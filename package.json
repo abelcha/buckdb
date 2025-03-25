@@ -1,0 +1,20 @@
+{
+  "name": "buckdb",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "^1.2.5",
+    "bun-plugin-glob-import": "^1.0.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.2.1-alpha.16",
+    "@fmt/sql-fmt": "npm:@jsr/fmt__sql-fmt",
+    "emphasize": "^7.0.0",
+    "es-toolkit": "^1.33.0",
+    "moderndash": "^4.0.0"
+  }
+}

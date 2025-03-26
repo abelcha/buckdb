@@ -1,17 +1,33 @@
 import { isString } from "es-toolkit";
 import { wrap } from "./utils";
 
+type Numericable = number | NumericField
+type Stringable = string | StringField
+type Whateverable = any | WhateverField
+
+
+export interface WhateverField {
+    /*WhateverInterface*/
+
+    /*WhateverInterface*/
+    /** Convert the operation chain to a SQL string */
+    toString(): string;
+}
+
+
 /**
  * Interface for string field operations
  * Defines methods that can be called on string fields in DuckDB
  */
 export interface StringField {
+    /*StringInterface*/
     /** Convert string to lowercase */
     lower(): StringField;
     /** Convert string to uppercase */
     upper(): StringField;
     /** Calculate Levenshtein distance between this string and another */
-    levenshtein_distance(other: string | StringField): NumericField;
+    levenshtein(other: Stringable): NumericField;
+    /*StringInterface*/
     // Add more string operations as needed
     /** Convert the operation chain to a SQL string */
     toString(): string;
@@ -22,16 +38,18 @@ export interface StringField {
  * Defines methods that can be called on numeric fields in DuckDB
  */
 export interface NumericField {
+    /*NumericInterface*/
     /** Add a value to this number */
-    add(value: number): NumericField;
+    add(value: Numericable): NumericField;
     /** Subtract a value from this number */
-    subtract(value: number): NumericField;
+    subtract(value: Numericable): NumericField;
     /** Multiply this number by a value */
-    multiply(value: number): NumericField;
+    multiply(value: Numericable): NumericField;
     /** Divide this number by a value */
-    divide(value: number): NumericField;
+    divide(value: Numericable): NumericField;
     /** Convert number to hexadecimal string */
     to_hex(): StringField;
+    /*NumericInterface*/
     // Add more numeric operations as needed
     /** Convert the operation chain to a SQL string */
     toString(): string;
@@ -42,15 +60,17 @@ export interface NumericField {
  * These functions can be used directly without chaining to a field
  */
 export interface DuckDBFunctions {
+    /*globalInterface*/
     /** Convert string to lowercase */
-    lower(value: string | StringField): StringField;
+    lower(value: Stringable): StringField;
     /** Convert string to uppercase */
-    upper(value: string | StringField): StringField;
+    upper(value: Stringable): StringField;
     /** Calculate Levenshtein distance between two strings */
-    levenshtein_distance(value1: string | StringField, value2: string | StringField): NumericField;
+    levenshtein(value1: Stringable, value2: Stringable): NumericField;
     /** Convert number to hexadecimal string */
-    to_hex(value: number | NumericField): StringField;
+    to_hex(value: Numericable): StringField;
     // Add more global functions as needed
+    /*globalInterface*/
 }
 
 type ReadCsvOptions = {
@@ -71,6 +91,39 @@ export interface DDBTableFunctions {
 }
 
 
+/**
+ * Implementation of string operations
+ * Provides concrete implementations of the StringField interface
+ */
+export class WhateverFieldImpl implements WhateverField {
+    /** Tracks the operation chain for this field */
+    private ops: Operation;
+
+    /**
+     * Create a new string field
+     * @param fieldName The name of the field in the database
+     */
+    constructor(fieldName: string) {
+        this.ops = { field: fieldName, method: '', args: [] };
+    }
+    /*WhateverFieldImpl*/
+
+    /*WhateverFieldImpl*/
+    toString(): string {
+        return operationToSql(this.ops);
+    }
+
+    /**
+     * Set the operation chain for this field
+     * @param ops The operation to set
+     * @returns This field instance for chaining
+     */
+    withOperation(ops: Operation): WhateverFieldImpl {
+        this.ops = ops;
+        return this;
+    }
+}
+
 
 /**
  * Implementation of string operations
@@ -87,7 +140,7 @@ export class StringFieldImpl implements StringField {
     constructor(fieldName: string) {
         this.ops = { field: fieldName, method: '', args: [] };
     }
-
+    /*StringFieldImpl*/
     lower(): StringField {
         return new StringFieldImpl('').withOperation({
             field: this.ops.field,
@@ -106,15 +159,15 @@ export class StringFieldImpl implements StringField {
         });
     }
 
-    levenshtein_distance(other: string | StringField): NumericField {
+    levenshtein(other: Stringable): NumericField {
         return new NumericFieldImpl('').withOperation({
             field: this.ops.field,
-            method: 'levenshtein_distance',
+            method: 'levenshtein',
             args: [other],
             chain: this.ops.method ? this.ops : undefined
         });
     }
-
+    /*StringFieldImpl*/
     toString(): string {
         return operationToSql(this.ops);
     }
@@ -145,7 +198,7 @@ export class NumericFieldImpl implements NumericField {
     constructor(fieldName: string) {
         this.ops = { field: fieldName, method: '', args: [] };
     }
-
+    /*NumericFieldImpl*/
     add(value: number): NumericField {
         return new NumericFieldImpl('').withOperation({
             field: this.ops.field,
@@ -190,6 +243,7 @@ export class NumericFieldImpl implements NumericField {
             chain: this.ops.method ? this.ops : undefined
         });
     }
+    /*NumericFieldImpl*/
 
     toString(): string {
         return operationToSql(this.ops);
@@ -206,7 +260,7 @@ export class NumericFieldImpl implements NumericField {
     }
 }
 
-const valueWrap = (value: string | StringField): string => {
+const valueWrap = (value: Stringable): string => {
     return isString(value) ? wrap(value, "'") : value.toString();
 }
 
@@ -215,7 +269,8 @@ const valueWrap = (value: string | StringField): string => {
  * Provides concrete implementations of the DuckDBFunctions interface
  */
 export class DuckDBFunctionsImpl implements DuckDBFunctions {
-    lower(value: string | StringField): StringField {
+    /*DuckDBFunctionsImpl*/
+    lower(value: Stringable): StringField {
         return new StringFieldImpl('').withOperation({
             field: '',
             method: 'lower',
@@ -223,7 +278,7 @@ export class DuckDBFunctionsImpl implements DuckDBFunctions {
         });
     }
 
-    upper(value: string | StringField): StringField {
+    upper(value: Stringable): StringField {
         return new StringFieldImpl('').withOperation({
             field: '',
             method: 'upper',
@@ -231,21 +286,22 @@ export class DuckDBFunctionsImpl implements DuckDBFunctions {
         });
     }
 
-    levenshtein_distance(value1: string | StringField, value2: string | StringField): NumericField {
+    levenshtein(value1: Stringable, value2: Stringable): NumericField {
         return new NumericFieldImpl('').withOperation({
             field: '',
-            method: 'levenshtein_distance',
+            method: 'levenshtein',
             args: [value1, value2]
         });
     }
 
-    to_hex(value: number | NumericField): StringField {
+    to_hex(value: Numericable): StringField {
         return new StringFieldImpl('').withOperation({
             field: '',
             method: 'to_hex',
             args: [value]
         });
     }
+    /*DuckDBFunctionsImpl*/
 }
 
 

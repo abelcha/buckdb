@@ -8,7 +8,7 @@
 import { DuckDBInstance } from '@duckdb/node-api';
 import init, { format } from '@fmt/sql-fmt';
 import { createEmphasize, all } from 'emphasize'
-import { DuckDBFunctionsImpl, NumericFieldImpl, StringFieldImpl, type DuckDBFunctions, type NumericField, type StringField } from './DuckdbTypes';
+import { DuckDBFunctionsImpl, NumericFieldImpl, StringFieldImpl, type DuckDBFunctions, type NumericField, type StringField } from './generated-typed';
 import { wrap } from './utils';
 const emphasize = createEmphasize(all)
 

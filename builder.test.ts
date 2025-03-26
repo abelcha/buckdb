@@ -12,12 +12,15 @@ import { mapValue } from "@duckdb/node-api";
 describe("TextEncoder", () => {
   test("selectMany", () => {
     expect(from('test.csv')
-      .selectMany((p, D) => ({ 
-        xx:D.levenshtein_distance('test', p.name),
-        uu: D.levenshtein_distance(p.age.to_hex(), D.upper(p.name)),
-        zz: D.levenshtein_distance('ab', 'cd'),
+      .selectMany((p, D) => ({
+        // '': D.distinct
+        // zz:p.age.ceiling()
+        xx:D.levenshtein('test', p.name),
+        uu: D.levenshtein(p.age.to_hex(), D.upper(p.name)),
+        zz: D.levenshtein('ab', 'cd'),
+        aa: p.name.levenshtein(D.to_hex(p.age.add(12)).upper()).subtract(-12),
         })).asSelector())
-      .toBe("levenshtein_distance('test', name) AS xx, levenshtein_distance(age.to_hex(), upper(name)) AS uu, levenshtein_distance('ab', 'cd') AS zz");
+      .toBe("levenshtein('test', name) AS xx, levenshtein(age.to_hex(), upper(name)) AS uu, levenshtein('ab', 'cd') AS zz, name.levenshtein(to_hex(age.add(12)).upper()).subtract(-12) AS aa");
 
     expect(from('test.csv')
       .selectMany(p => ({ name: p.name })).asSelector())
@@ -29,11 +32,11 @@ describe("TextEncoder", () => {
       .selectMany(p => ({ age: p.age.add(2024) })).asSelector())
       .toBe("age.add(2024) AS age");
     expect(from('test.csv')
-      .selectMany(p => ({ age: p.age.add(2024).to_hex().levenshtein_distance('toto') })).asSelector())
-      .toBe("age.add(2024).to_hex().levenshtein_distance('toto') AS age");
+      .selectMany(p => ({ age: p.age.add(2024).to_hex().levenshtein('toto') })).asSelector())
+      .toBe("age.add(2024).to_hex().levenshtein('toto') AS age");
     expect(from('test.csv')
-      .selectMany((p, { levenshtein_distance, to_hex }) => ({ w: levenshtein_distance(to_hex(p.age), p.name) })).asSelector())
-      .toBe("levenshtein_distance(to_hex(age), name) AS w");
+      .selectMany((p, { levenshtein, to_hex }) => ({ w: levenshtein(to_hex(p.age), p.name) })).asSelector())
+      .toBe("levenshtein(to_hex(age), name) AS w");
     expect(from('test.csv')
       .selectMany(p => ({
         cond: `IF(age>60, 'SENIOR', 'ADULT')`,
@@ -47,11 +50,12 @@ describe("TextEncoder", () => {
     expect(from('test.csv')
       .selectMany((p, D) => ({
         name: D.lower('abel'),
-        a: D.levenshtein_distance('abel', p.name),
+        a: D.levenshtein('abel', p.name),
         z: `IFNULL(${p.age},  40)`,
 
       })).asSelector())
-      .toBe("lower('abel') AS name, levenshtein_distance('abel', name) AS a, IFNULL(age,  40) AS z");
+      .toBe("lower('abel') AS name, levenshtein('abel', name) AS a, IFNULL(age,  40) AS z");
+      
   })
   test('asFrom', () => {
     expect(from('test.csv').asFrom()).toBe("'test.csv'");
@@ -61,9 +65,22 @@ describe("TextEncoder", () => {
     // expect(from(D => D.read_csv('test.csv')).asFrom()).toBe("FROM read_csv('test.csv')");
   })
   test('execute', async () => {
-    const resp = await from('test.csv').selectMany(p => ({ lolname: p.name })).execute();
+    // const resp = ;
+    expect(() => from('s3://my-bucket/test.csv').selectMany(p => ({ lolname: p.name })).execute())
+    .toThrow()
+    expect(() => from('tablename')
+    // .selectMany(p => ({dd: p.name.}))
+    .selectMany((p, D) => ({
+      d: D.hour(p.age)
+    }))
+    .asFrom().where((e, D) => (
+      D.and(
+        e.name.similarTo(/abc|dec/),
+        e.name.like('ABC%'),
+        D.or(e.name.eq('abc'), e.name.eq('def')),
+      )
+    ))).toThrow();
 
-    expect(resp).toBeInstanceOf(Promise);
     // expect(from('test.csv').execute()).toBeInstanceOf(Promise);
   })
   // test('join', () => {

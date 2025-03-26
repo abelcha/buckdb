@@ -8,20 +8,11 @@
 import { DuckDBInstance } from '@duckdb/node-api';
 import init, { format } from '@fmt/sql-fmt';
 import { createEmphasize, all } from 'emphasize'
-import { DuckDBFunctionsImpl, NumericFieldImpl, StringFieldImpl, type DuckDBFunctions, type NumericField, type StringField } from './generated-typed';
+import { DuckDBFunctionsImpl, NumericFieldImpl, StringFieldImpl, type DuckDBFunctions, type NumericField, type StringField } from './generated';
 import { wrap } from './utils';
-const emphasize = createEmphasize(all)
+// const emphasize = createEmphasize(all)
 
 await init();
-
-/**
- * Schema for the people table
- * This is a static schema for demonstration purposes
- */
-interface PeopleSchema {
-  name: StringField;
-  age: NumericField;
-}
 
 
 // Create a singleton instance of DuckDBFunctions
@@ -223,21 +214,42 @@ function createSchemaProxy<T>(schema: Record<keyof T, string>): T {
   return proxy;
 }
 
-/**
- * Start a query on a table
- * This is the main entry point for the query builder
- * 
- * @param tablePath Path to the table (file path for Parquet files)
- * @returns Query builder for the table
- */
-export function from(tablePath: string) {
+type TableSchemas = typeof tableSchemas;
+type TableName = keyof TableSchemas;
+type SchemaInterface<T extends TableName> = {
+  [K in keyof TableSchemas[T]['schema']]: 
+    TableSchemas[T]['schema'][K] extends 'varchar' ? StringField :
+    TableSchemas[T]['schema'][K] extends 'int' ? NumericField :
+    never
+};
 
-  // For now, we're using a static schema as specified
-  const peopleSchema = {
-    name: 'varchar',
-    age: 'int'
-  };
+const tableSchemas = {
+  fruits: {
+    schema: { color: 'varchar', season: 'varchar' } as const,
+  },
+  people: {
+    schema: { name: 'varchar', age: 'int' } as const,
+  }
+} as const;
+ 
+ 
+ 
+export function from<T extends TableName>(tableName: T) {
+  const tableConfig = tableSchemas[tableName];
+  const schemaProxy = createSchemaProxy(
+    tableConfig.schema as Record<string, string>
+  );
+  return new QueryBuilder<SchemaInterface<T>>(
+    tableName, 
+    schemaProxy as unknown as SchemaInterface<T>
+  );
+}
 
-  const schemaProxy = createSchemaProxy<PeopleSchema>(peopleSchema);
-  return new QueryBuilder<PeopleSchema>(tablePath, schemaProxy);
+
+if (import.meta.main) {
+  from('fruits').selectMany((e, D) => ({
+    col: e.color.str_split('#').list_extract(1),
+    // zz: e.not_a_type, // should be a type error
+  }))
+  .execute().then(res => res[0].col)
 }

@@ -18,6 +18,7 @@ function_name     AS name,
 parameters        AS params,
 parameter_types.list_transform(x -> TRANSTYPE(x))       AS paramtypes,
 TRANSTYPE(return_type)       AS returntypes,
+return_type       AS ogreturn,
 parameter_types       AS ogtypes,
 varargs           AS varargs,
 description       AS desc,
@@ -44,6 +45,7 @@ type IRow = {
     params: string[]
     paramtypes: string[]
     ogtypes: string[]
+    ogreturn: string
     returntypes: string
     desc: string
     comment: string
@@ -80,6 +82,7 @@ const getNameGP = (rows: IRow[], strict = true) => {
             comment: maxBy(rows, row => row.desc?.length)?.comment,
             example: maxBy(rows, row => row.desc?.length)?.example,
             ogtypes: largestParams.ogtypes,
+            ogreturn: largestParams.ogreturn,
         }
     })
 }
@@ -142,7 +145,6 @@ const ogTyped = (row: IRow, index: number) => {
 }
 const getArgsFinal = (row: any) => {
     const args = row.args.entries().toArray()
-    row.og_
     const argsKeys = getArgsKeys(row)
     const argsfinal = args.map(([key, types], argIndex) => {
         const isRequired = row.minArgs <= argIndex
@@ -150,6 +152,13 @@ const getArgsFinal = (row: any) => {
     })
     return argsfinal
 }
+
+
+// allnameGP.forEach(row => {
+//     console.log(`
+
+//     `)
+// })
 
 allnameGP.forEach((row) => {
     console.log(row.funcname, row.args)
@@ -169,14 +178,15 @@ allnameGP.forEach((row) => {
     )
 })
 
-rownameGP.forEach((row) => {
+allnameGP.forEach((row) => {
     // console.log(row.funcname, row.args)
     const argkeys = getArgsKeys(row)
     const argsfinal = getArgsFinal(row)
-    const result = InterfaceMap[row.result as 'VARCHAR' | 'NUMERIC']
+    const result = InterfaceMap[row.result as 'VARCHAR' | 'NUMERIC' | 'WHATEVER']
     row.args.values().next().value?.forEach(maintype => {
         // console.log({ maintype })
-        const exampleHeaderChain = `/** ${row.description || ''}, eg: ${exampleAsChain(row.example)} */` + '\n'
+        // console.log({ row })
+        const exampleHeaderChain = `/** (${row?.ogtypes.join(', ')}): ${row.ogreturn} | ${row.description || ''}, eg: ${exampleAsChain(row.example)} */` + '\n'
         namedInterfaces[maintype].push(`${exampleHeaderChain}   ${row.funcname}(${argsfinal.slice(1)?.join(', ')}): ${result.return}`)
         namedImplementations[maintype].push(
             `${exampleHeaderChain}  ${row.funcname} = (${argsfinal.slice(1)?.join(', ')}) => ` +
@@ -209,16 +219,19 @@ const repsplit = (tag: string, str: string) => {
 }
 // console.log({ namedImplementations })
 // console.log({ globalInterfaces,  })
+console.log('-------------')
+console.log(namedInterfaces['WHATEVER'], namedImplementations['WHATEVER'])
+console.log('-------------')
 repsplit('globalInterface', globalInterfaces.join('\n'))
 repsplit('StringInterface', namedInterfaces['VARCHAR'].join('\n'))
+repsplit('WhateverInterface', namedInterfaces['WHATEVER'].join('\n'))
 repsplit('StringFieldImpl', namedImplementations['VARCHAR'].join('\n'))
-repsplit('WhateverFieldImpl', namedImplementations['VARCHAR'].join('\n'))
 repsplit('NumericInterface', namedInterfaces['NUMERIC'].join('\n'))
 repsplit('NumericFieldImpl', namedImplementations['NUMERIC'].join('\n'))
 repsplit('WhateverFieldImpl', namedImplementations['WHATEVER'].join('\n'))
 repsplit('DuckDBFunctionsImpl', globalImplementations.join('\n'))
-await Bun.file('./generated-typed.ts').write(filecontent)
-await Bun.$`prettier --print-width=240 --write generated-typed.ts`
+await Bun.file('./generated.ts').write(filecontent)
+await Bun.$`prettier --print-width=240 --write generated.ts`
 // process.exit()
 // console.log('GLOBAL-INTERFACE')
 // console.log(globalInterfaces.join('\n'))
@@ -258,7 +271,8 @@ await Bun.$`prettier --print-width=240 --write generated-typed.ts`
 // console.table(oktypes)
 // console.log(rows.)
 
-// const xtypes = countBy(rows.flatMap(x => [...x.paramtypes, x.returntypes]), e => e)
+const xtypes = countBy(rows.flatMap(x => [...x.ogtypes, x.ogreturn]), e => e)
+console.log((xtypes))
 // console.log({ xtypes })
 // const zz = Object.entries(xtypes).map(([x, count]) => {
 //     // console.log({ x })

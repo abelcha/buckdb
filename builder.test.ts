@@ -66,20 +66,22 @@ describe("TextEncoder", () => {
   })
   test('execute', async () => {
     // const resp = ;
-    expect(() => from('s3://my-bucket/test.csv').selectMany(p => ({ lolname: p.name })).execute())
+    expect(() => from('s3://my-bucket/test.csv')
+    .selectMany(p => ({ lolname: p.name, zz:p.age.abs().format_bytes().split(','),  })).execute())
     .toThrow()
-    expect(() => from('tablename')
-    // .selectMany(p => ({dd: p.name.}))
-    .selectMany((p, D) => ({
-      d: D.hour(p.age)
-    }))
-    .asFrom().where((e, D) => (
-      D.and(
-        e.name.similarTo(/abc|dec/),
-        e.name.like('ABC%'),
-        D.or(e.name.eq('abc'), e.name.eq('def')),
-      )
-    ))).toThrow();
+    // expect(() => from('tablename')
+    // // .selectMany(p => ({dd: p.name.}))
+    // .selectMany((p, D) => ({
+    //   d: p.name.damerau_levenshtein('abc').divide(p.age),
+      
+    // }))
+    // .asFrom().where((e, D) => (
+    //   D.and(
+    //     e.name.similarTo(/abc|dec/),
+    //     e.name.like('ABC%'),
+    //     D.or(e.name.eq('abc'), e.name.eq('def')),
+    //   )
+    // ))).toThrow();
 
     // expect(from('test.csv').execute()).toBeInstanceOf(Promise);
   })

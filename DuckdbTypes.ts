@@ -141,32 +141,14 @@ export class StringFieldImpl implements StringField {
         this.ops = { field: fieldName, method: '', args: [] };
     }
     /*StringFieldImpl*/
-    lower(): StringField {
-        return new StringFieldImpl('').withOperation({
-            field: this.ops.field,
-            method: 'lower',
-            args: [],
-            chain: this.ops.method ? this.ops : undefined
-        });
-    }
+    lower = (): StringField => new StringFieldImpl('').withOperation({ field: this.ops.field, method: 'lower', args: [], chain: this.ops.method ? this.ops : undefined });
 
-    upper(): StringField {
-        return new StringFieldImpl('').withOperation({
-            field: this.ops.field,
-            method: 'upper',
-            args: [],
-            chain: this.ops.method ? this.ops : undefined
-        });
-    }
 
-    levenshtein(other: Stringable): NumericField {
-        return new NumericFieldImpl('').withOperation({
-            field: this.ops.field,
-            method: 'levenshtein',
-            args: [other],
-            chain: this.ops.method ? this.ops : undefined
-        });
-    }
+    upper = (): StringField => new StringFieldImpl('').withOperation({ field: this.ops.field, method: 'upper', args: [], chain: this.ops.method ? this.ops : undefined });
+
+
+    levenshtein = (other: Stringable): NumericField => new NumericFieldImpl('').withOperation({ field: this.ops.field, method: 'levenshtein', args: [other], chain: this.ops.method ? this.ops : undefined });
+
     /*StringFieldImpl*/
     toString(): string {
         return operationToSql(this.ops);
@@ -199,50 +181,12 @@ export class NumericFieldImpl implements NumericField {
         this.ops = { field: fieldName, method: '', args: [] };
     }
     /*NumericFieldImpl*/
-    add(value: number): NumericField {
-        return new NumericFieldImpl('').withOperation({
-            field: this.ops.field,
-            method: 'add',
-            args: [value],
-            chain: this.ops.method ? this.ops : undefined
-        });
-    }
+    add = (value: number): NumericField => new NumericFieldImpl('').withOperation({ field: this.ops.field, method: 'add', args: [value], chain: this.ops.method ? this.ops : undefined });
+    subtract = (value: number): NumericField => new NumericFieldImpl('').withOperation({ field: this.ops.field, method: 'subtract', args: [value], chain: this.ops.method ? this.ops : undefined });
+    multiply = (value: number): NumericField => new NumericFieldImpl('').withOperation({ field: this.ops.field, method: 'multiply', args: [value], chain: this.ops.method ? this.ops : undefined });
+    divide = (value: number): NumericField => new NumericFieldImpl('').withOperation({ field: this.ops.field, method: 'divide', args: [value], chain: this.ops.method ? this.ops : undefined });
+    to_hex = (): StringField => new StringFieldImpl('').withOperation({ field: this.ops.field, method: 'to_hex', args: [], chain: this.ops.method ? this.ops : undefined });
 
-    subtract(value: number): NumericField {
-        return new NumericFieldImpl('').withOperation({
-            field: this.ops.field,
-            method: 'subtract',
-            args: [value],
-            chain: this.ops.method ? this.ops : undefined
-        });
-    }
-
-    multiply(value: number): NumericField {
-        return new NumericFieldImpl('').withOperation({
-            field: this.ops.field,
-            method: 'multiply',
-            args: [value],
-            chain: this.ops.method ? this.ops : undefined
-        });
-    }
-
-    divide(value: number): NumericField {
-        return new NumericFieldImpl('').withOperation({
-            field: this.ops.field,
-            method: 'divide',
-            args: [value],
-            chain: this.ops.method ? this.ops : undefined
-        });
-    }
-
-    to_hex(): StringField {
-        return new StringFieldImpl('').withOperation({
-            field: this.ops.field,
-            method: 'to_hex',
-            args: [],
-            chain: this.ops.method ? this.ops : undefined
-        });
-    }
     /*NumericFieldImpl*/
 
     toString(): string {
@@ -270,40 +214,12 @@ const valueWrap = (value: Stringable): string => {
  */
 export class DuckDBFunctionsImpl implements DuckDBFunctions {
     /*DuckDBFunctionsImpl*/
-    lower(value: Stringable): StringField {
-        return new StringFieldImpl('').withOperation({
-            field: '',
-            method: 'lower',
-            args: [valueWrap(value)]
-        });
-    }
-
-    upper(value: Stringable): StringField {
-        return new StringFieldImpl('').withOperation({
-            field: '',
-            method: 'upper',
-            args: [(value)]
-        });
-    }
-
-    levenshtein(value1: Stringable, value2: Stringable): NumericField {
-        return new NumericFieldImpl('').withOperation({
-            field: '',
-            method: 'levenshtein',
-            args: [value1, value2]
-        });
-    }
-
-    to_hex(value: Numericable): StringField {
-        return new StringFieldImpl('').withOperation({
-            field: '',
-            method: 'to_hex',
-            args: [value]
-        });
-    }
+    lower = (value: Stringable): StringField => new StringFieldImpl('').withOperation({ field: '', method: 'lower', args: [valueWrap(value)] });
+    upper = (value: Stringable): StringField => new StringFieldImpl('').withOperation({ field: '', method: 'upper', args: [(value)] });
+    levenshtein = (value1: Stringable, value2: Stringable): NumericField => new NumericFieldImpl('').withOperation({ field: '', method: 'levenshtein', args: [value1, value2] });
+    to_hex = (value: Numericable): StringField => new StringFieldImpl('').withOperation({ field: '', method: 'to_hex', args: [value] });
     /*DuckDBFunctionsImpl*/
 }
-
 
 /**
  * Operation tracking for SQL generation
@@ -331,7 +247,6 @@ export function operationToSql(operation: Operation): string {
     if (!operation.method) {
         return operation.field;
     }
-
     // Format arguments properly (strings in quotes, objects to SQL, etc.)
     const args = operation.args.map(arg => isString(arg) ? wrap(arg, "'") : arg.toString()).join(', ');
 

@@ -15,6 +15,7 @@
     "@fmt/sql-fmt": "npm:@jsr/fmt__sql-fmt",
     "emphasize": "^7.0.0",
     "es-toolkit": "^1.33.0",
-    "moderndash": "^4.0.0"
+    "mri": "^1.2.0",
+    "type-fest": "^4.38.0"
   }
 }

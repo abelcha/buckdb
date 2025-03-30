@@ -4,3 +4,4 @@ duckdb-node-neo
 trash
 .buck
 src/.buck
+data

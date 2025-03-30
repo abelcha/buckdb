@@ -2,3 +2,5 @@
 node_modules
 duckdb-node-neo
 trash
+.buck
+src/.buck

@@ -1,255 +1,141 @@
-/**
- * TypeScript implementation for DuckDB query building with autocomplete
- * 
- * This module provides a type-safe way to build DuckDB SQL queries using TypeScript.
- * It allows for autocomplete on table fields and SQL functions, and transforms
- * method chains into SQL query strings.
- */
+type People = { name: DVarcharField; male: DBoolField; age: DNumericField };
+import _SchemaData from './.buck/table.json'
+import { dataSchemas } from './.buck/table.ts';
+import { DNumericField, DVarcharField, DBoolField, DGlobalField } from './.buck/types';
+import { makeProxy } from './proxy';
+import { get } from 'es-toolkit/compat';
+import { formatSource, NativeFieldTypes, prettifyPrintSQL, TableSchema, TypeMapping, wrap } from './utils.ts';
 import { DuckDBInstance } from '@duckdb/node-api';
-import init, { format } from '@fmt/sql-fmt';
-import { createEmphasize, all } from 'emphasize'
-import { DuckDBFunctionsImpl, NumericFieldImpl, StringFieldImpl, type DuckDBFunctions, type NumericField, type StringField } from './generated';
-import { wrap } from './utils';
-// const emphasize = createEmphasize(all)
 
-await init();
+type Schema = typeof dataSchemas;
+const SchemaData = _SchemaData as unknown as Schema;
+
+const duckdbFunctions = makeProxy() as unknown as DGlobalField
 
 
-// Create a singleton instance of DuckDBFunctions
-const duckdbFunctions = new DuckDBFunctionsImpl();
-
-
-/**
- * Query builder class
- * Builds a SQL query using a fluent API
- */
-export class QueryBuilder<T, R = Record<string, any>> {
-  /** The path to the table (file path for Parquet files) */
-  private tablePath: string;
-  /** Array of selected expressions */
-  private selections: string[] = [];
-  /** Array of WHERE conditions */
-  private conditions: string[] = [];
-  /** Schema proxy for the table */
-  private schema: T;
-  /** Result type for the query */
-  private resultType: R = {} as R;
-
-  /**
-   * Create a new query builder
-   * @param tablePath Path to the table (file path for Parquet files)
-   * @param schema Schema proxy for the table
-   */
-  constructor(tablePath: string, schema: T) {
-    this.tablePath = tablePath;
-    this.schema = schema;
-  }
-
-  /**
-   * Add a selection to the query
-   * @param selector Function that selects a field and applies operations
-   * @returns This query builder for chaining
-   */
-  select<K extends keyof T>(selector: (schema: T, D?: DuckDBFunctions) => any): QueryBuilder<T> {
-    const result = selector(this.schema, duckdbFunctions);
-    this.selections.push(result.toString());
-    return this;
-  }
-
-  /**
-   * Add multiple selections to the query with aliases
-   * @param selector Function that returns an object with field names as keys and field expressions as values
-   * @returns This query builder for chaining
-   */
-  selectMany<S extends Record<string, any>>(
-    selector: (schema: T, D?: DuckDBFunctions) => S
-  ): QueryBuilder<T, S> {
-    const result = selector(this.schema, duckdbFunctions);
-
-    for (const [alias, value] of Object.entries(result)) {
-      // console.log({ value, alias }, )
-      const val = value instanceof QueryBuilder ?
-        wrap(value.toSql(), '(', ')')
-        : (value).toString()
-      this.selections.push(`${val} AS ${alias}`);
-    }
-
-    // Update the result type to match the selector's return type
-    this.resultType = result as unknown as R;
-
-    return this as unknown as QueryBuilder<T, S>;
-  }
-
-  /**
-   * Get the selections as an array of SQL expressions
-   * @returns Array of SQL expressions
-   */
-  getSelections(): string[] {
-    return this.selections;
-  }
-
-  /**
-   * Add a WHERE condition to the query
-   * @param fieldSelector Function that selects a field
-   * @param operator Comparison operator (e.g., '>', '<', '=', '!=', 'IN', 'BETWEEN', 'LIKE', 'IS NULL', 'IS NOT NULL')
-   * @param value Value to compare against (can be omitted for NULL checks)
-   * @returns This query builder for chaining
-   */
-  where<K extends keyof T>(
-    fieldSelector: (schema: T) => any,
-    operator: string,
-    value?: any
-  ): QueryBuilder<T> {
-    const field = fieldSelector(this.schema);
-    let condition: string;
-
-    // Handle different operators
-    if (operator.toUpperCase() === 'IS NULL' || operator.toUpperCase() === 'IS NOT NULL') {
-      // NULL checks don't need a value
-      condition = `${field.toString()} ${operator}`;
-    } else if (operator.toUpperCase() === 'IN') {
-      // IN operator expects an array
-      if (Array.isArray(value)) {
-        const formattedValues = value.map(v => {
-          if (typeof v === 'string') return `'${v}'`;
-          return v;
-        }).join(', ');
-        condition = `${field.toString()} IN (${formattedValues})`;
-      } else {
-        throw new Error('IN operator requires an array value');
-      }
-    } else if (operator.toUpperCase() === 'BETWEEN') {
-      // BETWEEN operator expects an array with two values
-      if (Array.isArray(value) && value.length === 2) {
-        const [start, end] = value;
-        const formattedStart = typeof start === 'string' ? `'${start}'` : start;
-        const formattedEnd = typeof end === 'string' ? `'${end}'` : end;
-        condition = `${field.toString()} BETWEEN ${formattedStart} AND ${formattedEnd}`;
-      } else {
-        throw new Error('BETWEEN operator requires an array with two values');
-      }
-    } else {
-      // Standard operators
-      let formattedValue = value;
-
-      // Format the value based on its type
-      if (typeof value === 'string') {
-        formattedValue = `'${value}'`;
-      } else if (value && typeof value === 'object' && 'toString' in value) {
-        formattedValue = value.toString();
-      }
-
-      condition = `${field.toString()} ${operator} ${formattedValue}`;
-    }
-
-    this.conditions.push(condition);
-    return this;
-  }
-
-
-  /**
-   * Generate the final SQL query
-   * @returns SQL query string
-   */
-  toSql(): string {
-    let sql = `SELECT ${this.asSelector()} FROM ${this.asFrom()}`;
-
-    // Add WHERE clause if there are conditions
-    if (this.conditions.length > 0) {
-      sql += ` WHERE ${this.conditions.join(' AND ')}`;
-    }
-
-    return sql;
-  }
-  asFrom() {
-    return this.tablePath.match(/\.(parquet|csv|jsonl?|tsv)(.(gz|zst|xz))?$/) ?
-      wrap(this.tablePath, "'") : this.tablePath
-  }
-  asSelector(): string {
-    return this.selections.join(', ');
-  }
-
-  /**
-   * Execute the query and return the results
-   * @returns Promise with the query results
-   */
-  async execute(): Promise<R[]> {
-    // Create a DuckDB instance
-    const instance = await DuckDBInstance.create();
-
-    // Connect to the instance
-    const connection = await instance.connect();
-
-    // Run the query
-    const result = await connection.runAndReadAll(this.toSql());
-
-    // Get the results as JSON objects
-    const rows = result.getRowObjectsJson() as R[];
-
-    return rows;
-  }
-}
-
-/**
- * Create a schema proxy for a table
- * This proxy provides autocomplete for table fields
- * 
- * @param schema Record mapping field names to their types
- * @returns Proxy object with field implementations
- */
 function createSchemaProxy<T>(schema: Record<keyof T, string>): T {
-  const proxy = {} as T;
-
-  for (const key in schema) {
-    const fieldType = schema[key];
-
-    if (fieldType === 'varchar') {
-      (proxy as any)[key] = new StringFieldImpl(key as string);
-    } else if (fieldType === 'int') {
-      (proxy as any)[key] = new NumericFieldImpl(key as string);
+    const proxy = {} as T;
+    for (const key in schema) {
+        const fieldType = schema[key] as keyof TypeMapping;
+        (proxy as any)[key] = makeProxy(key) as unknown as TypeMapping[typeof fieldType];
     }
-    // Add more types as needed
-  }
-
-  return proxy;
+    return proxy;
 }
 
-type TableSchemas = typeof tableSchemas;
-type TableName = keyof TableSchemas;
-type SchemaInterface<T extends TableName> = {
-  [K in keyof TableSchemas[T]['schema']]: 
-    TableSchemas[T]['schema'][K] extends 'varchar' ? StringField :
-    TableSchemas[T]['schema'][K] extends 'int' ? NumericField :
-    never
-};
+class Dumper {
+    _limit?: number;
+    _table?: string;
+    groupBy?: string[];
+    selectFields: string[][] = [];
+    whereClauses: string[] = [];
+    constructor(table: string) {
+        this._table = table;
+    }
+    toSql({ pretty } = { pretty: false }): string {
+        const components = ['SELECT', this.asSelector(), 'FROM', this.asFrom(), this.asWhere(), this.asLimit()]
+        return prettifyPrintSQL(components.filter(e => e).join(' ').trim(), pretty);
+    }
 
-const tableSchemas = {
-  fruits: {
-    schema: { color: 'varchar', season: 'varchar' } as const,
-  },
-  people: {
-    schema: { name: 'varchar', age: 'int' } as const,
-  }
-} as const;
- 
- 
- 
-export function from<T extends TableName>(tableName: T) {
-  const tableConfig = tableSchemas[tableName];
-  const schemaProxy = createSchemaProxy(
-    tableConfig.schema as Record<string, string>
-  );
-  return new QueryBuilder<SchemaInterface<T>>(
-    tableName, 
-    schemaProxy as unknown as SchemaInterface<T>
-  );
+    asWhere() {
+        return this.whereClauses.length ? `WHERE ${this.whereClauses.join(" AND ")}` : "";
+    }
+
+    asLimit() {
+        return this._limit ? `LIMIT ${this._limit}` : ''
+    }
+    asFrom() {
+        return formatSource(this._table)
+    }
+    asSelector({ pretty }: { pretty?: boolean } = {}): string {
+        return prettifyPrintSQL(this.selectFields.map(([k, v]) => `${v} AS ${k}`).join(", ") || "*", pretty);
+    }
+    limit(n: number): this {
+        this._limit = n;
+        return this;
+    }
 }
 
+
+class From<T, S = T> extends Dumper {
+    dbpath: keyof T;
+    table: string;
+
+    constructor(source: string, dbpath = "") {
+        super(source);
+        this.dbpath = dbpath as keyof T;
+        this.table = source as string;
+        if (!dataSchemas?.[this.dbpath as string]?.[this.table as string]) {
+            this.loadSchema()
+        }
+    }
+    async loadSchema() {
+        console.log('OKOK  LOADDDD')
+        const { stderr, stdout, ...rr } = await Bun.$`bun src/sync-data ${this.dbpath || this.table}`
+        console.log({ stdout, stderr })
+        console.log({ rr })
+
+    }
+
+    select<U>(fn: (p: T, D: DGlobalField) => U): From<T, U> {
+        const tableConfig = get(SchemaData, this.dbpath)?.[this.table]
+        const schemaProxy = createSchemaProxy(
+            tableConfig as Record<keyof TableSchema<T>, string>
+        );
+        const result = fn(schemaProxy as T, duckdbFunctions);
+        if (typeof result === 'object' && result !== null) {
+            this.selectFields.push(
+                ...Object.entries(result).map(([k, v]) => [k, v instanceof From ? v.toString() : v?.toString()])
+            )
+        } else {
+            throw new Error("The select function must return an object.");
+        }
+        return this as unknown as From<T, U>;
+    }
+
+    selectMany = this.select;
+
+    async execute(): Promise<NativeFieldTypes<S>[]> {
+        const instance = await DuckDBInstance.create(this.dbpath as string || ':memory:');
+        const connection = await instance.connect();
+        const result = await connection.runAndReadAll(this.toSql());
+        const rows = result.getRowObjectsJson() as unknown as NativeFieldTypes<S>[];
+        return rows
+    }
+
+    async *stream(): AsyncGenerator<NativeFieldTypes<S>> {
+        for (const row of await this.execute()) {
+            yield row
+        }
+    }
+    public where(v: string): this;
+    public where(fn: (item: T & S) => boolean): this
+    public where(fn: string | ((item: T & S) => boolean)): this {
+
+        const condition = (fn.toString());
+        console.log({ condition })
+        if (condition) this.whereClauses.push(condition);
+        return this;
+    }
+}
+
+class Database<DBPath extends keyof Schema> {
+    dbpath: DBPath;
+    constructor(dbpath: DBPath) {
+        this.dbpath = dbpath;
+
+    }
+
+
+    from = <TableName extends keyof Schema[DBPath]>(table: TableName) => {
+        return new From<TableSchema<Schema[DBPath][TableName]>>(table as string, this.dbpath);
+    }
+}
+
+export const database = <DBPath extends keyof Schema>(dd: DBPath) => new Database(dd as DBPath);
+export const { from } = database('')
 
 if (import.meta.main) {
-  from('fruits').selectMany((e, D) => ({
-    col: e.color.str_split('#').list_extract(1),
-    // zz: e.not_a_type, // should be a type error
-  }))
-  .execute().then(res => res[0].col)
+    console.log('PPCCDD', import.meta.dir, import.meta.path)
+    const q = await (database('data/ex.duckdb').from('wavy'))
+    console.log(await q.limit(1).execute())
 }

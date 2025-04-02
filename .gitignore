@@ -3,6 +3,5 @@ node_modules
 duckdb-node-neo
 trash
 .buck
-!.buck/types.ts
 src/.buck
 data

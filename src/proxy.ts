@@ -1,6 +1,6 @@
 import { isString } from "es-toolkit";
 import { wrap } from "./utils";
-import { DGlobalField, DVarcharField, DNumericField } from "./.buck/types";
+import { IGlobal, DVarcharField, DNumericField } from "./.buck/types";
 
 export type Operation = {
     field?: string;
@@ -65,7 +65,7 @@ export function makeProxy<T>(field?: string, chain?: Operation) {
 
 
 async function main() {
-    const D = makeProxy() as unknown as DGlobalField;
+    const D = makeProxy() as unknown as IGlobal;
     const p = {
         name: makeProxy('name') as unknown as DVarcharField,
         age: makeProxy('age') as unknown as DNumericField,

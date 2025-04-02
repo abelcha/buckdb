@@ -11,6 +11,7 @@
     ],
     "target": "ESNext",
     "module": "ESNext",
+    // "noImplicitAny": true,
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,

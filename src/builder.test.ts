@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { database, from } from "./builder";
-import { DGlobalField, DNumericField, DVarcharField } from "./.buck/types";
+import { IGlobal, DNumericField, DVarcharField } from "./.buck/types";
 import { makeProxy } from "./proxy";
 
 const expectCompare = async (x) => {
@@ -53,7 +53,7 @@ describe("select", () => {
   })
 
   test("expectCompare", () => {
-    const D = makeProxy() as unknown as DGlobalField;
+    const D = makeProxy() as unknown as IGlobal;
     const p = {
       name: makeProxy('name') as unknown as DVarcharField,
       age: makeProxy('age') as unknown as DNumericField,

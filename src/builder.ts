@@ -1,16 +1,19 @@
 type People = { name: DVarcharField; male: DBoolField; age: DNumericField };
 import _SchemaData from './.buck/table.json'
 import { dataSchemas } from './.buck/table.ts';
-import { DNumericField, DVarcharField, DBoolField, DGlobalField } from './.buck/types';
+import { DNumericField, DVarcharField, DBoolField, IGlobal } from './.buck/types';
 import { makeProxy } from './proxy';
-import { get } from 'es-toolkit/compat';
-import { formatSource, NativeFieldTypes, prettifyPrintSQL, TableSchema, TypeMapping, wrap } from './utils.ts';
+import { get, isArray, isNumber, isObject } from 'es-toolkit/compat';
+import { formatSource, MapAntiType, MapInferredType, prettifyPrintSQL, TableSchema, TypeMapping, wrap } from './utils.ts';
 import { DuckDBInstance } from '@duckdb/node-api';
+import { isPlainObject, isString } from 'es-toolkit';
+import { ConditionParser } from './condition-parser.ts';
 
 type Schema = typeof dataSchemas;
+type MemorySchema = typeof dataSchemas['']
 const SchemaData = _SchemaData as unknown as Schema;
 
-const duckdbFunctions = makeProxy() as unknown as DGlobalField
+const duckdbFunctions = makeProxy() as unknown as IGlobal
 
 
 function createSchemaProxy<T>(schema: Record<keyof T, string>): T {
@@ -47,7 +50,7 @@ class Dumper {
         return formatSource(this._table)
     }
     asSelector({ pretty }: { pretty?: boolean } = {}): string {
-        return prettifyPrintSQL(this.selectFields.map(([k, v]) => `${v} AS ${k}`).join(", ") || "*", pretty);
+        return prettifyPrintSQL(this.selectFields.map(([v, k]) => !k?.match(/[^\d]/) ? v : `${v} AS ${k}`).join(", ") || "*", pretty);
     }
     limit(n: number): this {
         this._limit = n;
@@ -70,21 +73,30 @@ class From<T, S = T> extends Dumper {
     }
     async loadSchema() {
         console.log('OKOK  LOADDDD')
-        const { stderr, stdout, ...rr } = await Bun.$`bun src/sync-data ${this.dbpath || this.table}`
+        const { stdout, stderr } = Bun.spawnSync({ cmd: ['bun', 'src/sync-data', String(this.dbpath || this.table)] })
+        // const { stderr, stdout, ...rr } = await Bun.$
         console.log({ stdout, stderr })
-        console.log({ rr })
+        console.log('=============')
 
     }
 
-    select<U>(fn: (p: T, D: DGlobalField) => U): From<T, U> {
+    select<U>(fn: (p: T, D: IGlobal) => U): From<T, U> {
         const tableConfig = get(SchemaData, this.dbpath)?.[this.table]
         const schemaProxy = createSchemaProxy(
             tableConfig as Record<keyof TableSchema<T>, string>
         );
         const result = fn(schemaProxy as T, duckdbFunctions);
-        if (typeof result === 'object' && result !== null) {
+        if (isString(result)) {
+            this.selectFields.push([result])
+        }
+        if (isArray(result)) {
             this.selectFields.push(
-                ...Object.entries(result).map(([k, v]) => [k, v instanceof From ? v.toString() : v?.toString()])
+                ...result.map(e => [e?.toString()])
+            )
+        }
+        else if (isObject(result)) {
+            this.selectFields.push(
+                ...Object.entries(result).map(([k, v]) => [v?.toString(), k])
             )
         } else {
             throw new Error("The select function must return an object.");
@@ -94,26 +106,48 @@ class From<T, S = T> extends Dumper {
 
     selectMany = this.select;
 
-    async execute(): Promise<NativeFieldTypes<S>[]> {
+    async execute(): Promise<MapInferredType<S>[]> {
         const instance = await DuckDBInstance.create(this.dbpath as string || ':memory:');
         const connection = await instance.connect();
         const result = await connection.runAndReadAll(this.toSql());
-        const rows = result.getRowObjectsJson() as unknown as NativeFieldTypes<S>[];
-        return rows
+        const rows = this.selectFields?.[1]?.[1] ?
+            result.getRowObjectsJson() : result.getRowsJson();
+        return rows as MapInferredType<S>[];
     }
 
-    async *stream(): AsyncGenerator<NativeFieldTypes<S>> {
+    async * stream(): AsyncGenerator<MapInferredType<S>> {
         for (const row of await this.execute()) {
             yield row
         }
     }
-    public where(v: string): this;
-    public where(fn: (item: T & S) => boolean): this
-    public where(fn: string | ((item: T & S) => boolean)): this {
+    // public where(v: string): this;
+    // public where(fn: (item: T & S) => boolean): this
+    // public where(fn: string | ((item: T & S) => boolean)): this {
 
-        const condition = (fn.toString());
-        console.log({ condition })
-        if (condition) this.whereClauses.push(condition);
+    //     const condition = (fn.toString());
+    //     console.log({ condition })
+    //     if (condition) this.whereClauses.push(condition);
+    //     return this;
+    // }
+    public where(fn: string | ((item: MapAntiType<T & S>, D: IGlobal) => any)): this {
+        if (typeof fn === 'string') {
+            this.whereClauses.push(fn)
+            return this;
+        }
+        const parser = new ConditionParser()
+        const resp = parser.parseWhereClause(fn)
+        this.whereClauses.push(resp)
+        // console.log({ resp })
+        // const tableConfig = get(SchemaData, this.dbpath)?.[this.table]
+
+        // const schemaProxy = createSchemaProxy(
+        //     tableConfig as Record<keyof TableSchema<T>, string>
+        // );
+
+        // const condition = fn(schemaProxy as MapAntiType<T & S>, duckdbFunctions);
+        // fn()
+        // console.log({ condition })
+        // if (condition) this.whereClauses.push(condition);
         return this;
     }
 }
@@ -132,10 +166,34 @@ class Database<DBPath extends keyof Schema> {
 }
 
 export const database = <DBPath extends keyof Schema>(dd: DBPath) => new Database(dd as DBPath);
-export const { from } = database('')
+export const from = <RessourcePath extends keyof MemorySchema>(dd: RessourcePath) => new Database('').from(dd as RessourcePath);
 
 if (import.meta.main) {
     console.log('PPCCDD', import.meta.dir, import.meta.path)
-    const q = await (database('data/ex.duckdb').from('wavy'))
-    console.log(await q.limit(1).execute())
+    // const q = (database('data/ex.duckdb').from('wavy'))
+    // const q = from('data/people.parquet').select((p, D) => [p.total, p.name, p.age, D.concat(p.name, '[', p.total, ']')] as const)
+    // // 
+
+    // type www = number | bigint
+    // type ww2 = string | bigint
+    // const lol = (sss: ww2) => {
+    //     return sss + "lol"
+    // }
+
+    const q = from('data/people.parquet')
+        .select((p, D) => ({ _total: p.total, _name: p.name, _age: p.age, ww: D.concat(p.name, '[', p.total, ']') }))
+        .where(p => p.total > p.age && p.ww.regexp_matches(/.*[0-9]{3}/) || p.age > 10)
+        // .where(p => p._age in ['toto', 'tata'])
+        // .orderBy(e => e.total, 'desc')
+    // .where(p => )
+    // from('data/people.parquet', 'p1')
+        // .join('data/people.parquet', 'p2')
+
+    // .where({
+    //     total: { $gt: 1 },
+    //     age: 
+    // })
+    console.log(q.toSql({ pretty: true }))
+    // const resp = await q.limit(10).execute()
+
 }

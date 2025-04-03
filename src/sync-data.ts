@@ -1,6 +1,7 @@
 import { DuckDBInstance } from '@duckdb/node-api';
 import mri from 'mri'
 import { formatSource, mapTypes } from './utils';
+import { sleep } from 'bun';
 
 const defcon = await DuckDBInstance.create().then(e => e.connect())
 
@@ -39,6 +40,47 @@ export const tots = async (path: string) => {
     await Bun.file(pah).write(final)
 }
 
+
+const formatK = (e: string) => {
+    return `['${cutquotes(e).replaceAll("'", '\\\'')}']`
+}
+
+const renderFields = (fields: Record<string, string>) => {
+    return Object.entries(fields).map(([k, v]) => {
+        // const type = mapTypes(v)
+        return `\t\t${formatK(k)}: t.${v}Field,`
+    }).join('\n')
+}
+
+const renderTables = (tables: Record<string, Record<string, string>>) => {
+    return Object.entries(tables).map(([k, v]) => {
+        // const type = mapTypes(v)
+        return `\t${formatK(k)}: {
+${renderFields(v)}
+        },\n`
+    }).join('\n')
+}
+
+export const tots2 = async (path: string) => {
+    const content = await Bun.file(path).json() as Record<string, Record<string, string>>
+    const out = `
+    import * as  t from './types.ts'
+    export default interface Collection {
+        ${Object.entries(content).map(([dbname, tables]) => (`
+        ${formatK(dbname)}: {
+           ${renderTables(tables)}
+        }`
+    ))}
+    }
+`
+
+    // const final = (out.concat('\n}').join('\n'))
+    
+    const p = path.replace('.json', '2.ts')
+    await Bun.file(p).write(out)
+    await Bun.$`dprint fmt ${p}`
+}
+
 export const cutquotes = (str) => {
     return str?.[0] === "'" && str?.[str.length - 1] == "'" ? str.slice(1, -1) : str
 }
@@ -47,6 +89,7 @@ export const fetchSchemaRuntime = async (origin: string, connection = defcon) =>
     const fields = await getFields(origin, connection)
     await upsertJSON('table', '', { [origin]: fields })
     await tots('.buck/table.json')
+    await tots2('.buck/table.json')
 }
 
 export const fetchRessourceRuntime = async (origin: string) => {
@@ -57,8 +100,10 @@ export const fetchRessourceRuntime = async (origin: string) => {
         og[row.table_name] = await getFields(row.table_name, con)
     }
     await upsertJSON('table', origin, og)
+    // await sleep(500)
     await tots('.buck/table.json')
-    
+    await tots2('.buck/table.json')
+
 }
 if (import.meta.main) {
     const args = mri(process.argv.slice(2))

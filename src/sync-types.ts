@@ -9,7 +9,7 @@ const getFuncHeader = (row: any, ot: ftype) => {
 
     return {
         args: row.args.map((arg) => [arg.pname, arg.dtypes.map(e => e + 'able').join(' | ')].join(arg.required ? ': ' : '?: ')),
-        output: ot?.man && tt.man || tt?.field
+        output: ot?.man && tt.man || (!row.return_type ? 'void' : tt?.field)
     }
 }
 const getImprint = (row, t) => {
@@ -46,7 +46,7 @@ const genInterface = (rows, f: Partial<ftype>, slice = 0, mergeAny = false) => {
         }
         if (row.parameters[0] === 'col0' && row.parameters.length > 2 && row.function_type === 'table' && row.parameters[1] !== 'col1') {
             const [p1, ...pall] = args
-            args = [p1, ['opts?:' + wrap(pall.join(', '), 'Partial<{', '}>')]]
+            args = [p1, ['opts?:' + wrap(pall.toSorted().join(', '), 'Partial<{', '}>')]]
         }
         const fargs = args.slice(slice).join(', ')
         str += buildJSDoc(row)
@@ -63,7 +63,7 @@ const writefile = (pname: string, content: string) => {
         .then(() => Bun.$`prettier --print-width=240 --write .buck/${pname}.ts`)
 }
 
-const OmittedFuncs = Ω('split-VARCHAR-VARCHAR[]', 'length-VARCHAR-BIGINT')
+const OmittedFuncs = Ω('split-VARCHAR-any[]', 'length-VARCHAR-number')
 
 if (import.meta.main) {
     let output = []
@@ -71,13 +71,14 @@ if (import.meta.main) {
         .select(p => p)
         .where(`function_name SIMILAR TO '[a-z]\\w+' AND function_name NOT LIKE 'icu_collate%'`)
         .orderBy('function_name')
-    console.log(query.toSql({ pretty : true }))
+    console.log(query.toSql({ pretty: true }))
     let results = await query.execute()
     const mergeFuncNames = () => {
-        const groups = Object.groupBy(results, e => [e.function_name, e.parameter_types[0], e.return_type].join('-'))
+        const groups = Object.groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-'))
         return Object.entries(groups)
             .filter(([key, values]) => !(key in OmittedFuncs))
             .flatMap(([key, values]) => {
+                console.log('-->', key)
                 let maxParams = maxBy(values, e => e.parameter_types.length)
                 const args = range(maxParams.parameters.length).map((type, i) => {
                     let pname = fkey(maxParams.parameters[i]) //.match(/\w+/)[0]
@@ -95,12 +96,10 @@ if (import.meta.main) {
                     }
                     return { pname, ptypes, dtypes, required }
                 })
-                if (maxParams.function_name === 'concat') {
-                    maxParams.return_type = 'VARCHAR'
-                }
-
-                const output = `${mapTypes(maxParams.return_type)}Field`
-                return { ...maxParams, args, output }
+                const return_type = maxParams.function_name === 'concat' ? 'VARCHAR' : maxParams.return_type
+                const output = !return_type ? 'void' : `${mapTypes(return_type)}Field`
+                console.log({ return_type, output })
+                return { ...maxParams, return_type, args, output }
             })
     }
     results = mergeFuncNames()
@@ -124,10 +123,12 @@ if (import.meta.main) {
     // console.log(resp.table)@
     output.push(genInterface(resp.table, { id: 'table' }, 0))
 
+
     output.push(genInterface(grouped.DAny, TypeProps.DAny, 1, false))
     output.push(genInterface(grouped.DVarchar, TypeProps.DVarchar, 1, true))
     output.push(genInterface(grouped.DNumeric, TypeProps.DNumeric, 1, true))
     output.push(genInterface(resp.scalar, { id: 'global', man: 'Partial<CGlobal>' }, 0))
+    output.push(genInterface(resp.aggregate, { id: 'aggregate', man: 'Partial<CAggregate>' }, 0))
 
     writefile('types', output.join('\n'))
     await Bun.$`dprint fmt .buck/types.ts`

@@ -143,19 +143,22 @@ export class ConditionParser {
       }
 
       const objectText = expression.getText();
-      let methodName = [expression.expression.getText(), expression.name.getText()].join('.').replace(/^[eD]\./, '')
+      const rstar = new RegExp(`^(${this.allowedVars.join('|')})\\W`)
+      // console.log({ rstar })
+      let methodName = [expression.expression.getText(), expression.name.getText()].join('.').replace(rstar, '')
 
-      // For method calls on 'e', strip 'e.' prefix but preserve nested chains
-      if (objectText === 'e') {
-        if (ts.isPropertyAccessExpression(expression.expression)) {
-          // Nested method call (e.name.whatever()) - visit the expression to get full chain
-          const propertyChain = this.visitNode(expression.expression);
-          methodName = `${propertyChain}.${methodName}`;
-        } else {
-          // Simple method call (e.method()) - strip the 'e.' prefix
-          methodName = methodName;
-        }
-      }
+      // // For method calls on 'e', strip 'e.' prefix but preserve nested chains
+      // if (objectText === 'e') {
+      //   if (ts.isPropertyAccessExpression(expression.expression)) {
+      //     // Nested method call (e.name.whatever()) - visit the expression to get full chain
+      //     const propertyChain = this.visitNode(expression.expression);
+      //     console.log({ propertyChain })
+      //     methodName = `${propertyChain}.${methodName}`;
+      //   } else {
+      //     // Simple method call (e.method()) - strip the 'e.' prefix
+      //     methodName = methodName;
+      //   }
+      // }
 
       const args = node.arguments.map(arg => {
         const argText = this.visitNode(arg);
@@ -168,7 +171,7 @@ export class ConditionParser {
 
       // Handle DuckDB functions (D.*)
       if (objectText === 'D') {
-        return `__${methodName}(${args})`;
+        return `${methodName}(${args})`;
       }
       return `${methodName}(${args})`;
     }

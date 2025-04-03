@@ -75,4 +75,11 @@ test('operators', () => {
     expect(parser.parseWhereClause((e, D) => (e.field.x.y === 4 || e.age + 4 > 10) && e.age - 10 > 0)).toBe(
         "(field.x.y = 4 OR age + 4 > 10) AND age - 10 > 0"
     );
+
 });
+
+test('kitchen_sink', () => {
+    expect(parser.parseWhereClause((e, D) => (e.field.x.y === 4 || e.age + 4 > 10) && e.age - 10 > 0)).toBe(
+        "(field.x.y = 4 OR age + 4 > 10) AND age - 10 > 0"
+    );
+})

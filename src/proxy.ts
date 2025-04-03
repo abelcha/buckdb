@@ -1,6 +1,6 @@
 import { isString } from "es-toolkit";
-import { wrap } from "./utils";
-import { IGlobal, DVarcharField, DNumericField } from "./.buck/types";
+import { wrap, Ω } from "./utils";
+import { DGlobalField, DVarcharField, DNumericField, DAggregateField } from "./.buck/types";
 
 export type Operation = {
     field?: string;
@@ -49,7 +49,7 @@ export function makeProxy<T>(field?: string, chain?: Operation) {
 
     return new Proxy({}, {
         get(target, prop, receiver) {
-            if (prop === 'toString' || prop === Symbol.toPrimitive) {
+            if (prop in Ω('toString', 'valueOf') || prop === Symbol.toPrimitive) {
                 if (!chain?.method) {
                     return () => field
                 }
@@ -65,7 +65,7 @@ export function makeProxy<T>(field?: string, chain?: Operation) {
 
 
 async function main() {
-    const D = makeProxy() as unknown as IGlobal;
+    const D = makeProxy() as unknown as DGlobalField & DAggregateField;
     const p = {
         name: makeProxy('name') as unknown as DVarcharField,
         age: makeProxy('age') as unknown as DNumericField,

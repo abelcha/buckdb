@@ -98,8 +98,7 @@ export interface DVarcharField extends DAnyField {
   json_extract_path_text(col1: DArrayable): DArrayField;
   json_extract_string(col1: DArrayable): DArrayField;
   json_extract_string(col1: DNumericable | DVarcharable): DVarcharField;
-  json_keys(col1: DArrayable): DArrayField;
-  json_keys(col1: DVarcharable | DOtherable): DArrayField;
+  json_keys(col1: DArrayable | DVarcharable | DOtherable): DArrayField;
   json_serialize_plan(col1: DBoolable | DOtherable, col2: DBoolable | DOtherable, col3: DOtherable | DBoolable, col4: DOtherable | DBoolable): DJsonField;
   json_serialize_sql(col1: DOtherable | DBoolable, col2: DOtherable | DBoolable, col3: DOtherable | DBoolable): DJsonField;
   json_structure(): DJsonField;
@@ -435,7 +434,7 @@ export interface DOtherField extends DAnyField {
   [sInferred]: any;
   [sComptype]: any;
   add(col1: DOtherable): DOtherField;
-  add(col1: DNumericable): DOtherField;
+  add(col1: DOtherable | DNumericable): DOtherField;
   /**@description Subtract arguments, resulting in the time difference between the two timestamps	@example age(TIMESTAMP '2001-04-10', TIMESTAMP '1992-09-20')*/
   age(timestamp__01: DOtherable): DOtherField;
   array_to_json(): DJsonField;
@@ -599,10 +598,8 @@ export interface DOtherField extends DAnyField {
   /**@description Create a STRUCT containing the argument values. The entry name will be the bound variable name.	@example struct_pack(i := 4, s := 'string')*/
   struct_pack(): DStructField;
   subtract(col1: DOtherable): DOtherField;
-  subtract(col1: DNumericable): DOtherField;
+  subtract(col1: DOtherable | DNumericable): DOtherField;
   subtract(col1: DOtherable): DNumericField;
-  /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
-  time_bucket(timestamp: DOtherable, origin: DOtherable): DOtherField;
   /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
   time_bucket(timestamp: DOtherable, origin: DOtherable | DVarcharable): DOtherField;
   /**@description Converts a TIME WITH TIME ZONE to an integer sort key	@example timetz_byte_comparable('18:18:16.21-07:00'::TIME_TZ)*/
@@ -900,8 +897,7 @@ export interface DJsonField extends DAnyField {
   json_extract_path_text(col1: DArrayable): DArrayField;
   json_extract_string(col1: DNumericable | DVarcharable): DVarcharField;
   json_extract_string(col1: DArrayable): DArrayField;
-  json_keys(col1: DOtherable | DVarcharable): DArrayField;
-  json_keys(col1: DArrayable): DArrayField;
+  json_keys(col1: DOtherable | DVarcharable | DArrayable): DArrayField;
   json_pretty(): DVarcharField;
   json_structure(): DJsonField;
   json_transform(col1: DVarcharable): DAnyField;
@@ -922,8 +918,8 @@ export interface DGlobalField {
   acosh(x: DNumericable): DNumericField;
   add(col0: DOtherable, col1: DOtherable): DOtherField;
   add(col0: DNumericable, col1: DNumericable | DOtherable): DNumericField;
+  add(col0: DOtherable, col1: DOtherable | DNumericable): DOtherField;
   add(col0: DNumericable, col1: DOtherable): DOtherField;
-  add(col0: DOtherable, col1: DNumericable): DOtherField;
   add(col0: DArrayable, col1: DArrayable): DArrayField;
   /**@description Subtract arguments, resulting in the time difference between the two timestamps	@example age(TIMESTAMP '2001-04-10', TIMESTAMP '1992-09-20')*/
   age(timestamp: DOtherable, timestamp__01: DOtherable): DOtherField;
@@ -1290,10 +1286,8 @@ export interface DGlobalField {
   json_extract_string(col0: DVarcharable, col1: DNumericable | DVarcharable): DVarcharField;
   json_extract_string(col0: DJsonable, col1: DNumericable | DVarcharable): DVarcharField;
   json_extract_string(col0: DJsonable, col1: DArrayable): DArrayField;
-  json_keys(col0: DVarcharable, col1: DArrayable): DArrayField;
-  json_keys(col0: DJsonable, col1: DOtherable | DVarcharable): DArrayField;
-  json_keys(col0: DVarcharable, col1: DVarcharable | DOtherable): DArrayField;
-  json_keys(col0: DJsonable, col1: DArrayable): DArrayField;
+  json_keys(col0: DVarcharable, col1: DArrayable | DVarcharable | DOtherable): DArrayField;
+  json_keys(col0: DJsonable, col1: DOtherable | DVarcharable | DArrayable): DArrayField;
   json_merge_patch(...args: DAnyable[]): DJsonField;
   json_object(...args: DAnyable[]): DJsonField;
   json_pretty(col0: DJsonable): DVarcharField;
@@ -1653,15 +1647,13 @@ export interface DGlobalField {
   subtract(col0: DNumericable, col1: DNumericable | DOtherable): DNumericField;
   subtract(col0: DNumericable, col1: DOtherable | DNumericable): DNumericField;
   subtract(col0: DOtherable, col1: DOtherable): DOtherField;
-  subtract(col0: DOtherable, col1: DNumericable): DOtherField;
+  subtract(col0: DOtherable, col1: DOtherable | DNumericable): DOtherField;
   subtract(col0: DOtherable, col1: DOtherable): DNumericField;
   suffix(col0: DVarcharable, col1: DVarcharable): DBoolField;
   /**@description Computes the tan of x	@example tan(90)*/
   tan(x: DNumericable): DNumericField;
   /**@description Computes the hyperbolic tan of x	@example tanh(1)*/
   tanh(x: DNumericable): DNumericField;
-  /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
-  time_bucket(bucketWidth: DOtherable, timestamp: DOtherable, origin: DOtherable): DOtherField;
   /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
   time_bucket(bucketWidth: DOtherable, timestamp: DOtherable, origin: DOtherable | DVarcharable): DOtherField;
   /**@description Converts a TIME WITH TIME ZONE to an integer sort key	@example timetz_byte_comparable('18:18:16.21-07:00'::TIME_TZ)*/
@@ -1783,102 +1775,176 @@ export interface DGlobalField {
 }
 export interface DTableField {
   [sComptype]: undefined;
-  arrow_scan(col0: DOtherable, col1: DOtherable, col2: DOtherable): DOtherField;
-  arrow_scan_dumb(col0: DOtherable, col1: DOtherable, col2: DOtherable): DOtherField;
-  check_peg_parser(col0: DVarcharable): DOtherField;
-  checkpoint(col0: DVarcharable): DOtherField;
-  checkpoint(): DOtherField;
-  duckdb_columns(): DOtherField;
-  duckdb_constraints(): DOtherField;
-  duckdb_databases(): DOtherField;
-  duckdb_dependencies(): DOtherField;
-  duckdb_extensions(): DOtherField;
-  duckdb_functions(): DOtherField;
-  duckdb_indexes(): DOtherField;
-  duckdb_keywords(): DOtherField;
-  duckdb_log_contexts(): DOtherField;
-  duckdb_logs(): DOtherField;
-  duckdb_memory(): DOtherField;
-  duckdb_optimizers(): DOtherField;
-  duckdb_schemas(): DOtherField;
-  duckdb_secret_types(): DOtherField;
-  duckdb_secrets(redact: DBoolable): DOtherField;
-  duckdb_sequences(): DOtherField;
-  duckdb_settings(): DOtherField;
-  duckdb_table_sample(col0: DVarcharable): DOtherField;
-  duckdb_tables(): DOtherField;
-  duckdb_temporary_files(): DOtherField;
-  duckdb_types(): DOtherField;
-  duckdb_variables(): DOtherField;
-  duckdb_views(): DOtherField;
-  force_checkpoint(col0: DVarcharable): DOtherField;
-  generate_series(col0: DNumericable, col1: DNumericable | DOtherable, col2: DNumericable | DOtherable): DOtherField;
-  generate_series(col0: DOtherable, col1: DOtherable, col2: DOtherable): DOtherField;
-  glob(col0: DArrayable): DOtherField;
-  glob(col0: DVarcharable): DOtherField;
-  icu_calendar_names(): DOtherField;
-  parquet_bloom_probe(col0: DVarcharable, col1: DVarcharable, col2: DAnyable): DOtherField;
-  parquet_bloom_probe(col0: DArrayable, col1: DVarcharable, col2: DAnyable): DOtherField;
-  parquet_file_metadata(col0: DVarcharable): DOtherField;
-  parquet_file_metadata(col0: DArrayable): DOtherField;
-  parquet_kv_metadata(col0: DArrayable): DOtherField;
-  parquet_kv_metadata(col0: DVarcharable): DOtherField;
-  parquet_metadata(col0: DArrayable): DOtherField;
-  parquet_metadata(col0: DVarcharable): DOtherField;
-  parquet_scan(col0: DArrayable, opts?: Partial<{ schema: DAnyable; fileRowNumber: DBoolable; debugUseOpenssl: DBoolable; unionByName: DBoolable; explicitCardinality: DNumericable; compression: DVarcharable; encryptionConfig: DAnyable; hivePartitioning: DBoolable; filename: DAnyable; parquetVersion: DVarcharable; binaryAsString: DBoolable; hiveTypes: DAnyable; hiveTypesAutocast: DBoolable }>): DOtherField;
-  parquet_scan(col0: DVarcharable, opts?: Partial<{ hiveTypesAutocast: DBoolable; hiveTypes: DAnyable; binaryAsString: DBoolable; parquetVersion: DVarcharable; filename: DAnyable; hivePartitioning: DBoolable; encryptionConfig: DAnyable; compression: DVarcharable; explicitCardinality: DNumericable; unionByName: DBoolable; debugUseOpenssl: DBoolable; fileRowNumber: DBoolable; schema: DAnyable }>): DOtherField;
-  parquet_schema(col0: DArrayable): DOtherField;
-  parquet_schema(col0: DVarcharable): DOtherField;
-  pg_timezone_names(): DOtherField;
-  pragma_collations(): DOtherField;
-  pragma_database_size(): DOtherField;
-  pragma_metadata_info(): DOtherField;
-  pragma_metadata_info(col0: DVarcharable): DOtherField;
-  pragma_platform(): DOtherField;
-  pragma_show(col0: DVarcharable): DOtherField;
-  pragma_storage_info(col0: DVarcharable): DOtherField;
-  pragma_table_info(col0: DVarcharable): DOtherField;
-  pragma_user_agent(): DOtherField;
-  pragma_version(): DOtherField;
-  query(col0: DVarcharable): DOtherField;
-  query_table(col0: DArrayable, col1: DBoolable | DOtherable): DOtherField;
-  query_table(col0: DVarcharable): DOtherField;
-  range(col0: DOtherable, col1: DOtherable, col2: DOtherable): DOtherField;
-  range(col0: DNumericable, col1: DNumericable | DOtherable, col2: DNumericable | DOtherable): DOtherField;
-  read_blob(col0: DVarcharable): DOtherField;
-  read_blob(col0: DArrayable): DOtherField;
-  read_csv(col0: DVarcharable, opts?: Partial<{ hiveTypesAutocast: DBoolable; hiveTypes: DAnyable; unionByName: DBoolable; filename: DAnyable; strictMode: DBoolable; dtypes: DAnyable; nullPadding: DBoolable; parallel: DBoolable; decimalSeparator: DVarcharable; bufferSize: DNumericable; allVarchar: DBoolable; storeRejects: DBoolable; names: DArrayable; compression: DVarcharable; ignoreErrors: DBoolable; rejectsScan: DVarcharable; quote: DVarcharable; maxLineSize: DVarcharable; types: DAnyable; skip: DNumericable; columnTypes: DAnyable; rejectsTable: DVarcharable; normalizeNames: DBoolable; encoding: DVarcharable; nullstr: DAnyable; autoTypeCandidates: DAnyable; sampleSize: DNumericable; autoDetect: DBoolable; timestampformat: DVarcharable; forceNotNull: DArrayable; rejectsLimit: DNumericable; columns: DAnyable; newLine: DVarcharable; maximumLineSize: DVarcharable; comment: DVarcharable; allowQuotedNulls: DBoolable; escape: DVarcharable; header: DBoolable; hivePartitioning: DBoolable; sep: DVarcharable; columnNames: DArrayable; dateformat: DVarcharable; delim: DVarcharable }>): DOtherField;
-  read_csv(col0: DArrayable, opts?: Partial<{ delim: DVarcharable; dateformat: DVarcharable; columnNames: DArrayable; sep: DVarcharable; hivePartitioning: DBoolable; header: DBoolable; escape: DVarcharable; allowQuotedNulls: DBoolable; comment: DVarcharable; maximumLineSize: DVarcharable; newLine: DVarcharable; columns: DAnyable; rejectsLimit: DNumericable; forceNotNull: DArrayable; timestampformat: DVarcharable; autoDetect: DBoolable; sampleSize: DNumericable; autoTypeCandidates: DAnyable; nullstr: DAnyable; encoding: DVarcharable; normalizeNames: DBoolable; rejectsTable: DVarcharable; columnTypes: DAnyable; skip: DNumericable; types: DAnyable; maxLineSize: DVarcharable; quote: DVarcharable; rejectsScan: DVarcharable; ignoreErrors: DBoolable; compression: DVarcharable; names: DArrayable; storeRejects: DBoolable; allVarchar: DBoolable; bufferSize: DNumericable; decimalSeparator: DVarcharable; parallel: DBoolable; nullPadding: DBoolable; dtypes: DAnyable; strictMode: DBoolable; filename: DAnyable; unionByName: DBoolable; hiveTypes: DAnyable; hiveTypesAutocast: DBoolable }>): DOtherField;
-  read_csv_auto(col0: DArrayable, opts?: Partial<{ delim: DVarcharable; dateformat: DVarcharable; columnNames: DArrayable; sep: DVarcharable; hivePartitioning: DBoolable; header: DBoolable; escape: DVarcharable; allowQuotedNulls: DBoolable; comment: DVarcharable; maximumLineSize: DVarcharable; newLine: DVarcharable; columns: DAnyable; rejectsLimit: DNumericable; forceNotNull: DArrayable; timestampformat: DVarcharable; autoDetect: DBoolable; sampleSize: DNumericable; autoTypeCandidates: DAnyable; nullstr: DAnyable; encoding: DVarcharable; normalizeNames: DBoolable; rejectsTable: DVarcharable; columnTypes: DAnyable; skip: DNumericable; types: DAnyable; maxLineSize: DVarcharable; quote: DVarcharable; rejectsScan: DVarcharable; ignoreErrors: DBoolable; compression: DVarcharable; names: DArrayable; storeRejects: DBoolable; allVarchar: DBoolable; bufferSize: DNumericable; decimalSeparator: DVarcharable; parallel: DBoolable; nullPadding: DBoolable; dtypes: DAnyable; strictMode: DBoolable; filename: DAnyable; unionByName: DBoolable; hiveTypes: DAnyable; hiveTypesAutocast: DBoolable }>): DOtherField;
-  read_csv_auto(col0: DVarcharable, opts?: Partial<{ hiveTypesAutocast: DBoolable; hiveTypes: DAnyable; unionByName: DBoolable; filename: DAnyable; strictMode: DBoolable; dtypes: DAnyable; nullPadding: DBoolable; parallel: DBoolable; decimalSeparator: DVarcharable; bufferSize: DNumericable; allVarchar: DBoolable; storeRejects: DBoolable; names: DArrayable; compression: DVarcharable; ignoreErrors: DBoolable; rejectsScan: DVarcharable; quote: DVarcharable; maxLineSize: DVarcharable; types: DAnyable; skip: DNumericable; columnTypes: DAnyable; rejectsTable: DVarcharable; normalizeNames: DBoolable; encoding: DVarcharable; nullstr: DAnyable; autoTypeCandidates: DAnyable; sampleSize: DNumericable; autoDetect: DBoolable; timestampformat: DVarcharable; forceNotNull: DArrayable; rejectsLimit: DNumericable; columns: DAnyable; newLine: DVarcharable; maximumLineSize: DVarcharable; comment: DVarcharable; allowQuotedNulls: DBoolable; escape: DVarcharable; header: DBoolable; hivePartitioning: DBoolable; sep: DVarcharable; columnNames: DArrayable; dateformat: DVarcharable; delim: DVarcharable }>): DOtherField;
-  read_json(col0: DArrayable, opts?: Partial<{ filename: DAnyable; hiveTypesAutocast: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; timestampFormat: DVarcharable; compression: DVarcharable; maximumSampleFiles: DNumericable; unionByName: DBoolable; autoDetect: DBoolable; maximumDepth: DNumericable; maximumObjectSize: DNumericable; ignoreErrors: DBoolable; format: DVarcharable; convertStringsToIntegers: DBoolable; columns: DAnyable; sampleSize: DNumericable; dateformat: DVarcharable; dateFormat: DVarcharable; fieldAppearanceThreshold: DNumericable; timestampformat: DVarcharable; records: DVarcharable; mapInferenceThreshold: DNumericable }>): DOtherField;
-  read_json(col0: DVarcharable, opts?: Partial<{ mapInferenceThreshold: DNumericable; records: DVarcharable; timestampformat: DVarcharable; fieldAppearanceThreshold: DNumericable; dateFormat: DVarcharable; dateformat: DVarcharable; sampleSize: DNumericable; columns: DAnyable; convertStringsToIntegers: DBoolable; format: DVarcharable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable; maximumDepth: DNumericable; autoDetect: DBoolable; unionByName: DBoolable; maximumSampleFiles: DNumericable; compression: DVarcharable; timestampFormat: DVarcharable; hiveTypes: DAnyable; hivePartitioning: DBoolable; hiveTypesAutocast: DBoolable; filename: DAnyable }>): DOtherField;
-  read_json_auto(col0: DArrayable, opts?: Partial<{ filename: DAnyable; hiveTypesAutocast: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; timestampFormat: DVarcharable; compression: DVarcharable; maximumSampleFiles: DNumericable; unionByName: DBoolable; autoDetect: DBoolable; maximumDepth: DNumericable; maximumObjectSize: DNumericable; ignoreErrors: DBoolable; format: DVarcharable; convertStringsToIntegers: DBoolable; columns: DAnyable; sampleSize: DNumericable; dateformat: DVarcharable; dateFormat: DVarcharable; fieldAppearanceThreshold: DNumericable; timestampformat: DVarcharable; records: DVarcharable; mapInferenceThreshold: DNumericable }>): DOtherField;
-  read_json_auto(col0: DVarcharable, opts?: Partial<{ mapInferenceThreshold: DNumericable; records: DVarcharable; timestampformat: DVarcharable; fieldAppearanceThreshold: DNumericable; dateFormat: DVarcharable; dateformat: DVarcharable; sampleSize: DNumericable; columns: DAnyable; convertStringsToIntegers: DBoolable; format: DVarcharable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable; maximumDepth: DNumericable; autoDetect: DBoolable; unionByName: DBoolable; maximumSampleFiles: DNumericable; compression: DVarcharable; timestampFormat: DVarcharable; hiveTypes: DAnyable; hivePartitioning: DBoolable; hiveTypesAutocast: DBoolable; filename: DAnyable }>): DOtherField;
-  read_json_objects(col0: DArrayable, opts?: Partial<{ filename: DAnyable; hiveTypesAutocast: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; compression: DVarcharable; unionByName: DBoolable; maximumObjectSize: DNumericable; ignoreErrors: DBoolable; format: DVarcharable }>): DOtherField;
-  read_json_objects(col0: DVarcharable, opts?: Partial<{ format: DVarcharable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable; unionByName: DBoolable; compression: DVarcharable; hiveTypes: DAnyable; hivePartitioning: DBoolable; hiveTypesAutocast: DBoolable; filename: DAnyable }>): DOtherField;
-  read_json_objects_auto(col0: DVarcharable, opts?: Partial<{ format: DVarcharable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable; unionByName: DBoolable; compression: DVarcharable; hiveTypes: DAnyable; hivePartitioning: DBoolable; hiveTypesAutocast: DBoolable; filename: DAnyable }>): DOtherField;
-  read_json_objects_auto(col0: DArrayable, opts?: Partial<{ filename: DAnyable; hiveTypesAutocast: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; compression: DVarcharable; unionByName: DBoolable; maximumObjectSize: DNumericable; ignoreErrors: DBoolable; format: DVarcharable }>): DOtherField;
-  read_ndjson(col0: DArrayable, opts?: Partial<{ filename: DAnyable; hiveTypesAutocast: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; timestampFormat: DVarcharable; compression: DVarcharable; maximumSampleFiles: DNumericable; unionByName: DBoolable; autoDetect: DBoolable; maximumDepth: DNumericable; maximumObjectSize: DNumericable; ignoreErrors: DBoolable; format: DVarcharable; convertStringsToIntegers: DBoolable; columns: DAnyable; sampleSize: DNumericable; dateformat: DVarcharable; dateFormat: DVarcharable; fieldAppearanceThreshold: DNumericable; timestampformat: DVarcharable; records: DVarcharable; mapInferenceThreshold: DNumericable }>): DOtherField;
-  read_ndjson(col0: DVarcharable, opts?: Partial<{ mapInferenceThreshold: DNumericable; records: DVarcharable; timestampformat: DVarcharable; fieldAppearanceThreshold: DNumericable; dateFormat: DVarcharable; dateformat: DVarcharable; sampleSize: DNumericable; columns: DAnyable; convertStringsToIntegers: DBoolable; format: DVarcharable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable; maximumDepth: DNumericable; autoDetect: DBoolable; unionByName: DBoolable; maximumSampleFiles: DNumericable; compression: DVarcharable; timestampFormat: DVarcharable; hiveTypes: DAnyable; hivePartitioning: DBoolable; hiveTypesAutocast: DBoolable; filename: DAnyable }>): DOtherField;
-  read_ndjson_auto(col0: DVarcharable, opts?: Partial<{ mapInferenceThreshold: DNumericable; records: DVarcharable; timestampformat: DVarcharable; fieldAppearanceThreshold: DNumericable; dateFormat: DVarcharable; dateformat: DVarcharable; sampleSize: DNumericable; columns: DAnyable; convertStringsToIntegers: DBoolable; format: DVarcharable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable; maximumDepth: DNumericable; autoDetect: DBoolable; unionByName: DBoolable; maximumSampleFiles: DNumericable; compression: DVarcharable; timestampFormat: DVarcharable; hiveTypes: DAnyable; hivePartitioning: DBoolable; hiveTypesAutocast: DBoolable; filename: DAnyable }>): DOtherField;
-  read_ndjson_auto(col0: DArrayable, opts?: Partial<{ filename: DAnyable; hiveTypesAutocast: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; timestampFormat: DVarcharable; compression: DVarcharable; maximumSampleFiles: DNumericable; unionByName: DBoolable; autoDetect: DBoolable; maximumDepth: DNumericable; maximumObjectSize: DNumericable; ignoreErrors: DBoolable; format: DVarcharable; convertStringsToIntegers: DBoolable; columns: DAnyable; sampleSize: DNumericable; dateformat: DVarcharable; dateFormat: DVarcharable; fieldAppearanceThreshold: DNumericable; timestampformat: DVarcharable; records: DVarcharable; mapInferenceThreshold: DNumericable }>): DOtherField;
-  read_ndjson_objects(col0: DVarcharable, opts?: Partial<{ format: DVarcharable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable; unionByName: DBoolable; compression: DVarcharable; hiveTypes: DAnyable; hivePartitioning: DBoolable; hiveTypesAutocast: DBoolable; filename: DAnyable }>): DOtherField;
-  read_ndjson_objects(col0: DArrayable, opts?: Partial<{ filename: DAnyable; hiveTypesAutocast: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; compression: DVarcharable; unionByName: DBoolable; maximumObjectSize: DNumericable; ignoreErrors: DBoolable; format: DVarcharable }>): DOtherField;
-  read_parquet(col0: DVarcharable, opts?: Partial<{ hiveTypesAutocast: DBoolable; hiveTypes: DAnyable; binaryAsString: DBoolable; parquetVersion: DVarcharable; filename: DAnyable; hivePartitioning: DBoolable; encryptionConfig: DAnyable; compression: DVarcharable; explicitCardinality: DNumericable; unionByName: DBoolable; debugUseOpenssl: DBoolable; fileRowNumber: DBoolable; schema: DAnyable }>): DOtherField;
-  read_parquet(col0: DArrayable, opts?: Partial<{ schema: DAnyable; fileRowNumber: DBoolable; debugUseOpenssl: DBoolable; unionByName: DBoolable; explicitCardinality: DNumericable; compression: DVarcharable; encryptionConfig: DAnyable; hivePartitioning: DBoolable; filename: DAnyable; parquetVersion: DVarcharable; binaryAsString: DBoolable; hiveTypes: DAnyable; hiveTypesAutocast: DBoolable }>): DOtherField;
-  read_text(col0: DVarcharable): DOtherField;
-  read_text(col0: DArrayable): DOtherField;
-  repeat(col0: DAnyable, col1: DNumericable): DOtherField;
-  repeat_row(numRows: DNumericable, ...args: DAnyable[]): DOtherField;
-  seq_scan(): DOtherField;
-  sniff_csv(col0: DVarcharable, opts?: Partial<{ delim: DVarcharable; dateformat: DVarcharable; columnNames: DArrayable; sep: DVarcharable; hivePartitioning: DBoolable; header: DBoolable; escape: DVarcharable; allowQuotedNulls: DBoolable; comment: DVarcharable; maximumLineSize: DVarcharable; newLine: DVarcharable; columns: DAnyable; rejectsLimit: DNumericable; forceNotNull: DArrayable; timestampformat: DVarcharable; autoDetect: DBoolable; sampleSize: DNumericable; autoTypeCandidates: DAnyable; nullstr: DAnyable; encoding: DVarcharable; normalizeNames: DBoolable; rejectsTable: DVarcharable; columnTypes: DAnyable; skip: DNumericable; types: DAnyable; maxLineSize: DVarcharable; quote: DVarcharable; rejectsScan: DVarcharable; ignoreErrors: DBoolable; compression: DVarcharable; names: DArrayable; forceMatch: DBoolable; storeRejects: DBoolable; allVarchar: DBoolable; bufferSize: DNumericable; decimalSeparator: DVarcharable; parallel: DBoolable; nullPadding: DBoolable; dtypes: DAnyable; strictMode: DBoolable; filename: DAnyable; unionByName: DBoolable; hiveTypes: DAnyable; hiveTypesAutocast: DBoolable }>): DOtherField;
-  sql_auto_complete(col0: DVarcharable): DOtherField;
-  summary(col0: DOtherable): DOtherField;
-  test_all_types(useLargeEnum: DBoolable): DOtherField;
-  test_vector_types(col0: DAnyable, allFlat: DBoolable, ...args: DAnyable[]): DOtherField;
-  unnest(col0: DAnyable): DOtherField;
-  which_secret(col0: DVarcharable, col1: DVarcharable): DOtherField;
+  arrow_scan(col0: DOtherable, col1: DOtherable, col2: DOtherable): void;
+  arrow_scan_dumb(col0: DOtherable, col1: DOtherable, col2: DOtherable): void;
+  check_peg_parser(col0: DVarcharable): void;
+  checkpoint(col0: DVarcharable | DOtherable): void;
+  duckdb_columns(): void;
+  duckdb_constraints(): void;
+  duckdb_databases(): void;
+  duckdb_dependencies(): void;
+  duckdb_extensions(): void;
+  duckdb_functions(): void;
+  duckdb_indexes(): void;
+  duckdb_keywords(): void;
+  duckdb_log_contexts(): void;
+  duckdb_logs(): void;
+  duckdb_memory(): void;
+  duckdb_optimizers(): void;
+  duckdb_schemas(): void;
+  duckdb_secret_types(): void;
+  duckdb_secrets(redact: DBoolable): void;
+  duckdb_sequences(): void;
+  duckdb_settings(): void;
+  duckdb_table_sample(col0: DVarcharable): void;
+  duckdb_tables(): void;
+  duckdb_temporary_files(): void;
+  duckdb_types(): void;
+  duckdb_variables(): void;
+  duckdb_views(): void;
+  force_checkpoint(col0: DOtherable | DVarcharable): void;
+  generate_series(col0: DNumericable | DOtherable, col1: DNumericable | DOtherable, col2: DNumericable | DOtherable): void;
+  glob(col0: DArrayable | DVarcharable): void;
+  icu_calendar_names(): void;
+  parquet_bloom_probe(col0: DVarcharable | DArrayable, col1: DVarcharable, col2: DAnyable): void;
+  parquet_file_metadata(col0: DVarcharable | DArrayable): void;
+  parquet_kv_metadata(col0: DArrayable | DVarcharable): void;
+  parquet_metadata(col0: DArrayable | DVarcharable): void;
+  parquet_scan(col0: DArrayable | DVarcharable, opts?: Partial<{ binaryAsString: DBoolable; compression: DVarcharable | DBoolable; debugUseOpenssl: DBoolable; encryptionConfig: DAnyable; explicitCardinality: DNumericable | DAnyable; fileRowNumber: DBoolable | DAnyable; filename: DAnyable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable | DAnyable; parquetVersion: DVarcharable | DBoolable; schema: DAnyable | DBoolable; unionByName: DBoolable | DVarcharable }>): void;
+  parquet_schema(col0: DArrayable | DVarcharable): void;
+  pg_timezone_names(): void;
+  pragma_collations(): void;
+  pragma_database_size(): void;
+  pragma_metadata_info(col0: DOtherable | DVarcharable): void;
+  pragma_platform(): void;
+  pragma_show(col0: DVarcharable): void;
+  pragma_storage_info(col0: DVarcharable): void;
+  pragma_table_info(col0: DVarcharable): void;
+  pragma_user_agent(): void;
+  pragma_version(): void;
+  query(col0: DVarcharable): void;
+  query_table(col0: DArrayable | DVarcharable, col1: DBoolable | DOtherable): void;
+  range(col0: DOtherable | DNumericable, col1: DOtherable | DNumericable, col2: DOtherable | DNumericable): void;
+  read_blob(col0: DVarcharable | DArrayable): void;
+  read_csv(
+    col0: DVarcharable | DArrayable,
+    opts?: Partial<
+      {
+        allVarchar: DBoolable | DVarcharable;
+        allowQuotedNulls: DBoolable;
+        autoDetect: DBoolable | DVarcharable;
+        autoTypeCandidates: DAnyable | DVarcharable;
+        bufferSize: DNumericable | DVarcharable;
+        columnNames: DArrayable | DBoolable;
+        columnTypes: DAnyable | DBoolable;
+        columns: DAnyable | DBoolable;
+        comment: DVarcharable;
+        compression: DVarcharable | DArrayable;
+        dateformat: DVarcharable | DAnyable;
+        decimalSeparator: DVarcharable;
+        delim: DVarcharable | DBoolable;
+        dtypes: DAnyable | DBoolable;
+        encoding: DVarcharable | DNumericable;
+        escape: DVarcharable | DBoolable;
+        filename: DAnyable | DVarcharable;
+        forceNotNull: DArrayable | DVarcharable;
+        header: DBoolable | DAnyable;
+        hivePartitioning: DBoolable;
+        hiveTypes: DAnyable | DVarcharable;
+        hiveTypesAutocast: DBoolable | DVarcharable;
+        ignoreErrors: DBoolable | DVarcharable;
+        maxLineSize: DVarcharable | DAnyable;
+        maximumLineSize: DVarcharable | DNumericable;
+        names: DArrayable | DNumericable;
+        newLine: DVarcharable | DBoolable;
+        normalizeNames: DBoolable | DAnyable;
+        nullPadding: DBoolable | DVarcharable;
+        nullstr: DAnyable;
+        parallel: DBoolable;
+        quote: DVarcharable | DNumericable;
+        rejectsLimit: DNumericable | DArrayable;
+        rejectsScan: DVarcharable | DBoolable;
+        rejectsTable: DVarcharable;
+        sampleSize: DNumericable | DVarcharable;
+        sep: DVarcharable | DAnyable;
+        skip: DNumericable | DVarcharable;
+        storeRejects: DBoolable | DAnyable;
+        strictMode: DBoolable;
+        timestampformat: DVarcharable | DBoolable;
+        types: DAnyable;
+        unionByName: DBoolable | DArrayable;
+      }
+    >,
+  ): void;
+  read_csv_auto(
+    col0: DArrayable | DVarcharable,
+    opts?: Partial<
+      {
+        allVarchar: DBoolable | DVarcharable;
+        allowQuotedNulls: DBoolable;
+        autoDetect: DBoolable | DVarcharable;
+        autoTypeCandidates: DAnyable | DVarcharable;
+        bufferSize: DNumericable | DVarcharable;
+        columnNames: DArrayable | DBoolable;
+        columnTypes: DAnyable | DBoolable;
+        columns: DAnyable | DBoolable;
+        comment: DVarcharable;
+        compression: DVarcharable | DArrayable;
+        dateformat: DVarcharable | DAnyable;
+        decimalSeparator: DVarcharable;
+        delim: DVarcharable | DBoolable;
+        dtypes: DAnyable | DBoolable;
+        encoding: DVarcharable | DNumericable;
+        escape: DVarcharable | DBoolable;
+        filename: DAnyable | DVarcharable;
+        forceNotNull: DArrayable | DVarcharable;
+        header: DBoolable | DAnyable;
+        hivePartitioning: DBoolable;
+        hiveTypes: DAnyable | DVarcharable;
+        hiveTypesAutocast: DBoolable | DVarcharable;
+        ignoreErrors: DBoolable | DVarcharable;
+        maxLineSize: DVarcharable | DAnyable;
+        maximumLineSize: DVarcharable | DNumericable;
+        names: DArrayable | DNumericable;
+        newLine: DVarcharable | DBoolable;
+        normalizeNames: DBoolable | DAnyable;
+        nullPadding: DBoolable | DVarcharable;
+        nullstr: DAnyable;
+        parallel: DBoolable;
+        quote: DVarcharable | DNumericable;
+        rejectsLimit: DNumericable | DArrayable;
+        rejectsScan: DVarcharable | DBoolable;
+        rejectsTable: DVarcharable;
+        sampleSize: DNumericable | DVarcharable;
+        sep: DVarcharable | DAnyable;
+        skip: DNumericable | DVarcharable;
+        storeRejects: DBoolable | DAnyable;
+        strictMode: DBoolable;
+        timestampformat: DVarcharable | DBoolable;
+        types: DAnyable;
+        unionByName: DBoolable | DArrayable;
+      }
+    >,
+  ): void;
+  read_json(col0: DArrayable | DVarcharable, opts?: Partial<{ autoDetect: DBoolable; columns: DAnyable | DBoolable; compression: DVarcharable; convertStringsToIntegers: DBoolable; dateFormat: DVarcharable; dateformat: DVarcharable; fieldAppearanceThreshold: DNumericable | DAnyable; filename: DAnyable | DNumericable; format: DVarcharable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DNumericable; hiveTypesAutocast: DBoolable | DVarcharable; ignoreErrors: DBoolable | DNumericable; mapInferenceThreshold: DNumericable | DAnyable; maximumDepth: DNumericable | DVarcharable; maximumObjectSize: DNumericable | DBoolable; maximumSampleFiles: DNumericable; records: DVarcharable | DBoolable; sampleSize: DNumericable; timestampFormat: DVarcharable; timestampformat: DVarcharable | DBoolable; unionByName: DBoolable | DAnyable }>): void;
+  read_json_auto(col0: DArrayable | DVarcharable, opts?: Partial<{ autoDetect: DBoolable; columns: DAnyable | DBoolable; compression: DVarcharable; convertStringsToIntegers: DBoolable; dateFormat: DVarcharable; dateformat: DVarcharable; fieldAppearanceThreshold: DNumericable | DAnyable; filename: DAnyable | DNumericable; format: DVarcharable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DNumericable; hiveTypesAutocast: DBoolable | DVarcharable; ignoreErrors: DBoolable | DNumericable; mapInferenceThreshold: DNumericable | DAnyable; maximumDepth: DNumericable | DVarcharable; maximumObjectSize: DNumericable | DBoolable; maximumSampleFiles: DNumericable; records: DVarcharable | DBoolable; sampleSize: DNumericable; timestampFormat: DVarcharable; timestampformat: DVarcharable | DBoolable; unionByName: DBoolable | DAnyable }>): void;
+  read_json_objects(col0: DArrayable | DVarcharable, opts?: Partial<{ compression: DVarcharable; filename: DAnyable | DVarcharable; format: DVarcharable | DAnyable; hivePartitioning: DBoolable | DNumericable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable | DBoolable; unionByName: DBoolable | DAnyable }>): void;
+  read_json_objects_auto(col0: DVarcharable | DArrayable, opts?: Partial<{ compression: DVarcharable; filename: DAnyable | DVarcharable; format: DVarcharable | DAnyable; hivePartitioning: DBoolable | DNumericable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable | DBoolable; unionByName: DBoolable | DAnyable }>): void;
+  read_ndjson(col0: DArrayable | DVarcharable, opts?: Partial<{ autoDetect: DBoolable; columns: DAnyable | DBoolable; compression: DVarcharable; convertStringsToIntegers: DBoolable; dateFormat: DVarcharable; dateformat: DVarcharable; fieldAppearanceThreshold: DNumericable | DAnyable; filename: DAnyable | DNumericable; format: DVarcharable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DNumericable; hiveTypesAutocast: DBoolable | DVarcharable; ignoreErrors: DBoolable | DNumericable; mapInferenceThreshold: DNumericable | DAnyable; maximumDepth: DNumericable | DVarcharable; maximumObjectSize: DNumericable | DBoolable; maximumSampleFiles: DNumericable; records: DVarcharable | DBoolable; sampleSize: DNumericable; timestampFormat: DVarcharable; timestampformat: DVarcharable | DBoolable; unionByName: DBoolable | DAnyable }>): void;
+  read_ndjson_auto(col0: DVarcharable | DArrayable, opts?: Partial<{ autoDetect: DBoolable; columns: DAnyable | DBoolable; compression: DVarcharable; convertStringsToIntegers: DBoolable; dateFormat: DVarcharable; dateformat: DVarcharable; fieldAppearanceThreshold: DNumericable | DAnyable; filename: DAnyable | DNumericable; format: DVarcharable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DNumericable; hiveTypesAutocast: DBoolable | DVarcharable; ignoreErrors: DBoolable | DNumericable; mapInferenceThreshold: DNumericable | DAnyable; maximumDepth: DNumericable | DVarcharable; maximumObjectSize: DNumericable | DBoolable; maximumSampleFiles: DNumericable; records: DVarcharable | DBoolable; sampleSize: DNumericable; timestampFormat: DVarcharable; timestampformat: DVarcharable | DBoolable; unionByName: DBoolable | DAnyable }>): void;
+  read_ndjson_objects(col0: DVarcharable | DArrayable, opts?: Partial<{ compression: DVarcharable; filename: DAnyable | DVarcharable; format: DVarcharable | DAnyable; hivePartitioning: DBoolable | DNumericable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maximumObjectSize: DNumericable | DBoolable; unionByName: DBoolable | DAnyable }>): void;
+  read_parquet(col0: DVarcharable | DArrayable, opts?: Partial<{ binaryAsString: DBoolable; compression: DVarcharable | DBoolable; debugUseOpenssl: DBoolable; encryptionConfig: DAnyable; explicitCardinality: DNumericable | DAnyable; fileRowNumber: DBoolable | DAnyable; filename: DAnyable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable | DAnyable; parquetVersion: DVarcharable | DBoolable; schema: DAnyable | DBoolable; unionByName: DBoolable | DVarcharable }>): void;
+  read_text(col0: DVarcharable | DArrayable): void;
+  repeat(col0: DAnyable, col1: DNumericable): void;
+  repeat_row(numRows: DNumericable, ...args: DAnyable[]): void;
+  seq_scan(): void;
+  sniff_csv(col0: DVarcharable, opts?: Partial<{ allVarchar: DBoolable; allowQuotedNulls: DBoolable; autoDetect: DBoolable; autoTypeCandidates: DAnyable; bufferSize: DNumericable; columnNames: DArrayable; columnTypes: DAnyable; columns: DAnyable; comment: DVarcharable; compression: DVarcharable; dateformat: DVarcharable; decimalSeparator: DVarcharable; delim: DVarcharable; dtypes: DAnyable; encoding: DVarcharable; escape: DVarcharable; filename: DAnyable; forceMatch: DBoolable; forceNotNull: DArrayable; header: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maxLineSize: DVarcharable; maximumLineSize: DVarcharable; names: DArrayable; newLine: DVarcharable; normalizeNames: DBoolable; nullPadding: DBoolable; nullstr: DAnyable; parallel: DBoolable; quote: DVarcharable; rejectsLimit: DNumericable; rejectsScan: DVarcharable; rejectsTable: DVarcharable; sampleSize: DNumericable; sep: DVarcharable; skip: DNumericable; storeRejects: DBoolable; strictMode: DBoolable; timestampformat: DVarcharable; types: DAnyable; unionByName: DBoolable }>): void;
+  sql_auto_complete(col0: DVarcharable): void;
+  summary(col0: DOtherable): void;
+  test_all_types(useLargeEnum: DBoolable): void;
+  test_vector_types(col0: DAnyable, allFlat: DBoolable, ...args: DAnyable[]): void;
+  unnest(col0: DAnyable): void;
+  which_secret(col0: DVarcharable, col1: DVarcharable): void;
 }
 export interface CAny {
   [sInferred]: any;
@@ -2018,8 +2084,7 @@ export interface CVarchar extends CAny {
   json_extract_path_text(col1: DArrayable): DArrayField;
   json_extract_string(col1: DArrayable): DArrayField;
   json_extract_string(col1: DNumericable | DVarcharable): Partial<CVarchar>;
-  json_keys(col1: DArrayable): DArrayField;
-  json_keys(col1: DVarcharable | DOtherable): DArrayField;
+  json_keys(col1: DArrayable | DVarcharable | DOtherable): DArrayField;
   json_serialize_plan(col1: DBoolable | DOtherable, col2: DBoolable | DOtherable, col3: DOtherable | DBoolable, col4: DOtherable | DBoolable): DJsonField;
   json_serialize_sql(col1: DOtherable | DBoolable, col2: DOtherable | DBoolable, col3: DOtherable | DBoolable): DJsonField;
   json_structure(): DJsonField;
@@ -2363,8 +2428,8 @@ export interface CGlobal {
   acosh(x: DNumericable): Partial<number> & Partial<CNumeric>;
   add(col0: DOtherable, col1: DOtherable): DOtherField;
   add(col0: DNumericable, col1: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  add(col0: DOtherable, col1: DOtherable | DNumericable): DOtherField;
   add(col0: DNumericable, col1: DOtherable): DOtherField;
-  add(col0: DOtherable, col1: DNumericable): DOtherField;
   add(col0: DArrayable, col1: DArrayable): DArrayField;
   /**@description Subtract arguments, resulting in the time difference between the two timestamps	@example age(TIMESTAMP '2001-04-10', TIMESTAMP '1992-09-20')*/
   age(timestamp: DOtherable, timestamp__01: DOtherable): DOtherField;
@@ -2731,10 +2796,8 @@ export interface CGlobal {
   json_extract_string(col0: DVarcharable, col1: DNumericable | DVarcharable): Partial<CVarchar>;
   json_extract_string(col0: DJsonable, col1: DNumericable | DVarcharable): Partial<CVarchar>;
   json_extract_string(col0: DJsonable, col1: DArrayable): DArrayField;
-  json_keys(col0: DVarcharable, col1: DArrayable): DArrayField;
-  json_keys(col0: DJsonable, col1: DOtherable | DVarcharable): DArrayField;
-  json_keys(col0: DVarcharable, col1: DVarcharable | DOtherable): DArrayField;
-  json_keys(col0: DJsonable, col1: DArrayable): DArrayField;
+  json_keys(col0: DVarcharable, col1: DArrayable | DVarcharable | DOtherable): DArrayField;
+  json_keys(col0: DJsonable, col1: DOtherable | DVarcharable | DArrayable): DArrayField;
   json_merge_patch(...args: DAnyable[]): DJsonField;
   json_object(...args: DAnyable[]): DJsonField;
   json_pretty(col0: DJsonable): Partial<CVarchar>;
@@ -3094,15 +3157,13 @@ export interface CGlobal {
   subtract(col0: DNumericable, col1: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
   subtract(col0: DNumericable, col1: DOtherable | DNumericable): Partial<number> & Partial<CNumeric>;
   subtract(col0: DOtherable, col1: DOtherable): DOtherField;
-  subtract(col0: DOtherable, col1: DNumericable): DOtherField;
+  subtract(col0: DOtherable, col1: DOtherable | DNumericable): DOtherField;
   subtract(col0: DOtherable, col1: DOtherable): Partial<number> & Partial<CNumeric>;
   suffix(col0: DVarcharable, col1: DVarcharable): DBoolField;
   /**@description Computes the tan of x	@example tan(90)*/
   tan(x: DNumericable): Partial<number> & Partial<CNumeric>;
   /**@description Computes the hyperbolic tan of x	@example tanh(1)*/
   tanh(x: DNumericable): Partial<number> & Partial<CNumeric>;
-  /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
-  time_bucket(bucketWidth: DOtherable, timestamp: DOtherable, origin: DOtherable): DOtherField;
   /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
   time_bucket(bucketWidth: DOtherable, timestamp: DOtherable, origin: DOtherable | DVarcharable): DOtherField;
   /**@description Converts a TIME WITH TIME ZONE to an integer sort key	@example timetz_byte_comparable('18:18:16.21-07:00'::TIME_TZ)*/
@@ -3223,3 +3284,224 @@ export interface CGlobal {
   yearweek(ts: DOtherable): Partial<number> & Partial<CNumeric>;
 }
 export type DGlobalComp = Partial<CGlobal>;
+
+export interface CAggregate {
+  /**@description Returns the first non-null value from arg. This function is affected by ordering.*/
+  any_value(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the first non-null value from arg. This function is affected by ordering.*/
+  any_value(arg: DAnyable): Partial<CAny>;
+  /**@description Computes the approximate count of distinct elements using HyperLogLog.	@example approx_count_distinct(A)*/
+  approx_count_distinct(any: DAnyable): Partial<number> & Partial<CNumeric>;
+  /**@description Computes the approximate quantile using T-Digest.	@example approx_quantile(x, 0.5)*/
+  approx_quantile(x: DNumericable, pos: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Computes the approximate quantile using T-Digest.	@example approx_quantile(x, 0.5)*/
+  approx_quantile(x: DOtherable, pos: DNumericable): DOtherField;
+  /**@description Computes the approximate quantile using T-Digest.	@example approx_quantile(x, 0.5)*/
+  approx_quantile(x: DOtherable | DNumericable, pos: DArrayable): DArrayField;
+  /**@description Finds the k approximately most occurring values in the data set	@example approx_top_k(x, 5)*/
+  approx_top_k(val: DAnyable, k: DNumericable): DArrayField;
+  /**@description Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example first(A)*/
+  arbitrary(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example first(A)*/
+  arbitrary(arg: DAnyable): Partial<CAny>;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  arg_max(arg: DOtherable | DAnyable, val: DOtherable | DAnyable | DNumericable | DVarcharable): DOtherField;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  arg_max(arg: DNumericable, val: DOtherable | DVarcharable | DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  arg_max(arg: DVarcharable, val: DNumericable | DVarcharable | DOtherable): Partial<CVarchar>;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  arg_max(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
+  /**@description Finds the row with the maximum val. Calculates the arg expression at that row.	@example arg_max_null(A,B)*/
+  arg_max_null(arg: DNumericable, val: DNumericable | DOtherable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  /**@description Finds the row with the maximum val. Calculates the arg expression at that row.	@example arg_max_null(A,B)*/
+  arg_max_null(arg: DVarcharable, val: DNumericable | DVarcharable | DOtherable): Partial<CVarchar>;
+  /**@description Finds the row with the maximum val. Calculates the arg expression at that row.	@example arg_max_null(A,B)*/
+  arg_max_null(arg: DOtherable | DAnyable, val: DNumericable | DVarcharable | DOtherable | DAnyable): DOtherField;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  arg_min(arg: DOtherable | DAnyable, val: DOtherable | DVarcharable | DAnyable | DNumericable): DOtherField;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  arg_min(arg: DNumericable, val: DOtherable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  arg_min(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  arg_min(arg: DVarcharable, val: DOtherable | DVarcharable | DNumericable): Partial<CVarchar>;
+  /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
+  arg_min_null(arg: DNumericable, val: DOtherable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
+  arg_min_null(arg: DOtherable | DAnyable, val: DVarcharable | DNumericable | DOtherable | DAnyable): DOtherField;
+  /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
+  arg_min_null(arg: DVarcharable, val: DNumericable | DVarcharable | DOtherable): Partial<CVarchar>;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  argmax(arg: DOtherable | DAnyable, val: DVarcharable | DNumericable | DOtherable | DAnyable): DOtherField;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  argmax(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  argmax(arg: DVarcharable, val: DNumericable | DVarcharable | DOtherable): Partial<CVarchar>;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  argmax(arg: DNumericable, val: DOtherable | DVarcharable | DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  argmin(arg: DNumericable, val: DVarcharable | DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  argmin(arg: DOtherable | DAnyable, val: DNumericable | DVarcharable | DOtherable | DAnyable): DOtherField;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  argmin(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  argmin(arg: DVarcharable, val: DNumericable | DVarcharable | DOtherable): Partial<CVarchar>;
+  /**@description Returns a LIST containing all the values of a column.	@example list(A)*/
+  array_agg(arg: DAnyable): DArrayField;
+  /**@description Calculates the average value for all tuples in x.	@example SUM(x) / COUNT(*)*/
+  avg(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the bitwise AND of all bits in a given expression.	@example bit_and(A)*/
+  bit_and(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the bitwise AND of all bits in a given expression.	@example bit_and(A)*/
+  bit_and(arg: DOtherable): DOtherField;
+  /**@description Returns the bitwise OR of all bits in a given expression.	@example bit_or(A)*/
+  bit_or(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the bitwise OR of all bits in a given expression.	@example bit_or(A)*/
+  bit_or(arg: DOtherable): DOtherField;
+  /**@description Returns the bitwise XOR of all bits in a given expression.	@example bit_xor(A)*/
+  bit_xor(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the bitwise XOR of all bits in a given expression.	@example bit_xor(A)*/
+  bit_xor(arg: DOtherable): DOtherField;
+  /**@description Returns a bitstring with bits set for each distinct value.	@example bitstring_agg(A)*/
+  bitstring_agg(arg: DNumericable, col1: DNumericable | DOtherable, col2: DNumericable | DOtherable): DOtherField;
+  /**@description Returns TRUE if every input value is TRUE, otherwise FALSE.	@example bool_and(A)*/
+  bool_and(arg: DBoolable): DBoolField;
+  /**@description Returns TRUE if any input value is TRUE, otherwise FALSE.	@example bool_or(A)*/
+  bool_or(arg: DBoolable): DBoolField;
+  /**@description Returns the correlation coefficient for non-null pairs in a group.	@example COVAR_POP(y, x) / (STDDEV_POP(x) * STDDEV_POP(y))*/
+  corr(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the number of non-null values in arg.	@example count(A)*/
+  count(arg: DOtherable | DAnyable): Partial<number> & Partial<CNumeric>;
+  /**@description Counts the total number of TRUE values for a boolean column	@example count_if(A)*/
+  count_if(arg: DBoolable): Partial<number> & Partial<CNumeric>;
+  count_star(): Partial<number> & Partial<CNumeric>;
+  /**@description Counts the total number of TRUE values for a boolean column	@example count_if(A)*/
+  countif(arg: DBoolable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the population covariance of input values.	@example (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / COUNT(*)*/
+  covar_pop(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the sample covariance for non-null pairs in a group.	@example (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / (COUNT(*) - 1)*/
+  covar_samp(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the log-2 entropy of count input-values.*/
+  entropy(x: DAnyable): Partial<number> & Partial<CNumeric>;
+  /**@description Calculates the average using a more accurate floating point summation (Kahan Sum)	@example favg(A)*/
+  favg(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example first(A)*/
+  first(arg: DAnyable): Partial<CAny>;
+  /**@description Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example first(A)*/
+  first(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example kahan_sum(A)*/
+  fsum(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Concatenates the column string values with an optional separator.	@example string_agg(A, '-')*/
+  group_concat(str: DAnyable, arg: DVarcharable | DOtherable): Partial<CVarchar>;
+  /**@description Returns a LIST of STRUCTs with the fields bucket and count.	@example histogram(A)*/
+  histogram(arg: DAnyable, col1: DArrayable | DOtherable): DMapField;
+  /**@description Returns a LIST of STRUCTs with the fields bucket and count matching the buckets exactly.	@example histogram_exact(A, [0, 1, 2])*/
+  histogram_exact(arg: DAnyable, bins: DArrayable): DMapField;
+  /**@description Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example kahan_sum(A)*/
+  kahan_sum(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the excess kurtosis (Fisher’s definition) of all input values, with a bias correction according to the sample size*/
+  kurtosis(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the excess kurtosis (Fisher’s definition) of all input values, without bias correction*/
+  kurtosis_pop(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the last value of a column. This function is affected by ordering.	@example last(A)*/
+  last(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the last value of a column. This function is affected by ordering.	@example last(A)*/
+  last(arg: DAnyable): Partial<CAny>;
+  /**@description Returns a LIST containing all the values of a column.	@example list(A)*/
+  list(arg: DAnyable): DArrayField;
+  /**@description Concatenates the column string values with an optional separator.	@example string_agg(A, '-')*/
+  listagg(str: DAnyable, arg: DOtherable | DVarcharable): Partial<CVarchar>;
+  /**@description Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example mad(x)*/
+  mad(x: DOtherable): DOtherField;
+  /**@description Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example mad(x)*/
+  mad(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the maximum value present in arg.	@example max(A)*/
+  max(arg: DAnyable, col1: DNumericable): DArrayField;
+  /**@description Returns the maximum value present in arg.	@example max(A)*/
+  max(arg: DAnyable): Partial<CAny>;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  max_by(arg: DOtherable | DAnyable, val: DNumericable | DVarcharable | DOtherable | DAnyable): DOtherField;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  max_by(arg: DNumericable, val: DOtherable | DVarcharable | DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  max_by(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
+  /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
+  max_by(arg: DVarcharable, val: DOtherable | DNumericable | DVarcharable): Partial<CVarchar>;
+  /**@description Calculates the average value for all tuples in x.	@example SUM(x) / COUNT(*)*/
+  mean(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the middle value of the set. NULL values are ignored. For even value counts, quantitative values are averaged and ordinal values return the lower value.	@example median(x)*/
+  median(x: DAnyable): Partial<CAny>;
+  /**@description Returns the minimum value present in arg.	@example min(A)*/
+  min(arg: DAnyable): Partial<CAny>;
+  /**@description Returns the minimum value present in arg.	@example min(A)*/
+  min(arg: DAnyable, col1: DNumericable): DArrayField;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  min_by(arg: DOtherable | DAnyable, val: DNumericable | DVarcharable | DAnyable | DOtherable): DOtherField;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  min_by(arg: DNumericable, val: DOtherable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  min_by(arg: DVarcharable, val: DOtherable | DVarcharable | DNumericable): Partial<CVarchar>;
+  /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
+  min_by(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
+  /**@description Returns the most frequent value for the values within x. NULL values are ignored.*/
+  mode(x: DAnyable): Partial<CAny>;
+  /**@description Calculates the product of all tuples in arg.	@example product(A)*/
+  product(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.	@example quantile_disc(x, 0.5)*/
+  quantile(x: DAnyable, pos: DOtherable | DArrayable | DNumericable): Partial<CAny>;
+  /**@description Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example quantile_cont(x, 0.5)*/
+  quantile_cont(x: DNumericable, pos: DArrayable | DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example quantile_cont(x, 0.5)*/
+  quantile_cont(x: DOtherable, pos: DNumericable | DArrayable): DOtherField;
+  /**@description Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.	@example quantile_disc(x, 0.5)*/
+  quantile_disc(x: DAnyable, pos: DOtherable | DArrayable | DNumericable): Partial<CAny>;
+  /**@description Returns the average of the independent variable for non-null pairs in a group, where x is the independent variable and y is the dependent variable.*/
+  regr_avgx(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the average of the dependent variable for non-null pairs in a group, where x is the independent variable and y is the dependent variable.*/
+  regr_avgy(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the number of non-null number pairs in a group.	@example (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / COUNT(*)*/
+  regr_count(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the intercept of the univariate linear regression line for non-null pairs in a group.	@example AVG(y)-REGR_SLOPE(y,x)*AVG(x)*/
+  regr_intercept(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the coefficient of determination for non-null pairs in a group.*/
+  regr_r2(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the slope of the linear regression line for non-null pairs in a group.	@example COVAR_POP(x,y) / VAR_POP(x)*/
+  regr_slope(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@example REGR_COUNT(y, x) * VAR_POP(x)*/
+  regr_sxx(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the population covariance of input values	@example REGR_COUNT(y, x) * COVAR_POP(y, x)*/
+  regr_sxy(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@example REGR_COUNT(y, x) * VAR_POP(y)*/
+  regr_syy(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example reservoir_quantile(A,0.5,1024)*/
+  reservoir_quantile(x: DNumericable, quantile: DNumericable, sampleSize: DOtherable | DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example reservoir_quantile(A,0.5,1024)*/
+  reservoir_quantile(x: DNumericable, quantile: DArrayable, sampleSize: DNumericable | DOtherable): DArrayField;
+  /**@description Returns the standard error of the mean*/
+  sem(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the skewness of all input values.	@example skewness(A)*/
+  skewness(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the sample standard deviation	@example sqrt(var_samp(x))*/
+  stddev(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the population standard deviation.	@example sqrt(var_pop(x))*/
+  stddev_pop(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the sample standard deviation	@example sqrt(var_samp(x))*/
+  stddev_samp(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Concatenates the column string values with an optional separator.	@example string_agg(A, '-')*/
+  string_agg(str: DAnyable, arg: DOtherable | DVarcharable): Partial<CVarchar>;
+  /**@description Calculates the sum value for all tuples in arg.	@example sum(A)*/
+  sum(arg: DNumericable | DBoolable): Partial<number> & Partial<CNumeric>;
+  /**@description Internal only. Calculates the sum value for all tuples in arg without overflow checks.	@example sum_no_overflow(A)*/
+  sum_no_overflow(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example kahan_sum(A)*/
+  sumkahan(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the population variance.*/
+  var_pop(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the sample variance of all input values.	@example (SUM(x^2) - SUM(x)^2 / COUNT(x)) / (COUNT(x) - 1)*/
+  var_samp(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  /**@description Returns the sample variance of all input values.	@example (SUM(x^2) - SUM(x)^2 / COUNT(x)) / (COUNT(x) - 1)*/
+  variance(x: DNumericable): Partial<number> & Partial<CNumeric>;
+}
+export type DAggregateComp = Partial<CAggregate>;

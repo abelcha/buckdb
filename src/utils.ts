@@ -81,25 +81,25 @@ export type TypeMapping = {
 };
 
 export type GetInferredType<T> = T extends { [sInferred]: infer U } ? U : never;
-export type GetAntiType<T> = T extends { [sComptype]: infer V } ? V & T : never;
+// export type GetAntiType<T> = T extends { [sComptype]: infer V } ? V & T : never;
 export type GetCompType<T> = T extends { [sComptype]: infer V } ?  V : T;
-export type GetXType<T> = T extends DNumericField ? Partial<number> & Partial<DNumericField> & Partial<T> : Partial<T>;
+// export type GetXType<T> = T extends DNumericField ? Partial<number> & Partial<DNumericField> & Partial<T> : Partial<T>;
 
 
-export type ZMapAntiType<T> = T extends object
+export type MapReturnString<T, V> = T extends object
   ? {
     [K in keyof T]: T[K] extends (...args: any[]) => infer R
-    ? (...args: Parameters<T[K]>) => GetXType<R> // Apply GetAntiType to method return types
-    : GetXType<T[K]>; // Recursively transform non-method properties
-  } & T
+    ? (...args: Parameters<T[K]>) => V
+    : T[K]; // Recursively transform non-method properties
+  } 
   : T; // Base case: leave primitives unchanged
 export type MapCompType<T> = T extends object
   ? { [K in keyof T]: GetCompType<T[K]> }
   : T;
 
-export type MapAntiType<T> = T extends object
-  ? { [K in keyof T]: GetXType<T[K]> }
-  : T;
+// export type MapAntiType<T> = T extends object
+//   ? { [K in keyof T]: GetXType<T[K]> }
+//   : T;
 // Main generic type transformer
 export type MapInferredType<T> = T extends boolean[]
   ? { [K in keyof T]: GetInferredType<T[K]> }
@@ -109,7 +109,7 @@ export type MapInferredType<T> = T extends boolean[]
 
 
 
-type xxdx = MapAntiType<{ toto: DNumericField, test: DVarcharField }>
+// type xxdx = MapAntiType<{ toto: DNumericField, test: DVarcharField }>
 
 // function lol(e: xxdx) {
 //   e.test.toString()
@@ -130,7 +130,7 @@ export type TableSchema<Columns> = {
 };
 
 export const formatSource = (source: string) => {
-  return source?.match(/\.(parquet|csv|jsonl?|tsv)(.(gz|zst|xz))?$/) ?
+  return source?.match(/\.(parquet|csv|jsonl?|tsv)(\W(gz|zst|xz))?$/) ?
     wrap(source, "'") : source
 }
 

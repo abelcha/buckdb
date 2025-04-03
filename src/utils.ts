@@ -1,5 +1,5 @@
 import { all, createEmphasize } from 'emphasize';
-import { sInferred, sAnti, DNumericField, DVarcharField, DArrayField, DStructField, DJsonField, DBoolField, DMapField, DOtherField } from './.buck/types';
+import { sInferred, sAnti, DNumericField, DVarcharField, DArrayField, DStructField, DJsonField, DBoolField, DMapField, DOtherField, sComptype } from './.buck/types';
 
 export const wrap = (value: string, charA: string, charB = charA): string => {
   if (value[0] === charA && value[value.length - 1] === charB) {
@@ -9,15 +9,21 @@ export const wrap = (value: string, charA: string, charB = charA): string => {
 }
 
 export const TypeProps = {
-  'DNumeric': { id: 'numeric', able: 'DNumericable', field: 'DNumericField', rawType: 'number', inferredTo: 'number', anti: 'AntiNumber' },
-  'DVarchar': { id: 'varchar', able: 'DVarcharable', field: 'DVarcharField', rawType: 'string', inferredTo: 'string', anti: 'AntiString' },
+  'DNumeric': {
+    man: 'Partial<number> & Partial<CNumeric>',
+    comptype: 'number', id: 'numeric', able: 'DNumericable', field: 'DNumericField', rawType: 'number', inferredTo: 'number', anti: 'AntiNumber'
+  },
+  'DVarchar': {
+    man: 'Partial<CVarchar>',
+    id: 'varchar', able: 'DVarcharable', field: 'DVarcharField', rawType: 'string', inferredTo: 'string', anti: 'AntiString'
+  },
   'DArray': { id: 'array', able: 'DArrayable', field: 'DArrayField', rawType: 'any[]', inferredTo: 'any[]', anti: 'Array' },
   'DStruct': { id: 'struct', able: 'DStructable', field: 'DStructField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject' },
   'DJson': { id: 'json', able: 'DJsonable', field: 'DJsonField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject' },
   'DBool': { id: 'bool', able: 'DBoolable', field: 'DBoolField', rawType: 'boolean', inferredTo: 'boolean', anti: 'AntiBoolean' },
   'DMap': { id: 'map', able: 'DMapable', field: 'DMapField', rawType: 'Map<string,any>', inferredTo: 'Map<string,any>', anti: 'AntiMap' },
   'DOther': { id: 'other', able: 'DOtherable', field: 'DOtherField', rawType: 'any', inferredTo: 'any' },
-  'DAny': { id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' },
+  'DAny': {  man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' },
 }
 
 export const mapTypes = (type: string) => {
@@ -27,14 +33,14 @@ export const mapTypes = (type: string) => {
   if (!type) {
     return 'DOther';
   }
+  if (type.endsWith('[]') || type === 'LIST' || type === 'ARRAY' || type.match(/\w+\[\w+\]/)) {
+    return 'DArray';
+  }
   if (type?.match(/\b((U)?(BIG|HUGE|TINY|SMALL)?INT(EGER)?|DOUBLE|DECIMAL|FLOAT)\b/)) {
     return 'DNumeric';
   }
   if (type?.match(/^(VARCHAR|CHAR|TEXT)$/)) {
     return 'DVarchar';
-  }
-  if (type.endsWith('[]') || type === 'LIST' || type === 'ARRAY') {
-    return 'DArray';
   }
   if (type.startsWith('STRUCT')) {
     return 'DStruct';
@@ -75,12 +81,25 @@ export type TypeMapping = {
 };
 
 export type GetInferredType<T> = T extends { [sInferred]: infer U } ? U : never;
-export type GetAntiType<T> = T extends { [sInferred]: infer V } ? V | bigint : never;
+export type GetAntiType<T> = T extends { [sComptype]: infer V } ? V & T : never;
+export type GetCompType<T> = T extends { [sComptype]: infer V } ?  V : T;
+export type GetXType<T> = T extends DNumericField ? Partial<number> & Partial<DNumericField> & Partial<T> : Partial<T>;
 
+
+export type ZMapAntiType<T> = T extends object
+  ? {
+    [K in keyof T]: T[K] extends (...args: any[]) => infer R
+    ? (...args: Parameters<T[K]>) => GetXType<R> // Apply GetAntiType to method return types
+    : GetXType<T[K]>; // Recursively transform non-method properties
+  } & T
+  : T; // Base case: leave primitives unchanged
+export type MapCompType<T> = T extends object
+  ? { [K in keyof T]: GetCompType<T[K]> }
+  : T;
 
 export type MapAntiType<T> = T extends object
-  ? { [K in keyof T]: GetAntiType<T[K]> } & T
-  : never;
+  ? { [K in keyof T]: GetXType<T[K]> }
+  : T;
 // Main generic type transformer
 export type MapInferredType<T> = T extends boolean[]
   ? { [K in keyof T]: GetInferredType<T[K]> }
@@ -89,11 +108,12 @@ export type MapInferredType<T> = T extends boolean[]
   : never;
 
 
+
 type xxdx = MapAntiType<{ toto: DNumericField, test: DVarcharField }>
 
-function lol(e: xxdx) {
-  e.test.toString()
-}
+// function lol(e: xxdx) {
+//   e.test.toString()
+// }
 // export type NativeFieldTypes<R> = {
 //   [K in keyof R]: R[K] extends DVarcharField ? string :
 //   R[K] extends DNumericField ? number :

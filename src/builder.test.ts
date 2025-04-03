@@ -99,5 +99,14 @@ describe("select", () => {
     expect(from('data/test.csv').asFrom()).toBe("'data/test.csv'");
   })
   test('execute', async () => {
+    const q2 = from('data/people.parquet')
+      .select(p => ({ hh: p.name.replace('lol', 'toto'), xname: p.name }))
+      .where(p => p.age === 12 && p.age > 12 && p.total.abs() > 3 && p.name.levenshtein('xx') === 4)
+      .where(p => p.name.replace('lol', 'toto') === 'lol' && p.name === 'lol' && p.hh === 'lol' && p.name === p.total.to_hex())
+      .where((p, D) => D.abs(p.age) === p.total && p.hh.regexp_matches(/123/, '') && D.cos(99) === 12 && D.regexp_matches(p.name, /abel/, ''))
+    expect(q2.toSql()).toBe("SELECT name.replace('lol', 'toto') AS hh, name AS xname FROM 'data/people.parquet' " +
+      "WHERE (age = 12 AND age > 12 AND total.abs() > 3 AND name.levenshtein('xx') = 4) " +
+      "AND (name.replace('lol', 'toto') = 'lol' AND name = 'lol' AND hh = 'lol' AND name = total.to_hex()) " +
+      "AND (abs(age) = total AND hh.regexp_matches('123', '') AND cos(99) = 12 AND regexp_matches(name, 'abel', ''))")
   })
 });

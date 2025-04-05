@@ -44,6 +44,7 @@ class Dumper {
     whereClauses: string[] = [];
     _orderBy: string[] = [];
     _groupBy: string[] = [];
+    _joins: {table: string, alias: string}[] = [];
 
     constructor(table: string) {
         this._table = table;
@@ -71,7 +72,11 @@ class Dumper {
         return this._limit ? `LIMIT ${this._limit}` : ''
     }
     asFrom() {
-        return formatSource(this._table.toString())
+        let from = formatSource(this._table.toString());
+        for (const join of this._joins) {
+            from += ` JOIN ${formatSource(join.table)} AS ${join.alias}`;
+        }
+        return from;
     }
     asSelector({ pretty }: { pretty?: boolean } = {}): string {
         return prettifyPrintSQL(this.selectFields.map(([v, k]) => !k?.match(/[^\d]/) ? v : `${v} AS ${k}`).join(", ") || "*", pretty);
@@ -85,7 +90,15 @@ class Dumper {
 
 
 
-class From<T, S = T> extends Dumper {
+type WithJoins<T, J extends Record<string, TableSchema<any>>> = T & {
+    [K in keyof J]: TableSchema<J[K]>;
+};
+
+class From<T, S = T, J extends Record<string, TableSchema<any>> = {}> extends Dumper {
+    join<TableName extends keyof Schema[''], Alias extends string>(table: TableName, alias: Alias): From<T, S, J & Record<Alias, Schema[''][TableName]>> {
+        this._joins.push({table, alias});
+        return this as any;
+    }
     dbpath: keyof T;
     table: string;
     schema: Record<keyof TableSchema<T & S>, string>;
@@ -117,12 +130,23 @@ class From<T, S = T> extends Dumper {
             const fieldType = this.schema[key] as keyof TypeMapping;
             (proxy as any)[key] = makeProxy(key) as unknown as TypeMapping[typeof fieldType];
         }
+
+        // Add typed joined table proxies
+        for (const join of this._joins) {
+            const tableSchema = dataSchemas[''][join.table as keyof typeof dataSchemas['']];
+            const tableProxy = {} as TableSchema<typeof tableSchema>;
+            for (const field in tableSchema) {
+                (tableProxy as any)[field] = makeProxy(`${join.alias}.${field}`);
+            }
+            (proxy as any)[join.alias] = tableProxy;
+        }
+
         return proxy;
     }
 
-    select<U>(fn: (p: T, D: DMetaComp) => U): From<T, U> {
+    select<U>(fn: (p: WithJoins<T, J>, D: DMetaComp) => U): From<T, U, J> {
         const schemaProxy = this.getProxySchema();
-        const result = fn(schemaProxy as T, duckdbFunctions);
+        const result = fn(schemaProxy as WithJoins<T, J>, duckdbFunctions);
         if (isString(result)) {
             this.selectFields.push([result])
         }
@@ -140,7 +164,7 @@ class From<T, S = T> extends Dumper {
         } else {
             throw new Error("The select function must return an object.");
         }
-        return this as unknown as From<T, U>;
+        return this as unknown as From<T, U, J>;
     }
 
     selectMany = this.select;
@@ -218,10 +242,10 @@ class From<T, S = T> extends Dumper {
     }
 }
 if (import.meta.main) {
-        const q = from('data/people.parquet')
-        .join('data/final.csv', 't1')
+        const q = from('data/people.parquet', 'ppl')
+        .join('data/final.csv', 'tkl')
         .select((p, D) => ({
-            zz: pp.t1.name,
+            zz: p.ppl.name,
             xx: D.avg(p.total).round(2), 
             dec: p.age.divide(10)
         }))

@@ -4,7 +4,7 @@ import { dataSchemas } from './.buck/table.ts';
 import { DNumericField, DVarcharField, DBoolField, DTableField, DGlobalComp, DGlobalField, DAggregateComp, CAggregate } from './.buck/types';
 import { makeProxy } from './proxy';
 import { get, isArray, isObject, toUpper } from 'es-toolkit/compat';
-import { DField, formatSource, MapCompType, MapInferredType, MapReturnString, prettifyPrintSQL, TableSchema, TypeMapping, wrap } from './utils.ts';
+import { DField, formatSource, MapCompType, MapDeepCompType, MapInferredType, MapReturnString, prettifyPrintSQL, TableSchema, TypeMapping, wrap } from './utils.ts';
 import { DuckDBInstance } from '@duckdb/node-api';
 import { isString } from 'es-toolkit';
 import { ConditionParser } from './condition-parser.ts';
@@ -25,31 +25,35 @@ class Database<DBPath extends keyof Schema> {
         this.dbpath = dbpath;
 
     }
-    from = <TableName extends keyof Schema[DBPath]>(table: TableName) => {
-        return new From<TableSchema<Schema[DBPath][TableName]>>(table as string, this.dbpath);
+    from = <TableName extends keyof Schema[DBPath]>(table: TableName, alias?: string) => {
+        return new From<TableSchema<Schema[DBPath][TableName]>>(table as string, this.dbpath, alias);
     }
 }
 
 export const database = <DBPath extends keyof Schema>(dd: DBPath) => new Database(dd as DBPath);
-export const from = <W extends keyof MemorySchema>(dd: W) => new Database('').from(dd as W);
+export const from = <W extends keyof MemorySchema>(dd: W, alias?: string) => new Database('').from(dd as W, alias);
 
 
 class Dumper {
     _limit?: number;
     _having?: string;
     _table?: string;
+    _tableAlias?: string;
     _distinctOn: string[] = [];
     selectFields: string[][] = [];
     whereClauses: string[] = [];
     _orderBy: string[] = [];
     _groupBy: string[] = [];
-    _joins: {table: string, alias: string}[] = [];
+    _joins: { table: string, alias: string, condition: string }[] = [];
 
-    constructor(table: string) {
+    constructor(table: string, alias?: string) {
         this._table = table;
+        if (alias) {
+            this._tableAlias = alias;
+        }
     }
     toSql({ pretty } = { pretty: false }): string {
-        const components = ['SELECT', this.asDistinctOn(), this.asSelector(), 'FROM', this.asFrom(), this.asWhere(), this.asGroupBy(), this.asHaving(), this.asOrderBy(), this.asLimit()]
+        const components = ['FROM', this.asFrom(), 'SELECT', this.asDistinctOn(), this.asSelector(), this.asWhere(), this.asGroupBy(), this.asHaving(), this.asOrderBy(), this.asLimit()]
         return prettifyPrintSQL(components.filter(e => e).join(' ').trim(), pretty);
     }
     asOrderBy() {
@@ -72,8 +76,11 @@ class Dumper {
     }
     asFrom() {
         let from = formatSource(this._table.toString());
+        if (this._tableAlias) {
+            from += ` AS ${this._tableAlias}`;
+        }
         for (const join of this._joins) {
-            from += ` JOIN ${formatSource(join.table)} AS ${join.alias}`;
+            from += ` JOIN ${formatSource(join.table)} AS ${join.alias} ON ${join.condition}`;
         }
         return from;
     }
@@ -91,21 +98,23 @@ class Dumper {
 
 type WithJoins<T, J extends Record<string, TableSchema<any>>> = T & {
     [K in keyof J]: TableSchema<J[K]>;
-};
+} & Record<string, T>;
 
 class From<T, S = T, J extends Record<string, TableSchema<any>> = {}> extends Dumper {
-    join<TableName extends keyof Schema[''], Alias extends string>(table: TableName, alias: Alias): From<T, S, J & Record<Alias, Schema[''][TableName]>> {
-        this._joins.push({table, alias});
+    join<TableName extends keyof Schema[''], Alias extends string>(table: TableName, alias: Alias, fn: string | ((item: MapDeepCompType<Record<Alias, Schema[''][TableName]> & WithJoins<T, J>>, D: DGlobalComp) => any)): From<T, S, J & Record<Alias, Schema[''][TableName]>> {
+        this._joins.push({ table, alias, condition: this.conditionFn(fn) });
         return this as any;
     }
     dbpath: keyof T;
     table: string;
+    alias?: string;
     schema: Record<keyof TableSchema<T & S>, string>;
 
-    constructor(source: string, dbpath = "") {
-        super(source);
+    constructor(source: string, dbpath = "", alias?: string) {
+        super(source, alias);
         this.dbpath = dbpath as keyof T;
         this.table = source as string;
+        this.alias = alias;
         if (!dataSchemas?.[this.dbpath as string]?.[this.table as string]) {
             this.loadSchema()
         }
@@ -122,6 +131,16 @@ class From<T, S = T, J extends Record<string, TableSchema<any>> = {}> extends Du
         for (const key in this.schema) {
             const fieldType = this.schema[key] as keyof TypeMapping;
             (proxy as any)[key] = makeProxy(key) as unknown as TypeMapping[typeof fieldType];
+        }
+
+        // Add the main table proxy if it has an alias
+        if (this.alias) {
+            const tableProxy = {} as TableSchema<T & S>;
+            for (const key in this.schema) {
+                const fieldType = this.schema[key] as keyof TypeMapping;
+                (tableProxy as any)[key] = makeProxy(`${this.alias}.${key}`) as unknown as TypeMapping[typeof fieldType];
+            }
+            (proxy as any)[this.alias] = tableProxy;
         }
 
         // Add typed joined table proxies
@@ -171,7 +190,7 @@ class From<T, S = T, J extends Record<string, TableSchema<any>> = {}> extends Du
         const result = await connection.runAndReadAll(this.toSql());
         // console.log(result.getRowObjects())
         const rows = this.selectFields?.[0]?.[1] ?
-            result.getRowObjectsJson() : result.getRowsJson();
+            (opts?.json === false ? result.getRowObjects() : result.getRowObjectsJson()) : result.getRowsJson();
         return rows as MapInferredType<S>[];
     }
 
@@ -235,13 +254,15 @@ class From<T, S = T, J extends Record<string, TableSchema<any>> = {}> extends Du
     }
 }
 if (import.meta.main) {
-        const q = from('data/people.parquet', 'ppl')
-        .join('data/final.csv', 'tkl')
+    const q = from('data/blob.parquet', 'ppl')
+        .join('data/final.csv', 'tkl', e => e.tkl.firstname === e.ppl.name)
         .select((p, D) => ({
+            uu: p.xxxxxx.age,
             zz: p.tkl.name,
-            xx: D.avg(p.total).round(2), 
-            dec: p.age.divide(10)
+            xx: D.abs(p.ppl.total).round(2),
+            dec: p.ppl.age.divide(10)
         }))
-    const resp = await q.execute()
-    
+    const resp = await q.execute({ json: false })
+    console.log(resp)
+
 }

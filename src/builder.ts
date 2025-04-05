@@ -1,14 +1,13 @@
 type People = { name: DVarcharField; male: DBoolField; age: DNumericField };
-import _SchemaData from './.buck/table.json'
+import _SchemaData from './.buck/table.json';
 import { dataSchemas } from './.buck/table.ts';
 import { DNumericField, DVarcharField, DBoolField, DTableField, DGlobalComp, DGlobalField, DAggregateComp, CAggregate } from './.buck/types';
 import { makeProxy } from './proxy';
-import { get, isArray, isNumber, isObject, toUpper } from 'es-toolkit/compat';
+import { get, isArray, isObject, toUpper } from 'es-toolkit/compat';
 import { DField, formatSource, MapCompType, MapInferredType, MapReturnString, prettifyPrintSQL, TableSchema, TypeMapping, wrap } from './utils.ts';
 import { DuckDBInstance } from '@duckdb/node-api';
-import { isPlainObject, isString } from 'es-toolkit';
+import { isString } from 'es-toolkit';
 import { ConditionParser } from './condition-parser.ts';
-import { MapValue } from 'type-fest/source/entry';
 
 type Schema = typeof dataSchemas;
 type MemorySchema = typeof dataSchemas['']
@@ -115,14 +114,8 @@ class From<T, S = T, J extends Record<string, TableSchema<any>> = {}> extends Du
         this.schema = schema;
     }
     async loadSchema() {
-        console.log('OKOK  LOADDDD', String(this.dbpath || this.table))
         const { stdout, stderr } = Bun.spawnSync({ cmd: ['bun', 'src/sync-data', String(this.dbpath || this.table)] })
-        // const { stderr, stdout, ...rr } = await Bun.$
         console.log({ stdout, stderr })
-        console.log(stderr.toString())
-        console.log(stdout.toString())
-        console.log('=============')
-
     }
     getProxySchema() {
         const proxy = {} as T & S;
@@ -245,14 +238,10 @@ if (import.meta.main) {
         const q = from('data/people.parquet', 'ppl')
         .join('data/final.csv', 'tkl')
         .select((p, D) => ({
-            zz: p.ppl.name,
+            zz: p.tkl.name,
             xx: D.avg(p.total).round(2), 
             dec: p.age.divide(10)
         }))
-        // .where(p => p.age > 30 && p.name === 'lol')
-        .groupBy(p => p.dec)
-        .having('dec > 6')
-    // .where(p => p.total > p.age && p.ww.regexp_matches(/.*[0-9]{3}/, '') || p.age > 10 || p._name)
     const resp = await q.execute()
     
 }

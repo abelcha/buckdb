@@ -100,6 +100,8 @@ type ExpectIsEqual<A, B> = IsEqual<A, B> extends true
     : { error: "Types are not equal", expected: A, received: B }; // Triggers error if types are not equal
 type IsTrue<T extends true> = T;
 
+// type ExpectEqual<A, B > = IsEqual<A, B> extends true
+
 
 type ModelForCollection<C extends StrictCollection> = C extends { catalog: infer R, uri: infer T } ? // Use uri T for lookup
     R extends keyof Models ?
@@ -151,16 +153,16 @@ type qsdqsd = ModelForCollection<dftz>
 // Corrected uri from 'cities' to 'city' to match Models definition
 type uuuu = DefaultizeCollectionList<[{ uri: 'https://whatever/people.json', alias: 'ppl' }, { catalog: 's3://insee.ddb', uri: 'cities' }]>
 
-type result = IsTrue<ExpectIsEqual<qsdsqsd, peopleModel & { ppl: peopleModel } & cityModel & { cities: cityModel }>>; // This should now pass
+type result = IsTrue<TypeEq<qsdsqsd, peopleModel & { ppl: peopleModel } & cityModel & { cities: cityModel }>>
 // type result2 = IsTrue<ExpectIsEqual<qsdsqsd, { ppl: peopleModel, city: cityModel }>>; // Corrected expectation and set to true
 
 
 // type ModelKey<T extends keyof Models[T extends keyof Models] | keyof Models[''] & string> = T
 
 
-type ExecutedResult<SelectedFields extends SelectModel> = SelectedFields extends GenericRecursive<DField | string> ? {
+type ToExecuted<SelectedFields extends SelectModel> = SelectedFields extends GenericRecursive<DField | string> ? {
     [P in keyof SelectedFields]: SelectedFields[P] extends DField ? (SelectedFields[P] extends { [t.sInferred]: infer V } ? V : SelectedFields[P]) :
-    SelectedFields[P] extends SelectModel ? ExecutedResult<SelectedFields[P]> : never
+    SelectedFields[P] extends SelectModel ? ToExecuted<SelectedFields[P]> : never
 } : never;
 
 
@@ -169,13 +171,15 @@ type ToComp<SelectedFields extends SelectModel> = SelectedFields extends Generic
     SelectedFields[P] extends SelectModel ? ToComp<SelectedFields[P]> : never
 } : never;
 
-type rrrzz = ExecutedResult<peopleModel & { city: cityModel }>
+
+type rrrzz = ToExecuted<peopleModel & { city: cityModel }>
 type rrrdzz = ToComp<peopleModel & { city: cityModel }>
 
 
 type MState = {
     available: MetaModel,
-    selected: SelectModel,
+    // selected: SelectModel,
+    selected: Record<string, any>, // Relaxed constraint to allow Pick result
     // selected: Record<string, DField>,
     // grouped?: DField | string,
     condition?: string[],
@@ -187,7 +191,7 @@ interface MaterializedResult<S extends MState, C extends StrictCollection[]> {
     // execute(): Promise<MapInferredType<ModelFromCollectionList<C>>>
     groupBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedResult<S & { grouped: Z }, C>
     where<X>(fn: (p: ToComp<S['available'] & S['selected']>, D: DMetaComp) => X): MaterializedResult<S, C & [...S['condition'], X]>
-    execute(): Promise<ExecutedResult<S['selected']>>
+    execute(): Promise<ToExecuted<S['selected']>[]>
 }
 
 type PickRecursive<T, U extends (keyof T)[]> = {
@@ -201,6 +205,10 @@ interface FromResult<T extends keyof Models & string, C extends StrictCollection
         FromResult<T, [...C, DefaultizeCollection<{ catalog: T, uri: K, alias: DeriveName<K> }>]>;
     leftJoin: this['join'],
     rightJoin: this['join'],
+    select<U extends (keyof ModelFromCollectionList<C>)[]>(...keys: U & (keyof ModelFromCollectionList<C>)[]): MaterializedResult<{
+        selected: { [K in U[number] & keyof ModelFromCollectionList<C>]: ModelFromCollectionList<C>[K] },
+        available: ModelFromCollectionList<C>,
+    }, C>
     select<U extends SelectModel>(fn: (p: ModelFromCollectionList<C>, D: DMetaField) => U): MaterializedResult<{
         selected: U,
         available: ModelFromCollectionList<C>,
@@ -211,17 +219,68 @@ interface FromResult<T extends keyof Models & string, C extends StrictCollection
 
 declare function database<T extends keyof Models>(catalog: T): {
     from<K1 extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>, A extends string>(table: K1, alias: A): FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: A }>]>;
-    from<K1 extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>(table: K1): FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1>  }>]>;
+    from<K1 extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>(table: K1): FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1> }>]>;
+    // from<T extends keyof Models & string, FR extends FromResult<T>>(table: FR): FR;
 };
 
-// database('s3://insee.ddb').from('peoples').join('cities').join('countries')
-//     .select(['countries', 'age'])
-//     .execute(e => e.then(z => z.))
+const from = database('').from
+
+database('s3://insee.ddb').from('peoples').join('cities').join('countries')
+    .select('age', 'firstname', 'countryCode', 'countries')
+    // .select(e => ({ age: e.age.abs() }))
+    .where(e => e.age === 123)
+    .execute()
+    .then(([e]) => e.firstname && e.countries)
+
+from('https://whatever/people.json')
+    .select((e, D) => ({ c: D.count('*'), avg: D.avg(e.age), city: e.city_id }))
+    .where(e => e.age > 12)
+    .groupBy(e => e.city_id)
+
+from('https://whatever/people.json', 'pppl')
+    .join('https://whatever/city.json', ({ city, pppl }) => city.id.substring(0, 4) === pppl.city_id.concat(''))
+    .select(e => ({ zage: e.pppl.age.abs() }))
+    .where(e => e.zage > 12 && e.city_id && e.pppl.total > 12 && e.city.geo.lng > 30 && e.city.id === 'arez')
+
+const qqqqqq = database('s3://insee.ddb')
+    .from('countries', 'c')
+    .select(e => ({ zage: e.c.name, ddd: e.id }))
+    // .where(e => )
+
+// from(qqqqqq)
+//     // .join()
+//     .select(e => e.)
+
+
+from('https://whatever/people.json')
+    .select((e, D) => ({
+        uuu: D.raw`select whatever from test`,
+        zzz: D.raw`select whatever from test`,
+    }))
+    .where(e => e.uuu > 'lol')
+    .groupBy(e => e.city_id)
+
+
+// function read_csv<T>(url: T extends string ? T : never, options ): T {
+//     return url as T
+// }
+
+from('https://whatever/people.json')
+.join('https://whatever/country.json')
+// .select('city_id', '')
+.select((e, D) => ({
+    uuu: D.raw`select whatever from test`,
+    nn: e.age,
+    zzz: D.generate_series(12, 30, 1)
+}))
+.where(e => e.age % 4 === 3)
 
 const zzdd = (
     database('s3://insee.ddb')
         .from('peoples')
-        .join('cities', e => e.cities.id == e.p.city_id && e.peoples.city_id.cardinality() === 2)
+        // Corrected typo: e.p.city_id -> e.peoples.city_id
+        // Removed non-existent .cardinality() call
+        .join('cities', e => e.cities.id == e.peoples.city_id)
         .leftJoin('countries', 'C', e => e.C.id === e.cities.countryCode)
         .select((e, D) => ({
             zzz: e.peoples.age,
@@ -229,31 +288,13 @@ const zzdd = (
             cc: e.countryCode,
             country: e.C,
             zz: e.age,
+            uuu: D.raw`select whatever from test`,
             rr: e.firstname,
             ggg: D.max(e.age, e.cities.zipcode),
             h3_index: D.h3_latlng_to_cell(e.cities.geo.lat, e.cities.geo.lng, 5)
         }))
-        .where((e, D) => e.cities.countryCode === 'FR' && e.h3_index > 123)
+        .where((e, D) => e.cities.countryCode === 'FR' && e.h3_index > 123 && e.uuu === 'lol')
         .groupBy(e => e.zz)
         .execute()
-        .then(e => e.cc && e.country.name && e.h3_index)
-    // .then(e => e.rr.
+        .then(([e]) => e && e.country.name && e.h3_index && e.uuu)
 )
-type rrr = SimplifyDeep<typeof zzdd>
-
-function toto(mama: t.DNumericComp) {
-    return mama > 123
-}
-
-// type result3 = typeof rrr
-
-
-
-
-// type rrrr = IsTrue<ExpectIsEqual<result3, peopleModel & { peoples: peopleModel } & cityModel & { cities: cityModel } & countryModel & { cities: cityModel }>> // This should now pass
-
-// .join('countries')
-
-// from('https://whatever/people.json')
-//     .join('https://whatever/city.json')
-//     .join('https://whatever/country.json')

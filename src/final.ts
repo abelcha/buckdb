@@ -1,14 +1,15 @@
-import { DeriveName, DField, MapDeepCompType, MapInferredType } from "./utils"
+import { DeriveName, DField, DRawComp, DRawField, MapDeepCompType, MapInferredType, TypeEq } from "./utils"
 import * as t from "./.buck/types"
-import { ConditionalExcept, SimplifyDeep } from "type-fest"
 // import { IsEqual, Simplify } from "type-fest";
 `--sql SELECT
 - selectFields (...basetable, baseTableAlias + joinsTables)
 - condition (...basetable, baseTableAlias + joinsTables + selectedFields return )
 - result selectfields returns
 `
+
 type DMetaComp = t.DAggregateComp & t.DGlobalComp
-type DMetaField = t.DAggregateField & t.DGlobalField
+type DMetaField = t.DAggregateField & t.DGlobalField & { raw: (template: TemplateStringsArray) => DRawField }
+
 
 type peopleModel = {
     firstname: t.DVarcharField,

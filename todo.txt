@@ -1,0 +1,32 @@
+- match shortcut instead of regexp match
+- read_csv/... table functions
+- s3
+- use tsc like to build code
+- join
+- with
+- copy
+- string expression
+- array
+- object/Struct
+- date
+- different num types
+- operation /-+* etc
+- cast (cf https://duckdb.org/images/typecasting-matrix.png)
+- update/create
+- macro
+- sample
+- ternary
+- unique
+
+- ban compount / sequence / this
+- differentiate Immediatly executed statement and 
+
+
+===================
+- fusion funcname
+- aggregate functions
+- distinctOn
+- orderBy
+- groupBy
+- having
+- limit

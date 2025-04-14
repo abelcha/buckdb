@@ -1,7 +1,5 @@
 import { DuckDBInstance } from '@duckdb/node-api';
-import mri from 'mri'
 import { formatSource, mapTypes } from './utils';
-import { sleep } from 'bun';
 
 const defcon = await DuckDBInstance.create().then(e => e.connect())
 
@@ -57,7 +55,7 @@ const renderTables = (tables: Record<string, Record<string, string>>) => {
         // const type = mapTypes(v)
         return `\t${formatK(k)}: {
 ${renderFields(v)}
-        },\n`
+        };\n`
     }).join('\n')
 }
 
@@ -65,7 +63,7 @@ export const tots2 = async (path: string) => {
     const content = await Bun.file(path).json() as Record<string, Record<string, string>>
     const out = `
     import * as  t from './types.ts'
-    export default interface Collection {
+    export interface Models {
         ${Object.entries(content).map(([dbname, tables]) => (`
         ${formatK(dbname)}: {
            ${renderTables(tables)}
@@ -92,7 +90,7 @@ export const fetchSchemaRuntime = async (origin: string, connection = defcon) =>
     await tots2('.buck/table.json')
 }
 
-export const fetchRessourceRuntime = async (origin: string) => {
+export const fetchRessourceRuntime = async (origin: string, alias: string) => {
     const con = await DuckDBInstance.create(origin).then(e => e.connect())
     const resp = await con.runAndReadAll(`FROM duckdb_tables()`)//.then(e => e.getRowObjectsJson())
     const og = {}
@@ -102,12 +100,12 @@ export const fetchRessourceRuntime = async (origin: string) => {
     await upsertJSON('table', origin, og)
     // await sleep(500)
     await tots('.buck/table.json')
-    await tots2('.buck/table.json')
+    // await tots2('.buck/table.json')
 
 }
 if (import.meta.main) {
-    const args = mri(process.argv.slice(2))
-    const origin = args._[0] || 'duckdb_functions()';
+    const [origin] = process.argv.slice(2)
+    // const origin = args._[0] || 'duckdb_functions()';
     if (origin?.endsWith('.duckdb')) {
         await fetchRessourceRuntime(origin)
     } else {

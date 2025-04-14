@@ -1,5 +1,6 @@
 import { all, createEmphasize } from 'emphasize';
-import { sInferred, sAnti, DNumericField, DVarcharField, DArrayField, DStructField, DJsonField, DBoolField, DMapField, DOtherField, sComptype } from './.buck/types';
+// import { sInferred, DNumericField, DVarcharField, DArrayField, DDateField, DStructField, DJsonField, DBoolField, DMapField, DOtherField, sComptype, DAnyComp, DAnyField } from './.buck/types';
+import * as t from './.buck/types'
 
 export const wrap = (value: string, charA: string, charB = charA): string => {
   if (value[0] === charA && value[value.length - 1] === charB) {
@@ -21,11 +22,39 @@ export const TypeProps = {
   'DStruct': { id: 'struct', able: 'DStructable', field: 'DStructField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject' },
   'DJson': { id: 'json', able: 'DJsonable', field: 'DJsonField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject' },
   'DBool': { id: 'bool', able: 'DBoolable', field: 'DBoolField', rawType: 'boolean', inferredTo: 'boolean', anti: 'AntiBoolean' },
+  'DBlob': { id: 'blob', able: 'DBlobable', field: 'DBlobField', rawType: 'Blob', inferredTo: 'string', anti: 'AntiBlob' },
+  'DDate': { id: 'date', able: 'DDateable', field: 'DDateField', rawType: 'Date', inferredTo: 'Date', anti: 'AntiDate' },
   'DMap': { id: 'map', able: 'DMapable', field: 'DMapField', rawType: 'Map<string,any>', inferredTo: 'Map<string,any>', anti: 'AntiMap' },
   'DOther': { id: 'other', able: 'DOtherable', field: 'DOtherField', rawType: 'any', inferredTo: 'any' },
-  'DAny': {  man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' },
+  'DAny': { man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' },
 }
+export type DeriveName<Path extends string> =
+  Path extends `${infer _}/${infer Rest}`
+  ? DeriveName<Rest>
+  : Path extends `${infer Name}.${string}`
+  ? StripSpecialChars<Name>
+  : StripSpecialChars<Path>;
 
+type StripSpecialChars<S extends string> =
+  S extends `${infer First}${infer Rest}`
+  ? First extends AlphaNumeric
+  ? `${First}${StripSpecialChars<Rest>}`
+  : StripSpecialChars<Rest>
+  : '';
+
+type AlphaNumeric =
+  | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j'
+  | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't'
+  | 'u' | 'v' | 'w' | 'x' | 'y' | 'z'
+  | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J'
+  | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T'
+  | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
+  | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
+
+export const deriveName = <T extends string>(value: T): DeriveName<T> => {
+  const result = value.split('/').pop()?.split('.').shift() || value;
+  return result.replace(/[^a-zA-Z0-9]/g, '') as DeriveName<T>;
+}
 export const mapTypes = (type: string) => {
   if (type === 'ANY') {
     return 'DAny';
@@ -54,6 +83,12 @@ export const mapTypes = (type: string) => {
   if (type.startsWith('MAP')) {
     return 'DMap';
   }
+  if (type.startsWith('BLOB')) {
+    return 'DBlob';
+  }
+  if (type.match(/^(DATE|TIME)[\w\s]*/)) {
+    return 'DDate'
+  }
   return 'DOther';
 }
 
@@ -68,21 +103,28 @@ export const prettifyPrintSQL = (sql: string, pretty = false) => {
 
 
 // console.log(emphasize.listLanguages().filter(e => e.match(/SQL/img)))
-export type DField = DVarcharField | DNumericField | DOtherField | DArrayField | DStructField | DJsonField | DBoolField | DMapField
+
+export type DRawField = t.DAnyField
+export type DRawComp = t.DAnyComp
+
+
+export type DField = t.DVarcharField | t.DNumericField | t.DOtherField | t.DArrayField | t.DDateField | t.DStructField | t.DJsonField | t.DBoolField | t.DMapField |
+  DRawField
 export type TypeMapping = {
-  DVarchar: DVarcharField;
-  DNumeric: DNumericField;
-  DArray: DArrayField;
-  DStruct: DStructField;
-  DJson: DJsonField;
-  DBool: DBoolField;
-  DMap: DMapField;
-  DOther: DOtherField;
+  DVarchar: t.DVarcharField;
+  DNumeric: t.DNumericField;
+  DArray: t.DArrayField;
+  DStruct: t.DStructField;
+  DDate: t.DDateField;
+  DJson: t.DJsonField;
+  DBool: t.DBoolField;
+  DMap: t.DMapField;
+  DOther: t.DOtherField;
 };
 
-export type GetInferredType<T> = T extends { [sInferred]: infer U } ? U : never;
-// export type GetAntiType<T> = T extends { [sComptype]: infer V } ? V & T : never;
-export type GetCompType<T> = T extends { [sComptype]: infer V } ?  V : T;
+export type GetInferredType<T> = T extends { [t.sInferred]: infer U } ? U : never;
+// export type GetAntiType<T> = T extends { [t.sComptype]: infer V } ? V & T : never;
+export type GetCompType<T> = T extends { [t.sComptype]: infer V } ? V : T;
 // export type GetXType<T> = T extends DNumericField ? Partial<number> & Partial<DNumericField> & Partial<T> : Partial<T>;
 
 
@@ -91,21 +133,26 @@ export type MapReturnString<T, V> = T extends object
     [K in keyof T]: T[K] extends (...args: any[]) => infer R
     ? (...args: Parameters<T[K]>) => V
     : T[K]; // Recursively transform non-method properties
-  } 
+  }
   : T; // Base case: leave primitives unchanged
 export type MapCompType<T> = T extends object
   ? { [K in keyof T]: GetCompType<T[K]> }
   : T;
 
+export type MapDeepCompType<T> = T extends object
+  ? { [K in keyof T]: GetCompType<T[K]> extends object ? MapDeepCompType<GetCompType<T[K]>> : GetCompType<T[K]> }
+  : T;
+
+
+
+
 // export type MapAntiType<T> = T extends object
 //   ? { [K in keyof T]: GetXType<T[K]> }
 //   : T;
 // Main generic type transformer
-export type MapInferredType<T> = T extends boolean[]
-  ? { [K in keyof T]: GetInferredType<T[K]> }
-  : T extends object
-  ? { [K in keyof T]: GetInferredType<T[K]> }
-  : never;
+export type MapInferredType<T> = T extends object
+  ? { [K in keyof T]: GetInferredType<T[K]> extends object ? MapInferredType<T[K]> : GetInferredType<T[K]> }
+  : T;
 
 
 
@@ -142,3 +189,39 @@ export const Ω = (...values: (string | number)[]) => {
   }
   return rtn
 }
+
+export type IsNull<T> = [T] extends [null] ? true : false;
+
+export type IfNull<T, TypeIfNull = true, TypeIfNotNull = false> = (
+  IsNull<T> extends true ? TypeIfNull : TypeIfNotNull
+);
+export type TypeEq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false;
+
+export function assertType<_T extends true>() { }
+export function assertNotType<_T extends false>() { }
+
+export const PatternMatchers = {
+  'like': 'LIKE',
+  'notLike': 'NOT LIKE',
+  'ilike': 'ILIKE',
+  'notIlike': 'NOT ILIKE',
+  'similarTo': 'SIMILAR TO',
+  'notSimilarTo': 'NOT SIMILAR TO',
+  'glob': 'GLOB',
+  'notGlob': 'NOT GLOB',
+}
+export interface DuckDBClient {
+  query<T = any>(sql: string, params?: Record<string, any>): Promise<T[]>;
+  run(sql: string): Promise<any>;
+  load(...extensions: string[]): any;
+  dump(sql: string): void
+  // close(): Promise<void>;
+}
+
+export type DFindType<
+  F extends readonly { type_name: string; type_category: any }[], // Changed constraint
+  T extends F[number]["type_name"] // Adjusted T constraint based on F being an array
+> = Extract<
+  F[number], // Access elements of the array F
+  { type_name: T }
+>["type_category"];

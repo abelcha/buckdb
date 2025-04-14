@@ -7,15 +7,32 @@
     "@types/bun": "^1.2.5",
     "bun-plugin-glob-import": "^1.0.1"
   },
+  "scripts": {
+    "typecheck": " tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports"
+  },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.29.1-dev132.0",
     "@duckdb/node-api": "^1.2.1-alpha.16",
+    "@duckdb/node-bindings-darwin-x64": "^1.2.1-alpha.17",
     "@fmt/sql-fmt": "npm:@jsr/fmt__sql-fmt",
+    "@jsep-plugin/arrow": "^1.0.6",
+    "@jsep-plugin/object": "^1.2.2",
+    "@jsep-plugin/regex": "^1.0.4",
+    "@jsep-plugin/spread": "^1.0.3",
+    "@jsep-plugin/template": "^1.0.5",
+    "@types/esprima": "^4.0.6",
+    "apache-arrow": "^19.0.1",
     "emphasize": "^7.0.0",
     "es-toolkit": "^1.33.0",
+    "esprima": "^4.0.1",
+    "hyperimport": "^0.2.0",
+    "jsep": "^1.4.0",
+    "monaco-editor": "0.52.2",
     "mri": "^1.2.0",
-    "type-fest": "^4.38.0"
+    "type-fest": "^4.38.0",
+    "type-plus": "^7.6.2"
   }
 }

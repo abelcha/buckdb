@@ -1,14 +1,11 @@
-//     JavaScript Expression Parser (JSEP) <%= version %>
-//     JSEP may be freely distributed under the MIT License
-//     https://ericsmekens.github.io/jsep/
 
-interface JsepError extends Error {
+export interface JsepError extends Error {
 	index: number;
 	description: string;
 }
 
 // Define Expression types based on Jsep static constants
-type NodeType =
+export type NodeType =
 	| 'Compound'
 	| 'SequenceExpression'
 	| 'Identifier'
@@ -18,29 +15,34 @@ type NodeType =
 	| 'CallExpression'
 	| 'UnaryExpression'
 	| 'BinaryExpression'
-	| 'ArrayExpression';
+	| 'ArrayExpression'
+	| 'ObjectExpression'
+	| 'Property'
+	| 'SpreadElement'
+	| 'ArrowFunctionExpression'
 
-interface BaseExpression {
+
+export interface BaseExpression {
 	type: NodeType;
 	optional?: boolean;
 }
 
-interface CompoundExpression extends BaseExpression {
+export interface CompoundExpression extends BaseExpression {
 	type: 'Compound';
 	body: Expression[];
 }
 
-interface SequenceExpression extends BaseExpression {
+export interface SequenceExpression extends BaseExpression {
 	type: 'SequenceExpression';
 	expressions: Expression[];
 }
 
-interface Identifier extends BaseExpression {
+export interface Identifier extends BaseExpression {
 	type: 'Identifier';
 	name: string;
 }
 
-interface MemberExpression extends BaseExpression {
+export interface MemberExpression extends BaseExpression {
 	type: 'MemberExpression';
 	computed: boolean;
 	object: Expression;
@@ -48,31 +50,43 @@ interface MemberExpression extends BaseExpression {
 	optional?: boolean;
 }
 
-interface Literal extends BaseExpression {
+export interface Literal extends BaseExpression {
 	type: 'Literal';
 	value: string | number | boolean | null; // More specific than any
 	raw: string;
 }
+export interface Property extends BaseExpression {
+	type: 'Property';
+	key: Expression;
+	value: Expression;
+	computed: boolean;
+	optional?: boolean;
+}
 
-interface ThisExpression extends BaseExpression {
+export interface ObjectExpression extends BaseExpression {
+	type: 'ObjectExpression';
+	properties: Property[];
+}
+
+export interface ThisExpression extends BaseExpression {
 	type: 'ThisExpression';
 }
 
-interface CallExpression extends BaseExpression {
+export interface CallExpression extends BaseExpression {
 	type: 'CallExpression';
 	arguments: (Expression | null)[];
 	callee: Expression;
 	optional?: boolean;
 }
 
-interface UnaryExpression extends BaseExpression {
+export interface UnaryExpression extends BaseExpression {
 	type: 'UnaryExpression';
 	operator: string;
 	argument: Expression;
 	prefix: boolean;
 }
 
-interface BinaryExpression extends BaseExpression {
+export interface BinaryExpression extends BaseExpression {
 	type: 'BinaryExpression';
 	operator: string;
 	left: Expression;
@@ -80,9 +94,19 @@ interface BinaryExpression extends BaseExpression {
 	parenthesis: boolean;
 }
 
-interface ArrayExpression extends BaseExpression {
+export interface ArrowFunctionExpression extends BaseExpression {
+	type: 'ArrowFunctionExpression';
+	params: (Identifier | MemberExpression)[];
+	body: Expression;
+}
+
+export interface ArrayExpression extends BaseExpression {
 	type: 'ArrayExpression';
 	elements: (Expression | null)[];
+}
+export interface SpreadElement extends BaseExpression {
+	type: 'SpreadElement';
+	argument: Expression;
 }
 
 // Union type for all possible expressions
@@ -96,7 +120,11 @@ export type Expression =
 	| CallExpression
 	| UnaryExpression
 	| BinaryExpression
-	| ArrayExpression;
+	| ArrayExpression
+	| ObjectExpression
+	| Property
+	| ArrowFunctionExpression
+	| SpreadElement
 
 // Type for the hook environment
 interface HookEnv {
@@ -104,8 +132,6 @@ interface HookEnv {
 	node?: Expression | null; // Only allow Expression or null based on actual usage
 }
 
-// Type for hook callbacks
-type HookCallback = (env: HookEnv) => void;
 
 // Type for binary operator info used in stack
 interface BinaryOpInfo {
@@ -703,6 +729,7 @@ export class Jsep {
 		};
 	}
 
+	NEWLINE = String.fromCharCode(10)
 	/**
 	 * Parses a string literal, staring with single or double quotes with basic support for escape codes
 	 * e.g. `"hello world"`, `'this is\nJSEP'`
@@ -720,17 +747,16 @@ export class Jsep {
 				closed = true;
 				break;
 			}
-			else if (ch === '\\') {
+			else if (ch === String.fromCharCode()) {
 				// Check for all of the common escape codes
 				ch = this.expr.charAt(this.index++);
-
 				switch (ch) {
-					case 'n': str += '\n'; break;
-					case 'r': str += '\r'; break;
-					case 't': str += '\t'; break;
-					case 'b': str += '\b'; break;
-					case 'f': str += '\f'; break;
-					case 'v': str += '\x0B'; break;
+					case 'n': str += String.fromCharCode(10); break;
+					case 'r': str += String.fromCharCode(13); break;
+					case 't': str += String.fromCharCode(9); break;
+					case 'b': str += String.fromCharCode(8); break;
+					case 'f': str += String.fromCharCode(12); break;
+					case 'v': str += String.fromCharCode(11); break;
 					default: str += ch;
 				}
 			}
@@ -1034,8 +1060,8 @@ Jsep.max_binop_len = Jsep.getMaxKeyLen(Jsep.binary_ops);
 const ARROW_EXP = 'ArrowFunctionExpression';
 
 interface JSEPPlugin {
-  name: string;
-  init(jsxp: typeof Jsep): void;
+	name: string;
+	init(jsxp: typeof Jsep): void;
 }
 
 export const arrow: JSEPPlugin = {
@@ -1047,7 +1073,7 @@ export const arrow: JSEPPlugin = {
 
 		// this hook searches for the special case () => ...
 		// which would normally throw an error because of the invalid LHS to the bin op
-		jsxp.hooks.add('gobble-expression', function gobbleEmptyArrowArg(env) {
+		jsxp.hooks.add('gobble-expression', function gobbleEmptyArrowArg(env: { node: ArrowFunctionExpression }) {
 			this.gobbleSpaces();
 			if (this.code === jsxp.OPAREN_CODE) {
 				const backupIndex = this.index;
@@ -1068,7 +1094,7 @@ export const arrow: JSEPPlugin = {
 							type: 'ArrowFunctionExpression',
 							params: null,
 							body,
-						};
+						} as ArrowFunctionExpression;
 						return;
 					}
 				}
@@ -1107,15 +1133,15 @@ export const arrow: JSEPPlugin = {
 
 const OCURLY_CODE = 123; // {
 const CCURLY_CODE = 125; // }
-const OBJECT_EXP  = 'ObjectExpression';
-const PROPERTY    = 'Property';
+const OBJECT_EXP = 'ObjectExpression';
+const PROPERTY = 'Property';
 
 export const object: JSEPPlugin = {
 	name: 'object',
 
 	init(jsxp) {
 		// Object literal support
-		function gobbleObjectExpression(env) {
+		function gobbleObjectExpression(env: { node: ObjectExpression }) {
 			if (this.code === OCURLY_CODE) {
 				this.index++;
 				const properties = [];
@@ -1253,7 +1279,7 @@ export const jsepSpread: JSEPPlugin = {
 		// Spread operator: ...a
 		// Works in objects { ...a }, arrays [...a], function args fn(...a)
 		// NOTE: does not prevent `a ? ...b : ...c` or `...123`
-		jsxp.hooks.add('gobble-token', function gobbleSpread(env) {
+		jsxp.hooks.add('gobble-token', function gobbleSpread(env: { node: SpreadElement }) {
 			if ([0, 1, 2].every(i => this.expr.charCodeAt(this.index + i) === jsxp.PERIOD_CODE)) {
 				this.index += 3;
 				env.node = {
@@ -1305,8 +1331,8 @@ export const jsepTemplateLiteral: JSEPPlugin = {
 						env.node = node;
 
 						if (gobbleMember) {
-						  // allow . [] and () after template: `foo`.length
-						  env.node = this.gobbleTokenProperty(env.node);
+							// allow . [] and () after template: `foo`.length
+							env.node = this.gobbleTokenProperty(env.node);
 						}
 
 						return env.node;
@@ -1321,20 +1347,20 @@ export const jsepTemplateLiteral: JSEPPlugin = {
 							this.throwError('unclosed ${');
 						}
 					}
-					else if (ch === '\\') {
+					else if (ch === String.fromCharCode(47)) {
 						// Check for all of the common escape codes
 						raw += ch;
 						ch = this.expr.charAt(++this.index);
 						raw += ch;
 
 						switch (ch) {
-							case 'n': cooked += '\n'; break;
-							case 'r': cooked += '\r'; break;
-							case 't': cooked += '\t'; break;
-							case 'b': cooked += '\b'; break;
-							case 'f': cooked += '\f'; break;
-							case 'v': cooked += '\x0B'; break;
-							default : cooked += ch;
+							case 'n': cooked += String.fromCharCode(10); break;
+							case 'r': cooked += String.fromCharCode(13); break;
+							case 't': cooked += String.fromCharCode(9); break;
+							case 'b': cooked += String.fromCharCode(8); break;
+							case 'f': cooked += String.fromCharCode(12); break;
+							case 'v': cooked += String.fromCharCode(11); break;
+							default: cooked += ch;
 						}
 					}
 					else {
@@ -1364,8 +1390,7 @@ export const jsepTemplateLiteral: JSEPPlugin = {
 		});
 	}
 };
-
-
+Jsep.plugins.register(arrow, object, regex, jsepSpread, jsepTemplateLiteral);
 // Backward Compatibility:
 const jsep = expr => (new Jsep(expr)).parse() as Expression;
 const stdClassProps = Object.getOwnPropertyNames(class Test { });

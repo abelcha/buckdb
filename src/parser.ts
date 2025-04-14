@@ -1,21 +1,6 @@
-import jsep from './jsep';
-import regexPlugin from '@jsep-plugin/regex'
-import templatePlugin from '@jsep-plugin/template'
-import objectPlugin from '@jsep-plugin/object'
-import arrowPlugin from '@jsep-plugin/arrow'
-import spreadPlugin from '@jsep-plugin/spread'
-import * as p from 'esprima/src/nodes.ts'
-import * as esp from 'esprima'
-
-interface Expression {
-  type: string;
-  [key: string]: any;
-}
-
-// @ts-ignore-next-line
-jsep.plugins.register(regexPlugin, templatePlugin, arrowPlugin, objectPlugin, spreadPlugin)
-
-
+import { Identifier } from 'jsep';
+import jsep, { ArrowFunctionExpression, Expression, Property } from './jsep';
+import { PatternMatchers } from './utils'
 
 function mapUnaryOperator(jsOperator) {
   const unaryOperatorMap = {
@@ -91,10 +76,12 @@ function findUndefinedVariables(ast: Expression, context: Record<string, any>): 
   return Array.from(undefinedVars);
 }
 
+const SLASH = String.fromCharCode(47)
+const BACKSLASH = String.fromCharCode(92)
 export function transformDuckdb(node, params = new Map<string, number>(), context = {}) {
-  const contextStr = Object.entries(context).map(([key, value]) => `const ${key} = ${JSON.stringify(value)}`).join(';\n') + '\n'
+  // const contextStr = Object.entries(context).map(([key, value]) => `const ${key} = ${JSON.stringify(value)}`).join(';\n') + '\n'
 
-  function transformNode(node) {
+  function transformNode(node, opts = { asArray: false }) {
     // console.log(node.type, node.name, node.value)
     switch (node.type) {
       case 'ObjectExpression':
@@ -113,10 +100,12 @@ export function transformDuckdb(node, params = new Map<string, number>(), contex
               return null
             return node.name
           }
+          else if (typeof global[node.name] !== 'undefined') {
+            return `${node.name}`
+          }
           else if (typeof context[node.name] !== 'undefined') {
             return '(' + JSON.stringify(context[node.name]) + ')'
             // console.log('CONTEXTRTT', node.name)
-
           } else {
             throw new Error(`Undefined variable: ${node.name}, use .context({ ${node.name} }) too pass it down`);
 
@@ -126,29 +115,49 @@ export function transformDuckdb(node, params = new Map<string, number>(), contex
       case 'MemberExpression':
         // const isTopLevel = node.object.type === 'Identifier'
         node.property.isProperty = true
-        return [transformNode(node.object), transformNode(node.property)].filter(Boolean).join('.');
+        const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean)
+        return opts.asArray ? rtn : rtn.join('.');
       case 'Literal':
         // console.log(node.value instanceof RegExp)
         if (node.value instanceof RegExp) {
-          const rgx = node.value.toString().split('/').slice(1, -1).join('/')
+          const rgx = node.value.toString().split(SLASH).slice(1, -1).join(SLASH)
           const flags = node.value.flags ? `, '${node.value.flags}'` : ''
           return `'${rgx}'` + flags
         }
         if (node.raw.startsWith('"') && node.raw.endsWith('"')) {
-          return `'${node.raw.slice(1, -1).replace(/'/g, "\'")}'`
+          return `'${node.raw.slice(1, -1).replace(/'/g, BACKSLASH + "'")}'`
         }
         return node.raw;
       case 'CallExpression':
-        return `${transformNode(node.callee)}(${node.arguments.map(transformNode).join(', ')})`;
+        const callee = transformNode(node.callee, { asArray: true })
+        const lastCallee = callee[callee.length - 1]
+        const args = node.arguments.map(transformNode)
 
-        try {
-          const evalStr = `${transformNode(node.callee)}(${node.arguments.map(transformNode).join(', ')})`
-          const result = eval(contextStr + evalStr);
-          return String(result);
-        } catch {
-          // Fallback to original if evaluation fails
-          return `${transformNode(node.callee)}(${node.arguments.map(transformNode).join(', ')})`;
+        if (PatternMatchers[lastCallee]) {
+          return `${callee.slice(0, -1)} ${PatternMatchers[lastCallee]} ${args[0]}`
         }
+        if (lastCallee === 'as') {
+          console.log(node)
+          const gargs = node.arguments.slice(1).map(transformNode)
+          // console.log({gargs})
+          return `${callee.slice(0, -1)}::${node.arguments[0].value}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
+        }
+        if (callee[0].toLowerCase() === 'cast' && node.arguments.length === 2) {
+          return `CAST(${transformNode(node.arguments[0])}, ${node.arguments[1].value})`
+        }
+        // if (PatternMatchers[callee]) {
+        //   return '123'
+        // }
+        // console.log({ callee, args })
+        return `${callee.join('.')}(${node.arguments.map(transformNode).join(' ,')})`;
+      // try {
+      //   const evalStr = `${transformNode(node.callee)}(${node.arguments.map(transformNode).join(', ')})`
+      //   const result = eval(contextStr + evalStr);
+      //   return String(result);
+      // } catch {
+      //   // Fallback to original if evaluation fails
+      //   return `${transformNode(node.callee)}(${node.arguments.map(transformNode).join(', ')})`;
+      // }
       case 'UnaryExpression':
         return `${mapUnaryOperator(node.operator)} ${transformNode(node.argument)}`;
       case 'BinaryExpression':
@@ -164,6 +173,7 @@ export function transformDuckdb(node, params = new Map<string, number>(), contex
         throw new Error(`Unsupported node type: ${node.type}`);
     }
   }
+
   return transformNode(node);
 }
 const extractParams = (ast: Expression) => {
@@ -196,21 +206,50 @@ const extractParams = (ast: Expression) => {
 }
 
 export const extractParamsContext = (ast: Expression) => {
-  console.log(ast)
+  // console.log(ast)
   if (ast.type !== 'ArrowFunctionExpression') {
     throw new Error('AST is not an ArrowFunctionExpression');
   }
-  return extractParams(ast.params)
+  return extractParams(ast.params as unknown as Expression)
 }
 
 
 export const parse = (expr: Function, context = {}) => {
-  const ast = jsep(expr.toString())
+  const ast = jsep(expr.toString()) as ArrowFunctionExpression
   // console.log(ast)
   const params = extractParamsContext(ast)
   // const context = findUndefinedVariables(ast, {})
   const duckdbExpr = transformDuckdb(ast.body, params, context)
   return duckdbExpr
+}
+
+export const parseObject = (expr: Function, context = {}) => {
+  const ast = jsep(expr.toString()) as ArrowFunctionExpression
+  // console.log('----', expr.toString())
+  // console.log(ast)
+  const params = extractParamsContext(ast)
+  const node = ast.body
+  // console.log(node)
+  if (node.type === 'ObjectExpression') {
+    // console.log(node.properties)
+    return node.properties.map((prop: any) => {
+      return [prop.key?.name, transformDuckdb(prop.value, params, context)]
+    });
+  } else if (node.type === 'CallExpression' || node.type === 'MemberExpression') {
+    // console.log(node)
+    const rtn = [['', transformDuckdb(node, params, context)]]
+    // console.log({ rtn })
+    return rtn
+  }
+  else if (node.type === 'ArrayExpression') {
+    return node.elements.map((prop: any, i) => {
+      return [i, transformDuckdb(prop, params, context)]
+    });
+  }
+  else {
+    console.log(node)
+    throw new Error('AST is not an ObjectExpression');
+  }
 }
 
 
@@ -222,16 +261,28 @@ export const parse = (expr: Function, context = {}) => {
 // // const fn = ({ xx: { zz } }) => ((12 + zz) / 4 && &&  zz === 'string')
 // // const fn = (p, { Varchar, ...rest }) => p && tata() && rest.xx.Varchar(p.name) === 'lol' && Date.now() > 0 && JSON.stringify(lola) && toto[0].lol.tata
 // const fn = () => Date.now() > 42 && JSON.stringify(lola) === 'toto'
-// console.log(fn.toString())
+if (import.meta.main) {
+
+  const fn = (e, D) => D.cast(D.lol(e.name.a.haha()).str(), 'VARCHAR') && e.tata.lolo.as('Varchar') && e.name.similarTo(`123`) && e.name.toto.lol.notLike('%toot%')
+
+  // const fn = (p, D) => ({
+  //   age: p.age,
+  // diff: D.levenstein(p.name, 123)
+  // })
+  // console.log(parseObject(fn))
+  console.log(parse(fn))
+}
+
+// // console.log(fn.toString())
 // const ast = jsep(fn.toString())
 // const params = extractParamsContext(ast)
-// // console.log({ params })
-// // console.log(global.Math)
-// console.log(JSON.stringify(ast.body, null, 2))
-// // console.log(JSON.stringify(ast, null, 2))
-// // console.info('>>>', {ast})
+// // // console.log({ params })
+// // // console.log(global.Math)
+// // console.log(JSON.stringify(ast.body, null, 2))
+// // // console.log(JSON.stringify(ast, null, 2))
+// // // console.info('>>>', {ast})
 
 // console.log(transformDuckdb(ast.body, params, { customVar: 42, lola: 'nano' }))
-// // const zz = ast ~= 'toto'
-// // const fn = (v, D) => D.Varchar(v) + 12
-// // console.log(fn.toString())
+// // // const zz = ast ~= 'toto'
+// // // const fn = (v, D) => D.Varchar(v) + 12
+// // // console.log(fn.toString())

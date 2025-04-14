@@ -2,7 +2,7 @@ import { deriveName, DeriveName, DField, DRawField, DuckDBClient, formatSource, 
 import { Models } from './.buck/table2'
 import * as t from "./.buck/types"
 import { parse, parseObject } from './parser';
-import { groupBy } from "es-toolkit";
+import { groupBy, keyBy } from "es-toolkit";
 import { ObjectValue } from "type-fest/source/internal";
 
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
@@ -95,11 +95,11 @@ type MState = {
 
 interface MaterializedResult<S extends MState, C extends StrictCollection[]> {
     // execute(): Promise<MapInferredType<ModelFromCollectionList<C>>>
-    groupBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedResult<S & { grouped: Z }, C>
-    groupBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(...key: U[]): MaterializedResult<S, C>
+    groupBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedGroupByResult<S & { grouped: Z }, C>
+    groupBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(...key: U[]): MaterializedGroupByResult<S, C>
 
-    keyBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedResult<S & { keyed: true }, C>
-    keyBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U): MaterializedResult<S & { keyed: true }, C>
+    keyBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedGroupByResult<S & { keyed: true }, C>
+    keyBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U): MaterializedGroupByResult<S & { keyed: true }, C>
 
     minBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedResult<S & { single: true }, C>
     minBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U): MaterializedResult<S & { single: true }, C>
@@ -187,8 +187,9 @@ type InitialMaterializedResult<C extends StrictCollection[]> = MaterializedResul
     available: ModelFromCollectionList<C>,
 }, C>;
 
+type DExtensionsId = typeof t.DExtensions[number]['extension_name']
 // Updated DBuilder declaration
-declare function DBuilder<T extends keyof Models>(catalog: T): {
+declare function DBuilder<T extends keyof Models>(catalog: T, settings?: t.DSettings): {
     from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>, A extends string>(table: K1, alias: A):
         FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: A }>]> &
         InitialMaterializedResult<[DefaultizeCollection<{ catalog: T, uri: K1, alias: A }>]>; // Use the alias
@@ -196,9 +197,11 @@ declare function DBuilder<T extends keyof Models>(catalog: T): {
     from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>> & string>(table: K1):
         FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1> }>]> &
         InitialMaterializedResult<[DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1> }>]>; // Use the alias
+    load(...ext: DExtensionsId[]): ReturnType<typeof DBuilder<T>>
 };
 
-
+// const xdb = DBuilder('data/ex.duckdb').load('autocomplete', 'arrow')
+// xdb.from('')
 
 type DCondition = { condition: string, operator?: 'OR' | 'AND' }
 type DSelectee = { field: string, as?: string }
@@ -230,6 +233,7 @@ const serializeConditions = (id = 'WHERE') => (conditions: DCondition[]) => {
     }).join(' ')
 }
 const serializeOrder = (id: string) => (orders: DOrder[]) => {
+    if (!orders.length) return ''
     const m = orders.map((e, i) => {
         // const prefix = i === 0 ? id : (e.direction)
         return `${e.field} ${e.direction || ''}`.trim()
@@ -239,35 +243,44 @@ const serializeOrder = (id: string) => (orders: DOrder[]) => {
 
 const formatAlias = (source: { alias?: string, uri: string }) => {
     if (source.alias) {
-        return `${formatSource(source.uri)} AS ${source.alias}\n`
+        return `${formatSource(source.uri)} AS ${source.alias}`
     }
     return formatSource(source.uri)
 }
 const formatAs = (source: { field: string, as?: string }) => {
     if (source.as && typeof source.as === 'string') {
-        return `${source.field} AS ${source.as}\n`
+        return `${source.field.padEnd(20)} AS ${source.as}`
     }
     return source.field
 }
 const serializeDatasource = (datasources: DDatasource[]) => {
-    return datasources.map((d) => d.join ? `${d.join} ${formatAlias(d)} ON (${d.joinOn})` : formatAlias(d)).join('\n ') + '\n'
+    return datasources.map((d) => d.join ? `${d.join} ${formatAlias(d)} ON (${d.joinOn})` : formatAlias(d)).join('\n ')
 }
 const serializeSelected = (selected: DSelectee[]) => {
     if (!selected.length) {
         return '*'
     }
-    return selected.map(formatAs).join(', ')
+    return (selected).map(formatAs).map(e => `${e}`).join(', \n        ')
     // return prettifyPrintSQL(selected.map(([v, k]) => !k?.match(/[^\d]/) ? v : `${v} AS ${k}`).join(", ") || "*", pretty);
+}
+const newLine = (e: string) => {
+    const raw = e.replaceAll(/\n/g, '').replaceAll(/\s+/g, ' ').trim()
+    if (raw.length < 30) {
+        return raw
+    }
+    return e
 }
 function toSql(state: DState) {
     // console.log({ state })
     const components = [
         'FROM',
         serializeDatasource(state.datasources),
-        ' SELECT',
-        serializeSelected(state.selected),
+        '\n SELECT',
+        serializeTuple('DISTINCT ON')(state.distinctOn),
+        newLine(serializeSelected(state.selected)),
+        '\n',
         serializeConditions('WHERE')(state.conditions),
-        serializeTuple('GROUP BY')(state.groupBy),
+        serializeTuple(' GROUP BY')(state.groupBy),
         serializeConditions('HAVING')(state.having),
         serializeOrder('ORDER BY')(state.orderBy),
         serializeValue('LIMIT')(state.limit),
@@ -279,17 +292,18 @@ function toSql(state: DState) {
 }
 type Parseable = string | Function
 
+const formalize = (e: string | Function) => typeof e === 'function' ? parse(e) : e
 const deriveState = (s: any, kmap: Record<keyof DState | string, any | any[]>, format = e => e) => {
     return Object.entries(kmap).reduce((acc, [key, values]) => {
         if (!Array.isArray(values)) {
             return { ...acc, [key]: values }
         }
-        const newVals = values.map(e => typeof e === 'function' ? parse(e) : e).map(format)
+        const newVals = values.map(formalize).map(format)
         return Object.assign(acc, { [key]: (s[key] || []).concat(newVals) })
     }, s) as DState
 }
 
-export const builder = (ddb: DuckDBClient) => {
+export const builder = (ddb: DuckDBClient, opts: Partial<t.DSettings> = {}) => {
 
     const fromRes = (state = dstate) => {
         const _join = (joinType: DDatasource['join'] = 'JOIN') => function (table, alias, fn = undefined) {
@@ -308,7 +322,7 @@ export const builder = (ddb: DuckDBClient) => {
             crossJoin: _join('CROSS JOIN'),
             naturalJoin: _join('NATURAL JOIN'),
             select: function (...keys: Parseable[]) {
-                console.log({ keys })
+                // console.log({ keys })
                 const selected = keys.flatMap(k => {
                     if (typeof k === 'function') {
                         const res = parseObject(k)
@@ -331,8 +345,15 @@ export const builder = (ddb: DuckDBClient) => {
             groupBy: function (...groupBy: Parseable[]) {
                 return fromRes(deriveState(state, { groupBy }))
             },
+            distinctOn: function (...distinctOn: Parseable[]) {
+                return fromRes(deriveState(state, { distinctOn }))
+            },
             keyBy: function (...groupBy: Parseable[]) {
-                return fromRes(deriveState({ ...state, keyBy: groupBy }, { groupBy }))
+                const keyBy = formalize(groupBy[0])
+                if (!state.selected.find(e => e.field === keyBy)) {
+                    state.selected.push({ field: keyBy })
+                }
+                return fromRes(deriveState({ ...state, selected: state.selected, keyBy }, { groupBy }))
             },
             minBy: function (...fields: Parseable[]) {
                 // return this.orderBy(fields, 'ASC').limit(10)
@@ -366,8 +387,10 @@ export const builder = (ddb: DuckDBClient) => {
                 if (state.agg) {
                     return resp[0]
                 }
-                if (state?.keyBy?.length) {
-                    return groupBy(resp, e => e[state.groupBy[0]])
+                // console.log('kbbbbb', state.keyBy)
+                if (state?.keyBy) {
+                    // console.log({ state })
+                    return keyBy(resp, (obj) => obj[state.keyBy])
                 }
                 return resp
             },
@@ -376,6 +399,7 @@ export const builder = (ddb: DuckDBClient) => {
             },
             dump: () => {
                 ddb.dump(toSql(state))
+                console.log(state)
                 return fromRes(state)
             },
             show: function () {
@@ -396,6 +420,12 @@ export const builder = (ddb: DuckDBClient) => {
     }
     return function __DBuilder(catalog = '') {
         return {
+            load: function (...ext: DExtensionsId[]) {
+                ddb.load(...ext)
+                // console.log({ str })
+                // const resp = await this.run(str)
+                // ddb.run(str)
+            },
             from: (table: string, alias?: string) => fromRes({
                 ...dstate,
                 datasources: [{
@@ -408,62 +438,3 @@ export const builder = (ddb: DuckDBClient) => {
     } as unknown as typeof DBuilder
     // return fromRes as unknown as typeof DBuilder
 }
-// builder({} as unknown as DuckDBClient)('s3://insee.ddb').from().
-
-// function __database(catalog = '') {
-//     return {
-//         from: (table, alias) => fromRes({
-//             ...dstate,
-//             datasources: [{
-//                 catalog: catalog,
-//                 uri: table,
-//                 alias: alias,// || deriveName(table),
-//             }]
-//         })
-//     }
-//     // return new 
-// }
-// export const database = __database as unknown as typeof Ddatabase
-// export const from = database('').from
-
-// // database('data/ex.duckdb').from('')
-
-// const zz = async () => {
-//     const db = database('data/ex.duckdb')
-//     const q = db.from('https://whatever/people.json')
-//         .join('https://whatever/city.json', e => e.city.id === e.people.city_id)
-//         .select('age', 'people', 'total')
-//         .distinctOn('age')
-//         .where(e => e.age > 18)
-//         .groupBy('city_id', 'age')
-//         // .groupBy('')
-//         .having(e => e.people.age > 14)
-//         .orderBy('people', 'total')
-//         .limit(100)
-//         .offset(42)
-
-
-//     console.log('=======<', q.toSql())
-//     // const resp = await q.execute({ pretty: true })
-//     // console.log({ resp })
-// }
-
-// zz()
-
-
-
-
-
-// // database('s3://insee.ddb').from('cities').join('countries', 'cccc').select('cities.countryCode', 'cccc.countryCode', 'geo')
-// // const xx = await database('').from('data/test.csv', 'testxx')
-// //     .join('data/final.csv', e => e.testxx.name === e.final.name)
-// //     // .select('age', 'final')
-// //     .select((e, D) => ({ age: e.testxx.age, final: e.final.email, oo: D.levenshtein(e.email, e.pid) }))
-// //     .toSql()
-// // console.log({ xx })
-// // // xx[0].final.firstname.toLocaleLowerCase()
-// // database('s3://insee.ddb').from('peoples', 'zzz').join('https://whatever/country.json')
-// // .select(e => e.zzz.)
-
-// // database('data/ex.duckdb').from('data/test.csv', 'zzz').join('data/people.parquet', 'iii', e => e.iii.)
-// // .select(e => e.iii)

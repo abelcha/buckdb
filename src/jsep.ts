@@ -1,4 +1,3 @@
-
 export interface JsepError extends Error {
 	index: number;
 	description: string;
@@ -20,6 +19,9 @@ export type NodeType =
 	| 'Property'
 	| 'SpreadElement'
 	| 'ArrowFunctionExpression'
+	| 'TaggedTemplateExpression'
+	| 'TemplateLiteral'
+	| 'TemplateElement'
 
 
 export interface BaseExpression {
@@ -52,7 +54,7 @@ export interface MemberExpression extends BaseExpression {
 
 export interface Literal extends BaseExpression {
 	type: 'Literal';
-	value: string | number | boolean | null; // More specific than any
+	value: string | number | boolean | null | RegExp; // Allow RegExp
 	raw: string;
 }
 export interface Property extends BaseExpression {
@@ -61,11 +63,12 @@ export interface Property extends BaseExpression {
 	value: Expression;
 	computed: boolean;
 	optional?: boolean;
+	shorthand?: boolean; // Add missing optional property
 }
 
 export interface ObjectExpression extends BaseExpression {
 	type: 'ObjectExpression';
-	properties: Property[];
+	properties: (Property | Expression)[]; // Allow SpreadElement etc.
 }
 
 export interface ThisExpression extends BaseExpression {
@@ -96,7 +99,7 @@ export interface BinaryExpression extends BaseExpression {
 
 export interface ArrowFunctionExpression extends BaseExpression {
 	type: 'ArrowFunctionExpression';
-	params: (Identifier | MemberExpression)[];
+	params: (Identifier | MemberExpression)[] | null; // Allow null for () => ...
 	body: Expression;
 }
 
@@ -108,6 +111,31 @@ export interface SpreadElement extends BaseExpression {
 	type: 'SpreadElement';
 	argument: Expression;
 }
+
+// Add Template Element interface
+export interface TemplateElement extends BaseExpression {
+	type: 'TemplateElement';
+	value: {
+		raw: string;
+		cooked: string | null; // Cooked can be null if invalid escape sequence
+	};
+	tail: boolean;
+}
+
+// Add Template Literal interface
+export interface TemplateLiteral extends BaseExpression {
+	type: 'TemplateLiteral';
+	quasis: TemplateElement[];
+	expressions: Expression[];
+}
+
+// Add Tagged Template Expression interface
+export interface TaggedTemplateExpression extends BaseExpression {
+	type: 'TaggedTemplateExpression';
+	tag: Expression;
+	quasi: TemplateLiteral;
+}
+
 
 // Union type for all possible expressions
 export type Expression =
@@ -125,6 +153,9 @@ export type Expression =
 	| Property
 	| ArrowFunctionExpression
 	| SpreadElement
+	| TaggedTemplateExpression // Add Template Literal types to main union
+	| TemplateLiteral
+	| TemplateElement
 
 // Type for the hook environment
 interface HookEnv {
@@ -140,6 +171,77 @@ interface BinaryOpInfo {
 	right_a: boolean; // right associative
 }
 
+// Type for hook callbacks
+type HookCallback = (this: Jsep, env: HookEnv) => void;
+
+class Hooks {
+	// Index signature to allow string indexing for hook names
+	[key: string]: HookCallback[] | undefined | ((name: string | string[] | Record<string, HookCallback>, callback?: HookCallback, first?: boolean) => void) | ((name: string, env: HookEnv) => void);
+
+	add(name: string | string[] | Record<string, HookCallback>, callback?: HookCallback, first?: boolean): void {
+		if (typeof name === 'object' && !Array.isArray(name)) {
+			// Multiple hook callbacks, keyed by name
+			const hookMap = name; // Rename for clarity
+			const isFirstArg = callback; // The second arg is 'first' in this overload
+			for (const hookName in hookMap) {
+				// Pass the actual callback from the map and the correct 'first' value
+				this.add(hookName, hookMap[hookName], isFirstArg);
+			}
+		} else {
+			const names = Array.isArray(name) ? name : [name];
+			names.forEach((n) => {
+				const currentHooks = this[n] || [];
+				if (callback && Array.isArray(currentHooks)) { // Type guard for array push
+					currentHooks[first ? 'unshift' : 'push'](callback);
+					this[n] = currentHooks; // Reassign if necessary (though push modifies in place)
+				} else if (!this[n]) {
+					this[n] = callback ? [callback] : [];
+				}
+			});
+		}
+	}
+
+
+	run(name: string, env: HookEnv): void { // Use specific HookEnv type
+		const callbacks = this[name];
+		if (Array.isArray(callbacks)) {
+			callbacks.forEach((callback: HookCallback) => { // Use specific HookCallback type
+				callback.call(env.context, env); // Ensure context is Jsep instance
+			});
+		}
+	}
+}
+
+interface JSEPPlugin {
+	name: string;
+	init(jsxp: typeof Jsep): void;
+}
+
+class Plugins {
+	jsep: typeof Jsep; // Use typeof Jsep
+	registered: Record<string, JSEPPlugin>; // Use specific JSEPPlugin type
+
+	constructor(jsep: typeof Jsep) { // Use typeof Jsep
+		this.jsep = jsep;
+		this.registered = {};
+	}
+
+
+	register(...plugins: JSEPPlugin[]) { // Use specific JSEPPlugin type
+		plugins.forEach((plugin) => {
+			if (typeof plugin !== 'object' || !plugin.name || !plugin.init) {
+				throw new Error('Invalid JSEP plugin format');
+			}
+			if (this.registered[plugin.name]) {
+				// already registered. Ignore.
+				return;
+			}
+			plugin.init(this.jsep);
+			this.registered[plugin.name] = plugin;
+		});
+	}
+}
+
 
 export class Jsep {
 	// Instance properties
@@ -152,7 +254,7 @@ export class Jsep {
 	static binary_ops: Record<string, number>;
 	static right_associative: Set<string>;
 	static additional_identifier_chars: Set<string>;
-	static literals: Record<string, boolean | null>;
+	static literals: Record<string, boolean | null | number | string | RegExp>; // Allow RegExp
 	static this_str: string;
 	static max_unop_len: number;
 	static max_binop_len: number;
@@ -170,6 +272,11 @@ export class Jsep {
 	static UNARY_EXP: 'UnaryExpression';
 	static BINARY_EXP: 'BinaryExpression';
 	static ARRAY_EXP: 'ArrayExpression';
+	// Added template types to NodeType union
+	static TAGGED_TEMPLATE_EXPRESSION: 'TaggedTemplateExpression';
+	static TEMPLATE_LITERAL: 'TemplateLiteral';
+	static TEMPLATE_ELEMENT: 'TemplateElement';
+
 
 	// Char Code constants (defined below class)
 	static TAB_CODE: number;
@@ -187,6 +294,11 @@ export class Jsep {
 	static QUMARK_CODE: number;
 	static SEMCOL_CODE: number;
 	static COLON_CODE: number;
+	static BTICK_CODE: number; // `
+	static OCURLY_CODE: number; // {
+	static CCURLY_CODE: number; // }
+	static FSLASH_CODE: number; // /
+	static BSLASH_CODE: number; // \
 
 
 	static addUnaryOp(op_name: string): typeof Jsep {
@@ -210,7 +322,7 @@ export class Jsep {
 		return Jsep;
 	}
 
-	static addLiteral(literal_name: string, literal_value: any): typeof Jsep {
+	static addLiteral(literal_name: string, literal_value: boolean | null | number | string | RegExp): typeof Jsep { // Use specific types
 		Jsep.literals[literal_name] = literal_value;
 		return Jsep;
 	}
@@ -258,6 +370,8 @@ export class Jsep {
 		Jsep.literals = {};
 		return Jsep;
 	}
+
+
 
 	get char(): string {
 		return this.expr.charAt(this.index);
@@ -318,27 +432,33 @@ export class Jsep {
 	/**
 	 * Run a given hook
 	 */
-	runHook(name: string, node?: Expression): Expression {
-		if (Jsep.hooks[name]) {
-			const env = { context: this, node: node || false };
+	runHook(name: string, node?: Expression | null): Expression | null { // Allow null return
+		const callbacks = Jsep.hooks[name];
+		if (Array.isArray(callbacks)) { // Check hook exists and is array
+			const env: HookEnv = { context: this, node: node || null }; // Use HookEnv type
 			Jsep.hooks.run(name, env);
-			return env.node as Expression;
+			// Ensure undefined is not returned, only Expression or null
+			return env.node === undefined ? null : env.node;
 		}
-		return node;
+		return node || null; // Return original node or null
 	}
 
 	/**
 	 * Runs a given hook until one returns a node
 	 */
-	searchHook(name: string): Expression {
-		if (Jsep.hooks[name]) {
-			const env = { context: this, node: undefined };
-			Jsep.hooks[name].find(function (callback) {
+	searchHook(name: string): Expression | undefined { // Allow undefined return
+		const callbacks = Jsep.hooks[name];
+		if (Array.isArray(callbacks)) { // Check if callbacks is an array
+			const env: HookEnv = { context: this, node: undefined };
+			// Use Array.prototype.some for efficiency
+			callbacks.some((callback: HookCallback) => {
 				callback.call(env.context, env);
-				return env.node;
+				return !!env.node; // Stop searching once node is found
 			});
-			return env.node;
+			// Ensure node is Expression or undefined, not null
+			return env.node ? env.node : undefined;
 		}
+		return undefined; // Return undefined if hook doesn't exist or callbacks is not an array
 	}
 
 	gobbleSpaces(): void {
@@ -358,6 +478,11 @@ export class Jsep {
 		this.runHook('before-all');
 		const nodes = this.gobbleExpressions();
 
+		// Handle case where gobbleExpressions returns empty array (e.g., empty input)
+		if (nodes.length === 0) {
+			this.throwError('Empty expression');
+		}
+
 		const node: Expression = nodes.length === 1
 			? nodes[0]
 			: {
@@ -365,8 +490,15 @@ export class Jsep {
 				body: nodes
 			};
 
-		// @ts-ignore - dynamic hook behavior
-		return this.runHook('after-all', node) as Expression;
+		// Ensure node is not null before passing to runHook
+		const finalNode = node ? this.runHook('after-all', node) : null;
+		if (!finalNode) {
+			// This should ideally not happen if the input expression was valid
+			// and hooks didn't clear the node, but handle it defensively.
+			this.throwError('Parser finished with no expression node.');
+		}
+		// After the check, finalNode is guaranteed to be Expression.
+		return finalNode;
 	}
 	/*	 * top-level parser (but can be reused within as well)*/
 
@@ -374,7 +506,9 @@ export class Jsep {
 	 * top-level parser (but can be reused within as well)
 	 */
 	gobbleExpressions(untilICode?: number): Expression[] {
-		let nodes = [], ch_i, node;
+		const nodes: Expression[] = []; // Ensure nodes array type
+		let ch_i: number;
+		let node: Expression | null;
 
 		while (this.index < this.expr.length) {
 			ch_i = this.code;
@@ -384,7 +518,8 @@ export class Jsep {
 			}
 			else {
 				// Try to gobble each expression individually
-				if (node = this.gobbleExpression()) {
+				node = this.gobbleExpression(); // Can return null
+				if (node) { // Check if node is not null
 					nodes.push(node);
 					// If we weren't able to find a binary expression and are out of room, then
 					// the expression passed in probably has too much
@@ -394,6 +529,9 @@ export class Jsep {
 						break;
 					}
 					this.throwError('Unexpected "' + this.char + '"');
+				} else {
+					// End of expression string reached after trying to gobble an expression
+					break;
 				}
 			}
 		}
@@ -401,10 +539,13 @@ export class Jsep {
 		return nodes;
 	}
 	/** 	 * The main parsing function. */
-	gobbleExpression(): Expression {
-		const node = this.searchHook('gobble-expression') || this.gobbleBinaryExpression();
+	gobbleExpression(): Expression | null { // Allow null return
+		let node = this.searchHook('gobble-expression') || this.gobbleBinaryExpression();
 		this.gobbleSpaces();
-		return this.runHook('after-expression', node);
+		// runHook can return null, so the final return type must accommodate that
+		node = this.runHook('after-expression', node);
+		// runHook now correctly returns Expression | null
+		return node;
 	}
 
 
@@ -438,101 +579,132 @@ export class Jsep {
 	 * This function is responsible for gobbling an individual expression,
 	 * e.g. `1`, `1+2`, `a+(b*2)-Math.sqrt(2)`
 	 */
-	gobbleBinaryExpression(): BinaryExpression {
-		let node, biop, prec, stack, biop_info, left, right, i, cur_biop;
+	// Can return any Expression type if no binary op is found
+	gobbleBinaryExpression(): Expression | null {
+		let node: Expression | undefined | null; // Allow undefined during processing
+		let biop: string | boolean;
+		let prec: number;
+		let stack: (Expression | BinaryOpInfo)[] = []; // Initialize stack type
+		let biop_info: BinaryOpInfo;
+		let left: Expression | null;
+		let right: Expression | null;
+		let i: number;
+		let cur_biop: string | boolean;
+
 
 		// First, try to get the leftmost thing
 		// Then, check to see if there's a binary operator operating on that leftmost thing
 		// Don't gobbleBinaryOp without a left-hand-side
-		left = this.gobbleToken();
+		left = this.gobbleToken(); // gobbleToken can return null
 		if (!left) {
+			return null; // Return null if no left side
+		}
+		biop = this.gobbleBinaryOp(); // biop can be string or false
+
+		// If there wasn't a binary operator (biop is false), just return the leftmost node
+		if (biop === false) {
 			return left;
 		}
-		biop = this.gobbleBinaryOp();
 
-		// If there wasn't a binary operator, just return the leftmost node
-		if (!biop) {
-			return left;
+		// Otherwise, we need to start a stack to properly place the binary operations in their precedence structure
+		// Type guard to ensure biop is a string here
+		if (typeof biop !== 'string') {
+			// This should theoretically not happen based on the check above, but satisfies TS
+			this.throwError('Internal error: Invalid binary operator state.');
 		}
-
-		// Otherwise, we need to start a stack to properly place the binary operations in their
-		// precedence structure
 		biop_info = { value: biop, prec: Jsep.binaryPrecedence(biop), right_a: Jsep.right_associative.has(biop) };
 
-		right = this.gobbleToken();
+		right = this.gobbleToken(); // Can return null
 
 		if (!right) {
 			this.throwError("Expected expression after " + biop);
 		}
 
-		stack = [left, biop_info, right];
+		stack = [left, biop_info, right]; // left and right are Expression | null
 
 		// Properly deal with precedence using [recursive descent](http://www.engr.mun.ca/~theo/Misc/exp_parsing.htm)
-		while ((biop = this.gobbleBinaryOp())) {
-			prec = Jsep.binaryPrecedence(biop);
+		while ((cur_biop = this.gobbleBinaryOp())) { // Assign to cur_biop, check truthiness
+			// Type guard: cur_biop must be string here
+			if (typeof cur_biop !== 'string') break;
+
+			prec = Jsep.binaryPrecedence(cur_biop);
 
 			if (prec === 0) {
-				this.index -= biop.length;
+				this.index -= cur_biop.length; // Use cur_biop length
 				break;
 			}
 
-			biop_info = { value: biop, prec, right_a: Jsep.right_associative.has(biop) };
-
-			cur_biop = biop;
+			biop_info = { value: cur_biop, prec, right_a: Jsep.right_associative.has(cur_biop) };
 
 			// Reduce: make a binary expression from the three topmost entries.
-			const comparePrev = prev => biop_info.right_a && prev.right_a
+			const comparePrev = (prev: BinaryOpInfo) => biop_info.right_a && prev.right_a
 				? prec > prev.prec
 				: prec <= prev.prec;
-			while ((stack.length > 2) && comparePrev(stack[stack.length - 2])) {
-				right = stack.pop();
-				biop = stack.pop().value;
-				left = stack.pop();
+
+			while (stack.length > 2 && comparePrev(stack[stack.length - 2] as BinaryOpInfo)) {
+				right = stack.pop() as Expression; // Assert Expression type after check
+				const current_op_info = stack.pop() as BinaryOpInfo; // Assert BinaryOpInfo
+				left = stack.pop() as Expression; // Assert Expression type
+
 				node = {
 					type: Jsep.BINARY_EXP,
-					operator: biop,
-					left,
-					right,
+					operator: current_op_info.value,
+					left: left, // Ensure left is Expression
+					right: right, // Ensure right is Expression
 					parenthesis: false
 				};
 				stack.push(node);
 			}
 
-			node = this.gobbleToken();
+			const nextToken = this.gobbleToken(); // Can return null
 
-			if (!node) {
+			if (!nextToken) {
 				this.throwError("Expected expression after " + cur_biop);
 			}
 
-			stack.push(biop_info, node);
+			stack.push(biop_info, nextToken);
 		}
 
-		i = stack.length - 1;
-		node = stack[i];
+		// Combine remaining stack items
+		let finalNode = stack.pop(); // Could be Expression or BinaryOpInfo initially
 
-		while (i > 1) {
-			node = {
+		while (stack.length > 1) {
+			const opInfo = stack.pop() as BinaryOpInfo; // Assert BinaryOpInfo
+			const leftNode = stack.pop() as Expression; // Assert Expression
+
+			if (!finalNode || typeof finalNode === 'boolean' || !('type' in finalNode)) {
+				// Handle cases where finalNode might not be a valid Expression (though unlikely here)
+				this.throwError('Internal error: Invalid stack state during binary expression reduction.');
+			}
+
+
+			finalNode = {
 				type: Jsep.BINARY_EXP,
-				operator: stack[i - 1].value,
-				left: stack[i - 2],
-				right: node,
+				operator: opInfo.value,
+				left: leftNode,
+				right: finalNode as Expression, // Assert finalNode is Expression
 				parenthesis: false
 			};
-			i -= 2;
 		}
 
-		return node;
+
+		// Final node should be the single remaining Expression on the stack
+		return finalNode as Expression | null; // Cast final result, could be null if input was empty
 	}
 	/**
 	 * An individual part of a binary expression:
 	 * e.g. `foo.bar(baz)`, `1`, `"abc"`, `(a % 2)` (because it's in parenthesis)
 	 */
-	gobbleToken(): Expression {
-		let ch, to_check, tc_len, node;
+	gobbleToken(): Expression | null { // Allow null return
+		let ch: number;
+		let to_check: string;
+		let tc_len: number;
+		let node: Expression | undefined | null; // Allow undefined/null during processing
 
 		this.gobbleSpaces();
-		node = this.searchHook('gobble-token');
+		node = this.searchHook('gobble-token'); // Can return undefined
 		if (node) {
+			// runHook now correctly returns Expression | null
 			return this.runHook('after-token', node);
 		}
 
@@ -567,6 +739,7 @@ export class Jsep {
 					if (!argument) {
 						this.throwError('missing unaryOp argument');
 					}
+					// runHook now correctly returns Expression | null
 					return this.runHook('after-token', {
 						type: Jsep.UNARY_EXP,
 						operator: to_check,
@@ -578,16 +751,22 @@ export class Jsep {
 				to_check = to_check.substr(0, --tc_len);
 			}
 
-			if (Jsep.isIdentifierStart(ch)) {
-				node = this.gobbleIdentifier();
-				if (Jsep.literals.hasOwnProperty(node.name)) {
+		if (Jsep.isIdentifierStart(ch)) {
+			const idNode = this.gobbleIdentifier(); // Store in temp var
+			node = idNode; // Assign to node
+			if (Jsep.literals.hasOwnProperty(idNode.name)) {
+				const literalValue = Jsep.literals[idNode.name];
+				// Check value is not undefined before assigning
+				if (literalValue !== undefined) {
 					node = {
 						type: Jsep.LITERAL,
-						value: Jsep.literals[node.name],
-						raw: node.name,
+						value: literalValue,
+						raw: idNode.name,
 					};
 				}
-				else if (node.name === Jsep.this_str) {
+				// If literalValue is undefined, node remains the Identifier
+			}
+			else if (idNode.name === Jsep.this_str) {
 					node = { type: Jsep.THIS_EXP };
 				}
 			}
@@ -597,11 +776,13 @@ export class Jsep {
 		}
 
 		if (!node) {
-			return this.runHook('after-token');
+			// runHook now correctly returns Expression | null
+			return this.runHook('after-token', node || null); // Pass null explicitly if node is null/undefined
 		}
 
-		node = this.gobbleTokenProperty(node);
-		return this.runHook('after-token', node);
+		node = this.gobbleTokenProperty(node); // Can return null
+		// runHook now correctly returns Expression | null
+		return this.runHook('after-token', node || null); // Pass null explicitly if node is null/undefined
 	}
 	/**
 	 * An individual part of a binary expression:
@@ -625,15 +806,17 @@ export class Jsep {
 			this.index++;
 
 			if (ch === Jsep.OBRACK_CODE) {
+				const propertyExpr = this.gobbleExpression(); // Can return null
+				if (!propertyExpr) {
+					this.throwError('Expected expression within []');
+				}
 				node = {
 					type: Jsep.MEMBER_EXP,
 					computed: true,
 					object: node,
-					property: this.gobbleExpression()
+					property: propertyExpr
 				};
-				if (!node.property) {
-					this.throwError('Unexpected "' + this.char + '"');
-				}
+				// No need to check node.property existence after assignment
 				this.gobbleSpaces();
 				ch = this.code;
 				if (ch !== Jsep.CBRACK_CODE) {
@@ -663,7 +846,10 @@ export class Jsep {
 			}
 
 			if (optional) {
-				node.optional = true;
+				// Ensure node is MemberExpression before setting optional
+				if (node.type === Jsep.MEMBER_EXP || node.type === Jsep.CALL_EXP) {
+					node.optional = true;
+				}
 			} // else leave undefined for compatibility with esprima
 
 			this.gobbleSpaces();
@@ -747,7 +933,7 @@ export class Jsep {
 				closed = true;
 				break;
 			}
-			else if (ch === String.fromCharCode()) {
+			else if (ch === '\\') { // Correct escape character check
 				// Check for all of the common escape codes
 				ch = this.expr.charAt(this.index++);
 				switch (ch) {
@@ -815,8 +1001,9 @@ export class Jsep {
 	 * until the terminator character `)` or `]` is encountered.
 	 * e.g. `foo(bar, baz)`, `my_func()`, or `[bar, baz]`}
 	 */
-	gobbleArguments(termination: number): Expression[] {
-		const args = [];
+	// Allow null elements for array literals like [,,]
+	gobbleArguments(termination: number): (Expression | null)[] {
+		const args: (Expression | null)[] = []; // Initialize with correct type
 		let closed = false;
 		let separator_count = 0;
 
@@ -842,8 +1029,14 @@ export class Jsep {
 					if (termination === Jsep.CPAREN_CODE) {
 						this.throwError('Unexpected token ,');
 					}
+					// Handle sparse arrays like [a,,c]
 					else if (termination === Jsep.CBRACK_CODE) {
-						for (let arg = args.length; arg < separator_count; arg++) {
+						// Push null for the missing element before the comma
+						args.push(null);
+						// If there are multiple commas like [a,,,d], keep pushing null
+						while (this.expr.charCodeAt(this.index) === Jsep.COMMA_CODE) {
+							this.index++;
+							separator_count++;
 							args.push(null);
 						}
 					}
@@ -920,58 +1113,6 @@ export class Jsep {
 	}
 }
 
-class Hooks {
-
-	add(name: string, callback: Function, first?: boolean) {
-		if (typeof arguments[0] != 'string') {
-			// Multiple hook callbacks, keyed by name
-			for (let name in arguments[0]) {
-				this.add(name, arguments[0][name], arguments[1]);
-			}
-		}
-		else {
-			(Array.isArray(name) ? name : [name]).forEach(function (name) {
-				this[name] = this[name] || [];
-
-				if (callback) {
-					this[name][first ? 'unshift' : 'push'](callback);
-				}
-			}, this);
-		}
-	}
-
-	run(name: string, env: any) {
-		this[name] = this[name] || [];
-		this[name].forEach(function (callback: Function) {
-			callback.call(env && env.context ? env.context : env, env);
-		});
-	}
-}
-
-class Plugins {
-	constructor(jsep) {
-		this.jsep = jsep;
-		this.registered = {};
-	}
-	jsep: Jsep;
-	registered: Record<string, any>;
-
-	register(...plugins: any[]) {
-		plugins.forEach((plugin) => {
-			if (typeof plugin !== 'object' || !plugin.name || !plugin.init) {
-				throw new Error('Invalid JSEP plugin format');
-			}
-			if (this.registered[plugin.name]) {
-				// already registered. Ignore.
-				return;
-			}
-			plugin.init(this.jsep);
-			this.registered[plugin.name] = plugin;
-		});
-	}
-}
-
-
 // Static fields:
 const hooks = new Hooks();
 Object.assign(Jsep, {
@@ -992,6 +1133,10 @@ Object.assign(Jsep, {
 	UNARY_EXP: 'UnaryExpression',
 	BINARY_EXP: 'BinaryExpression',
 	ARRAY_EXP: 'ArrayExpression',
+	TAGGED_TEMPLATE_EXPRESSION: 'TaggedTemplateExpression',
+	TEMPLATE_LITERAL: 'TemplateLiteral',
+	TEMPLATE_ELEMENT: 'TemplateElement',
+
 
 	TAB_CODE: 9,
 	LF_CODE: 10,
@@ -1008,6 +1153,11 @@ Object.assign(Jsep, {
 	QUMARK_CODE: 63, // ?
 	SEMCOL_CODE: 59, // ;
 	COLON_CODE: 58, // :
+	BTICK_CODE: 96, // `
+	OCURLY_CODE: 123, // {
+	CCURLY_CODE: 125, // }
+	FSLASH_CODE: 47, // /
+	BSLASH_CODE: 92, // \
 
 
 	// Operations
@@ -1047,8 +1197,9 @@ Object.assign(Jsep, {
 	literals: {
 		'true': true,
 		'false': false,
-		'null': null
-	},
+		'null': null,
+		// Numbers and strings are handled directly, no need to list them here
+	} as Record<string, boolean | null | number | string | RegExp>, // Ensure type matches static property
 
 	// Except for `this`, which is special. This could be changed to something like `'self'` as well
 	this_str: 'this',
@@ -1059,10 +1210,6 @@ Jsep.max_binop_len = Jsep.getMaxKeyLen(Jsep.binary_ops);
 
 const ARROW_EXP = 'ArrowFunctionExpression';
 
-interface JSEPPlugin {
-	name: string;
-	init(jsxp: typeof Jsep): void;
-}
 
 export const arrow: JSEPPlugin = {
 	name: 'arrow',
@@ -1073,7 +1220,8 @@ export const arrow: JSEPPlugin = {
 
 		// this hook searches for the special case () => ...
 		// which would normally throw an error because of the invalid LHS to the bin op
-		jsxp.hooks.add('gobble-expression', function gobbleEmptyArrowArg(env: { node: ArrowFunctionExpression }) {
+		// Use HookCallback type for consistency
+		jsxp.hooks.add('gobble-expression', function gobbleEmptyArrowArg(this: Jsep, env: HookEnv) {
 			this.gobbleSpaces();
 			if (this.code === jsxp.OPAREN_CODE) {
 				const backupIndex = this.index;
@@ -1086,53 +1234,63 @@ export const arrow: JSEPPlugin = {
 					const biop = this.gobbleBinaryOp();
 					if (biop === '=>') {
 						// () => ...
-						const body = this.gobbleBinaryExpression();
-						if (!body) {
+						// Rename second 'body' variable to avoid conflict
+						const arrowBody = this.gobbleBinaryExpression();
+						if (!arrowBody) {
 							this.throwError("Expected expression after " + biop);
 						}
 						env.node = {
-							type: 'ArrowFunctionExpression',
+							type: ARROW_EXP as 'ArrowFunctionExpression', // Use constant and assert type
 							params: null,
-							body,
-						} as ArrowFunctionExpression;
-						return;
+							body: arrowBody, // Use renamed variable
+						}; // Don't need 'as' assertion if types match HookEnv.node
+						return; // Return from the hook callback
 					}
 				}
 				this.index = backupIndex;
 			}
 		});
 
-		jsxp.hooks.add('after-expression', function fixBinaryArrow(env) {
-			updateBinariesToArrows(env.node);
+		// Use HookCallback type
+		jsxp.hooks.add('after-expression', function fixBinaryArrow(this: Jsep, env: HookEnv) {
+			updateBinariesToArrows(env.node); // Pass env.node which can be Expression | null
 		});
 
-		function updateBinariesToArrows(node) {
-			if (node) {
+		// node can be Expression | null
+		function updateBinariesToArrows(node: Expression | null): void { // Use specific type
+			if (node && typeof node === 'object') { // Check if node is an object and not null
 				// Traverse full tree, converting any sub-object nodes as needed
-				Object.values(node).forEach((val) => {
+				Object.values(node).forEach((val) => { // Infer type for val
+					// Check if val is an Expression or array before recursing
 					if (val && typeof val === 'object') {
-						updateBinariesToArrows(val);
+						if (Array.isArray(val)) {
+							val.forEach(updateBinariesToArrows);
+						} else if ('type' in val) { // Basic check for Expression-like object
+							updateBinariesToArrows(val as Expression);
+						}
 					}
 				});
 
-				if (node.operator === '=>') {
-					node.type = ARROW_EXP;
-					node.params = node.left ? [node.left] : null;
-					node.body = node.right;
-					if (node.params && node.params[0].type === jsxp.SEQUENCE_EXP) {
-						node.params = node.params[0].expressions;
+				// Check if node is a BinaryExpression with operator '=>'
+				if (node.type === jsxp.BINARY_EXP && node.operator === '=>') {
+					const arrowNode = node as any; // Cast to any to modify properties
+					arrowNode.type = ARROW_EXP;
+					arrowNode.params = arrowNode.left ? [arrowNode.left] : null;
+					arrowNode.body = arrowNode.right;
+					if (arrowNode.params && arrowNode.params[0].type === jsxp.SEQUENCE_EXP) {
+						arrowNode.params = arrowNode.params[0].expressions;
 					}
-					delete node.left;
-					delete node.right;
-					delete node.operator;
+					// Delete properties after casting to any
+					delete arrowNode.left;
+					delete arrowNode.right;
+					delete arrowNode.operator;
+					delete arrowNode.parenthesis; // Also delete parenthesis property
 				}
 			}
 		}
 	}
 };
 
-const OCURLY_CODE = 123; // {
-const CCURLY_CODE = 125; // }
 const OBJECT_EXP = 'ObjectExpression';
 const PROPERTY = 'Property';
 
@@ -1141,20 +1299,23 @@ export const object: JSEPPlugin = {
 
 	init(jsxp) {
 		// Object literal support
-		function gobbleObjectExpression(env: { node: ObjectExpression }) {
-			if (this.code === OCURLY_CODE) {
+		// Use HookCallback type
+		function gobbleObjectExpression(this: Jsep, env: HookEnv) {
+			if (this.code === jsxp.OCURLY_CODE) { // Use static constant
 				this.index++;
-				const properties = [];
+				const properties: (Property | Expression)[] = []; // Match ObjectExpression.properties type
 
-				while (!isNaN(this.code)) {
+				while (this.index < this.expr.length) { // Check index bounds
 					this.gobbleSpaces();
-					if (this.code === CCURLY_CODE) {
+					if (this.code === jsxp.CCURLY_CODE) { // Correct check: CCURLY_CODE
 						this.index++;
-						env.node = this.gobbleTokenProperty({
-							type: OBJECT_EXP,
+						// gobbleTokenProperty expects Expression, ensure type matches
+						const objNode: ObjectExpression = {
+							type: OBJECT_EXP as 'ObjectExpression', // Use constant and assert
 							properties,
-						});
-						return;
+						};
+						env.node = this.gobbleTokenProperty(objNode);
+						return; // Return from hook callback
 					}
 
 					// Note: using gobbleExpression instead of gobbleToken to support object destructuring
@@ -1164,10 +1325,10 @@ export const object: JSEPPlugin = {
 					}
 
 					this.gobbleSpaces();
-					if (key.type === jsxp.IDENTIFIER && (this.code === jsxp.COMMA_CODE || this.code === CCURLY_CODE)) {
+					if (key.type === jsxp.IDENTIFIER && (this.code === jsxp.COMMA_CODE || this.code === jsxp.CCURLY_CODE)) {
 						// property value shorthand
 						properties.push({
-							type: PROPERTY,
+							type: PROPERTY as 'Property', // Use constant and assert
 							computed: false,
 							key,
 							value: key,
@@ -1183,16 +1344,18 @@ export const object: JSEPPlugin = {
 						}
 						const computed = key.type === jsxp.ARRAY_EXP;
 						properties.push({
-							type: PROPERTY,
+							type: PROPERTY as 'Property', // Use constant and assert
 							computed,
 							key: computed
-								? key.elements[0]
+								// Ensure key.elements[0] is an Expression if key is ArrayExpression
+								? (key as ArrayExpression).elements[0] as Expression
 								: key,
 							value: value,
 							shorthand: false,
 						});
 						this.gobbleSpaces();
 					}
+					// Ensure key is not null before pushing
 					else if (key) {
 						// spread, assignment (object destructuring with defaults), etc.
 						properties.push(key);
@@ -1210,21 +1373,23 @@ export const object: JSEPPlugin = {
 	}
 };
 
-const FSLASH_CODE = 47; // '/'
-const BSLASH_CODE = 92; // '\\'
 
 export const regex: JSEPPlugin = {
 	name: 'regex',
 
 	init(jsxp) {
 		// Regex literal: /abc123/ig
-		jsxp.hooks.add('gobble-token', function gobbleRegexLiteral(env) {
-			if (this.code === FSLASH_CODE) {
+		// Use HookCallback type
+		jsxp.hooks.add('gobble-token', function gobbleRegexLiteral(this: Jsep, env: HookEnv) {
+			if (this.code === jsxp.FSLASH_CODE) { // Use static constant
 				const patternIndex = ++this.index;
 
 				let inCharSet = false;
 				while (this.index < this.expr.length) {
-					if (this.code === FSLASH_CODE && !inCharSet) {
+					// Check for escape char '\' before checking for '/' or '[' or ']'
+					const currentCode = this.code; // Store current code
+
+					if (currentCode === jsxp.FSLASH_CODE && !inCharSet) { // Use static constant
 						const pattern = this.expr.slice(patternIndex, this.index);
 
 						let flags = '';
@@ -1244,33 +1409,44 @@ export const regex: JSEPPlugin = {
 						try {
 							value = new RegExp(pattern, flags);
 						}
-						catch (e) {
-							this.throwError(e.message);
+						catch (e: unknown) { // Catch unknown error type
+							if (e instanceof Error) {
+								this.throwError(e.message);
+							} else {
+								this.throwError('Invalid Regular Expression');
+							}
 						}
 
-						env.node = {
+						const literalNode: Literal = { // Ensure type matches Literal
 							type: jsxp.LITERAL,
-							value,
+							value, // Value is RegExp here
 							raw: this.expr.slice(patternIndex - 1, this.index),
 						};
+						env.node = literalNode;
 
 						// allow . [] and () after regex: /regex/.test(a)
-						env.node = this.gobbleTokenProperty(env.node);
-						return env.node;
+						// gobbleTokenProperty expects Expression, ensure type matches
+						env.node = this.gobbleTokenProperty(literalNode);
+						return; // Return from hook callback
 					}
-					if (this.code === jsxp.OBRACK_CODE) {
-						inCharSet = true;
+
+					if (currentCode === jsxp.BSLASH_CODE) { // Check for backslash first
+						this.index += 2; // Skip escaped char
+					} else {
+						if (currentCode === jsxp.OBRACK_CODE) { // [
+							inCharSet = true;
+						} else if (inCharSet && currentCode === jsxp.CBRACK_CODE) { // ]
+							inCharSet = false;
+						}
+						this.index++; // Move to next char
 					}
-					else if (inCharSet && this.code === jsxp.CBRACK_CODE) {
-						inCharSet = false;
-					}
-					this.index += this.code === BSLASH_CODE ? 2 : 1;
 				}
-				this.throwError('Unclosed Regex');
+				this.throwError('Unclosed Regex'); // Throw error if loop finishes without closing '/'
 			}
 		});
 	},
 };
+
 
 export const jsepSpread: JSEPPlugin = {
 	name: 'jsepSpread',
@@ -1279,125 +1455,166 @@ export const jsepSpread: JSEPPlugin = {
 		// Spread operator: ...a
 		// Works in objects { ...a }, arrays [...a], function args fn(...a)
 		// NOTE: does not prevent `a ? ...b : ...c` or `...123`
-		jsxp.hooks.add('gobble-token', function gobbleSpread(env: { node: SpreadElement }) {
+		// Use HookCallback type
+		jsxp.hooks.add('gobble-token', function gobbleSpread(this: Jsep, env: HookEnv) {
 			if ([0, 1, 2].every(i => this.expr.charCodeAt(this.index + i) === jsxp.PERIOD_CODE)) {
 				this.index += 3;
+				const argument = this.gobbleExpression(); // Can return null
+				if (!argument) {
+					this.throwError('Expected expression after ...');
+				}
 				env.node = {
 					type: 'SpreadElement',
-					argument: this.gobbleExpression(),
+					argument: argument,
 				};
 			}
 		});
 	},
 };
 
-const BTICK_CODE = 96; // `
 const TAGGED_TEMPLATE_EXPRESSION = 'TaggedTemplateExpression';
 const TEMPLATE_LITERAL = 'TemplateLiteral';
-const TEMPLATE_ELEMENT = 'TemplateElement';
+const TEMPLATE_ELEMENT = 'TemplateElement'; // Now defined above
 
 export const jsepTemplateLiteral: JSEPPlugin = {
 	name: 'jsepTemplateLiteral',
 
 	init(jsxp) {
-		function gobbleTemplateLiteral(env, gobbleMember = true) {
-			if (this.code === BTICK_CODE) {
-				const node = {
-					type: TEMPLATE_LITERAL,
+		// env can be null when called directly, make it optional
+		function gobbleTemplateLiteral(this: Jsep, env?: HookEnv | null, gobbleMember = true): TemplateLiteral | undefined {
+			if (this.code === jsxp.BTICK_CODE) { // Use static constant
+				const node: TemplateLiteral = { // Use TemplateLiteral type
+					type: TEMPLATE_LITERAL as 'TemplateLiteral', // Use constant and assert
 					quasis: [],
 					expressions: [],
 				};
-				let cooked = '';
+				let cooked: string | null = ''; // cooked can be null
 				let raw = '';
 				let closed = false;
 				const length = this.expr.length;
-				const pushQuasi = () => node.quasis.push({
-					type: TEMPLATE_ELEMENT,
-					value: {
-						raw,
-						cooked,
-					},
-					tail: closed,
-				});
+				const templateStart = this.index; // Keep track of start for raw value
+
+				const pushQuasi = () => {
+					const quasi: TemplateElement = { // Use TemplateElement type
+						type: TEMPLATE_ELEMENT as 'TemplateElement', // Use constant and assert
+						value: {
+							raw: raw,
+							cooked: cooked,
+						},
+						tail: closed,
+					};
+					node.quasis.push(quasi);
+				};
+
+				this.index++; // Consume opening backtick `
 
 				while (this.index < length) {
-					let ch = this.expr.charAt(++this.index);
+					const elStart = this.index;
+					let ch = this.expr.charAt(this.index);
 
-					if (ch === '`') {
-						this.index += 1;
+					if (ch === '`') { // End of template literal
+						raw = this.expr.slice(elStart, this.index);
+						this.index++; // Consume closing backtick
 						closed = true;
 						pushQuasi();
 
-						env.node = node;
+						// Assign node to env if called as a hook
+						if (env) env.node = node;
 
-						if (gobbleMember) {
-							// allow . [] and () after template: `foo`.length
-							env.node = this.gobbleTokenProperty(env.node);
+						// Optionally gobble member/call expressions after the literal
+						if (gobbleMember && env) {
+							// Ensure node is not null before passing
+							env.node = this.gobbleTokenProperty(node);
 						}
 
-						return env.node;
+						return node; // Return the completed TemplateLiteral node
 					}
-					else if (ch === '$' && this.expr.charAt(this.index + 1) === '{') {
-						this.index += 2;
-						pushQuasi();
-						raw = '';
-						cooked = '';
-						node.expressions.push(...this.gobbleExpressions(CCURLY_CODE));
-						if (this.code !== CCURLY_CODE) {
+					else if (ch === '$' && this.expr.charAt(this.index + 1) === '{') { // Start of expression hole ${...}
+						raw = this.expr.slice(elStart, this.index);
+						pushQuasi(); // Push the preceding TemplateElement
+
+						this.index += 2; // Consume ${
+						// Pass CCURLY_CODE to gobbleExpressions
+						node.expressions.push(...this.gobbleExpressions(jsxp.CCURLY_CODE));
+						if (this.code !== jsxp.CCURLY_CODE) { // Correct check: CCURLY_CODE
 							this.throwError('unclosed ${');
 						}
-					}
-					else if (ch === String.fromCharCode(47)) {
-						// Check for all of the common escape codes
-						raw += ch;
-						ch = this.expr.charAt(++this.index);
-						raw += ch;
+						this.index++; // Consume closing }
 
-						switch (ch) {
-							case 'n': cooked += String.fromCharCode(10); break;
-							case 'r': cooked += String.fromCharCode(13); break;
-							case 't': cooked += String.fromCharCode(9); break;
-							case 'b': cooked += String.fromCharCode(8); break;
-							case 'f': cooked += String.fromCharCode(12); break;
-							case 'v': cooked += String.fromCharCode(11); break;
-							default: cooked += ch;
+						// Reset raw/cooked for the next TemplateElement
+						raw = '';
+						cooked = '';
+					} else { // Regular character or escape sequence
+						this.index++; // Consume the character
+						if (ch === '\\') { // Escape sequence
+							if (this.index >= length) {
+								this.throwError('Invalid escape sequence');
+							}
+							const escapedChar = this.expr.charAt(this.index++);
+							switch (escapedChar) {
+								case 'n': cooked += '\n'; break;
+								case 'r': cooked += '\r'; break;
+								case 't': cooked += '\t'; break;
+								case 'b': cooked += '\b'; break;
+								case 'f': cooked += '\f'; break;
+								case 'v': cooked += '\v'; break;
+								case '`': cooked += '`'; break;
+								case '$': cooked += '$'; break;
+								case '\\': cooked += '\\'; break;
+								// TODO: Handle unicode/hex escapes if needed
+								default:
+									// Handle invalid escape sequences - cooked becomes null
+									cooked = null;
+									break;
+							}
+						} else {
+							if (cooked !== null) { // Don't append if already invalid
+								cooked += ch;
+							}
 						}
-					}
-					else {
-						cooked += ch;
-						raw += ch;
 					}
 				}
 				this.throwError('Unclosed `');
 			}
+			return undefined; // Return undefined if not starting with `
 		}
 
-		jsxp.hooks.add('gobble-token', gobbleTemplateLiteral);
+		// Use HookCallback type
+		jsxp.hooks.add('gobble-token', function gobbleTemplateLiteralHook(this: Jsep, env: HookEnv) {
+			// Call the main logic, assigning the result to env.node
+			gobbleTemplateLiteral.call(this, env, true);
+		});
 
-		jsxp.hooks.add('after-token', function gobbleTaggedTemplateIdentifier(env) {
-			if ((env.node.type === jsxp.IDENTIFIER || env.node.type === jsxp.MEMBER_EXP) && this.code === BTICK_CODE) {
-				env.node = {
-					type: TAGGED_TEMPLATE_EXPRESSION,
-					tag: env.node,
-					quasi: gobbleTemplateLiteral.bind(this)(env, false),
+
+		// Use HookCallback type
+		jsxp.hooks.add('after-token', function gobbleTaggedTemplateIdentifier(this: Jsep, env: HookEnv) {
+			// Check env.node exists and is the right type before proceeding
+			if (env.node && (env.node.type === jsxp.IDENTIFIER || env.node.type === jsxp.MEMBER_EXP) && this.code === jsxp.BTICK_CODE) {
+				const tag = env.node;
+				// Call gobbleTemplateLiteral directly, not as a hook, don't gobble member after
+				const quasi = gobbleTemplateLiteral.call(this, undefined, false); // Pass undefined for env
+
+				if (!quasi) {
+					// Should not happen if BTICK_CODE was detected, but check anyway
+					this.throwError('Expected template literal after tag');
+				}
+
+				const taggedNode: TaggedTemplateExpression = { // Use specific type
+					type: TAGGED_TEMPLATE_EXPRESSION as 'TaggedTemplateExpression', // Use constant and assert
+					tag: tag,
+					quasi: quasi,
 				};
+				env.node = taggedNode;
+
 
 				// allow . [] and () after tagged template: bar`foo`.length
-				env.node = this.gobbleTokenProperty(env.node);
+				env.node = this.gobbleTokenProperty(taggedNode);
 
-				return env.node;
+				// No explicit return needed, env.node is modified
 			}
 		});
 	}
 };
 Jsep.plugins.register(arrow, object, regex, jsepSpread, jsepTemplateLiteral);
-// Backward Compatibility:
-const jsep = expr => (new Jsep(expr)).parse() as Expression;
-const stdClassProps = Object.getOwnPropertyNames(class Test { });
-Object.getOwnPropertyNames(Jsep)
-	.filter(prop => !stdClassProps.includes(prop) && jsep[prop] === undefined)
-	.forEach((m) => {
-		jsep[m] = Jsep[m];
-	});
-jsep.Jsep = Jsep; // allows for const { Jsep } = require('jsep');
-export default jsep;
+
+export default Jsep; // Export the class directly

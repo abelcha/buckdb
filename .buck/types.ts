@@ -10,12 +10,12 @@ export type DMapable = Map<string, any> | DMapField;
 export type DOtherable = any | DOtherField;
 export type DAnyable = any | DAnyField;
 export type RegExpable = RegExp | string;
-export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
 export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
-export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
-export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
-export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
 export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
+export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
+export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
+export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
+export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
 export type DSomeField = DVarcharField | DNumericField | DDateField | DVarcharField | DNumericField | DDateField | DOtherField | DArrayField | DAnyField | DStructField | DBlobField | DMapField | DBoolField | DJsonField;
 export declare const sId: unique symbol;
 export declare const sComptype: unique symbol;
@@ -439,6 +439,8 @@ export interface DNumericField extends DAnyField {
   setseed(): DOtherField;
   /**@description Rounds x to s decimal places	@example round(42.4332, 2)*/
   round(precision?: DNumericable | DOtherable): DNumericField;
+  /**@example between(val, col1, col2)*/
+  between(col1: DNumericable, col2: DNumericable): DBoolField;
 }
 export interface DDateField extends DAnyField {
   [sInferred]: Date;
@@ -713,6 +715,70 @@ export interface DOtherField extends DAnyField {
   row(): DStructField;
   /**@description count	@example count()*/
   count(): DNumericField;
+  /**@description cast to Blob	@example ${upperFirst(e.logical_type)}(value)*/
+  Blob(): DBlobField;
+  /**@description cast to Date	@example ${upperFirst(e.logical_type)}(value)*/
+  Date(): DDateField;
+  /**@description cast to Enum	@example ${upperFirst(e.logical_type)}(value)*/
+  Enum(): DOtherField;
+  /**@description cast to Hugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  Hugeint(): DNumericField;
+  /**@description cast to Float	@example ${upperFirst(e.logical_type)}(value)*/
+  Float(): DNumericField;
+  /**@description cast to Map	@example ${upperFirst(e.logical_type)}(value)*/
+  Map(): DMapField;
+  /**@description cast to Union	@example ${upperFirst(e.logical_type)}(value)*/
+  Union(): DOtherField;
+  /**@description cast to Bit	@example ${upperFirst(e.logical_type)}(value)*/
+  Bit(): DOtherField;
+  /**@description cast to Integer	@example ${upperFirst(e.logical_type)}(value)*/
+  Integer(): DNumericField;
+  /**@description cast to List	@example ${upperFirst(e.logical_type)}(value)*/
+  List(): DArrayField;
+  /**@description cast to Decimal	@example ${upperFirst(e.logical_type)}(value)*/
+  Decimal(): DNumericField;
+  /**@description cast to Double	@example ${upperFirst(e.logical_type)}(value)*/
+  Double(): DNumericField;
+  /**@description cast to Null	@example ${upperFirst(e.logical_type)}(value)*/
+  Null(): DOtherField;
+  /**@description cast to Timestamp_ns	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_ns(): DDateField;
+  /**@description cast to Uhugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  Uhugeint(): DNumericField;
+  /**@description cast to Bigint	@example ${upperFirst(e.logical_type)}(value)*/
+  Bigint(): DNumericField;
+  /**@description cast to Interval	@example ${upperFirst(e.logical_type)}(value)*/
+  Interval(): DOtherField;
+  /**@description cast to Uinteger	@example ${upperFirst(e.logical_type)}(value)*/
+  Uinteger(): DNumericField;
+  /**@description cast to Boolean	@example ${upperFirst(e.logical_type)}(value)*/
+  Boolean(): DBoolField;
+  /**@description cast to Varchar	@example ${upperFirst(e.logical_type)}(value)*/
+  Varchar(): DVarcharField;
+  /**@description cast to Uuid	@example ${upperFirst(e.logical_type)}(value)*/
+  Uuid(): DOtherField;
+  /**@description cast to Ubigint	@example ${upperFirst(e.logical_type)}(value)*/
+  Ubigint(): DNumericField;
+  /**@description cast to Usmallint	@example ${upperFirst(e.logical_type)}(value)*/
+  Usmallint(): DNumericField;
+  /**@description cast to Utinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  Utinyint(): DNumericField;
+  /**@description cast to Varint	@example ${upperFirst(e.logical_type)}(value)*/
+  Varint(): DOtherField;
+  /**@description cast to Timestamp	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp(): DDateField;
+  /**@description cast to Tinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  Tinyint(): DNumericField;
+  /**@description cast to Smallint	@example ${upperFirst(e.logical_type)}(value)*/
+  Smallint(): DNumericField;
+  /**@description cast to Struct	@example ${upperFirst(e.logical_type)}(value)*/
+  Struct(): DStructField;
+  /**@description cast to Time	@example ${upperFirst(e.logical_type)}(value)*/
+  Time(): DDateField;
+  /**@description cast to Timestamp_ms	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_ms(): DDateField;
+  /**@description cast to Timestamp_s	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_s(): DDateField;
 }
 export interface DArrayField extends DAnyField {
   [sInferred]: any[];
@@ -870,12 +936,12 @@ export interface DArrayField extends DAnyField {
   repeat(count: DNumericable): DArrayField;
 }
 export interface DAnyField {
-  as(destype: DBOOLEAN_NATIVE, b?: DNumericable, c?: DNumericable): DBoolField;
   as(destype: DSTRING_NATIVE, b?: DNumericable, c?: DNumericable): DVarcharField;
-  as(destype: DCOMPOSITE_NATIVE, b?: DNumericable, c?: DNumericable): DAnyField;
-  as(destype: DDATETIME_NATIVE, b?: DNumericable, c?: DNumericable): DDateField;
-  as(destype: DANY_NATIVE, b?: DNumericable, c?: DNumericable): DAnyField;
   as(destype: DNUMERIC_NATIVE, b?: DNumericable, c?: DNumericable): DNumericField;
+  as(destype: DDATETIME_NATIVE, b?: DNumericable, c?: DNumericable): DDateField;
+  as(destype: DBOOLEAN_NATIVE, b?: DNumericable, c?: DNumericable): DBoolField;
+  as(destype: DANY_NATIVE, b?: DNumericable, c?: DNumericable): DAnyField;
+  as(destype: DCOMPOSITE_NATIVE, b?: DNumericable, c?: DNumericable): DAnyField;
 
   [sInferred]: any;
   [sComptype]: any;
@@ -927,24 +993,28 @@ export interface DAnyField {
   map_extract(key: DAnyable, ...args: DAnyable[]): DAnyField;
   /**@description Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example map_extract_value(map(['key'], ['val']), 'key')*/
   map_extract_value(key: DAnyable, ...args: DAnyable[]): DAnyField;
-  /**@description LIKE	@example like("abc")*/
+  /**@example like(str, matcher)*/
   like(matcher: DAnyable): DBoolField;
-  /**@description NOT LIKE	@example notLike("abc")*/
+  /**@example notLike(str, matcher)*/
   notLike(matcher: DAnyable): DBoolField;
-  /**@description ILIKE	@example ilike("abc")*/
+  /**@example ilike(str, matcher)*/
   ilike(matcher: DAnyable): DBoolField;
-  /**@description NOT ILIKE	@example notIlike("abc")*/
+  /**@example notIlike(str, matcher)*/
   notIlike(matcher: DAnyable): DBoolField;
-  /**@description SIMILAR TO	@example similarTo("abc")*/
+  /**@example similarTo(str, matcher)*/
   similarTo(matcher: DAnyable): DBoolField;
-  /**@description NOT SIMILAR TO	@example notSimilarTo("abc")*/
+  /**@example notSimilarTo(str, matcher)*/
   notSimilarTo(matcher: DAnyable): DBoolField;
-  /**@description GLOB	@example glob("abc")*/
+  /**@example glob(str, matcher)*/
   glob(matcher: DAnyable): DBoolField;
-  /**@description NOT GLOB	@example notGlob("abc")*/
+  /**@example notGlob(str, matcher)*/
   notGlob(matcher: DAnyable): DBoolField;
-  /**@description CASTSSS	@example castas()*/
-  castas(): DVarcharField;
+  /**@example is(str, matcher)*/
+  is(matcher: DAnyable): DBoolField;
+  /**@example isNot(str, matcher)*/
+  isNot(matcher: DAnyable): DBoolField;
+  /**@description CASTSSS	@example cast()*/
+  cast(): DVarcharField;
 }
 export interface DStructField extends DAnyField {
   [sInferred]: Record<string, any>;
@@ -1961,26 +2031,96 @@ export interface DGlobalField {
   reverse(string: DVarcharable): DVarcharField;
   /**@description Extract the right-most count characters	@example right('Hello🦆', 3)*/
   right(string: DVarcharable, count: DNumericable): DVarcharField;
-  /**@description LIKE	@example like("abc")*/
+  /**@example like(str, matcher)*/
   like(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description NOT LIKE	@example notLike("abc")*/
+  /**@example notLike(str, matcher)*/
   notLike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description ILIKE	@example ilike("abc")*/
+  /**@example ilike(str, matcher)*/
   ilike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description NOT ILIKE	@example notIlike("abc")*/
+  /**@example notIlike(str, matcher)*/
   notIlike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description SIMILAR TO	@example similarTo("abc")*/
+  /**@example similarTo(str, matcher)*/
   similarTo(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description NOT SIMILAR TO	@example notSimilarTo("abc")*/
+  /**@example notSimilarTo(str, matcher)*/
   notSimilarTo(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description GLOB	@example glob("abc")*/
+  /**@example glob(str, matcher)*/
   glob(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description NOT GLOB	@example notGlob("abc")*/
+  /**@example notGlob(str, matcher)*/
   notGlob(str: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example is(str, matcher)*/
+  is(str: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example isNot(str, matcher)*/
+  isNot(str: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example between(val, col1, col2)*/
+  between(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
   /**@description count	@example count()*/
   count(): DNumericField;
-  /**@description CASTSSS	@example castas()*/
-  castas(vtype: DAnyable): DVarcharField;
+  /**@description CASTSSS	@example cast()*/
+  cast(vtype: DAnyable): DVarcharField;
+  /**@description cast to Blob	@example ${upperFirst(e.logical_type)}(value)*/
+  Blob(val: DOtherable): DBlobField;
+  /**@description cast to Date	@example ${upperFirst(e.logical_type)}(value)*/
+  Date(val: DOtherable): DDateField;
+  /**@description cast to Enum	@example ${upperFirst(e.logical_type)}(value)*/
+  Enum(val: DOtherable): DOtherField;
+  /**@description cast to Hugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  Hugeint(val: DOtherable): DNumericField;
+  /**@description cast to Float	@example ${upperFirst(e.logical_type)}(value)*/
+  Float(val: DOtherable): DNumericField;
+  /**@description cast to Map	@example ${upperFirst(e.logical_type)}(value)*/
+  Map(val: DOtherable): DMapField;
+  /**@description cast to Union	@example ${upperFirst(e.logical_type)}(value)*/
+  Union(val: DOtherable): DOtherField;
+  /**@description cast to Bit	@example ${upperFirst(e.logical_type)}(value)*/
+  Bit(val: DOtherable): DOtherField;
+  /**@description cast to Integer	@example ${upperFirst(e.logical_type)}(value)*/
+  Integer(val: DOtherable): DNumericField;
+  /**@description cast to List	@example ${upperFirst(e.logical_type)}(value)*/
+  List(val: DOtherable): DArrayField;
+  /**@description cast to Decimal	@example ${upperFirst(e.logical_type)}(value)*/
+  Decimal(val: DOtherable): DNumericField;
+  /**@description cast to Double	@example ${upperFirst(e.logical_type)}(value)*/
+  Double(val: DOtherable): DNumericField;
+  /**@description cast to Null	@example ${upperFirst(e.logical_type)}(value)*/
+  Null(val: DOtherable): DOtherField;
+  /**@description cast to Timestamp_ns	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_ns(val: DOtherable): DDateField;
+  /**@description cast to Uhugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  Uhugeint(val: DOtherable): DNumericField;
+  /**@description cast to Bigint	@example ${upperFirst(e.logical_type)}(value)*/
+  Bigint(val: DOtherable): DNumericField;
+  /**@description cast to Interval	@example ${upperFirst(e.logical_type)}(value)*/
+  Interval(val: DOtherable): DOtherField;
+  /**@description cast to Uinteger	@example ${upperFirst(e.logical_type)}(value)*/
+  Uinteger(val: DOtherable): DNumericField;
+  /**@description cast to Boolean	@example ${upperFirst(e.logical_type)}(value)*/
+  Boolean(val: DOtherable): DBoolField;
+  /**@description cast to Varchar	@example ${upperFirst(e.logical_type)}(value)*/
+  Varchar(val: DOtherable): DVarcharField;
+  /**@description cast to Uuid	@example ${upperFirst(e.logical_type)}(value)*/
+  Uuid(val: DOtherable): DOtherField;
+  /**@description cast to Ubigint	@example ${upperFirst(e.logical_type)}(value)*/
+  Ubigint(val: DOtherable): DNumericField;
+  /**@description cast to Usmallint	@example ${upperFirst(e.logical_type)}(value)*/
+  Usmallint(val: DOtherable): DNumericField;
+  /**@description cast to Utinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  Utinyint(val: DOtherable): DNumericField;
+  /**@description cast to Varint	@example ${upperFirst(e.logical_type)}(value)*/
+  Varint(val: DOtherable): DOtherField;
+  /**@description cast to Timestamp	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp(val: DOtherable): DDateField;
+  /**@description cast to Tinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  Tinyint(val: DOtherable): DNumericField;
+  /**@description cast to Smallint	@example ${upperFirst(e.logical_type)}(value)*/
+  Smallint(val: DOtherable): DNumericField;
+  /**@description cast to Struct	@example ${upperFirst(e.logical_type)}(value)*/
+  Struct(val: DOtherable): DStructField;
+  /**@description cast to Time	@example ${upperFirst(e.logical_type)}(value)*/
+  Time(val: DOtherable): DDateField;
+  /**@description cast to Timestamp_ms	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_ms(val: DOtherable): DDateField;
+  /**@description cast to Timestamp_s	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_s(val: DOtherable): DDateField;
 }
 export interface DAggregateField {
   /**@description Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example reservoir_quantile(A,0.5,1024)*/
@@ -2391,12 +2531,12 @@ export interface DTableField {
   read_blob(col0: DArrayable | DVarcharable): void;
 }
 export interface CAny {
-  as(destype: DBOOLEAN_NATIVE, b?: DNumericable, c?: DNumericable): DBoolField;
   as(destype: DSTRING_NATIVE, b?: DNumericable, c?: DNumericable): Partial<CVarchar>;
-  as(destype: DCOMPOSITE_NATIVE, b?: DNumericable, c?: DNumericable): Partial<CAny>;
-  as(destype: DDATETIME_NATIVE, b?: DNumericable, c?: DNumericable): DDateField;
-  as(destype: DANY_NATIVE, b?: DNumericable, c?: DNumericable): Partial<CAny>;
   as(destype: DNUMERIC_NATIVE, b?: DNumericable, c?: DNumericable): Partial<number> & Partial<CNumeric>;
+  as(destype: DDATETIME_NATIVE, b?: DNumericable, c?: DNumericable): DDateField;
+  as(destype: DBOOLEAN_NATIVE, b?: DNumericable, c?: DNumericable): DBoolField;
+  as(destype: DANY_NATIVE, b?: DNumericable, c?: DNumericable): Partial<CAny>;
+  as(destype: DCOMPOSITE_NATIVE, b?: DNumericable, c?: DNumericable): Partial<CAny>;
 
   [sInferred]: any;
   /**@description Returns the name of a given expression	@example alias(42 + 1)*/
@@ -2447,24 +2587,28 @@ export interface CAny {
   map_extract(key: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example map_extract_value(map(['key'], ['val']), 'key')*/
   map_extract_value(key: DAnyable, ...args: DAnyable[]): Partial<CAny>;
-  /**@description LIKE	@example like("abc")*/
+  /**@example like(str, matcher)*/
   like(matcher: DAnyable): DBoolField;
-  /**@description NOT LIKE	@example notLike("abc")*/
+  /**@example notLike(str, matcher)*/
   notLike(matcher: DAnyable): DBoolField;
-  /**@description ILIKE	@example ilike("abc")*/
+  /**@example ilike(str, matcher)*/
   ilike(matcher: DAnyable): DBoolField;
-  /**@description NOT ILIKE	@example notIlike("abc")*/
+  /**@example notIlike(str, matcher)*/
   notIlike(matcher: DAnyable): DBoolField;
-  /**@description SIMILAR TO	@example similarTo("abc")*/
+  /**@example similarTo(str, matcher)*/
   similarTo(matcher: DAnyable): DBoolField;
-  /**@description NOT SIMILAR TO	@example notSimilarTo("abc")*/
+  /**@example notSimilarTo(str, matcher)*/
   notSimilarTo(matcher: DAnyable): DBoolField;
-  /**@description GLOB	@example glob("abc")*/
+  /**@example glob(str, matcher)*/
   glob(matcher: DAnyable): DBoolField;
-  /**@description NOT GLOB	@example notGlob("abc")*/
+  /**@example notGlob(str, matcher)*/
   notGlob(matcher: DAnyable): DBoolField;
-  /**@description CASTSSS	@example castas()*/
-  castas(): Partial<CVarchar>;
+  /**@example is(str, matcher)*/
+  is(matcher: DAnyable): DBoolField;
+  /**@example isNot(str, matcher)*/
+  isNot(matcher: DAnyable): DBoolField;
+  /**@description CASTSSS	@example cast()*/
+  cast(): Partial<CVarchar>;
 }
 export type DAnyComp = Partial<CAny>;
 
@@ -2886,6 +3030,8 @@ export interface CNumeric extends CAny {
   setseed(): DOtherField;
   /**@description Rounds x to s decimal places	@example round(42.4332, 2)*/
   round(precision?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example between(val, col1, col2)*/
+  between(col1: DNumericable, col2: DNumericable): DBoolField;
 }
 export type DNumericComp = Partial<number> & Partial<CNumeric>;
 
@@ -3824,26 +3970,96 @@ export interface CGlobal {
   reverse(string: DVarcharable): Partial<CVarchar>;
   /**@description Extract the right-most count characters	@example right('Hello🦆', 3)*/
   right(string: DVarcharable, count: DNumericable): Partial<CVarchar>;
-  /**@description LIKE	@example like("abc")*/
+  /**@example like(str, matcher)*/
   like(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description NOT LIKE	@example notLike("abc")*/
+  /**@example notLike(str, matcher)*/
   notLike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description ILIKE	@example ilike("abc")*/
+  /**@example ilike(str, matcher)*/
   ilike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description NOT ILIKE	@example notIlike("abc")*/
+  /**@example notIlike(str, matcher)*/
   notIlike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description SIMILAR TO	@example similarTo("abc")*/
+  /**@example similarTo(str, matcher)*/
   similarTo(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description NOT SIMILAR TO	@example notSimilarTo("abc")*/
+  /**@example notSimilarTo(str, matcher)*/
   notSimilarTo(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description GLOB	@example glob("abc")*/
+  /**@example glob(str, matcher)*/
   glob(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description NOT GLOB	@example notGlob("abc")*/
+  /**@example notGlob(str, matcher)*/
   notGlob(str: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example is(str, matcher)*/
+  is(str: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example isNot(str, matcher)*/
+  isNot(str: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example between(val, col1, col2)*/
+  between(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
   /**@description count	@example count()*/
   count(): Partial<number> & Partial<CNumeric>;
-  /**@description CASTSSS	@example castas()*/
-  castas(vtype: DAnyable): Partial<CVarchar>;
+  /**@description CASTSSS	@example cast()*/
+  cast(vtype: DAnyable): Partial<CVarchar>;
+  /**@description cast to Blob	@example ${upperFirst(e.logical_type)}(value)*/
+  Blob(val: DOtherable): DBlobField;
+  /**@description cast to Date	@example ${upperFirst(e.logical_type)}(value)*/
+  Date(val: DOtherable): DDateField;
+  /**@description cast to Enum	@example ${upperFirst(e.logical_type)}(value)*/
+  Enum(val: DOtherable): DOtherField;
+  /**@description cast to Hugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  Hugeint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Float	@example ${upperFirst(e.logical_type)}(value)*/
+  Float(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Map	@example ${upperFirst(e.logical_type)}(value)*/
+  Map(val: DOtherable): DMapField;
+  /**@description cast to Union	@example ${upperFirst(e.logical_type)}(value)*/
+  Union(val: DOtherable): DOtherField;
+  /**@description cast to Bit	@example ${upperFirst(e.logical_type)}(value)*/
+  Bit(val: DOtherable): DOtherField;
+  /**@description cast to Integer	@example ${upperFirst(e.logical_type)}(value)*/
+  Integer(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to List	@example ${upperFirst(e.logical_type)}(value)*/
+  List(val: DOtherable): DArrayField;
+  /**@description cast to Decimal	@example ${upperFirst(e.logical_type)}(value)*/
+  Decimal(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Double	@example ${upperFirst(e.logical_type)}(value)*/
+  Double(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Null	@example ${upperFirst(e.logical_type)}(value)*/
+  Null(val: DOtherable): DOtherField;
+  /**@description cast to Timestamp_ns	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_ns(val: DOtherable): DDateField;
+  /**@description cast to Uhugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  Uhugeint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Bigint	@example ${upperFirst(e.logical_type)}(value)*/
+  Bigint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Interval	@example ${upperFirst(e.logical_type)}(value)*/
+  Interval(val: DOtherable): DOtherField;
+  /**@description cast to Uinteger	@example ${upperFirst(e.logical_type)}(value)*/
+  Uinteger(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Boolean	@example ${upperFirst(e.logical_type)}(value)*/
+  Boolean(val: DOtherable): DBoolField;
+  /**@description cast to Varchar	@example ${upperFirst(e.logical_type)}(value)*/
+  Varchar(val: DOtherable): Partial<CVarchar>;
+  /**@description cast to Uuid	@example ${upperFirst(e.logical_type)}(value)*/
+  Uuid(val: DOtherable): DOtherField;
+  /**@description cast to Ubigint	@example ${upperFirst(e.logical_type)}(value)*/
+  Ubigint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Usmallint	@example ${upperFirst(e.logical_type)}(value)*/
+  Usmallint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Utinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  Utinyint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Varint	@example ${upperFirst(e.logical_type)}(value)*/
+  Varint(val: DOtherable): DOtherField;
+  /**@description cast to Timestamp	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp(val: DOtherable): DDateField;
+  /**@description cast to Tinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  Tinyint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Smallint	@example ${upperFirst(e.logical_type)}(value)*/
+  Smallint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@description cast to Struct	@example ${upperFirst(e.logical_type)}(value)*/
+  Struct(val: DOtherable): DStructField;
+  /**@description cast to Time	@example ${upperFirst(e.logical_type)}(value)*/
+  Time(val: DOtherable): DDateField;
+  /**@description cast to Timestamp_ms	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_ms(val: DOtherable): DDateField;
+  /**@description cast to Timestamp_s	@example ${upperFirst(e.logical_type)}(value)*/
+  Timestamp_s(val: DOtherable): DDateField;
 }
 export type DGlobalComp = Partial<CGlobal>;
 
@@ -4309,107 +4525,25 @@ export interface DSettings {
   user: string;
   /**@description The (average) length at which to enable ZSTD compression, defaults to 4096*/
   zstd_min_string_length: number;
-  /**@description Period of time between UI polling requests (in ms)*/
-  ui_polling_interval: number;
-  /**@description Remote URL to which the UI server forwards GET requests*/
-  ui_remote_url: string;
-  /**@description S3 Access Key ID*/
-  s3_access_key_id: string;
-  /**@description Enable globbing the filesystem (if possible) to find the latest version metadata. This could result in reading an uncommitted version.*/
-  unsafe_enable_version_guessing: boolean;
-  /**@description Override the azure endpoint for when the Azure credential providers are used.*/
-  azure_endpoint: string;
-  /**@description Proxy to use when login & performing request to azure. By default it will use the HTTP_PROXY environment variable if set.*/
-  azure_http_proxy: string;
-  /**@description Disable Globs and Query Parameters on S3 URLs*/
-  s3_url_compatibility_mode: boolean;
-  /**@description Forces upfront download of file*/
-  force_download: boolean;
-  /**@description S3 use SSL*/
-  s3_use_ssl: boolean;
-  /**@description S3 Access Key*/
-  s3_secret_access_key: string;
-  /**@description Local port on which the UI server listens*/
-  ui_local_port: number;
-  /**@description Path to a custom certificate file for self-signed certificates.*/
-  ca_cert_file: string;
-  /**@description Enable server side certificate verification.*/
-  enable_server_cert_verification: boolean;
-  /**@description Cache Parquet metadata - useful when reading the same files multiple times*/
-  parquet_metadata_cache: boolean;
-  /**@description Time between retries*/
-  http_retry_wait_ms: number;
-  /**@description S3 Uploader max parts per file (between 1 and 10000)*/
-  s3_uploader_max_parts_per_file: number;
-  /**@description Load all SQLite columns as VARCHAR columns*/
-  sqlite_all_varchar: boolean;
-  /**@description Keep alive connections. Setting this to false can help when running into connection failures*/
-  http_keep_alive: boolean;
-  /**@description Backoff factor for exponentially increasing retry wait time*/
-  http_retry_backoff: number;
-  /**@description Http proxy password if needed.*/
-  azure_proxy_password: string;
-  /**@description HTTP retries on I/O error*/
-  http_retries: number;
-  /**@description HTTP timeout read/write/connection/retry (in seconds)*/
-  http_timeout: number;
-  /**@description DEBUG SETTING: print all queries sent to SQLite to stdout*/
-  sqlite_debug_show_queries: boolean;
-  /**@description S3 Endpoint*/
-  s3_endpoint: string;
-  /**@description Azure connection string, used for authenticating and configuring azure requests*/
-  azure_storage_connection_string: string;
-  /**@description Forwards the internal logging of the Delta Kernel to the duckdb logger. Warning: this may impact performance even with DuckDB logging disabled.*/
-  delta_kernel_logging: boolean;
-  /**@description S3 URL style*/
-  s3_url_style: string;
   /**@description The current time zone*/
   TimeZone: string;
-  /**@description Use the prefetching mechanism for all types of parquet files*/
-  prefetch_all_parquet_files: boolean;
-  /**@description Include http info from the Azure Storage in the explain analyze statement.*/
-  azure_http_stats: boolean;
-  /**@description S3 Region*/
-  s3_region: string;
-  /**@description Http proxy user name if needed.*/
-  azure_proxy_user_name: string;
-  /**@description Size of the read buffer.  It is recommended that this is evenly divisible by azure_read_transfer_chunk_size.*/
-  azure_read_buffer_size: number;
-  /**@description Maximum size in bytes that the Azure client will read in a single request. It is recommended that this is a factor of azure_read_buffer_size.*/
-  azure_read_transfer_chunk_size: number;
-  /**@description Debug option to limit number of items returned in list requests*/
-  hf_max_per_page: number;
-  /**@description Maximum number of threads the Azure client can use for a single parallel read. If azure_read_transfer_chunk_size is less than azure_read_buffer_size then setting this > 1 will allow the Azure client to do concurrent requests to fill the buffer.*/
-  azure_read_transfer_concurrency: number;
-  /**@description S3 Uploader global thread limit*/
-  s3_uploader_thread_limit: number;
-  /**@description S3 Uploader max filesize (between 50GB and 5TB)*/
-  s3_uploader_max_filesize: string;
-  /**@description Ordered list of Azure credential providers, in string format separated by ';'. E.g. 'cli;workload_identity;managed_identity;env'*/
-  azure_credential_chain: string;
-  /**@description Enable/disable the caching of some context when performing queries. This cache is by default enable, and will for a given connection keep a local context when performing a query. If you suspect that the caching is causing some side effect you can try to disable it by setting this option to false.*/
-  azure_context_caching: boolean;
-  /**@description Disable the prefetching mechanism in Parquet*/
-  disable_parquet_prefetching: boolean;
-  /**@description S3 Session Token*/
-  s3_session_token: string;
   /**@description Attempt to decode/encode geometry data in/as GeoParquet files if the spatial extension is present.*/
   enable_geoparquet_conversion: boolean;
-  /**@description Azure account name, when set, the extension will attempt to automatically detect credentials*/
-  azure_account_name: string;
-  /**@description Adds the filtered files to the explain output. Warning: this may impact performance of delta scan during explain analyze queries.*/
-  delta_scan_explain_files_filtered: boolean;
   /**@description The current calendar*/
   Calendar: string;
-  /**@description Underlying adapter to use with the Azure SDK. Read more about the adapter at https://github.com/Azure/azure-sdk-for-cpp/blob/main/doc/HttpTransportAdapter.md. Valid values are: default, curl*/
-  azure_transport_option_type: string;
+  /**@description Cache Parquet metadata - useful when reading the same files multiple times*/
+  parquet_metadata_cache: boolean;
+  /**@description Use the prefetching mechanism for all types of parquet files*/
+  prefetch_all_parquet_files: boolean;
+  /**@description Disable the prefetching mechanism in Parquet*/
+  disable_parquet_prefetching: boolean;
   /**@description In Parquet files, interpret binary data as a string.*/
   binary_as_string: boolean;
 }
 export const DExtensions = [
   {
     "extension_name": "arrow",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/arrow.duckdb_extension",
     "description": "A zero-copy data integration between Apache Arrow and DuckDB",
@@ -4431,7 +4565,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "aws",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/aws.duckdb_extension",
     "description": "Provides features that depend on the AWS SDK",
@@ -4442,7 +4576,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "azure",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/azure.duckdb_extension",
     "description": "Adds a filesystem abstraction for Azure blob storage to DuckDB",
@@ -4464,7 +4598,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "delta",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/delta.duckdb_extension",
     "description": "Adds support for Delta Lake",
@@ -4475,7 +4609,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "excel",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/excel.duckdb_extension",
     "description": "Adds support for Excel-like format strings",
@@ -4486,7 +4620,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "fts",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/fts.duckdb_extension",
     "description": "Adds support for Full-Text Search Indexes",
@@ -4497,10 +4631,10 @@ export const DExtensions = [
   },
   {
     "extension_name": "h3",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/h3.duckdb_extension",
-    "description": "H3 hierarchical hexagonal indexing system for geospatial data, v4.2.1",
+    "description": "",
     "aliases": [],
     "extension_version": "fa14488",
     "install_mode": "REPOSITORY",
@@ -4508,7 +4642,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "httpfs",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/httpfs.duckdb_extension",
     "description": "Adds support for reading and writing files over a HTTP(S) connection",
@@ -4523,7 +4657,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "iceberg",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/iceberg.duckdb_extension",
     "description": "Adds support for Apache Iceberg",
@@ -4545,7 +4679,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "inet",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/inet.duckdb_extension",
     "description": "Adds support for IP-related data types and functions",
@@ -4628,7 +4762,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "spatial",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/spatial.duckdb_extension",
     "description": "Geospatial extension that adds support for working with spatial data and functions",
@@ -4639,7 +4773,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "sqlite_scanner",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/sqlite_scanner.duckdb_extension",
     "description": "Adds support for reading and writing SQLite database files",
@@ -4675,7 +4809,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "ui",
-    "loaded": true,
+    "loaded": false,
     "installed": true,
     "install_path": "/me/.duckdb/extensions/v1.2.1/osx_arm64/ui.duckdb_extension",
     "description": "Adds local UI for DuckDB",

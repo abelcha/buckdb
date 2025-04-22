@@ -10,12 +10,12 @@ export type DMapable = Map<string, any> | DMapField;
 export type DOtherable = any | DOtherField;
 export type DAnyable = any | DAnyField;
 export type RegExpable = RegExp | string;
-export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
 export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
-export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
+export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
+export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
 export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
 export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
-export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
+export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
 export type DSomeField = DVarcharField | DNumericField | DDateField | DVarcharField | DNumericField | DDateField | DOtherField | DArrayField | DAnyField | DStructField | DBlobField | DMapField | DBoolField | DJsonField;
 export declare const sId: unique symbol;
 export declare const sComptype: unique symbol;
@@ -264,6 +264,14 @@ export interface DVarcharField extends DAnyField {
   reverse(): DVarcharField;
   /**@description Extract the right-most count characters	@example right('Hello🦆', 3)*/
   right(count: DNumericable): DVarcharField;
+  /**@example Like(val, matcher)*/
+  Like(matcher: DAnyable): DBoolField;
+  /**@example Ilike(val, matcher)*/
+  Ilike(matcher: DAnyable): DBoolField;
+  /**@example SimilarTo(val, matcher)*/
+  SimilarTo(matcher: DAnyable): DBoolField;
+  /**@example Glob(val, matcher)*/
+  Glob(matcher: DAnyable): DBoolField;
 }
 export interface DNumericField extends DAnyField {
   [sInferred]: number;
@@ -439,8 +447,10 @@ export interface DNumericField extends DAnyField {
   setseed(): DOtherField;
   /**@description Rounds x to s decimal places	@example round(42.4332, 2)*/
   round(precision?: DNumericable | DOtherable): DNumericField;
-  /**@example between(val, col1, col2)*/
-  between(col1: DNumericable, col2: DNumericable): DBoolField;
+  /**@example Between(val, col1, col2)*/
+  Between(col1: DNumericable, col2: DNumericable): DBoolField;
+  /**@example NotBetween(val, col1, col2)*/
+  NotBetween(col1: DNumericable, col2: DNumericable): DBoolField;
 }
 export interface DDateField extends DAnyField {
   [sInferred]: Date;
@@ -713,72 +723,72 @@ export interface DOtherField extends DAnyField {
   row_to_json(): DJsonField;
   /**@description Create an unnamed STRUCT (tuple) containing the argument values.	@example row(i, i % 4, i / 4)*/
   row(): DStructField;
-  /**@description count	@example count()*/
+  /**@example count()*/
   count(): DNumericField;
-  /**@description cast to Float	@example ${upperFirst(e.logical_type)}(value)*/
-  Float(): DNumericField;
-  /**@description cast to Map	@example ${upperFirst(e.logical_type)}(value)*/
-  Map(): DMapField;
-  /**@description cast to Union	@example ${upperFirst(e.logical_type)}(value)*/
-  Union(): DOtherField;
-  /**@description cast to Blob	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Blob(val)*/
   Blob(): DBlobField;
-  /**@description cast to Date	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Date(val)*/
   Date(): DDateField;
-  /**@description cast to Enum	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Enum(val)*/
   Enum(): DOtherField;
-  /**@description cast to Hugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Hugeint(val)*/
   Hugeint(): DNumericField;
-  /**@description cast to Usmallint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Usmallint(val)*/
   Usmallint(): DNumericField;
-  /**@description cast to Utinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Utinyint(val)*/
   Utinyint(): DNumericField;
-  /**@description cast to Varint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Varint(val)*/
   Varint(): DOtherField;
-  /**@description cast to Boolean	@example ${upperFirst(e.logical_type)}(value)*/
-  Boolean(): DBoolField;
-  /**@description cast to Varchar	@example ${upperFirst(e.logical_type)}(value)*/
-  Varchar(): DVarcharField;
-  /**@description cast to Uuid	@example ${upperFirst(e.logical_type)}(value)*/
-  Uuid(): DOtherField;
-  /**@description cast to Ubigint	@example ${upperFirst(e.logical_type)}(value)*/
-  Ubigint(): DNumericField;
-  /**@description cast to Timestamp	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp(): DDateField;
-  /**@description cast to Tinyint	@example ${upperFirst(e.logical_type)}(value)*/
-  Tinyint(): DNumericField;
-  /**@description cast to Smallint	@example ${upperFirst(e.logical_type)}(value)*/
-  Smallint(): DNumericField;
-  /**@description cast to Struct	@example ${upperFirst(e.logical_type)}(value)*/
-  Struct(): DStructField;
-  /**@description cast to Time	@example ${upperFirst(e.logical_type)}(value)*/
-  Time(): DDateField;
-  /**@description cast to Timestamp_ms	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp_ms(): DDateField;
-  /**@description cast to Timestamp_s	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp_s(): DDateField;
-  /**@description cast to Bit	@example ${upperFirst(e.logical_type)}(value)*/
-  Bit(): DOtherField;
-  /**@description cast to Integer	@example ${upperFirst(e.logical_type)}(value)*/
-  Integer(): DNumericField;
-  /**@description cast to List	@example ${upperFirst(e.logical_type)}(value)*/
-  List(): DArrayField;
-  /**@description cast to Bigint	@example ${upperFirst(e.logical_type)}(value)*/
-  Bigint(): DNumericField;
-  /**@description cast to Interval	@example ${upperFirst(e.logical_type)}(value)*/
-  Interval(): DOtherField;
-  /**@description cast to Uinteger	@example ${upperFirst(e.logical_type)}(value)*/
-  Uinteger(): DNumericField;
-  /**@description cast to Decimal	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Decimal(val)*/
   Decimal(): DNumericField;
-  /**@description cast to Double	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Double(val)*/
   Double(): DNumericField;
-  /**@description cast to Null	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Null(val)*/
   Null(): DOtherField;
-  /**@description cast to Timestamp_ns	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Timestamp_ns(val)*/
   Timestamp_ns(): DDateField;
-  /**@description cast to Uhugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Uhugeint(val)*/
   Uhugeint(): DNumericField;
+  /**@example Bigint(val)*/
+  Bigint(): DNumericField;
+  /**@example Interval(val)*/
+  Interval(): DOtherField;
+  /**@example Uinteger(val)*/
+  Uinteger(): DNumericField;
+  /**@example Boolean(val)*/
+  Boolean(): DBoolField;
+  /**@example Varchar(val)*/
+  Varchar(): DVarcharField;
+  /**@example Uuid(val)*/
+  Uuid(): DOtherField;
+  /**@example Ubigint(val)*/
+  Ubigint(): DNumericField;
+  /**@example Float(val)*/
+  Float(): DNumericField;
+  /**@example Map(val)*/
+  Map(): DMapField;
+  /**@example Union(val)*/
+  Union(): DOtherField;
+  /**@example Timestamp(val)*/
+  Timestamp(): DDateField;
+  /**@example Tinyint(val)*/
+  Tinyint(): DNumericField;
+  /**@example Smallint(val)*/
+  Smallint(): DNumericField;
+  /**@example Struct(val)*/
+  Struct(): DStructField;
+  /**@example Time(val)*/
+  Time(): DDateField;
+  /**@example Timestamp_ms(val)*/
+  Timestamp_ms(): DDateField;
+  /**@example Timestamp_s(val)*/
+  Timestamp_s(): DDateField;
+  /**@example Bit(val)*/
+  Bit(): DOtherField;
+  /**@example Integer(val)*/
+  Integer(): DNumericField;
+  /**@example List(val)*/
+  List(): DArrayField;
 }
 export interface DArrayField extends DAnyField {
   [sInferred]: any[];
@@ -936,12 +946,12 @@ export interface DArrayField extends DAnyField {
   repeat(count: DNumericable): DArrayField;
 }
 export interface DAnyField {
-  as(destype: DSTRING_NATIVE, b?: DNumericable, c?: DNumericable): DVarcharField;
-  as(destype: DBOOLEAN_NATIVE, b?: DNumericable, c?: DNumericable): DBoolField;
-  as(destype: DDATETIME_NATIVE, b?: DNumericable, c?: DNumericable): DDateField;
-  as(destype: DANY_NATIVE, b?: DNumericable, c?: DNumericable): DAnyField;
-  as(destype: DNUMERIC_NATIVE, b?: DNumericable, c?: DNumericable): DNumericField;
-  as(destype: DCOMPOSITE_NATIVE, b?: DNumericable, c?: DNumericable): DAnyField;
+  as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  as(destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
+  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
+  as(destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
+  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
+  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
 
   [sInferred]: any;
   [sComptype]: any;
@@ -993,28 +1003,10 @@ export interface DAnyField {
   map_extract(key: DAnyable, ...args: DAnyable[]): DAnyField;
   /**@description Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example map_extract_value(map(['key'], ['val']), 'key')*/
   map_extract_value(key: DAnyable, ...args: DAnyable[]): DAnyField;
-  /**@description [object Object]	@example like("abc")*/
-  like(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notLike("abc")*/
-  notLike(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example ilike("abc")*/
-  ilike(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notIlike("abc")*/
-  notIlike(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example similarTo("abc")*/
-  similarTo(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notSimilarTo("abc")*/
-  notSimilarTo(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example glob("abc")*/
-  glob(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notGlob("abc")*/
-  notGlob(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example is("abc")*/
-  is(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example isNot("abc")*/
-  isNot(matcher: DAnyable): DBoolField;
-  /**@description CAST	@example cast()*/
-  cast(): DVarcharField;
+  /**@example Is(val, matcher)*/
+  Is(matcher: DAnyable): DBoolField;
+  /**@example IsNot(val, matcher)*/
+  IsNot(matcher: DAnyable): DBoolField;
 }
 export interface DStructField extends DAnyField {
   [sInferred]: Record<string, any>;
@@ -1097,6 +1089,13 @@ export interface DJsonField extends DAnyField {
   json_value(col1: DArrayable): DArrayField;
 }
 export interface DGlobalField {
+  cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
+  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
+  cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
+  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
+  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
+
   /**@description Extract the right-most count grapheme clusters	@example right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)*/
   right_grapheme(string: DVarcharable, count: DNumericable): DVarcharField;
   /**@description Absolute value	@example abs(-17.4)*/
@@ -2031,96 +2030,88 @@ export interface DGlobalField {
   reverse(string: DVarcharable): DVarcharField;
   /**@description Extract the right-most count characters	@example right('Hello🦆', 3)*/
   right(string: DVarcharable, count: DNumericable): DVarcharField;
-  /**@description [object Object]	@example like("abc")*/
-  like(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notLike("abc")*/
-  notLike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example ilike("abc")*/
-  ilike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notIlike("abc")*/
-  notIlike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example similarTo("abc")*/
-  similarTo(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notSimilarTo("abc")*/
-  notSimilarTo(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example glob("abc")*/
-  glob(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notGlob("abc")*/
-  notGlob(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example is("abc")*/
-  is(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example isNot("abc")*/
-  isNot(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@example between(val, col1, col2)*/
-  between(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
-  /**@description count	@example count()*/
+  /**@example count()*/
   count(): DNumericField;
-  /**@description CAST	@example cast()*/
-  cast(vtype: DAnyable): DVarcharField;
-  /**@description cast to Float	@example ${upperFirst(e.logical_type)}(value)*/
-  Float(val: DOtherable): DNumericField;
-  /**@description cast to Map	@example ${upperFirst(e.logical_type)}(value)*/
-  Map(val: DOtherable): DMapField;
-  /**@description cast to Union	@example ${upperFirst(e.logical_type)}(value)*/
-  Union(val: DOtherable): DOtherField;
-  /**@description cast to Blob	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Blob(val)*/
   Blob(val: DOtherable): DBlobField;
-  /**@description cast to Date	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Date(val)*/
   Date(val: DOtherable): DDateField;
-  /**@description cast to Enum	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Enum(val)*/
   Enum(val: DOtherable): DOtherField;
-  /**@description cast to Hugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Hugeint(val)*/
   Hugeint(val: DOtherable): DNumericField;
-  /**@description cast to Usmallint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Usmallint(val)*/
   Usmallint(val: DOtherable): DNumericField;
-  /**@description cast to Utinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Utinyint(val)*/
   Utinyint(val: DOtherable): DNumericField;
-  /**@description cast to Varint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Varint(val)*/
   Varint(val: DOtherable): DOtherField;
-  /**@description cast to Boolean	@example ${upperFirst(e.logical_type)}(value)*/
-  Boolean(val: DOtherable): DBoolField;
-  /**@description cast to Varchar	@example ${upperFirst(e.logical_type)}(value)*/
-  Varchar(val: DOtherable): DVarcharField;
-  /**@description cast to Uuid	@example ${upperFirst(e.logical_type)}(value)*/
-  Uuid(val: DOtherable): DOtherField;
-  /**@description cast to Ubigint	@example ${upperFirst(e.logical_type)}(value)*/
-  Ubigint(val: DOtherable): DNumericField;
-  /**@description cast to Timestamp	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp(val: DOtherable): DDateField;
-  /**@description cast to Tinyint	@example ${upperFirst(e.logical_type)}(value)*/
-  Tinyint(val: DOtherable): DNumericField;
-  /**@description cast to Smallint	@example ${upperFirst(e.logical_type)}(value)*/
-  Smallint(val: DOtherable): DNumericField;
-  /**@description cast to Struct	@example ${upperFirst(e.logical_type)}(value)*/
-  Struct(val: DOtherable): DStructField;
-  /**@description cast to Time	@example ${upperFirst(e.logical_type)}(value)*/
-  Time(val: DOtherable): DDateField;
-  /**@description cast to Timestamp_ms	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp_ms(val: DOtherable): DDateField;
-  /**@description cast to Timestamp_s	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp_s(val: DOtherable): DDateField;
-  /**@description cast to Bit	@example ${upperFirst(e.logical_type)}(value)*/
-  Bit(val: DOtherable): DOtherField;
-  /**@description cast to Integer	@example ${upperFirst(e.logical_type)}(value)*/
-  Integer(val: DOtherable): DNumericField;
-  /**@description cast to List	@example ${upperFirst(e.logical_type)}(value)*/
-  List(val: DOtherable): DArrayField;
-  /**@description cast to Bigint	@example ${upperFirst(e.logical_type)}(value)*/
-  Bigint(val: DOtherable): DNumericField;
-  /**@description cast to Interval	@example ${upperFirst(e.logical_type)}(value)*/
-  Interval(val: DOtherable): DOtherField;
-  /**@description cast to Uinteger	@example ${upperFirst(e.logical_type)}(value)*/
-  Uinteger(val: DOtherable): DNumericField;
-  /**@description cast to Decimal	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Decimal(val)*/
   Decimal(val: DOtherable): DNumericField;
-  /**@description cast to Double	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Double(val)*/
   Double(val: DOtherable): DNumericField;
-  /**@description cast to Null	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Null(val)*/
   Null(val: DOtherable): DOtherField;
-  /**@description cast to Timestamp_ns	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Timestamp_ns(val)*/
   Timestamp_ns(val: DOtherable): DDateField;
-  /**@description cast to Uhugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Uhugeint(val)*/
   Uhugeint(val: DOtherable): DNumericField;
+  /**@example Bigint(val)*/
+  Bigint(val: DOtherable): DNumericField;
+  /**@example Interval(val)*/
+  Interval(val: DOtherable): DOtherField;
+  /**@example Uinteger(val)*/
+  Uinteger(val: DOtherable): DNumericField;
+  /**@example Boolean(val)*/
+  Boolean(val: DOtherable): DBoolField;
+  /**@example Varchar(val)*/
+  Varchar(val: DOtherable): DVarcharField;
+  /**@example Uuid(val)*/
+  Uuid(val: DOtherable): DOtherField;
+  /**@example Ubigint(val)*/
+  Ubigint(val: DOtherable): DNumericField;
+  /**@example Float(val)*/
+  Float(val: DOtherable): DNumericField;
+  /**@example Map(val)*/
+  Map(val: DOtherable): DMapField;
+  /**@example Union(val)*/
+  Union(val: DOtherable): DOtherField;
+  /**@example Timestamp(val)*/
+  Timestamp(val: DOtherable): DDateField;
+  /**@example Tinyint(val)*/
+  Tinyint(val: DOtherable): DNumericField;
+  /**@example Smallint(val)*/
+  Smallint(val: DOtherable): DNumericField;
+  /**@example Struct(val)*/
+  Struct(val: DOtherable): DStructField;
+  /**@example Time(val)*/
+  Time(val: DOtherable): DDateField;
+  /**@example Timestamp_ms(val)*/
+  Timestamp_ms(val: DOtherable): DDateField;
+  /**@example Timestamp_s(val)*/
+  Timestamp_s(val: DOtherable): DDateField;
+  /**@example Bit(val)*/
+  Bit(val: DOtherable): DOtherField;
+  /**@example Integer(val)*/
+  Integer(val: DOtherable): DNumericField;
+  /**@example List(val)*/
+  List(val: DOtherable): DArrayField;
+  /**@example Like(val, matcher)*/
+  Like(val: DVarcharable, matcher: DAnyable): DBoolField;
+  /**@example Ilike(val, matcher)*/
+  Ilike(val: DVarcharable, matcher: DAnyable): DBoolField;
+  /**@example SimilarTo(val, matcher)*/
+  SimilarTo(val: DVarcharable, matcher: DAnyable): DBoolField;
+  /**@example Glob(val, matcher)*/
+  Glob(val: DVarcharable, matcher: DAnyable): DBoolField;
+  /**@example Is(val, matcher)*/
+  Is(val: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example IsNot(val, matcher)*/
+  IsNot(val: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example Between(val, col1, col2)*/
+  Between(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
+  /**@example NotBetween(val, col1, col2)*/
+  NotBetween(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
 }
 export interface DAggregateField {
   /**@description Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example reservoir_quantile(A,0.5,1024)*/
@@ -2531,12 +2522,12 @@ export interface DTableField {
   read_blob(col0: DArrayable | DVarcharable): void;
 }
 export interface CAny {
-  as(destype: DSTRING_NATIVE, b?: DNumericable, c?: DNumericable): Partial<CVarchar>;
-  as(destype: DBOOLEAN_NATIVE, b?: DNumericable, c?: DNumericable): DBoolField;
-  as(destype: DDATETIME_NATIVE, b?: DNumericable, c?: DNumericable): DDateField;
-  as(destype: DANY_NATIVE, b?: DNumericable, c?: DNumericable): Partial<CAny>;
-  as(destype: DNUMERIC_NATIVE, b?: DNumericable, c?: DNumericable): Partial<number> & Partial<CNumeric>;
-  as(destype: DCOMPOSITE_NATIVE, b?: DNumericable, c?: DNumericable): Partial<CAny>;
+  as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  as(destype: DSTRING_NATIVE, ...args: DAnyable[]): Partial<CVarchar>;
+  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  as(destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): Partial<number> & Partial<CNumeric>;
+  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
 
   [sInferred]: any;
   /**@description Returns the name of a given expression	@example alias(42 + 1)*/
@@ -2587,28 +2578,10 @@ export interface CAny {
   map_extract(key: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example map_extract_value(map(['key'], ['val']), 'key')*/
   map_extract_value(key: DAnyable, ...args: DAnyable[]): Partial<CAny>;
-  /**@description [object Object]	@example like("abc")*/
-  like(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notLike("abc")*/
-  notLike(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example ilike("abc")*/
-  ilike(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notIlike("abc")*/
-  notIlike(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example similarTo("abc")*/
-  similarTo(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notSimilarTo("abc")*/
-  notSimilarTo(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example glob("abc")*/
-  glob(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notGlob("abc")*/
-  notGlob(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example is("abc")*/
-  is(matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example isNot("abc")*/
-  isNot(matcher: DAnyable): DBoolField;
-  /**@description CAST	@example cast()*/
-  cast(): Partial<CVarchar>;
+  /**@example Is(val, matcher)*/
+  Is(matcher: DAnyable): DBoolField;
+  /**@example IsNot(val, matcher)*/
+  IsNot(matcher: DAnyable): DBoolField;
 }
 export type DAnyComp = Partial<CAny>;
 
@@ -2854,6 +2827,14 @@ export interface CVarchar extends CAny {
   reverse(): Partial<CVarchar>;
   /**@description Extract the right-most count characters	@example right('Hello🦆', 3)*/
   right(count: DNumericable): Partial<CVarchar>;
+  /**@example Like(val, matcher)*/
+  Like(matcher: DAnyable): DBoolField;
+  /**@example Ilike(val, matcher)*/
+  Ilike(matcher: DAnyable): DBoolField;
+  /**@example SimilarTo(val, matcher)*/
+  SimilarTo(matcher: DAnyable): DBoolField;
+  /**@example Glob(val, matcher)*/
+  Glob(matcher: DAnyable): DBoolField;
 }
 export type DVarcharComp = Partial<CVarchar>;
 
@@ -3030,12 +3011,21 @@ export interface CNumeric extends CAny {
   setseed(): DOtherField;
   /**@description Rounds x to s decimal places	@example round(42.4332, 2)*/
   round(precision?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@example between(val, col1, col2)*/
-  between(col1: DNumericable, col2: DNumericable): DBoolField;
+  /**@example Between(val, col1, col2)*/
+  Between(col1: DNumericable, col2: DNumericable): DBoolField;
+  /**@example NotBetween(val, col1, col2)*/
+  NotBetween(col1: DNumericable, col2: DNumericable): DBoolField;
 }
 export type DNumericComp = Partial<number> & Partial<CNumeric>;
 
 export interface CGlobal {
+  cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): Partial<CVarchar>;
+  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): Partial<number> & Partial<CNumeric>;
+  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
+
   /**@description Extract the right-most count grapheme clusters	@example right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)*/
   right_grapheme(string: DVarcharable, count: DNumericable): Partial<CVarchar>;
   /**@description Absolute value	@example abs(-17.4)*/
@@ -3970,96 +3960,88 @@ export interface CGlobal {
   reverse(string: DVarcharable): Partial<CVarchar>;
   /**@description Extract the right-most count characters	@example right('Hello🦆', 3)*/
   right(string: DVarcharable, count: DNumericable): Partial<CVarchar>;
-  /**@description [object Object]	@example like("abc")*/
-  like(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notLike("abc")*/
-  notLike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example ilike("abc")*/
-  ilike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notIlike("abc")*/
-  notIlike(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example similarTo("abc")*/
-  similarTo(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notSimilarTo("abc")*/
-  notSimilarTo(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example glob("abc")*/
-  glob(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example notGlob("abc")*/
-  notGlob(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example is("abc")*/
-  is(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@description [object Object]	@example isNot("abc")*/
-  isNot(str: DAnyable, matcher: DAnyable): DBoolField;
-  /**@example between(val, col1, col2)*/
-  between(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
-  /**@description count	@example count()*/
+  /**@example count()*/
   count(): Partial<number> & Partial<CNumeric>;
-  /**@description CAST	@example cast()*/
-  cast(vtype: DAnyable): Partial<CVarchar>;
-  /**@description cast to Float	@example ${upperFirst(e.logical_type)}(value)*/
-  Float(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Map	@example ${upperFirst(e.logical_type)}(value)*/
-  Map(val: DOtherable): DMapField;
-  /**@description cast to Union	@example ${upperFirst(e.logical_type)}(value)*/
-  Union(val: DOtherable): DOtherField;
-  /**@description cast to Blob	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Blob(val)*/
   Blob(val: DOtherable): DBlobField;
-  /**@description cast to Date	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Date(val)*/
   Date(val: DOtherable): DDateField;
-  /**@description cast to Enum	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Enum(val)*/
   Enum(val: DOtherable): DOtherField;
-  /**@description cast to Hugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Hugeint(val)*/
   Hugeint(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Usmallint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Usmallint(val)*/
   Usmallint(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Utinyint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Utinyint(val)*/
   Utinyint(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Varint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Varint(val)*/
   Varint(val: DOtherable): DOtherField;
-  /**@description cast to Boolean	@example ${upperFirst(e.logical_type)}(value)*/
-  Boolean(val: DOtherable): DBoolField;
-  /**@description cast to Varchar	@example ${upperFirst(e.logical_type)}(value)*/
-  Varchar(val: DOtherable): Partial<CVarchar>;
-  /**@description cast to Uuid	@example ${upperFirst(e.logical_type)}(value)*/
-  Uuid(val: DOtherable): DOtherField;
-  /**@description cast to Ubigint	@example ${upperFirst(e.logical_type)}(value)*/
-  Ubigint(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Timestamp	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp(val: DOtherable): DDateField;
-  /**@description cast to Tinyint	@example ${upperFirst(e.logical_type)}(value)*/
-  Tinyint(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Smallint	@example ${upperFirst(e.logical_type)}(value)*/
-  Smallint(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Struct	@example ${upperFirst(e.logical_type)}(value)*/
-  Struct(val: DOtherable): DStructField;
-  /**@description cast to Time	@example ${upperFirst(e.logical_type)}(value)*/
-  Time(val: DOtherable): DDateField;
-  /**@description cast to Timestamp_ms	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp_ms(val: DOtherable): DDateField;
-  /**@description cast to Timestamp_s	@example ${upperFirst(e.logical_type)}(value)*/
-  Timestamp_s(val: DOtherable): DDateField;
-  /**@description cast to Bit	@example ${upperFirst(e.logical_type)}(value)*/
-  Bit(val: DOtherable): DOtherField;
-  /**@description cast to Integer	@example ${upperFirst(e.logical_type)}(value)*/
-  Integer(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to List	@example ${upperFirst(e.logical_type)}(value)*/
-  List(val: DOtherable): DArrayField;
-  /**@description cast to Bigint	@example ${upperFirst(e.logical_type)}(value)*/
-  Bigint(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Interval	@example ${upperFirst(e.logical_type)}(value)*/
-  Interval(val: DOtherable): DOtherField;
-  /**@description cast to Uinteger	@example ${upperFirst(e.logical_type)}(value)*/
-  Uinteger(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Decimal	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Decimal(val)*/
   Decimal(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Double	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Double(val)*/
   Double(val: DOtherable): Partial<number> & Partial<CNumeric>;
-  /**@description cast to Null	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Null(val)*/
   Null(val: DOtherable): DOtherField;
-  /**@description cast to Timestamp_ns	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Timestamp_ns(val)*/
   Timestamp_ns(val: DOtherable): DDateField;
-  /**@description cast to Uhugeint	@example ${upperFirst(e.logical_type)}(value)*/
+  /**@example Uhugeint(val)*/
   Uhugeint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example Bigint(val)*/
+  Bigint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example Interval(val)*/
+  Interval(val: DOtherable): DOtherField;
+  /**@example Uinteger(val)*/
+  Uinteger(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example Boolean(val)*/
+  Boolean(val: DOtherable): DBoolField;
+  /**@example Varchar(val)*/
+  Varchar(val: DOtherable): Partial<CVarchar>;
+  /**@example Uuid(val)*/
+  Uuid(val: DOtherable): DOtherField;
+  /**@example Ubigint(val)*/
+  Ubigint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example Float(val)*/
+  Float(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example Map(val)*/
+  Map(val: DOtherable): DMapField;
+  /**@example Union(val)*/
+  Union(val: DOtherable): DOtherField;
+  /**@example Timestamp(val)*/
+  Timestamp(val: DOtherable): DDateField;
+  /**@example Tinyint(val)*/
+  Tinyint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example Smallint(val)*/
+  Smallint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example Struct(val)*/
+  Struct(val: DOtherable): DStructField;
+  /**@example Time(val)*/
+  Time(val: DOtherable): DDateField;
+  /**@example Timestamp_ms(val)*/
+  Timestamp_ms(val: DOtherable): DDateField;
+  /**@example Timestamp_s(val)*/
+  Timestamp_s(val: DOtherable): DDateField;
+  /**@example Bit(val)*/
+  Bit(val: DOtherable): DOtherField;
+  /**@example Integer(val)*/
+  Integer(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  /**@example List(val)*/
+  List(val: DOtherable): DArrayField;
+  /**@example Like(val, matcher)*/
+  Like(val: DVarcharable, matcher: DAnyable): DBoolField;
+  /**@example Ilike(val, matcher)*/
+  Ilike(val: DVarcharable, matcher: DAnyable): DBoolField;
+  /**@example SimilarTo(val, matcher)*/
+  SimilarTo(val: DVarcharable, matcher: DAnyable): DBoolField;
+  /**@example Glob(val, matcher)*/
+  Glob(val: DVarcharable, matcher: DAnyable): DBoolField;
+  /**@example Is(val, matcher)*/
+  Is(val: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example IsNot(val, matcher)*/
+  IsNot(val: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example Between(val, col1, col2)*/
+  Between(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
+  /**@example NotBetween(val, col1, col2)*/
+  NotBetween(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
 }
 export type DGlobalComp = Partial<CGlobal>;
 

@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "types": [
-      "bun-plugin-glob-import/types",
       "bun"
     ],
     // Environment setup & latest features
@@ -23,7 +22,7 @@
     "resolveJsonModule": true,
     // Best practices
     "strict": false,
-    "skipLibCheck": true,
+    "skipLibCheck":true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     // Some stricter flags (disabled by default)

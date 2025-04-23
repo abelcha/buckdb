@@ -1,6 +1,40 @@
-import { all, createEmphasize } from 'emphasize';
+// import { all, createEmphasize } from 'emphasize';
 // import { sInferred, DNumericField, DVarcharField, DArrayField, DDateField, DStructField, DJsonField, DBoolField, DMapField, DOtherField, sComptype, DAnyComp, DAnyField } from './.buck/types';
-import * as t from './.buck/types'
+import * as t from '../.buck/types'
+
+
+export type DuckdbCon = {
+  cmdQueue: CommandQueue;
+  run: (sql: string) => Promise<any>;
+  query: (sql: string, opts?: Record<string, any>) => Promise<any[]>;
+  upsertSchema: (model: string, schema: Record<string, any>) => Promise<void>;
+  settings?: (s: Partial<t.DSettings>) => DuckdbCon;
+  loadExtensions: (...extensions: string[]) => DuckdbCon;
+}
+
+export class CommandQueue {
+  constructor() {
+    this.queue = []
+  }
+  queue: string[]
+  pushSettings(settings: Partial<t.DSettings> = {}) {
+    // const q = 
+    this.queue.push(...Object.entries(settings).map(([key, value]) => `SET ${key} = '${value}';`))
+    return this;
+  }
+  pushExtensions(...extensions: string[]) {
+    this.queue.push(...extensions.map(e => `INSTALL '${e}';LOAD '${e}';`))
+    return this
+  }
+  flush() {
+    const s = this.queue.join('\n')
+    this.queue = []
+    return s
+  }
+
+}
+
+
 
 export const wrap = (value: string, charA: string, charB = charA): string => {
   if (value[0] === charA && value[value.length - 1] === charB) {
@@ -95,11 +129,11 @@ export const mapTypes = (type: string) => {
 
 
 
-const emphasize = createEmphasize(all)
+// const emphasize = createEmphasize(all)
 
-export const prettifyPrintSQL = (sql: string, pretty = false) => {
-  return !pretty ? sql : emphasize.highlightAuto(sql, { subset: ['sql'] }).value
-}
+// export const prettifyPrintSQL = (sql: string, pretty = false) => {
+//   return !pretty ? sql : emphasize.highlightAuto(sql, { subset: ['sql'] }).value
+// }
 
 
 // console.log(emphasize.listLanguages().filter(e => e.match(/SQL/img)))
@@ -200,16 +234,29 @@ export type TypeEq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T ex
 export function assertType<_T extends true>() { }
 export function assertNotType<_T extends false>() { }
 
-export const PatternMatchers = {
-  'like': 'LIKE',
-  'notLike': 'NOT LIKE',
-  'ilike': 'ILIKE',
-  'notIlike': 'NOT ILIKE',
-  'similarTo': 'SIMILAR TO',
-  'notSimilarTo': 'NOT SIMILAR TO',
-  'glob': 'GLOB',
-  'notGlob': 'NOT GLOB',
+
+const basePatternMatcher = {
+  keyword: '',
+  joinWith: ', ',
+  return_type: 'BOOLEAN',
+  params: { val: 'VARCHAR', matcher: 'ANY' } as Record<string, string>,
 }
+type TPatternMatcher = typeof basePatternMatcher
+export const PatternMatchers: Record<string, TPatternMatcher> = {
+  'Like': { ...basePatternMatcher, keyword: 'LIKE' },
+  // 'NotLike': { ...basePatternMatcher, keyword: 'NOT LIKE' },
+  'Ilike': { ...basePatternMatcher, keyword: 'ILIKE' },
+  // 'NotIlike': { ...basePatternMatcher, keyword: 'NOT ILIKE' },
+  'SimilarTo': { ...basePatternMatcher, keyword: 'SIMILAR TO' },
+  // 'NotSimilarTo': { ...basePatternMatcher, keyword: 'NOT SIMILAR TO' },
+  'Glob': { ...basePatternMatcher, keyword: 'GLOB' },
+  // 'NotGlob': { ...basePatternMatcher, keyword: 'NOT GLOB' },
+  'Is': { ...basePatternMatcher, keyword: 'IS', params: { val: 'ANY', matcher: 'ANY' } },
+  'IsNot': { ...basePatternMatcher, keyword: 'IS NOT', params: { val: 'ANY', matcher: 'ANY' } },
+  'Between': { ...basePatternMatcher, keyword: 'BETWEEN', params: { val: 'INT', col1: 'INT', col2: 'INT' }, joinWith: ' AND ' },
+  'NotBetween': { ...basePatternMatcher, keyword: 'NOT BETWEEN', params: { val: 'INT', col1: 'INT', col2: 'INT' }, joinWith: ' AND ' },
+}
+export const LiteralTypes = ['Bit', 'Integer', 'List', 'Timestamp', 'Tinyint', 'Smallint', 'Struct', 'Time', 'Timestamp_ms', 'Timestamp_s', 'Float', 'Map', 'Union', 'Blob', 'Date', 'Enum', 'Hugeint', 'Boolean', 'Varchar', 'Uuid', 'Ubigint', 'Bigint', 'Interval', 'Uinteger', 'Usmallint', 'Utinyint', 'Varint', 'Decimal', 'Double', 'Null', 'Timestamp_ns', 'Uhugeint']
 export interface DuckDBClient {
   query<T = any>(sql: string, params?: Record<string, any>): Promise<T[]>;
   run(sql: string): Promise<any>;
@@ -225,3 +272,12 @@ export type DFindType<
   F[number], // Access elements of the array F
   { type_name: T }
 >["type_category"];
+
+
+export const keyBy = <T extends object, K extends keyof T>(array: T[], key: K): Record<string, T> => {
+  return array.reduce((acc, obj) => {
+    const keyValue = obj[key];
+    acc[keyValue as unknown as string] = obj;
+    return acc;
+  }, {} as Record<string, T>);
+}

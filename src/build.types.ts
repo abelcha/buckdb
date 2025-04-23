@@ -1,4 +1,4 @@
-import { DConstructor, DeriveName, DField, DRawField, DuckDBClient, DuckdbCon, DuckdbFactory, formatSource, keyBy } from "./utils";
+import { DeriveName, DField, DRawField, DuckDBClient, DuckdbCon, formatSource, keyBy } from "./utils";
 import { Models } from '../.buck/table3';
 import * as t from "../.buck/types";
 import { parse, parseObject } from './parser';
@@ -164,7 +164,7 @@ export interface FromResult<T extends keyof Models & string, C extends StrictCol
 
 }
 
-// DBuilder('').from('data/people.parquet').select(e => e.age).execute().then(e => e)
+// DBuilder('').from('data/final.csv').select(e => ({ xx: e. })).execute().then(e => e)
 
 // function With<
 //     T extends keyof Models & string,
@@ -188,8 +188,9 @@ export type InitialMaterializedResult<C extends StrictCollection[]> = Materializ
 }, C>;
 
 export type DExtensionsId = typeof t.DExtensions[number]['extension_name']
-// Updated DBuilder declaration
-export declare function DBuilder<T extends keyof Models>(catalog: T, settings?: Partial<t.DSettings>): {
+
+// Define the return type for DBuilder
+type DBuilderResult<T extends keyof Models> = {
     ddb: DuckdbCon,
     settings(s: t.DSettings): DuckdbCon,
     // loadExtension(s: t.DSettings): typeof DBuilder<T>,
@@ -200,10 +201,16 @@ export declare function DBuilder<T extends keyof Models>(catalog: T, settings?: 
     from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>> & string>(table: K1):
         FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1> }>]> &
         InitialMaterializedResult<[DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1> }>]>; // Use the alias
-    
-    loadExtensions(...ext: DExtensionsId[]): ReturnType<typeof DBuilder<T>>
+    loadExtensions(...ext: DExtensionsId[]): DBuilderResult<T> // Use the defined type here
     fetchSchema(id: string): Promise<Models>
 };
+
+// Overload for settings only
+export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResult<''>;
+export declare function DBuilder(): DBuilderResult<''>;
+
+// Updated DBuilder declaration with catalog
+export declare function DBuilder<T extends keyof Models>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<T>;
 
 // const xdb = DBuilder('data/ex.duckdb').load('autocomplete', 'arrow')
 // xdb.from('')

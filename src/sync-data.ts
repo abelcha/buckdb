@@ -103,6 +103,7 @@ export const fetchRessourceRuntime = async (origin: string, alias: string) => {
     // await tots2('.buck/table.json')
 
 }
+
 if (import.meta.main) {
     const [origin] = process.argv.slice(2)
     // const origin = args._[0] || 'duckdb_functions()';

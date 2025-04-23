@@ -22,6 +22,7 @@ export type NodeType =
 	| 'TaggedTemplateExpression'
 	| 'TemplateLiteral'
 	| 'TemplateElement'
+	| 'ConditionalExpression'
 
 
 export interface BaseExpression {
@@ -55,6 +56,7 @@ export interface MemberExpression extends BaseExpression {
 export interface Literal extends BaseExpression {
 	type: 'Literal';
 	value: string | number | boolean | null | RegExp; // Allow RegExp
+	valueType: 'string' | 'number' | 'boolean' | 'null' | 'RegExp'; // Type of the value
 	raw: string;
 }
 export interface Property extends BaseExpression {
@@ -136,6 +138,13 @@ export interface TaggedTemplateExpression extends BaseExpression {
 	quasi: TemplateLiteral;
 }
 
+export interface ConditionalExpression extends BaseExpression {
+	type: 'ConditionalExpression';
+	tag: Expression;
+	quasi: TemplateLiteral;
+	test: BinaryExpression | UnaryExpression | Expression
+}
+
 
 // Union type for all possible expressions
 export type Expression =
@@ -156,6 +165,7 @@ export type Expression =
 	| TaggedTemplateExpression // Add Template Literal types to main union
 	| TemplateLiteral
 	| TemplateElement
+	| ConditionalExpression
 
 // Type for the hook environment
 interface HookEnv {
@@ -751,22 +761,23 @@ export class Jsep {
 				to_check = to_check.substr(0, --tc_len);
 			}
 
-		if (Jsep.isIdentifierStart(ch)) {
-			const idNode = this.gobbleIdentifier(); // Store in temp var
-			node = idNode; // Assign to node
-			if (Jsep.literals.hasOwnProperty(idNode.name)) {
-				const literalValue = Jsep.literals[idNode.name];
-				// Check value is not undefined before assigning
-				if (literalValue !== undefined) {
-					node = {
-						type: Jsep.LITERAL,
-						value: literalValue,
-						raw: idNode.name,
-					};
+			if (Jsep.isIdentifierStart(ch)) {
+				const idNode = this.gobbleIdentifier(); // Store in temp var
+				node = idNode; // Assign to node
+				if (Jsep.literals.hasOwnProperty(idNode.name)) {
+					const literalValue = Jsep.literals[idNode.name];
+					// Check value is not undefined before assigning
+					if (literalValue !== undefined) {
+						node = {
+							type: Jsep.LITERAL,
+							value: literalValue,
+							valueType: typeof literalValue,
+							raw: idNode.name,
+						};
+					}
+					// If literalValue is undefined, node remains the Identifier
 				}
-				// If literalValue is undefined, node remains the Identifier
-			}
-			else if (idNode.name === Jsep.this_str) {
+				else if (idNode.name === Jsep.this_str) {
 					node = { type: Jsep.THIS_EXP };
 				}
 			}
@@ -910,6 +921,7 @@ export class Jsep {
 
 		return {
 			type: Jsep.LITERAL,
+			valueType: 'number',
 			value: parseFloat(number),
 			raw: number
 		};
@@ -958,6 +970,7 @@ export class Jsep {
 		return {
 			type: Jsep.LITERAL,
 			value: str,
+			valueType: 'string',
 			raw: this.expr.substring(startIndex, this.index),
 		};
 	}
@@ -1209,6 +1222,60 @@ Jsep.max_binop_len = Jsep.getMaxKeyLen(Jsep.binary_ops);
 
 
 const ARROW_EXP = 'ArrowFunctionExpression';
+
+
+const CONDITIONAL_EXP = 'ConditionalExpression';
+
+export const ternary: JSEPPlugin = {
+	name: 'ternary',
+
+	init(jsep) {
+		// Ternary expression: test ? consequent : alternate
+		jsep.hooks.add('after-expression', function gobbleTernary(env: HookEnv) {
+			if (env.node && this.code === jsep.QUMARK_CODE) {
+				this.index++;
+				const test = env.node as BinaryExpression;
+				const consequent = this.gobbleExpression();
+
+				if (!consequent) {
+					this.throwError('Expected expression');
+				}
+
+				this.gobbleSpaces();
+
+				if (this.code === jsep.COLON_CODE) {
+					this.index++;
+					const alternate = this.gobbleExpression();
+
+					if (!alternate) {
+						this.throwError('Expected expression');
+					}
+					env.node = {
+						type: CONDITIONAL_EXP as 'ConditionalExpression', // Use constant and assert type
+						test,
+						consequent,
+						alternate,
+					};
+
+					// check for operators of higher priority than ternary (i.e. assignment)
+					// jsep sets || at 1, and assignment at 0.9, and conditional should be between them
+					if (test.operator && jsep.binary_ops[test.operator] <= 0.9) {
+						let newTest = test;
+						while (newTest.right.operator && jsep.binary_ops[newTest.right.operator] <= 0.9) {
+							newTest = newTest.right;
+						}
+						env.node.test = newTest.right;
+						newTest.right = env.node;
+						env.node = test;
+					}
+				}
+				else {
+					this.throwError('Expected :');
+				}
+			}
+		});
+	},
+};
 
 
 export const arrow: JSEPPlugin = {
@@ -1615,6 +1682,14 @@ export const jsepTemplateLiteral: JSEPPlugin = {
 		});
 	}
 };
-Jsep.plugins.register(arrow, object, regex, jsepSpread, jsepTemplateLiteral);
-
-export default Jsep; // Export the class directly
+Jsep.plugins.register(ternary, arrow, object, regex, jsepSpread, jsepTemplateLiteral);
+// Backward Compatibility:
+const jsep = expr => (new Jsep(expr)).parse() as Expression;
+const stdClassProps = Object.getOwnPropertyNames(class Test { });
+Object.getOwnPropertyNames(Jsep)
+	.filter(prop => !stdClassProps.includes(prop) && jsep[prop] === undefined)
+	.forEach((m) => {
+		jsep[m] = Jsep[m];
+	});
+jsep.Jsep = Jsep; // allows for const { Jsep } = require('jsep');
+export default jsep;

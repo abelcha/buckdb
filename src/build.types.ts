@@ -5,7 +5,6 @@ import { DDirection } from "./build";
 
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
-
 export type NestedKeyOf<ObjectType extends Record<string, any>> = {
     [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends { [t.sInferred]: infer V }
     ? `${Key}`
@@ -179,18 +178,6 @@ export interface FromResult<T extends keyof Models & string, C extends StrictCol
 
 }
 
-
-// function With<
-//     T extends keyof Models & string,
-//     C extends StrictCollection[],
-//     R extends FromResult<T, C> | MaterializedSelectResult<any, C>,
-//     U
-// >(
-//     result: R,
-//     callback: (value: R) => FromResult<T, C>
-// ): U {
-//     return callback(result);
-// }
 // With(DBuilder('').from('data/people.parquet').select(e => ({ toto: e.age.acos() })), e => e)
 // DBuilder('').from('data/people.parquet').select(e => ({ toto: e.age.acos() })).groupBy('toto').execute().then(e => e[0].toto))
 

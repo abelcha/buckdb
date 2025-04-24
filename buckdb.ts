@@ -1,25 +1,4 @@
-// similar to | match | startsWith | endsWith | includes
-// b
-// from
-// copy
-// export
-// union
-// grouping set/cube etc
-// offset
-// limit 10%
-// using sample
-// count filter
-// case when
-// union
-// intercept
-// except all
-// casting
-// IN
-// NOT
-// select all
-// columns
-// update
-// turn ... and into wildcard, replace etc
+
 // + as a string concat operator
 
 // interface DuckDBClient {
@@ -30,7 +9,7 @@
 import { DSettings } from './.buck/types';
 import { builder } from './src/build'
 import { CommandQueue, DuckdbCon } from './src/utils';
-import {generateInterface} from './interface-generator'
+import {generateInterface} from './src/interface-generator'
 
 const tempJsonFix = e => JSON.parse(JSON.stringify(e, (key, value) => {
     switch (value?.constructor?.name) {

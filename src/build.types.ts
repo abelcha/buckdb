@@ -1,7 +1,7 @@
 import { DeriveName, DField, DRawField, DuckDBClient, DuckdbCon, formatSource, keyBy } from "./utils";
 import { Models } from '../.buck/table3';
 import * as t from "../.buck/types";
-import { parse, parseObject } from './parser';
+import { DDirection } from "./build";
 
 export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 
@@ -118,14 +118,31 @@ export interface MaterializedResult<S extends MState, C extends StrictCollection
         >[]>
     toSql({ pretty }: { pretty?: boolean }): string
     toSql(): string
-    orderBy: this['groupBy'],
+    // orderBy: this['groupBy'],
+    orderBy<U extends ([NestedKeyOf<S['available'] & S['selected']>, DDirection?][])>(...key: U): MaterializedResult<S, C>
+    orderBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U, d?: DDirection): MaterializedResult<S, C>
+    orderBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaField) => Z, d?: DDirection): MaterializedResult<S, C>
+
+    // orderBy<U extends ([NestedKeyOf<S['available'] & S['selected']> | DDirection])>(...key: [U]): MaterializedResult<S, C>
+
     // having: this['where'],
     limit: (n: number) => this,
+    context: (n: Record<string, any>) => this,
     sample: (n: number | `${number}%`) => this,
     offset: (n: number) => this,
     dump: () => this,
     show: () => this,
 }
+DBuilder('').from('data/final.csv').select(e => ({ xx: e.email }))
+    // .orderBy(['final.email', 'ASC'], ['final.email', 'ASC'], ['final.email', 'ASC'], ['final.email'], ['final.email'])
+    // .orderBy('final.firstname')
+    // .orderBy('final.firstname', 'ASC NULLS LAST')
+    .orderBy(['final.email', 'ASC'], ['email'])
+    .orderBy('final.email', 'DESC')
+    .orderBy(e => e.email, 'DESC')
+    .orderBy(e => e.lat.bit_length())
+    .execute().then(e => e)
+
 export interface MaterializedWhereResult<S extends MState, C extends StrictCollection[]> extends MaterializedResult<S, C> {
     orWhere: this['where']
 }
@@ -136,8 +153,6 @@ export interface MaterializedGroupByResult<S extends MState, C extends StrictCol
 export interface MaterializedSelectResult<S extends MState, C extends StrictCollection[]> extends MaterializedResult<S, C> {
     distinctOn: this['groupBy'],
 }
-
-
 
 export interface FromResult<T extends keyof Models & string, C extends StrictCollection[] = []> {
     join<K extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>, A extends string>(table: K, alias: A, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: T, uri: K, alias: A }>]>>, D: DMetaComp) => any):
@@ -164,7 +179,6 @@ export interface FromResult<T extends keyof Models & string, C extends StrictCol
 
 }
 
-// DBuilder('').from('data/final.csv').select(e => ({ xx: e. })).execute().then(e => e)
 
 // function With<
 //     T extends keyof Models & string,

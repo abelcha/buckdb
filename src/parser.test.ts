@@ -1,6 +1,7 @@
 import { test, expect } from 'bun:test';
 //  import { ConditionParser } from './condition-parser';
 import { parse, parseObject } from './parser'
+import jsep from './jsep';
 
 
 test('should parse basic condition', () => {
@@ -38,11 +39,11 @@ test('template litteral', () => {
     expect(parse((e, D) => e.name === `lol`)).toBe("name = 'lol'");
     expect(parse((e, D) => e.name.match(`lol`))).toBe("name.match('lol')");
     // Now we support template literals with expressions
-    expect(parse((e, D) => e.name === `abel${e.vrl}`, { num })).toBe("name = 'abel' || vrl || ''");
-    expect(parse((e, D) => e.name === `abel${num}`, { num })).toBe("name = 'abel' || (0) || ''");
-    expect(parse((e, D) => e.name === `${num}abel`, { num })).toBe("name = '' || (0) || 'abel'");
+    expect(parse((e, D) => e.name === `abel${e.vrl}`, { num })).toBe("name = 'abel' || vrl");
+    expect(parse((e, D) => e.name === `abel${num}`, { num })).toBe("name = 'abel' || (0)");
+    expect(parse((e, D) => e.name === `${num}abel`, { num })).toBe("name = (0) || 'abel'");
     expect(parse((e, D) => e.name === `prefix${num}suffix`, { num })).toBe("name = 'prefix' || (0) || 'suffix'");
-    expect(parse((e, D) => e.name === `${num}${num+1}`, { num })).toBe("name = '' || (0) || '' || ((0) + 1) || ''");
+    expect(parse((e, D) => e.name === `${num}${num + 1}`, { num })).toBe("name = (0) || (0) + 1");
 })
 test('should parse logical NOT', () => {
     let num = 0
@@ -108,7 +109,7 @@ test('pattermatcher', () => {
         l: D.SimilarTo(p.lat, /12.+/) ? p.lat : D.Bigint(42),
         // lg: p.lng, nm: p.name, dd: D.Bigint(12)
     }))).toEqual([
-        ["l", "(CASE WHEN (lat SIMILAR TO '12.+') THEN lat ELSE CAST(42 AS Bigint) END)"]
+        ["l", "(CASE WHEN (lat SIMILAR TO '12.+') THEN lat ELSE CAST(42 AS BIGINT) END)"]
     ]);
 
 });
@@ -141,10 +142,10 @@ test('object', () => {
         nm: p.name,
         dd: D.Float(12)
     }))).toEqual([
-        ["l", "(CASE WHEN (name SIMILAR TO '\\w+mode') THEN (CASE WHEN (description.len() < 3) THEN value ELSE scope END) ELSE CAST(42 AS Varchar) END)"],
+        ["l", "(CASE WHEN (name SIMILAR TO '\\w+mode') THEN (CASE WHEN (description.len() < 3) THEN value ELSE scope END) ELSE CAST(42 AS VARCHAR) END)"],
         ["lg", "geo.lng"],
         ["nm", "name"],
-        ["dd", "CAST(12 AS Float)"]
+        ["dd", "CAST(12 AS FLOAT)"]
     ]);
 })
 test('string', () => {
@@ -153,11 +154,59 @@ test('string', () => {
     expect(parse((e, D) => e.arr === "'abel")).toBe(`arr = '''abel'`);
     expect(parseObject((e, D) => ({
         xxx: D.Varchar('lol')
-    }))).toEqual([['xxx', "CAST('lol' AS Varchar)"]])
+    }))).toEqual([['xxx', "CAST('lol' AS VARCHAR)"]])
+
+    // Basic template literal tests
     const lol = 42
-    expect(parse((e, D) => `abel${lol}`, { lol })).toBe("'abel42'");
+    expect(parse((e, D) => `abel${lol}`, { lol })).toBe("'abel' || (42)");
+
+    // Additional template literal tests
+    expect(parse((e, D) => `${e.firstName} ${e.lastName}`)).toBe("firstName || ' ' || lastName");
+    expect(parse((e, D) => `User: ${e.name}, Age: ${e.age}`)).toBe("'User: ' || name || ', Age: ' || age");
+    expect(parse((e, D) => `Count: ${e.count + 1}`)).toBe("'Count: ' || (count + 1)");
+    expect(parse((e, D) => `${e.value}%`)).toBe("value || '%'");
+    expect(parse((e, D) => `${e.prefix}-${e.id}-${e.suffix}`)).toBe("prefix || '-' || id || '-' || suffix");
+
+    // Empty template literal
+    expect(parse((e, D) => ``)).toBe("''");
+
+    // Template literal with expressions but no text
+    expect(parse((e, D) => `${e.name}`)).toBe("name");
+
+    // Test string concatenation with + operator
+    expect(parse((e, D) => e.name + '---' + e.age)).toBe("name || '---' || age");
+    expect(parse((e, D) => e.name + 42 + '---')).toBe("name || 42 || '---'");
+    expect(parse((e, D) => 'prefix-' + e.name + '-suffix')).toBe("'prefix-' || name || '-suffix'");
+
+    // Additional string concatenation tests
+    expect(parse((e, D) => 'Hello, ' + e.name + '! Your score is ' + e.score)).toBe(
+        "'Hello, ' || name || '! Your score is ' || score"
+    );
+    expect(parse((e, D) => e.firstName + ' ' + e.lastName)).toBe("firstName || ' ' || lastName");
+    expect(parse((e, D) => e.value + '%')).toBe("value || '%'");
+    expect(parse((e, D) => e.count + ' items')).toBe("count || ' items'");
+
+    // Mixed string concatenation and arithmetic
+    expect(parse((e, D) => 'Total: ' + (e.price * e.quantity))).toBe("'Total: ' || price * quantity");
+    expect(parse((e, D) => e.prefix + (e.a + e.b) + e.suffix)).toBe("prefix + (a + b) + suffix");
     // expect(parse((e, D) =>  D.raw`['123', 'tata', 'yoyo']`)).toBe(`arr = '\\'abel'`);
 })
+
+const parseBody = (expr: Function | string, context = {}) => {
+    try {
+
+        return parse('(p, D) => (' + expr + ')', context)
+    } catch (err) {
+        console.error('Error parsing body:', err.message);
+        console.log('-------------')
+        console.log(require('util').inspect(jsep(expr), {
+            depth: Infinity,
+            colors: true,
+            showHidden: false
+        }))
+        console.log('---------------')
+    }
+}
 test('arrays', () => {
 
     expect(parse((e, D) => e.arr['abel'])).toBe("arr.abel");
@@ -166,6 +215,12 @@ test('arrays', () => {
     expect(parse((e, D) => e.arr[1])).toBe("arr[1]");
     expect(parse((e, D) => e.arr[.1])).toBe("arr[0:1]");
     expect(parse((e, D) => e.arr[43.55])).toBe("arr[43:55]");
+})
+
+test('properties', () => {
+    expect(parseBody(`{'toto':"43"}`)).toBe("{'toto': '43'}");
+    expect(parseBody(`{toto:/45/g, x:15}`)).toBe("{toto: '45', x: 15}");
+    expect(parseBody(`{['toto']:42}`)).toBe("{'toto': 42}");
 })
 
 // test('+ sign', () => {

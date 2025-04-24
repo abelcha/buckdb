@@ -254,9 +254,22 @@ export const PatternMatchers: Record<string, TPatternMatcher> = {
   'Is': { ...basePatternMatcher, keyword: 'IS', params: { val: 'ANY', matcher: 'ANY' } },
   'IsNot': { ...basePatternMatcher, keyword: 'IS NOT', params: { val: 'ANY', matcher: 'ANY' } },
   'Between': { ...basePatternMatcher, keyword: 'BETWEEN', params: { val: 'INT', col1: 'INT', col2: 'INT' }, joinWith: ' AND ' },
+  'In': { ...basePatternMatcher, keyword: 'IN', joinWith: ', ' },
   'NotBetween': { ...basePatternMatcher, keyword: 'NOT BETWEEN', params: { val: 'INT', col1: 'INT', col2: 'INT' }, joinWith: ' AND ' },
 }
-export const LiteralTypes = ['Bit', 'Integer', 'List', 'Timestamp', 'Tinyint', 'Smallint', 'Struct', 'Time', 'Timestamp_ms', 'Timestamp_s', 'Float', 'Map', 'Union', 'Blob', 'Date', 'Enum', 'Hugeint', 'Boolean', 'Varchar', 'Uuid', 'Ubigint', 'Bigint', 'Interval', 'Uinteger', 'Usmallint', 'Utinyint', 'Varint', 'Decimal', 'Double', 'Null', 'Timestamp_ns', 'Uhugeint']
+export const DefaultLiteralTypes = ['Bit', 'Integer', 'Timestamp', 'Tinyint', 'Smallint', 'Json', 'Struct', 'Time', 'Timestamp_ms', 'Timestamp_s', 'Float', 'Map', 'Union', 'Blob', 'Date', 'Enum', 'Hugeint', 'Boolean', 'Varchar', 'Uuid', 'Ubigint', 'Bigint', 'Interval', 'Uinteger', 'Usmallint', 'Utinyint', 'Varint', 'Decimal', 'Double', 'Null', 'Timestamp_ns', 'Uhugeint']
+
+export const LitteralTypesMap = new Map(
+  DefaultLiteralTypes.map(e => [e, e.toUpperCase()] as [string, string])
+    .concat([
+      ['List', ''],
+      ['Array', ''],
+      ['Struct', ''],
+    ])
+)
+
+export const LiteralTypes = LitteralTypesMap.keys()
+
 export interface DuckDBClient {
   query<T = any>(sql: string, params?: Record<string, any>): Promise<T[]>;
   run(sql: string): Promise<any>;

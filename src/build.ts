@@ -6,10 +6,12 @@ import { DBuilder, DExtensionsId } from "./build.types";
 
 export type DCondition = { condition: string, operator?: 'OR' | 'AND' }
 export type DSelectee = { field: string, as?: string }
-export type DOrder = { field: string, direction?: 'ASC' | 'DESC' }
+export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST' | 'ASC NULLS LAST' | 'DESC NULLS LAST'
+export type DOrder = { field: string, direction?: DDirection }
 export type DDatasource = { catalog: string, uri: string, alias?: string, joinOn?: string, join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' }
 
 export const dstate = {
+    context: {} as Record<string, any>,
     datasources: [] as DDatasource[],
     selected: [] as DSelectee[],
     conditions: [] as DCondition[],
@@ -81,6 +83,7 @@ const newLine = (e: string) => {
 function toSql(state: DState) {
     // console.log({ state })
     // console.log('====>', state.orderBy)
+
     const components = [
         'FROM',
         serializeDatasource(state.datasources),
@@ -116,11 +119,11 @@ const deriveState = (s: any, kmap: Record<keyof DState | string, any | any[]>, f
 
 
 
-export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
+export const builder = (ddb?: DuckdbCon) => function database(a: any, b: any) {
     const handle = typeof a === 'string' ? a : ''
     const opts = (typeof a === 'object' ? a : (b || {})) as Partial<t.DSettings>
 
-    if (opts) {
+    if (opts && Object.keys(opts).length) {
         ddb.settings(opts)
     }
     const fromRes = (state = dstate) => {
@@ -159,8 +162,16 @@ export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
             where: function (...conditions: Parseable[]) {
                 return fromRes(deriveState(state, { conditions }, condition => ({ condition, operator: 'AND' })))
             },
-            orderBy: function (field: Parseable[], type?: 'ASC' | 'DESC') {
-                return fromRes({...state,  orderBy: [...state.orderBy, { field, type }] })
+            // Updated orderBy: Accepts single Parseable field, uses 'direction'
+            orderBy: function (...params: any[]) {
+                if (typeof params[0] === 'string') {
+                    params = [params]
+                }
+                const nworder = (params as string[][]).map(([field, direction]) => ({ field, direction }))
+                return fromRes({ ...state, orderBy: [...state.orderBy, ...nworder] as DOrder[] }) // Use 'direction'
+            },
+            context: function (context: Record<string, any>) {
+                return fromRes({ ...state, context: { ...state.context, ...context } })
             },
             groupBy: function (...groupBy: Parseable[]) {
                 return fromRes(deriveState(state, { groupBy }))

@@ -1,5 +1,5 @@
 import jsep, { ArrowFunctionExpression, Expression, Property } from './jsep';
-import { LiteralTypes, PatternMatchers } from './utils'
+import { LitteralTypesMap, PatternMatchers } from './utils'
 
 function mapUnaryOperator(jsOperator) {
   const unaryOperatorMap = {
@@ -93,17 +93,81 @@ const joinMembers = (members: any[]) => {
 
 const SLASH = String.fromCharCode(47)
 const BACKSLASH = String.fromCharCode(92)
-export function transformDuckdb(node, params = new Map<string, { depth: number, position: number }>(), context: Record<string, any> = {}) {
-  // const contextStr = Object.entries(context).map(([key, value]) => `const ${key} = ${JSON.stringify(value)}`).join(';\n') + '\n'
+// Helper function to check if a node is or contains a string literal
+function hasStringLiteral(node) {
+  if (!node) return false;
 
-  function transformNode(node, opts = { asArray: false }) {
+  // Direct string literal
+  if (node.type === 'Literal' && typeof node.value === 'string') {
+    return true;
+  }
+
+  // Check for nested string literals in binary expressions
+  if (node.type === 'BinaryExpression') {
+    return hasStringLiteral(node.left) || hasStringLiteral(node.right);
+  }
+
+  return false;
+}
+
+// Helper function to recursively transform string concatenation
+function transformStringConcat(node, transformer) {
+  // If not a binary expression or not addition, process normally
+  if (node.type !== 'BinaryExpression' || node.operator !== '+') {
+    return transformer(node);
+  }
+
+  // Recursively process left and right sides
+  const left = transformStringConcat(node.left, transformer);
+  const right = transformStringConcat(node.right, transformer);
+
+  // Always use || for concatenation in binary expressions that contain strings
+  return `${left} || ${right}`;
+}
+
+// Process template literal parts into SQL concatenation
+function processTemplateLiteral(node, transformer) {
+  if (node.expressions.length === 0) {
+    // Simple template literal without expressions
+    return `'${node.quasis[0].value.cooked.replaceAll(/'/g, "''")}'`;
+  }
+
+  // Template literal with expressions - use SQL string concatenation with ||
+  const parts = [];
+
+  // Process each part of the template literal
+  for (let i = 0; i < node.quasis.length; i++) {
+    const quasi = node.quasis[i];
+    // Only add non-empty string parts
+    if (quasi.value.cooked !== '') {
+      parts.push(`'${quasi.value.cooked.replaceAll(/'/g, "''")}'`);
+    }
+
+    // Add expression if not at the end
+    if (!quasi.tail) {
+      const expr = transformer(node.expressions[i]);
+
+      // If the expression contains binary operators, ensure it's properly parenthesized
+      if (node.expressions[i].type === 'BinaryExpression' && !expr.startsWith('(')) {
+        parts.push('(' + expr + ')');
+      } else {
+        parts.push(expr);
+      }
+    }
+  }
+
+  // Join all parts with the SQL concatenation operator
+  return parts.join(' || ');
+}
+
+export function transformDuckdb(node, params = new Map<string, { depth: number, position: number }>(), context: Record<string, any> = {}) {
+  // Main transformer function
+  function transformNode(node, opts = { isFuncArg: false }) {
     switch (node.type) {
       case 'ObjectExpression':
         return `{${node.properties.map(transformNode).join(', ')}}`;
       case 'Property':
-        return `${transformNode(node.key)}: ${transformNode(node.value)}`;
-      // case 'ArrowFunctionExpression':f
-      //   return `(${(node.params || []).map(transformNode).join(', ')}) => ${transformNode(node.body)}`;
+        return `${transformNode({ ...node.key, isProperty: true })}: ${transformNode(node.value)}`;
       case 'SequenceExpression':
         return node.expressions.map(transformNode).join(', ');
       case 'Identifier':
@@ -120,19 +184,18 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
             return '(' + JSON.stringify(context[node.name]) + ')'
           } else {
             throw new Error(`Undefined variable: ${node.name}, use .context({ ${node.name} }) too pass it down`);
-
           }
         }
         return node.name;
       case 'MemberExpression':
-        // const isTopLevel = node.object.type === 'Identifier'
         node.property.isProperty = true
         const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean)
-        return opts.asArray ? rtn : joinMembers(rtn);
+        return opts.isFuncArg ? rtn : joinMembers(rtn);
       case 'Literal':
         if (node.value instanceof RegExp) {
           const rgx = node.value.toString().split(SLASH).slice(1, -1).join(SLASH)
-          const flags = node.value.flags ? `, '${node.value.flags}'` : ''
+          const flags = opts.isFuncArg && node.value.flags ? `, '${node.value.flags}'` : ''
+          // console.log(opts.isFuncArg, node)
           return `'${rgx}'` + flags
         }
         if (node.value === null) {
@@ -147,13 +210,11 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         }
         return node.raw;
       case 'CallExpression':
-        const callee = transformNode(node.callee, { asArray: true })
-        // if ()
+        const callee = transformNode(node.callee, { isFuncArg: true })
         const lastCallee = callee[callee.length - 1]
-        let args = node.arguments.map(transformNode)
+        let args = node.arguments.map(e => transformNode(e, { isFuncArg: true }))
         if (PatternMatchers[lastCallee]) {
           const { keyword, joinWith } = PatternMatchers[lastCallee]
-          // node.callee.object.type === 'Identifier' && params.has(node.callee.object.name)
           if (node.callee.object.type === 'Identifier' && params.has(node.callee.object.name)) {
             return `${args[0]} ${keyword} ${args.slice(1).join(joinWith)}`
           }
@@ -170,18 +231,14 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           const supp = typeof args[2] !== 'undefined' ? `(${args.slice(2).join(', ')})` : ''
           return `CAST(${args[0]} AS ${node.arguments[1].value}${supp})`
         }
-        if (LiteralTypes.includes(lastCallee) && params.get(node.callee.object.name)?.position === 1) {
-          return `CAST(${args[0]} AS ${lastCallee})`
+        if (LitteralTypesMap.has(lastCallee) && params.get(node.callee.object.name)?.position === 1) {
+          const toType = LitteralTypesMap.get(lastCallee)
+          if (toType === '') {
+            return `(${args[0]})`
+          }
+          return `CAST(${args[0]} AS ${toType})`
         }
         return `${callee.join('.')}(${node.arguments.map(transformNode).join(', ')})`;
-      // try {
-      //   const evalStr = `${transformNode(node.callee)}(${node.arguments.map(transformNode).join(', ')})`
-      //   const result = eval(contextStr + evalStr);
-      //   return String(result);
-      // } catch {
-      //   // Fallback to original if evaluation fails
-      //   return `${transformNode(node.callee)}(${node.arguments.map(transformNode).join(', ')})`;
-      // }
       case 'UnaryExpression':
         // fn.toString() transform true and false to !1 and !0
         if (node.operator === '!' && node.argument.type === 'Literal' && typeof node.argument.value === 'number') {
@@ -189,8 +246,14 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         }
         return `${mapUnaryOperator(node.operator)} ${transformNode(node.argument)}`;
       case 'BinaryExpression':
-        const b = `${transformNode(node.left)} ${mapOperator(node.operator)} ${transformNode(node.right)}`
-        return node.parenthesis ? `(${b})` : b
+        // Special handling for string concatenation
+        if (node.operator === '+' && hasStringLiteral(node)) {
+          return transformStringConcat(node, transformNode);
+        }
+
+        // Regular binary operation
+        const b = `${transformNode(node.left)} ${mapOperator(node.operator)} ${transformNode(node.right)}`;
+        return node.parenthesis ? `(${b})` : b;
       case 'ArrayExpression':
         return `[${node.elements.map(transformNode).join(', ')}]`;
       case 'SpreadElement':
@@ -198,51 +261,17 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
       case 'ConditionalExpression':
         return `(CASE WHEN (${transformNode(node.test)}) THEN ${transformNode(node.consequent)} ELSE ${transformNode(node.alternate)} END)`;
       case 'TemplateLiteral':
-        // Handle template literals with expressions like `abel${lol}`
-        if (node.expressions.length === 0) {
-          // Simple template literal without expressions
-          return `'${node.quasis[0].value.cooked.replaceAll(/'/g, "''")}'`;
-        } else {
-          // Check if this is a simple template literal with a single expression and no surrounding text
-          // For cases like `abel${lol}` where we want to concatenate directly
-          if (node.quasis.length === 2 &&
-              node.expressions.length === 1 &&
-              node.quasis[0].value.cooked === 'abel' &&
-              node.quasis[1].value.cooked === '' &&
-              context?.lol !== undefined) {
-            // Special case for the test in parser.test.ts line 157
-            return `'abel${context.lol}'`;
-          }
-          
-          // Template literal with expressions
-          let result = '';
-          for (let i = 0; i < node.quasis.length; i++) {
-            const quasi = node.quasis[i];
-            result += `'${quasi.value.cooked.replaceAll(/'/g, "''")}'`;
-            
-            if (!quasi.tail) {
-              // Add the expression between quasis, ensuring it's properly parenthesized
-              const expr = transformNode(node.expressions[i]);
-              // If the expression contains binary operators, ensure it's parenthesized
-              if (expr.includes(' + ') || expr.includes(' - ') ||
-                  expr.includes(' * ') || expr.includes(' / ')) {
-                result += ' || (' + expr + ') || ';
-              } else {
-                result += ' || ' + expr + ' || ';
-              }
-            }
-          }
-          return result;
-        }
+        return processTemplateLiteral(node, transformNode);
       case 'TemplateElement':
         return `'${node.value.cooked.replaceAll(/'/g, "''")}'`;
       default:
         if (context?.log !== false) {
           console.log(JSON.stringify(node, null, 2))
         }
-          throw new Error(`Unsupported node type: ${node.type}`);
+        throw new Error(`Unsupported node type: ${node.type}`);
     }
   }
+
   return transformNode(node);
 }
 const extractParams = (ast: Expression) => {
@@ -282,7 +311,6 @@ export const extractParamsContext = (ast: Expression) => {
   }
   return extractParams(ast.params as unknown as Expression)
 }
-
 
 export const parse = (expr: Function | string, context = {}) => {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()

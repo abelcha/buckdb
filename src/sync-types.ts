@@ -9,7 +9,8 @@ const resp = await from('duckdb_types()')
     // .keyBy(e => e.type_category)
     // .toSql()
     .execute()
-
+resp.push({ logical_type: 'Array' })
+resp.push({ logical_type: 'Json' })
 const DuckFunction = (function_name: string, params: Record<string, string>, return_type = 'ANY', opts: Record<string, string> = {}) => {
     const parameters = Object.keys(params)
     const parameter_types = parameters.map(e => params[e])

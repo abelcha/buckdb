@@ -59,7 +59,7 @@ const formatAlias = (source: { alias?: string, uri: string }) => {
 }
 const formatAs = (source: { field: string, as?: string }) => {
     if (source.as && typeof source.as === 'string') {
-        return `${source.field.padEnd(20)} AS ${source.as}`
+        return `${source.field.toString().padEnd(20)} AS ${source.as}`
     }
     return source.field
 }
@@ -106,20 +106,20 @@ function toSql(state: DState) {
 }
 type Parseable = string | Function
 
-const formalize = (e: string | Function) => typeof e === 'function' ? parse(e) : e
-const deriveState = (s: any, kmap: Record<keyof DState | string, any | any[]>, format = e => e) => {
+const formalize = (e: string | Function, context = {}) => typeof e === 'function' ? parse(e, context) : e
+const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>, format = (e: any) => e) => {
     return Object.entries(kmap).reduce((acc, [key, values]) => {
         if (!Array.isArray(values)) {
             return { ...acc, [key]: values }
         }
-        const newVals = values.map(formalize).map(format)
+        const newVals = values.map(v => formalize(v, s.context)).map(format)
         return Object.assign(acc, { [key]: (s[key] || []).concat(newVals) })
     }, s) as DState
 }
 
 
 
-export const builder = (ddb?: DuckdbCon) => function database(a: any, b: any) {
+export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
     const handle = typeof a === 'string' ? a : ''
     const opts = (typeof a === 'object' ? a : (b || {})) as Partial<t.DSettings>
 
@@ -127,13 +127,16 @@ export const builder = (ddb?: DuckdbCon) => function database(a: any, b: any) {
         ddb.settings(opts)
     }
     const fromRes = (state = dstate) => {
-        const _join = (joinType: DDatasource['join'] = 'JOIN') => function (table, alias, fn = undefined) {
+        const _join = (joinType: DDatasource['join'] = 'JOIN') => function (table: any, alias: any, fn = undefined) {
             if (typeof fn === 'undefined') {
                 fn = alias
                 alias = undefined
             }
             const joinOn = typeof fn === 'function' ? parse(fn) : fn
             return fromRes(deriveState(state, { datasources: [{ catalog: '', uri: table, alias, join: joinType, joinOn }] }))
+        }
+        const _where = (operator = 'AND') => function (...conditions: Parseable[]) {
+            return fromRes(deriveState(state, { conditions: conditions.map(v => formalize(v, state.context)) }, condition => ({ condition, operator })))
         }
         return {
             // _join: ,
@@ -143,32 +146,24 @@ export const builder = (ddb?: DuckdbCon) => function database(a: any, b: any) {
             crossJoin: _join('CROSS JOIN'),
             naturalJoin: _join('NATURAL JOIN'),
             select: function (...keys: Parseable[]) {
-                // console.log('TYPE NORMAL', a.toString())
-                // console.log({ keys })
                 const selected = keys.flatMap(k => {
                     if (typeof k === 'function') {
-                        // console.log('TYPE FUNCTION', k.toString())
-                        const res = parseObject(k)
-                        // if (res.every(([e]) => typeof e === 'number')) {
-                        //     console.log('EVERYYYY', res)
-                        //     // return res.map(e => ({ field: e }))
-                        // }
-                        return res.map(([value, key]) => ({ field: key, as: value })) as DSelectee[]
+                        return parseObject(k).map(([value, key]) => ({ field: key, as: value })) as DSelectee[]
                     }
                     return { field: k }
                 })
                 return fromRes({ ...state, selected })
             },
-            where: function (...conditions: Parseable[]) {
-                return fromRes(deriveState(state, { conditions }, condition => ({ condition, operator: 'AND' })))
-            },
+            where: _where('AND'),
+            or: _where('OR'),
+            and: _where('AND'),
             // Updated orderBy: Accepts single Parseable field, uses 'direction'
             orderBy: function (...params: any[]) {
                 if (typeof params[0] === 'string') {
                     params = [params]
                 }
                 const nworder = (params as string[][]).map(([field, direction]) => ({ field, direction }))
-                return fromRes({ ...state, orderBy: [...state.orderBy, ...nworder] as DOrder[] }) // Use 'direction'
+                return fromRes({ ...state, orderBy: [...(state.orderBy || []), ...nworder] as DOrder[] }) // Use 'direction'
             },
             context: function (context: Record<string, any>) {
                 return fromRes({ ...state, context: { ...state.context, ...context } })
@@ -179,12 +174,12 @@ export const builder = (ddb?: DuckdbCon) => function database(a: any, b: any) {
             distinctOn: function (...distinctOn: Parseable[]) {
                 return fromRes(deriveState(state, { distinctOn }))
             },
-            keyBy: function (...groupBy: Parseable[]) {
-                const keyBy = formalize(groupBy[0])
+            keyBy: function (gp: Parseable) {
+                const keyBy = formalize(gp, state.context)
                 if (!state.selected.find(e => e.field === keyBy)) {
                     state.selected.push({ field: keyBy })
                 }
-                return fromRes(deriveState({ ...state, selected: state.selected, keyBy }, { groupBy }))
+                return fromRes(deriveState({ ...state, selected: state.selected, keyBy }, { groupBy: [gp] }))
             },
             minBy: function (...fields: Parseable[]) {
                 // return this.orderBy(fields, 'ASC').limit(10)
@@ -209,15 +204,15 @@ export const builder = (ddb?: DuckdbCon) => function database(a: any, b: any) {
             execute: async function (props: Record<string, any> = {}) {
                 const str = toSql(Object.assign(state, props))
                 if (props?.dump || props?.pretty) {
-                    this.dump(str)
+                    this.dump()
                 }
-                if (state.selected.length === 1 && !state.selected[0].as) {
-                    return ddb.query(str, { rows: true }).then(e => e.map(e => e[0]))
+                if (state.selected.length === 1 && !state.selected[0]?.as) {
+                    return ddb.query(str, { rows: true, ...props }).then(e => e.map(e => e[0]))
                 }
                 if (state.selected.length && state.selected.every((e) => typeof e.as === 'number')) {
-                    return ddb.query(str, { rows: true })
+                    return ddb.query(str, { rows: true, ...props })
                 }
-                const resp = await ddb.query(str)
+                const resp = await ddb.query(str, props)
                 if (state.agg) {
                     return resp[0]
                 }
@@ -233,14 +228,14 @@ export const builder = (ddb?: DuckdbCon) => function database(a: any, b: any) {
             },
             dump: () => {
                 console.log(toSql(state))
-                console.log(state)
+                // console.log(state)
                 return fromRes(state)
             },
             show: function () {
                 // console.log('GPPPP', state.groupBy)
                 console.log(toSql(state))
                 const res = fromRes(state).execute().then(e => console.log(e))
-                // console.log(res)
+                console.log(res)
                 return fromRes(state)
 
             },
@@ -264,13 +259,9 @@ export const builder = (ddb?: DuckdbCon) => function database(a: any, b: any) {
         },
 
         loadExtensions: function (...ext: DExtensionsId[]) {
-            console.log('LOAD ', ext)
+            // console.log('LOAD ', ext)
             ddb.loadExtensions(...ext)
             return this
-            // ddb.load(...ext)
-            // console.log({ str })
-            // const resp = await this.run(str)
-            // ddb.run(str)
         },
         from: (table: string, alias?: string) => fromRes({
             ...dstate,

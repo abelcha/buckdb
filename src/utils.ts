@@ -8,7 +8,7 @@ export type DuckdbCon = {
   run: (sql: string) => Promise<any>;
   query: (sql: string, opts?: Record<string, any>) => Promise<any[]>;
   upsertSchema: (model: string, schema: Record<string, any>) => Promise<void>;
-  settings?: (s: Partial<t.DSettings>) => DuckdbCon;
+  settings: (s: Partial<t.DSettings>) => DuckdbCon;
   loadExtensions: (...extensions: string[]) => DuckdbCon;
 }
 
@@ -45,11 +45,12 @@ export const wrap = (value: string, charA: string, charB = charA): string => {
 
 export const TypeProps = {
   'DNumeric': {
-    man: 'Partial<number> & Partial<CNumeric>',
-    comptype: 'number', id: 'numeric', able: 'DNumericable', field: 'DNumericField', rawType: 'number', inferredTo: 'number', anti: 'AntiNumber'
+    man: 'number & CNumeric',
+    comptype: 'number', id: 'numeric', able: 'DNumericable', field: 'DNumericField', rawType: 'number', inferredTo: 'number', anti: 'AntiNumber',
+    fieldSuffix: '& number'
   },
   'DVarchar': {
-    man: 'Partial<CVarchar>',
+    man: 'string & CVarchar',
     id: 'varchar', able: 'DVarcharable', field: 'DVarcharField', rawType: 'string', inferredTo: 'string', anti: 'AntiString'
   },
   'DArray': { id: 'array', able: 'DArrayable', field: 'DArrayField', rawType: 'any[]', inferredTo: 'any[]', anti: 'Array' },
@@ -62,70 +63,48 @@ export const TypeProps = {
   'DOther': { id: 'other', able: 'DOtherable', field: 'DOtherField', rawType: 'any', inferredTo: 'any' },
   'DAny': { man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' },
 }
-export type DeriveName<Path extends string> =
-  Path extends `${infer _}/${infer Rest}`
-  ? DeriveName<Rest>
-  : Path extends `${infer Name}.${string}`
-  ? StripSpecialChars<Name>
-  : StripSpecialChars<Path>;
 
-type StripSpecialChars<S extends string> =
-  S extends `${infer First}${infer Rest}`
-  ? First extends AlphaNumeric
-  ? `${First}${StripSpecialChars<Rest>}`
-  : StripSpecialChars<Rest>
-  : '';
 
-type AlphaNumeric =
-  | 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j'
-  | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't'
-  | 'u' | 'v' | 'w' | 'x' | 'y' | 'z'
-  | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J'
-  | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T'
-  | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z'
-  | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9';
 
-export const deriveName = <T extends string>(value: T): DeriveName<T> => {
-  const result = value.split('/').pop()?.split('.').shift() || value;
-  return result.replace(/[^a-zA-Z0-9]/g, '') as DeriveName<T>;
-}
+
 export const mapTypes = (type: string) => {
-  if (type === 'ANY') {
-    return 'DAny';
-  }
-  if (!type) {
-    return 'DOther';
-  }
+  if (type === 'ANY') return 'DAny';
+  if (!type) return 'DOther';
+
   if (type.endsWith('[]') || type === 'LIST' || type === 'ARRAY' || type.match(/\w+\[\w+\]/)) {
+    // console.log({ type, xx, _ })
     return 'DArray';
   }
-  if (type?.match(/\b((U)?(BIG|HUGE|TINY|SMALL)?INT(EGER)?|DOUBLE|DECIMAL|FLOAT)\b/)) {
+  if (type?.match(/\b((U)?(BIG|HUGE|TINY|SMALL)?INT(EGER)?|DOUBLE|DECIMAL|FLOAT)\b/))
     return 'DNumeric';
-  }
-  if (type?.match(/^(VARCHAR|CHAR|TEXT)$/)) {
-    return 'DVarchar';
-  }
-  if (type.startsWith('STRUCT')) {
-    return 'DStruct';
-  }
-  if (type.startsWith('JSON')) {
-    return 'DJson';
-  }
-  if (type.startsWith('BOOLEAN')) {
-    return 'DBool';
-  }
-  if (type.startsWith('MAP')) {
-    return 'DMap';
-  }
-  if (type.startsWith('BLOB')) {
-    return 'DBlob';
-  }
-  if (type.match(/^(DATE|TIME)[\w\s]*/)) {
-    return 'DDate'
-  }
+  if (type?.match(/^(VARCHAR|CHAR|TEXT)$/)) return 'DVarchar';
+  if (type.startsWith('STRUCT')) return 'DStruct';
+  if (type.startsWith('JSON')) return 'DJson';
+  if (type.startsWith('BOOLEAN')) return 'DBool';
+  if (type.startsWith('MAP')) return 'DMap';
+  if (type.startsWith('BLOB')) return 'DBlob';
+  if (type.match(/^(DATE|TIME)[\w\s]*/)) return 'DDate'
   return 'DOther';
 }
 
+export const mapTypesProps = (type: string) => {
+  const mtype = mapTypes(type)
+  if (mtype === 'DArray') {
+    const [_, subtype] = type.match(/^([A-Z]+)\[\]$/) || []
+    if (subtype) {
+      const s = mapTypesProps(subtype)
+      const rtn = {
+        ...TypeProps.DArray, rawType: s.rawType + '[]', inferredTo: !s.inferredTo ? 'any[]' : s.inferredTo + '[]'
+      }
+      console.log({ subtype, rtn })
+      return rtn
+    }
+    return 'DArray';
+  }
+  return TypeProps[mtype]
+}
+
+// console.log('=======', mapTypesProps('BIGINT[]'))
 
 
 
@@ -188,24 +167,6 @@ export type MapInferredType<T> = T extends object
   ? { [K in keyof T]: GetInferredType<T[K]> extends object ? MapInferredType<T[K]> : GetInferredType<T[K]> }
   : T;
 
-
-
-// type xxdx = MapAntiType<{ toto: DNumericField, test: DVarcharField }>
-
-// function lol(e: xxdx) {
-//   e.test.toString()
-// }
-// export type NativeFieldTypes<R> = {
-//   [K in keyof R]: R[K] extends DVarcharField ? string :
-//   R[K] extends DNumericField ? number :
-//   R[K] extends DBoolField ? boolean :
-//   R[K] extends DArrayField ? any[] :
-//   R[K] extends DOtherField ? any :
-//   R[K] extends (infer U)[] ? NativeFieldTypes<U>[] :
-//   R[K] extends object ? { [P in keyof R[K]]: NativeFieldTypes<R[K][P]> } :
-//   R[K]
-// }
-
 export type TableSchema<Columns> = {
   [K in keyof Columns]: Columns[K] extends keyof TypeMapping ? TypeMapping[Columns[K]] : bigint;
 };
@@ -234,7 +195,7 @@ export type TypeEq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T ex
 export function assertType<_T extends true>() { }
 export function assertNotType<_T extends false>() { }
 
-
+// Simpler assertion helpers
 const basePatternMatcher = {
   keyword: '',
   joinWith: ', ',
@@ -251,8 +212,8 @@ export const PatternMatchers: Record<string, TPatternMatcher> = {
   // 'NotSimilarTo': { ...basePatternMatcher, keyword: 'NOT SIMILAR TO' },
   'Glob': { ...basePatternMatcher, keyword: 'GLOB' },
   // 'NotGlob': { ...basePatternMatcher, keyword: 'NOT GLOB' },
-  'Is': { ...basePatternMatcher, keyword: 'IS', params: { val: 'ANY', matcher: 'ANY' } },
-  'IsNot': { ...basePatternMatcher, keyword: 'IS NOT', params: { val: 'ANY', matcher: 'ANY' } },
+  'IsNull': { ...basePatternMatcher, keyword: 'IS NULL', params: { val: 'ANY' } },
+  // 'IsNot': { ...basePatternMatcher, keyword: 'IS NOT', params: { val: 'ANY', matcher: 'ANY' } },
   'Between': { ...basePatternMatcher, keyword: 'BETWEEN', params: { val: 'INT', col1: 'INT', col2: 'INT' }, joinWith: ' AND ' },
   'In': { ...basePatternMatcher, keyword: 'IN', joinWith: ', ' },
   'NotBetween': { ...basePatternMatcher, keyword: 'NOT BETWEEN', params: { val: 'INT', col1: 'INT', col2: 'INT' }, joinWith: ' AND ' },

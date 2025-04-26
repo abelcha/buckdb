@@ -59,6 +59,20 @@ test('should parse complex condition with DuckDB function', () => {
     expect(result).toBe(
         "(name.match_regex('[a-z].+') OR age > 12) AND levenstein_distance(name, 'duckdb') > 4"
     );
+
+    const result2 = parse((e) => (e.name.regexp_matches(/[a-z].+/ig)));
+
+    expect(result2).toBe(
+        "name.regexp_matches('[a-z].+', 'gi')"
+    );
+    expect(parse((e) => e.name.regexp_extract_all(/[a-z](.+)/ig))).toBe(
+        "name.regexp_extract_all('[a-z](.+)', 0, 'gi')"
+    );
+
+    expect(parse((e, D) => D.regexp_replace(e.name, /\W/m, 'yyy'))).toBe(
+        "regexp_replace(name, '\\W', 'yyy', 'm')"
+    );
+
 });
 
 // test('should throw on invalid parameter count', () => {
@@ -76,6 +90,7 @@ test('should parse complex condition with DuckDB function', () => {
 
 test('should throw on local variable usage', () => {
     //   const localVar = 10;
+    const whatever = Math.random() > .5 ? 10 : 0;
     //   console.log('-------->', parse((e, D) => e.age > localVar))
     expect(() => parse((e, D) => e.age > whatever)).toThrow(
         "Undefined variable: whatever, use .context({ whatever }) too pass it down"
@@ -98,13 +113,13 @@ test('ternary', () => {
 
 
 test('pattermatcher', () => {
-    expect(parse((e, D) => e.num.SimilarTo(/.+\w+/img))).toBe("regexp_match(num, '.+\\w+', 'gim')");
+    expect(parse((e) => e.num.SimilarTo(/.+\w+/img))).toBe("regexp_match(num, '.+\\w+', 'gim')");
 
-    expect(parse((e, D) => e.num.Like('%12'))).toBe("num LIKE '%12'");
-    expect(parse((e, D) => e.num.SimilarTo(/.+\w+/))).toBe("num SIMILAR TO '.+\\w+'");
-    expect(parse((e, D) => e.num.Between(12, 52))).toBe("num BETWEEN 12 AND 52");
-    expect(parse((e, D) => e.num.NotBetween(12, 52))).toBe("num NOT BETWEEN 12 AND 52");
-    expect(parse((e, D) => e.num.IsNot(null))).toBe("num IS NOT NULL");
+    expect(parse((e) => e.num.Like('%12'))).toBe("num LIKE '%12'");
+    expect(parse((e) => e.num.SimilarTo(/.+\w+/))).toBe("num SIMILAR TO '.+\\w+'");
+    expect(parse((e) => e.num.Between(12, 52))).toBe("num BETWEEN 12 AND 52");
+    expect(parse((e) => e.num.NotBetween(12, 52))).toBe("num NOT BETWEEN 12 AND 52");
+    expect(parse((e) => !e.num.IsNull())).toBe("num IS NOT NULL");
     expect(parseObject((p, D) => ({
         l: D.SimilarTo(p.lat, /12.+/) ? p.lat : D.Bigint(42),
         // lg: p.lng, nm: p.name, dd: D.Bigint(12)

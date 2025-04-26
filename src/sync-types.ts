@@ -1,4 +1,4 @@
-import { mapTypes, PatternMatchers, TypeProps, wrap, Ω } from './utils';
+import { mapTypes, mapTypesProps, PatternMatchers, TypeProps, wrap, Ω } from './utils';
 import { camelCase, groupBy, mapValues, maxBy, omit, range, uniq, uniqBy, upperFirst } from 'es-toolkit';
 import { Buck, from } from '../buckdb';
 const resp = await from('duckdb_types()')
@@ -103,7 +103,7 @@ const genAs = async () => {
 
 
 
-type ftype = typeof TypeProps['DVarchar']
+type ftype = typeof TypeProps['DNumeric']
 const fkey = key => camelCase(key).match(/\w+/)[0].replace('array', 'arr').replace('enum', 'enm')
 const getFuncHeader = (row: any, ot: ftype) => {
     const tt = TypeProps[mapTypes(row.return_type)] as ftype
@@ -143,12 +143,12 @@ const genRowFunction = (row: any, f: Partial<ftype> = {}, slice = 0) => {
     return `${buildJSDoc(row)}  ${row.function_name}(${fargs}): ${output} ;\n`
 }
 
-const genInterface = (rows = [], f: Partial<ftype>, slice = 0, mergeAny = false) => {
+const genInterface = (rows = [], f: ftype | { id: string } & Record<string, any>, slice = 0, mergeAny = false) => {
     const field = `D${upperFirst(f.id)}Field`
     const comp = `D${upperFirst(f.id)}Comp`
     const ccomp = `C${upperFirst(f.id)}`
 
-    let str = `export interface ${f.man ? ccomp : field} ${mergeAny && f.id !== 'any' ? `extends ${f.man ? 'CAny' : 'DAnyField'}` : ''} {\n`
+    let str = `interface ${f.man ? ccomp : ('_' + field)} ${mergeAny && f.id !== 'any' ? `extends ${f.man ? 'CAny' : 'DAnyField'}` : ''} {\n`
     if (f.inferredTo)
         str += `  [sInferred]: ${f.inferredTo}\n`
     if (!f.man && f.rawType)
@@ -157,9 +157,12 @@ const genInterface = (rows = [], f: Partial<ftype>, slice = 0, mergeAny = false)
     for (const row of uniqBy(rows, e => getImprint(e, f)) as any[]) {
         str += genRowFunction(row, f, slice)
     }
-    str += '}'
+    str += '}\n'
     if (f.man)
         str += `\nexport type ${comp} = ${f.man} \n`
+    else
+        str += `export type ${field} = _${field}` + (f.fieldSuffix || '')
+
     return str
 }
 
@@ -187,7 +190,7 @@ const generateSettings = async () => {
     // console.log('lslslss', resp.length)
     // console.log({resp})
     let out = `export interface DSettings {\n`
-    out += resp.map(e => buildJSDoc(e) + `  ${e.name}: ${TypeProps[mapTypes(e.input_type)].rawType},`).join('\n')
+    out += resp.map(e => buildJSDoc(e) + `  ${e.name}: ${mapTypesProps(e.input_type).rawType},`).join('\n')
     out += '\n}\n'
     out += `export const DExtensions = ` + JSON.stringify(await from('duckdb_extensions()').execute(), null, 2) + ' as const' + '\n'
     // out += `\nexport const DTypes = ` + JSON.stringify(await from('duckdb_types()').select('type_name', 'type_size', 'logical_type', 'type_category').execute(), null, 2) + ' as const' + '\n'
@@ -260,7 +263,7 @@ if (import.meta.main) {
         const xkeys = ['DVarchar', 'DNumeric', 'DDate', ...Object.keys(grouped)]
         // console.log(resp)
         let header = Object.entries(TypeProps).map(([key, value]) => {
-            return `export type ${value.able} = ${value.inferredTo || value.rawType} | ${value.field};`
+            return `export type ${value.able} = ${value.inferredTo || value.rawType} | ${value.field} | _${value.field};`
         })
             .concat('export type RegExpable = RegExp | string;')
             .join('\n')
@@ -271,7 +274,8 @@ if (import.meta.main) {
         output.push(...symbols.map(e => `export declare const ${e}: unique symbol;`))
         for (const maintype of new Set(xkeys)) {
             const { man, ...f } = TypeProps[maintype]
-            let s = genInterface(grouped[maintype] || [], f, 1, true)
+            const d = (grouped[maintype] || []).filter(e => !PatternMatchers[e.function_name])
+            let s = genInterface(d, f, 1, true)
             if (maintype === 'DAny') {
                 // console.log('dannnyyyy')
                 s = s.replace('{', '{\n' + funcas)
@@ -297,11 +301,11 @@ if (import.meta.main) {
         output.push(genInterface(grouped.DVarchar, TypeProps.DVarchar, 1, true))
         output.push(genInterface(grouped.DNumeric, TypeProps.DNumeric, 1, true))
 
-        const globalInterComp = genInterface(resp.scalar, { id: 'global', man: 'Partial<CGlobal>' }, 0)
+        const globalInterComp = genInterface(resp.scalar, { id: 'global', man: 'CGlobal' }, 0)
             .replace('{', '{\n' + globcomp)
         output.push(globalInterComp)
 
-        const aff = genInterface(resp.aggregate, { id: 'aggregate', man: 'Partial<CAggregate>' }, 0)
+        const aff = genInterface(resp.aggregate, { id: 'aggregate', man: 'CAggregate' }, 0)
         // console.log(aff)
         output.push(aff)
         output.push(await generateSettings())

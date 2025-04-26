@@ -1,7 +1,7 @@
 import { test, expect } from 'bun:test';
 //  import { ConditionParser } from './condition-parser';
 import { builder } from './build'
-import { DuckDBNodeAdapter } from '../adapters/DuckDBNodeAdapter';
+// import { DuckDBNodeAdapter } from '../adapters/DuckDBNodeAdapter';
 import { Buck, from, MemoryDB } from '../buckdb';
 const xx = from('duckdb_functions()')
 const clean = a => a.replaceAll(/\n/g, '').replaceAll(/\s+/g, ' ')

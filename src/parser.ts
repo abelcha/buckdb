@@ -1,5 +1,27 @@
 import jsep, { ArrowFunctionExpression, Expression, Property } from './jsep';
-import { LitteralTypesMap, PatternMatchers } from './utils'
+import { LitteralTypesMap, PatternMatchers, wrap, Ω } from './utils'
+
+const RegexpFuncsWthOptions = new Map([
+  ['regexp_extract', 3],
+  ['regexp_extract_all', 3],
+  ['regexp_replace', 3],
+  ['regexp_matches', 2],
+  ['regexp_full_matches', 2],
+])
+
+// {
+//   regexp_extract: 3,// (pattern: DVarcharable | RegExpable, group0?: DArrayable | DNumericable | DOtherable, options?: DOtherable | DVarcharable): DVarcharField;
+//     /**@description Split the string along the regex and extract all occurrences of group. A set of optional options can be set.	@example regexp_extract_all('hello_world', '([a-z ]+)_?', 1)*/
+//     regexp_extract_all: 3,//(regex: DVarcharable | RegExpable, group0?: DNumericable | DOtherable, options?: DOtherable | DVarcharable): DArrayField;
+//       /**@description Returns true if the entire string matches the regex. A set of optional options can be set.	@example regexp_full_match('anabanana', '(an)*')*/
+//       regexp_full_match: 2,//, (regex: DVarcharable | RegExpable, options?: DOtherable | DVarcharable): DBoolField;
+//         /**@description Returns true if string contains the regexp pattern, false otherwise. A set of optional options can be set.	@example regexp_matches('anabanana', '(an)*')*/
+//         regexp_matches: 2,//(pattern: DVarcharable | RegExpable, options?: DOtherable | DVarcharable): DBoolField;
+//           /**@description If string contains the regexp pattern, replaces the matching part with replacement. A set of optional options can be set.	@example regexp_replace('hello', '[lo]', '-')*/
+//           regexp_replace: 3,//(pattern: DVarcharable | RegExpable, replacement: DVarcharable, options?: DOtherable | DVarcharable): DVarcharField;
+//   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
+//   // regexp_split_to_array: (separator: DVarcharable | RegExpable, col2?: DOtherable | DVarcharable): DArrayField;
+// }
 
 function mapUnaryOperator(jsOperator) {
   const unaryOperatorMap = {
@@ -33,7 +55,7 @@ function mapOperator(jsOperator) {
     '-': '-',
     '*': '*',
     '/': '/',
-    '&&': 'AND',   // Logical AND
+    '&&': '\nAND',   // Logical AND
     '||': 'OR',    // Logical OR
     '>': '>',
     '<': '<',
@@ -181,7 +203,7 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
             return `${node.name}`
           }
           else if (typeof context[node.name] !== 'undefined') {
-            return '(' + JSON.stringify(context[node.name]) + ')'
+            return '(' + JSON.stringify(context[node.name]).replaceAll(/'/g, "''").replaceAll(/\"/g, "'") + ')'
           } else {
             throw new Error(`Undefined variable: ${node.name}, use .context({ ${node.name} }) too pass it down`);
           }
@@ -194,8 +216,7 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
       case 'Literal':
         if (node.value instanceof RegExp) {
           const rgx = node.value.toString().split(SLASH).slice(1, -1).join(SLASH)
-          const flags = opts.isFuncArg && node.value.flags ? `, '${node.value.flags}'` : ''
-          // console.log(opts.isFuncArg, node)
+          const flags = false && opts.isFuncArg && node.value.flags ? `, '${node.value.flags}'` : ''
           return `'${rgx}'` + flags
         }
         if (node.value === null) {
@@ -213,13 +234,27 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         const callee = transformNode(node.callee, { isFuncArg: true })
         const lastCallee = callee[callee.length - 1]
         let args = node.arguments.map(e => transformNode(e, { isFuncArg: true }))
+        if (RegexpFuncsWthOptions.has(lastCallee)) {
+          const offset = RegexpFuncsWthOptions.get(lastCallee) as number;
+          const index = node.arguments.findIndex(e => e.type === 'Literal' && e.value instanceof RegExp)
+          if (index === -1) {
+            break
+          }
+          const pargs = node.arguments.slice(index)
+          if (offset === 3 && pargs.length === 1) {
+            args.push('0')
+          }
+          if (pargs.length < offset) {
+            args.push(wrap(pargs[0].value.flags, "'"))
+          }
+        }
         if (PatternMatchers[lastCallee]) {
           const { keyword, joinWith } = PatternMatchers[lastCallee]
           if (node.callee.object.type === 'Identifier' && params.has(node.callee.object.name)) {
             return `${args[0]} ${keyword} ${args.slice(1).join(joinWith)}`
           }
-          if (lastCallee === 'SimilarTo' && node.arguments?.[0]?.value?.flags) {
-            return `regexp_match(${callee.slice(0, -1)}, ${args.join(joinWith)})`
+          if (lastCallee in Ω('SimilarTo', 'regexp_matches') && node.arguments?.[0]?.value?.flags) {
+            return `regexp_matches(${callee.slice(0, -1)}, ${args[0]}, '${node.arguments?.[0]?.value?.flags}')`
           }
           return `${callee.slice(0, -1)} ${keyword} ${args.join(joinWith)}`
         }
@@ -227,6 +262,7 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           const gargs = node.arguments.slice(1).map(transformNode)
           return `${callee.slice(0, -1)}::${node.arguments[0].value}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
         }
+
         if (callee[0].toLowerCase() === 'cast' && node.arguments.length === 2) {
           const supp = typeof args[2] !== 'undefined' ? `(${args.slice(2).join(', ')})` : ''
           return `CAST(${args[0]} AS ${node.arguments[1].value}${supp})`
@@ -238,12 +274,14 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           }
           return `CAST(${args[0]} AS ${toType})`
         }
-        return `${callee.join('.')}(${node.arguments.map(transformNode).join(', ')})`;
+
+        return `${callee.join('.')}(${args.join(', ')})`;
       case 'UnaryExpression':
         // fn.toString() transform true and false to !1 and !0
         if (node.operator === '!' && node.argument.type === 'Literal' && typeof node.argument.value === 'number') {
           return !node.argument.value
         }
+        // console.log(node.argument?.callee?.property)
         return `${mapUnaryOperator(node.operator)} ${transformNode(node.argument)}`;
       case 'BinaryExpression':
         // Special handling for string concatenation

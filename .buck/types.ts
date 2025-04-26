@@ -10,12 +10,12 @@ export type DMapable = Map<string, any> | DMapField | _DMapField;
 export type DOtherable = any | DOtherField | _DOtherField;
 export type DAnyable = any | DAnyField | _DAnyField;
 export type RegExpable = RegExp | string;
-export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
-export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
 export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
-export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
-export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
 export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
+export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
+export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
+export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
+export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
 export type DSomeField = DVarcharField | DNumericField | DDateField | DNumericField | DDateField | DOtherField | DArrayField | DAnyField | DVarcharField | DStructField | DBlobField | DMapField | DBoolField | DJsonField;
 export declare const sId: unique symbol;
 export declare const sComptype: unique symbol;
@@ -264,16 +264,6 @@ interface _DVarcharField extends DAnyField {
   url_encode(): DVarcharField;
   /**@description Writes to the logger	@example write_log('Hello')*/
   write_log(...args: DAnyable[]): DAnyField;
-  /**@example Like(val, matcher)*/
-  Like(matcher: DAnyable): DBoolField;
-  /**@example Ilike(val, matcher)*/
-  Ilike(matcher: DAnyable): DBoolField;
-  /**@example SimilarTo(val, matcher)*/
-  SimilarTo(matcher: DAnyable): DBoolField;
-  /**@example Glob(val, matcher)*/
-  Glob(matcher: DAnyable): DBoolField;
-  /**@example In(val, matcher)*/
-  In(matcher: DAnyable): DBoolField;
 }
 export type DVarcharField = _DVarcharField;
 interface _DNumericField extends DAnyField {
@@ -450,10 +440,6 @@ interface _DNumericField extends DAnyField {
   trunc(): DNumericField;
   /**@description Bitwise XOR	@example xor(17, 5)*/
   xor(right: DNumericable): DNumericField;
-  /**@example Between(val, col1, col2)*/
-  Between(col1: DNumericable, col2: DNumericable): DBoolField;
-  /**@example NotBetween(val, col1, col2)*/
-  NotBetween(col1: DNumericable, col2: DNumericable): DBoolField;
 }
 export type DNumericField = _DNumericField & number;
 interface _DDateField extends DAnyField {
@@ -957,12 +943,12 @@ interface _DArrayField extends DAnyField {
 }
 export type DArrayField = _DArrayField;
 interface _DAnyField {
-  as(destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
-  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
   as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
-  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
-  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
   as(destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
+  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
+  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
+  as(destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
+  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
 
   [sInferred]: any;
   [sComptype]: any;
@@ -1014,10 +1000,6 @@ interface _DAnyField {
   typeof(): DVarcharField;
   /**@description Returns the VectorType of a given column	@example vector_type(col)*/
   vector_type(): DVarcharField;
-  /**@example Is(val, matcher)*/
-  Is(matcher: DAnyable): DBoolField;
-  /**@example IsNot(val, matcher)*/
-  IsNot(matcher: DAnyable): DBoolField;
 }
 export type DAnyField = _DAnyField;
 interface _DStructField extends DAnyField {
@@ -1106,12 +1088,12 @@ interface _DJsonField extends DAnyField {
 }
 export type DJsonField = _DJsonField;
 interface _DGlobalField {
-  cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
-  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
   cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
-  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
-  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
   cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
+  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
+  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
+  cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
+  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
 
   /**@description Absolute value	@example abs(-17.4)*/
   abs(x: DNumericable): DNumericField;
@@ -2125,10 +2107,8 @@ interface _DGlobalField {
   SimilarTo(val: DVarcharable, matcher: DAnyable): DBoolField;
   /**@example Glob(val, matcher)*/
   Glob(val: DVarcharable, matcher: DAnyable): DBoolField;
-  /**@example Is(val, matcher)*/
-  Is(val: DAnyable, matcher: DAnyable): DBoolField;
-  /**@example IsNot(val, matcher)*/
-  IsNot(val: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example IsNull(val)*/
+  IsNull(val: DAnyable): DBoolField;
   /**@example Between(val, col1, col2)*/
   Between(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
   /**@example In(val, matcher)*/
@@ -2547,12 +2527,12 @@ interface _DTableField {
 }
 export type DTableField = _DTableField;
 interface CAny {
-  as(destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
-  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
   as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
-  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
-  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
   as(destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
+  as(destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
+  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
 
   [sInferred]: any;
   /**@description Returns the name of a given expression	@example alias(42 + 1)*/
@@ -2603,10 +2583,8 @@ interface CAny {
   typeof(): string & CVarchar;
   /**@description Returns the VectorType of a given column	@example vector_type(col)*/
   vector_type(): string & CVarchar;
-  /**@example Is(val, matcher)*/
-  Is(matcher: DAnyable): DBoolField;
-  /**@example IsNot(val, matcher)*/
-  IsNot(matcher: DAnyable): DBoolField;
+  /**@example IsNull(val)*/
+  IsNull(): DBoolField;
 }
 
 export type DAnyComp = Partial<CAny>;
@@ -3049,12 +3027,12 @@ interface CNumeric extends CAny {
 export type DNumericComp = number & CNumeric;
 
 interface CGlobal {
-  cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
-  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
   cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
-  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
-  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
   cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
+  cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
+  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
 
   /**@description Absolute value	@example abs(-17.4)*/
   abs(x: DNumericable): number & CNumeric;
@@ -4068,10 +4046,8 @@ interface CGlobal {
   SimilarTo(val: DVarcharable, matcher: DAnyable): DBoolField;
   /**@example Glob(val, matcher)*/
   Glob(val: DVarcharable, matcher: DAnyable): DBoolField;
-  /**@example Is(val, matcher)*/
-  Is(val: DAnyable, matcher: DAnyable): DBoolField;
-  /**@example IsNot(val, matcher)*/
-  IsNot(val: DAnyable, matcher: DAnyable): DBoolField;
+  /**@example IsNull(val)*/
+  IsNull(val: DAnyable): DBoolField;
   /**@example Between(val, col1, col2)*/
   Between(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
   /**@example In(val, matcher)*/
@@ -4080,7 +4056,7 @@ interface CGlobal {
   NotBetween(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
 }
 
-export type DGlobalComp = Partial<CGlobal>;
+export type DGlobalComp = CGlobal;
 
 interface CAggregate {
   /**@description Returns the first non-null value from arg. This function is affected by ordering.*/
@@ -4318,7 +4294,7 @@ interface CAggregate {
   variance(x: DNumericable): number & CNumeric;
 }
 
-export type DAggregateComp = Partial<CAggregate>;
+export type DAggregateComp = CAggregate;
 
 export interface DSettings {
   /**@description Access mode of the database (AUTOMATIC, READ_ONLY or READ_WRITE)*/

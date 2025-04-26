@@ -1,27 +1,27 @@
-export type DNumericable = number | DNumericField;
-export type DVarcharable = string | DVarcharField;
-export type DArrayable = any[] | DArrayField;
-export type DStructable = Record<string, any> | DStructField;
-export type DJsonable = Record<string, any> | DJsonField;
-export type DBoolable = boolean | DBoolField;
-export type DBlobable = string | DBlobField;
-export type DDateable = Date | DDateField;
-export type DMapable = Map<string, any> | DMapField;
-export type DOtherable = any | DOtherField;
-export type DAnyable = any | DAnyField;
+export type DNumericable = number | DNumericField | _DNumericField;
+export type DVarcharable = string | DVarcharField | _DVarcharField;
+export type DArrayable = any[] | DArrayField | _DArrayField;
+export type DStructable = Record<string, any> | DStructField | _DStructField;
+export type DJsonable = Record<string, any> | DJsonField | _DJsonField;
+export type DBoolable = boolean | DBoolField | _DBoolField;
+export type DBlobable = string | DBlobField | _DBlobField;
+export type DDateable = Date | DDateField | _DDateField;
+export type DMapable = Map<string, any> | DMapField | _DMapField;
+export type DOtherable = any | DOtherField | _DOtherField;
+export type DAnyable = any | DAnyField | _DAnyField;
 export type RegExpable = RegExp | string;
 export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
-export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
-export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
-export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
 export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
+export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
 export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
+export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
+export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
 export type DSomeField = DVarcharField | DNumericField | DDateField | DNumericField | DDateField | DOtherField | DArrayField | DAnyField | DVarcharField | DStructField | DBlobField | DMapField | DBoolField | DJsonField;
 export declare const sId: unique symbol;
 export declare const sComptype: unique symbol;
 export declare const sAnti: unique symbol;
 export declare const sInferred: unique symbol;
-export interface DVarcharField extends DAnyField {
+interface _DVarcharField extends DAnyField {
   [sInferred]: string;
   [sComptype]: DVarcharComp;
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
@@ -275,7 +275,8 @@ export interface DVarcharField extends DAnyField {
   /**@example In(val, matcher)*/
   In(matcher: DAnyable): DBoolField;
 }
-export interface DNumericField extends DAnyField {
+export type DVarcharField = _DVarcharField;
+interface _DNumericField extends DAnyField {
   [sInferred]: number;
   [sComptype]: DNumericComp;
   /**@description Absolute value	@example abs(-17.4)*/
@@ -454,7 +455,8 @@ export interface DNumericField extends DAnyField {
   /**@example NotBetween(val, col1, col2)*/
   NotBetween(col1: DNumericable, col2: DNumericable): DBoolField;
 }
-export interface DDateField extends DAnyField {
+export type DNumericField = _DNumericField & number;
+interface _DDateField extends DAnyField {
   [sInferred]: Date;
   [sComptype]: Date;
   add(col1: DDateable | DOtherable): DDateField;
@@ -549,7 +551,8 @@ export interface DDateField extends DAnyField {
   /**@description Extract the yearweek component from a date or timestamp	@example yearweek(timestamp '2021-08-03 11:59:44.123456')*/
   yearweek(): DNumericField;
 }
-export interface DOtherField extends DAnyField {
+export type DDateField = _DDateField;
+interface _DOtherField extends DAnyField {
   [sInferred]: any;
   [sComptype]: any;
   add(col1: DDateable): DDateField;
@@ -796,7 +799,8 @@ export interface DOtherField extends DAnyField {
   /**@example Json(val)*/
   Json(): DJsonField;
 }
-export interface DArrayField extends DAnyField {
+export type DOtherField = _DOtherField;
+interface _DArrayField extends DAnyField {
   [sInferred]: any[];
   [sComptype]: any[];
   add(col1: DArrayable): DArrayField;
@@ -951,13 +955,14 @@ export interface DArrayField extends DAnyField {
   /**@description Repeats the string count number of times	@example repeat('A', 5)*/
   repeat(count: DNumericable): DArrayField;
 }
-export interface DAnyField {
+export type DArrayField = _DArrayField;
+interface _DAnyField {
   as(destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
-  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
-  as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
-  as(destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
   as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
+  as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
   as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
+  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
+  as(destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
 
   [sInferred]: any;
   [sComptype]: any;
@@ -1014,7 +1019,8 @@ export interface DAnyField {
   /**@example IsNot(val, matcher)*/
   IsNot(matcher: DAnyable): DBoolField;
 }
-export interface DStructField extends DAnyField {
+export type DAnyField = _DAnyField;
+interface _DStructField extends DAnyField {
   [sInferred]: Record<string, any>;
   [sComptype]: Record<string, any>;
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
@@ -1024,7 +1030,8 @@ export interface DStructField extends DAnyField {
   /**@description Extract the entry from the STRUCT by position (starts at 1!).	@example struct_extract_at({'i': 3, 'v2': 3, 'v3': 0}, 2)*/
   struct_extract_at(entry: DNumericable): DAnyField;
 }
-export interface DBlobField extends DAnyField {
+export type DStructField = _DStructField;
+interface _DBlobField extends DAnyField {
   [sInferred]: string;
   [sComptype]: Blob;
   /**@description Convert a blob to a base64 encoded string	@example base64('A'::blob)*/
@@ -1050,7 +1057,8 @@ export interface DBlobField extends DAnyField {
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
   to_hex(): DVarcharField;
 }
-export interface DMapField extends DAnyField {
+export type DBlobField = _DBlobField;
+interface _DMapField extends DAnyField {
   [sInferred]: Map<string, any>;
   [sComptype]: Map<string, any>;
   /**@description Checks if a map contains a given key.	@example contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')*/
@@ -1058,13 +1066,15 @@ export interface DMapField extends DAnyField {
   /**@description Checks if a map contains a given key.	@example map_contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')*/
   map_contains(key: DAnyable): DBoolField;
 }
-export interface DBoolField extends DAnyField {
+export type DMapField = _DMapField;
+interface _DBoolField extends DAnyField {
   [sInferred]: boolean;
   [sComptype]: boolean;
   /**@description Returns list of schemas. Pass a parameter of True to include implicit schemas	@example current_schemas(true)*/
   current_schemas(): DArrayField;
 }
-export interface DJsonField extends DAnyField {
+export type DBoolField = _DBoolField;
+interface _DJsonField extends DAnyField {
   [sInferred]: Record<string, any>;
   [sComptype]: Record<string, any>;
   from_json(col1: DVarcharable): DAnyField;
@@ -1094,13 +1104,14 @@ export interface DJsonField extends DAnyField {
   json_value(col1: DNumericable | DVarcharable): DVarcharField;
   json_value(col1: DArrayable): DArrayField;
 }
-export interface DGlobalField {
+export type DJsonField = _DJsonField;
+interface _DGlobalField {
   cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
-  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
-  cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
-  cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
   cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
+  cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
   cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
+  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
+  cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
 
   /**@description Absolute value	@example abs(-17.4)*/
   abs(x: DNumericable): DNumericField;
@@ -2125,7 +2136,8 @@ export interface DGlobalField {
   /**@example NotBetween(val, col1, col2)*/
   NotBetween(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
 }
-export interface DAggregateField {
+export type DGlobalField = _DGlobalField;
+interface _DAggregateField {
   /**@description Returns the first non-null value from arg. This function is affected by ordering.*/
   any_value(arg: DNumericable): DNumericField;
   /**@description Returns the first non-null value from arg. This function is affected by ordering.*/
@@ -2360,7 +2372,8 @@ export interface DAggregateField {
   /**@description Returns the sample variance of all input values.	@example (SUM(x^2) - SUM(x)^2 / COUNT(x)) / (COUNT(x) - 1)*/
   variance(x: DNumericable): DNumericField;
 }
-export interface DTableField {
+export type DAggregateField = _DAggregateField;
+interface _DTableField {
   arrow_scan(col0: DOtherable, col1: DOtherable, col2: DOtherable): void;
   arrow_scan_dumb(col0: DOtherable, col1: DOtherable, col2: DOtherable): void;
   check_peg_parser(col0: DVarcharable): void;
@@ -2532,25 +2545,26 @@ export interface DTableField {
   unnest(col0: DAnyable): void;
   which_secret(col0: DVarcharable, col1: DVarcharable): void;
 }
-export interface CAny {
-  as(destype: DSTRING_NATIVE, ...args: DAnyable[]): Partial<CVarchar>;
-  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+export type DTableField = _DTableField;
+interface CAny {
+  as(destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
+  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
   as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
-  as(destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
-  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): Partial<number> & Partial<CNumeric>;
   as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
+  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  as(destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
 
   [sInferred]: any;
   /**@description Returns the name of a given expression	@example alias(42 + 1)*/
-  alias(): Partial<CVarchar>;
+  alias(): string & CVarchar;
   /**@description list_slice with added step feature.	@example list_slice([4, 5, 6], 1, 3, 2)*/
   array_slice(begin: DAnyable, end: DAnyable, step?: DNumericable | DOtherable): Partial<CAny>;
   /**@description Whether or not we can implicitly cast from the source type to the other type	@example can_implicitly_cast(NULL::INTEGER, NULL::BIGINT)*/
   can_cast_implicitly(targetType: DAnyable): DBoolField;
   /**@description Returns the size of the map (or the number of entries in the map)	@example cardinality( map([4, 2], ['a', 'b']) );*/
-  cardinality(...args: DAnyable[]): Partial<number> & Partial<CNumeric>;
+  cardinality(...args: DAnyable[]): number & CNumeric;
   /**@description Concatenate many strings together.	@example concat('Hello', ' ', 'World')*/
-  concat(...args: DAnyable[]): Partial<CVarchar>;
+  concat(...args: DAnyable[]): string & CVarchar;
   /**@description If arg2 is NULL, return NULL. Otherwise, return arg1.	@example constant_or_null(42, NULL)*/
   constant_or_null(arg2: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Constructs a binary-comparable sort key based on a set of input parameters and sort qualifiers	@example create_sort_key('A', 'DESC')*/
@@ -2560,9 +2574,9 @@ export interface CAny {
   /**@description Returns the numeric value backing the given enum value	@example enum_code('happy'::mood)*/
   enum_code(): Partial<CAny>;
   /**@description Returns the first value of the input enum type	@example enum_first(NULL::mood)*/
-  enum_first(): Partial<CVarchar>;
+  enum_first(): string & CVarchar;
   /**@description Returns the last value of the input enum type	@example enum_last(NULL::mood)*/
-  enum_last(): Partial<CVarchar>;
+  enum_last(): string & CVarchar;
   /**@description Returns all values of the input enum type as an array	@example enum_range(NULL::mood)*/
   enum_range(): DArrayField;
   /**@description Returns the range between the two given enum values as an array. The values must be of the same enum type. When the first parameter is NULL, the result starts with the first value of the enum type. When the second parameter is NULL, the result ends with the last value of the enum type	@example enum_range_boundary(NULL, 'happy'::mood)*/
@@ -2572,7 +2586,7 @@ export interface CAny {
   /**@description Returns the highest value of the set of input parameters	@example greatest(42, 84)*/
   greatest(...args: DAnyable[]): Partial<CAny>;
   /**@description Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example hash('🦆')*/
-  hash(...args: DAnyable[]): Partial<number> & Partial<CNumeric>;
+  hash(...args: DAnyable[]): number & CNumeric;
   /**@description Whether or not the provided value is the histogram "other" bin (used for values not belonging to any provided bin)	@example is_histogram_other_bin(v)*/
   is_histogram_other_bin(): DBoolField;
   /**@description Returns the lowest value of the set of input parameters	@example least(42, 84)*/
@@ -2584,68 +2598,69 @@ export interface CAny {
   /**@description Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example map_extract_value(map(['key'], ['val']), 'key')*/
   map_extract_value(key: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Returns a string with statistics about the expression. Expression can be a column, constant, or SQL expression	@example stats(5)*/
-  stats(): Partial<CVarchar>;
+  stats(): string & CVarchar;
   /**@description Returns the name of the data type of the result of the expression	@example typeof('abc')*/
-  typeof(): Partial<CVarchar>;
+  typeof(): string & CVarchar;
   /**@description Returns the VectorType of a given column	@example vector_type(col)*/
-  vector_type(): Partial<CVarchar>;
+  vector_type(): string & CVarchar;
   /**@example Is(val, matcher)*/
   Is(matcher: DAnyable): DBoolField;
   /**@example IsNot(val, matcher)*/
   IsNot(matcher: DAnyable): DBoolField;
 }
+
 export type DAnyComp = Partial<CAny>;
 
-export interface CVarchar extends CAny {
+interface CVarchar extends CAny {
   [sInferred]: string;
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
-  array_extract(index: DNumericable): Partial<CVarchar>;
+  array_extract(index: DNumericable): string & CVarchar;
   /**@description Returns an integer that represents the Unicode code point of the first character of the string	@example ascii('Ω')*/
-  ascii(): Partial<number> & Partial<CNumeric>;
+  ascii(): number & CNumeric;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  bin(): Partial<CVarchar>;
-  bit_length(): Partial<number> & Partial<CNumeric>;
+  bin(): string & CVarchar;
+  bit_length(): number & CNumeric;
   /**@description Pads the bitstring until the specified length	@example bitstring('1010'::BIT, 7)*/
   bitstring(length: DNumericable): DOtherField;
   /**@description Concatenate strings together separated by the specified separator.	@example concat_ws(', ', 'Banana', 'Apple', 'Melon')*/
-  concat_ws(string: DAnyable, ...args: DAnyable[]): Partial<CVarchar>;
+  concat_ws(string: DAnyable, ...args: DAnyable[]): string & CVarchar;
   /**@description Returns true if search_string is found within string.	@example contains('abc', 'a')*/
   contains(searchString: DVarcharable): DBoolField;
   /**@description Returns the current value of the configuration setting	@example current_setting('access_mode')*/
   current_setting(): Partial<CAny>;
   /**@description Return the current value of the sequence. Note that nextval must be called at least once prior to calling currval.	@example currval('my_sequence_name')*/
-  currval(): Partial<number> & Partial<CNumeric>;
+  currval(): number & CNumeric;
   /**@description Extension of Levenshtein distance to also include transposition of adjacent characters as an allowed edit operation. In other words, the minimum number of edit operations (insertions, deletions, substitutions or transpositions) required to change one string to another. Different case is considered different	@example damerau_levenshtein('hello', 'world')*/
-  damerau_levenshtein(str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  damerau_levenshtein(str2: DVarcharable): number & CNumeric;
   /**@description The number of partition boundaries between the timestamps	@example date_diff('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')*/
-  date_diff(startdate: DDateable, enddate: DDateable): Partial<number> & Partial<CNumeric>;
+  date_diff(startdate: DDateable, enddate: DDateable): number & CNumeric;
   /**@description Get subfield (equivalent to extract)	@example date_part('minute', TIMESTAMP '1992-09-20 20:38:40')*/
-  date_part(col1: DDateable | DOtherable): Partial<number> & Partial<CNumeric>;
+  date_part(col1: DDateable | DOtherable): number & CNumeric;
   /**@description The number of complete partitions between the timestamps	@example date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')*/
-  date_sub(startdate: DDateable, enddate: DDateable): Partial<number> & Partial<CNumeric>;
+  date_sub(startdate: DDateable, enddate: DDateable): number & CNumeric;
   /**@description Truncate to specified precision	@example date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')*/
   date_trunc(timestamp: DDateable): DDateField;
   /**@description Truncate to specified precision	@example date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')*/
   date_trunc(timestamp: DOtherable): DOtherField;
   /**@description The number of partition boundaries between the timestamps	@example date_diff('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')*/
-  datediff(startdate: DDateable, enddate: DDateable): Partial<number> & Partial<CNumeric>;
+  datediff(startdate: DDateable, enddate: DDateable): number & CNumeric;
   /**@description Get subfield (equivalent to extract)	@example date_part('minute', TIMESTAMP '1992-09-20 20:38:40')*/
-  datepart(col1: DDateable | DOtherable): Partial<number> & Partial<CNumeric>;
+  datepart(col1: DDateable | DOtherable): number & CNumeric;
   /**@description The number of complete partitions between the timestamps	@example date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')*/
-  datesub(startdate: DDateable, enddate: DDateable): Partial<number> & Partial<CNumeric>;
+  datesub(startdate: DDateable, enddate: DDateable): number & CNumeric;
   /**@description Truncate to specified precision	@example date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')*/
   datetrunc(timestamp: DDateable): DDateField;
   /**@description Truncate to specified precision	@example date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')*/
   datetrunc(timestamp: DOtherable): DOtherField;
   /**@description The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example levenshtein('duck','db')*/
-  editdist3(str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  editdist3(str2: DVarcharable): number & CNumeric;
   /**@description Convert varchar to blob. Converts utf-8 characters into literal encoding	@example encode('my_string_with_ü')*/
   encode(): DBlobField;
   ends_with(col1: DVarcharable): DBoolField;
   /**@description Throws the given error message	@example error('access_mode')*/
   error(): DOtherField;
   /**@description Formats a string using fmt syntax	@example format('Benchmark "{}" took {} seconds', 'CSV', 42)*/
-  format(...args: DAnyable[]): Partial<CVarchar>;
+  format(...args: DAnyable[]): string & CVarchar;
   /**@description Convert a base64 encoded string to a character string	@example from_base64('QQ==')*/
   from_base64(): DBlobField;
   /**@description Converts a value from binary representation to a blob	@example unbin('0110')*/
@@ -2656,24 +2671,24 @@ export interface CVarchar extends CAny {
   from_json_strict(col1: DVarcharable): Partial<CAny>;
   getvariable(): Partial<CAny>;
   /**@description The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example hamming('duck','luck')*/
-  hamming(str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  hamming(str2: DVarcharable): number & CNumeric;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  hex(): Partial<CVarchar>;
-  icu_sort_key(col1: DVarcharable): Partial<CVarchar>;
+  hex(): string & CVarchar;
+  icu_sort_key(col1: DVarcharable): string & CVarchar;
   /**@description Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example ilike_escape('A%c', 'a$%C', '$')*/
   ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /**@description Returns whether or not the database/schema are in the search path	@example in_search_path('memory', 'main')*/
   in_search_path(schemaName: DVarcharable): DBoolField;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
-  instr(needle: DVarcharable): Partial<number> & Partial<CNumeric>;
+  instr(needle: DVarcharable): number & CNumeric;
   /**@description The Jaccard similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example jaccard('duck','luck')*/
-  jaccard(str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  jaccard(str2: DVarcharable): number & CNumeric;
   /**@description The Jaro similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example jaro_similarity('duck', 'duckdb', 0.5)*/
-  jaro_similarity(str2: DVarcharable, scoreCutoff?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  jaro_similarity(str2: DVarcharable, scoreCutoff?: DNumericable | DOtherable): number & CNumeric;
   /**@description The Jaro-Winkler similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example jaro_winkler_similarity('duck', 'duckdb', 0.5)*/
-  jaro_winkler_similarity(str2: DVarcharable, scoreCutoff?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  jaro_winkler_similarity(str2: DVarcharable, scoreCutoff?: DNumericable | DOtherable): number & CNumeric;
   json_array_length(col1: DArrayable): DArrayField;
-  json_array_length(col1?: DOtherable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  json_array_length(col1?: DOtherable | DVarcharable): number & CNumeric;
   json_contains(col1: DJsonable | DVarcharable): DBoolField;
   json_exists(col1: DVarcharable): DBoolField;
   json_exists(col1: DArrayable): DArrayField;
@@ -2681,78 +2696,78 @@ export interface CVarchar extends CAny {
   json_extract(col1: DArrayable): DArrayField;
   json_extract_path(col1: DNumericable | DVarcharable): DJsonField;
   json_extract_path(col1: DArrayable): DArrayField;
-  json_extract_path_text(col1: DNumericable | DVarcharable): Partial<CVarchar>;
+  json_extract_path_text(col1: DNumericable | DVarcharable): string & CVarchar;
   json_extract_path_text(col1: DArrayable): DArrayField;
   json_extract_string(col1: DArrayable): DArrayField;
-  json_extract_string(col1: DNumericable | DVarcharable): Partial<CVarchar>;
+  json_extract_string(col1: DNumericable | DVarcharable): string & CVarchar;
   json_keys(col1?: DArrayable | DOtherable | DVarcharable): DArrayField;
   json_serialize_plan(col1?: DBoolable | DOtherable, col2?: DBoolable | DOtherable, col3?: DBoolable | DOtherable, col4?: DBoolable | DOtherable): DJsonField;
   json_serialize_sql(col1?: DBoolable | DOtherable, col2?: DBoolable | DOtherable, col3?: DBoolable | DOtherable): DJsonField;
   json_structure(): DJsonField;
   json_transform(col1: DVarcharable): Partial<CAny>;
   json_transform_strict(col1: DVarcharable): Partial<CAny>;
-  json_type(col1?: DOtherable | DVarcharable): Partial<CVarchar>;
+  json_type(col1?: DOtherable | DVarcharable): string & CVarchar;
   json_type(col1: DArrayable): DArrayField;
   json_valid(): DBoolField;
   json_value(col1: DArrayable): DArrayField;
-  json_value(col1: DNumericable | DVarcharable): Partial<CVarchar>;
+  json_value(col1: DNumericable | DVarcharable): string & CVarchar;
   /**@description Convert string to lower case	@example lower('Hello')*/
-  lcase(): Partial<CVarchar>;
+  lcase(): string & CVarchar;
   /**@description Extract the left-most count characters	@example left('Hello🦆', 2)*/
-  left(count: DNumericable): Partial<CVarchar>;
+  left(count: DNumericable): string & CVarchar;
   /**@description Extract the left-most count grapheme clusters	@example left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)*/
-  left_grapheme(count: DNumericable): Partial<CVarchar>;
+  left_grapheme(count: DNumericable): string & CVarchar;
   /**@description Number of characters in string.	@example length('Hello🦆')*/
-  len(): Partial<number> & Partial<CNumeric>;
+  len(): number & CNumeric;
   /**@description Number of grapheme clusters in string.	@example length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')*/
-  length_grapheme(): Partial<number> & Partial<CNumeric>;
+  length_grapheme(): number & CNumeric;
   /**@description The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example levenshtein('duck','db')*/
-  levenshtein(str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  levenshtein(str2: DVarcharable): number & CNumeric;
   /**@description Returns true if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example like_escape('a%c', 'a$%c', '$')*/
   like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
-  list_element(index: DNumericable): Partial<CVarchar>;
+  list_element(index: DNumericable): string & CVarchar;
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
-  list_extract(index: DNumericable): Partial<CVarchar>;
+  list_extract(index: DNumericable): string & CVarchar;
   /**@description Convert string to lower case	@example lower('Hello')*/
-  lower(): Partial<CVarchar>;
+  lower(): string & CVarchar;
   /**@description Pads the string with the character from the left until it has count characters	@example lpad('hello', 10, '>')*/
-  lpad(count: DNumericable, character: DVarcharable): Partial<CVarchar>;
+  lpad(count: DNumericable, character: DVarcharable): string & CVarchar;
   /**@description Removes any occurrences of any of the characters from the left side of the string	@example ltrim('>>>>test<<', '><')*/
-  ltrim(characters?: DOtherable | DVarcharable): Partial<CVarchar>;
+  ltrim(characters?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns the MD5 hash of the value as a string	@example md5('123')*/
-  md5(): Partial<CVarchar>;
+  md5(): string & CVarchar;
   /**@description Returns the MD5 hash of the value as an INT128	@example md5_number('123')*/
-  md5_number(): Partial<number> & Partial<CNumeric>;
+  md5_number(): number & CNumeric;
   /**@description The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example hamming('duck','luck')*/
-  mismatches(str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  mismatches(str2: DVarcharable): number & CNumeric;
   /**@description Return the following value of the sequence.	@example nextval('my_sequence_name')*/
-  nextval(): Partial<number> & Partial<CNumeric>;
+  nextval(): number & CNumeric;
   /**@description Convert string to Unicode NFC normalized string. Useful for comparisons and ordering if text data is mixed between NFC normalized and not.	@example nfc_normalize('ardèch')*/
-  nfc_normalize(): Partial<CVarchar>;
+  nfc_normalize(): string & CVarchar;
   /**@description Returns false if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example not_ilike_escape('A%c', 'a$%C', '$')*/
   not_ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /**@description Returns false if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example not_like_escape('a%c', 'a$%c', '$')*/
   not_like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /**@description Returns the unicode codepoint of the first character of the string	@example unicode('ü')*/
-  ord(): Partial<number> & Partial<CNumeric>;
+  ord(): number & CNumeric;
   /**@description Returns the top-level directory name. separator options: system, both_slash (default), forward_slash, backslash	@example parse_dirname('path/to/file.csv', 'system')*/
-  parse_dirname(separator?: DOtherable | DVarcharable): Partial<CVarchar>;
+  parse_dirname(separator?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns the head of the path similarly to Python's os.path.dirname. separator options: system, both_slash (default), forward_slash, backslash	@example parse_dirpath('path/to/file.csv', 'system')*/
-  parse_dirpath(separator?: DOtherable | DVarcharable): Partial<CVarchar>;
+  parse_dirpath(separator?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns the last component of the path similarly to Python's os.path.basename. If trim_extension is true, the file extension will be removed (it defaults to false). separator options: system, both_slash (default), forward_slash, backslash	@example parse_filename('path/to/file.csv', true, 'forward_slash')*/
-  parse_filename(trimExtension?: DBoolable | DOtherable | DVarcharable, separator?: DOtherable | DVarcharable): Partial<CVarchar>;
+  parse_filename(trimExtension?: DBoolable | DOtherable | DVarcharable, separator?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns a list of the components (directories and filename) in the path similarly to Python's pathlib.PurePath::parts. separator options: system, both_slash (default), forward_slash, backslash	@example parse_path('path/to/file.csv', 'system')*/
   parse_path(separator?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
-  position(needle: DVarcharable): Partial<number> & Partial<CNumeric>;
+  position(needle: DVarcharable): number & CNumeric;
   prefix(col1: DVarcharable): DBoolField;
   /**@description Formats a string using printf syntax	@example printf('Benchmark "%s" took %d seconds', 'CSV', 42)*/
-  printf(...args: DAnyable[]): Partial<CVarchar>;
+  printf(...args: DAnyable[]): string & CVarchar;
   /**@description Escapes all potentially meaningful regexp characters in the input string	@example regexp_escape('https://duckdb.org')*/
-  regexp_escape(): Partial<CVarchar>;
+  regexp_escape(): string & CVarchar;
   /**@description If string contains the regexp pattern, returns the capturing group specified by optional parameter group. The group must be a constant value. If no group is given, it defaults to 0. A set of optional options can be set.	@example regexp_extract('abc', '([a-z])(b)', 1)*/
-  regexp_extract(pattern: DVarcharable | RegExpable, group0?: DArrayable | DNumericable | DOtherable, options?: DOtherable | DVarcharable): Partial<CVarchar>;
+  regexp_extract(pattern: DVarcharable | RegExpable, group0?: DArrayable | DNumericable | DOtherable, options?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Split the string along the regex and extract all occurrences of group. A set of optional options can be set.	@example regexp_extract_all('hello_world', '([a-z ]+)_?', 1)*/
   regexp_extract_all(regex: DVarcharable | RegExpable, group0?: DNumericable | DOtherable, options?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns true if the entire string matches the regex. A set of optional options can be set.	@example regexp_full_match('anabanana', '(an)*')*/
@@ -2760,27 +2775,27 @@ export interface CVarchar extends CAny {
   /**@description Returns true if string contains the regexp pattern, false otherwise. A set of optional options can be set.	@example regexp_matches('anabanana', '(an)*')*/
   regexp_matches(pattern: DVarcharable | RegExpable, options?: DOtherable | DVarcharable): DBoolField;
   /**@description If string contains the regexp pattern, replaces the matching part with replacement. A set of optional options can be set.	@example regexp_replace('hello', '[lo]', '-')*/
-  regexp_replace(pattern: DVarcharable | RegExpable, replacement: DVarcharable, options?: DOtherable | DVarcharable): Partial<CVarchar>;
+  regexp_replace(pattern: DVarcharable | RegExpable, replacement: DVarcharable, options?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
   regexp_split_to_array(separator: DVarcharable | RegExpable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Repeats the string count number of times	@example repeat('A', 5)*/
-  repeat(count: DNumericable): Partial<CVarchar>;
+  repeat(count: DNumericable): string & CVarchar;
   /**@description Replaces any occurrences of the source with target in string	@example replace('hello', 'l', '-')*/
-  replace(source: DVarcharable, target: DVarcharable): Partial<CVarchar>;
+  replace(source: DVarcharable, target: DVarcharable): string & CVarchar;
   /**@description Reverses the string	@example reverse('hello')*/
-  reverse(): Partial<CVarchar>;
+  reverse(): string & CVarchar;
   /**@description Extract the right-most count characters	@example right('Hello🦆', 3)*/
-  right(count: DNumericable): Partial<CVarchar>;
+  right(count: DNumericable): string & CVarchar;
   /**@description Extract the right-most count grapheme clusters	@example right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)*/
-  right_grapheme(count: DNumericable): Partial<CVarchar>;
+  right_grapheme(count: DNumericable): string & CVarchar;
   /**@description Pads the string with the character from the right until it has count characters	@example rpad('hello', 10, '<')*/
-  rpad(count: DNumericable, character: DVarcharable): Partial<CVarchar>;
+  rpad(count: DNumericable, character: DVarcharable): string & CVarchar;
   /**@description Removes any occurrences of any of the characters from the right side of the string	@example rtrim('>>>>test<<', '><')*/
-  rtrim(characters?: DOtherable | DVarcharable): Partial<CVarchar>;
+  rtrim(characters?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns the SHA1 hash of the value	@example sha1('hello')*/
-  sha1(): Partial<CVarchar>;
+  sha1(): string & CVarchar;
   /**@description Returns the SHA256 hash of the value	@example sha256('hello')*/
-  sha256(): Partial<CVarchar>;
+  sha256(): string & CVarchar;
   /**@description Returns true if string begins with search_string	@example starts_with('abc','a')*/
   starts_with(searchString: DVarcharable): DBoolField;
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
@@ -2788,7 +2803,7 @@ export interface CVarchar extends CAny {
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
   str_split_regex(separator: DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Converts a date to a string according to the format string.	@example strftime(date '1992-01-01', '%a, %-d %B %Y')*/
-  strftime(format: DDateable): Partial<CVarchar>;
+  strftime(format: DDateable): string & CVarchar;
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   string_split(separator: DVarcharable): DArrayField;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
@@ -2796,46 +2811,46 @@ export interface CVarchar extends CAny {
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   string_to_array(separator: DVarcharable): DArrayField;
   /**@description Strips accents from string.	@example strip_accents('mühleisen')*/
-  strip_accents(): Partial<CVarchar>;
+  strip_accents(): string & CVarchar;
   /**@description Number of bytes in string.	@example strlen('🦆')*/
-  strlen(): Partial<number> & Partial<CNumeric>;
+  strlen(): number & CNumeric;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
-  strpos(needle: DVarcharable): Partial<number> & Partial<CNumeric>;
+  strpos(needle: DVarcharable): number & CNumeric;
   /**@description Converts the string text to timestamp applying the format strings in the list until one succeeds. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('4/15/2023 10:56:00', ['%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'])*/
   strptime(formatList: DArrayable | DVarcharable): DDateField;
   /**@description Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring('Hello', 2, 2)*/
-  substr(start: DNumericable, length?: DNumericable | DOtherable): Partial<CVarchar>;
+  substr(start: DNumericable, length?: DNumericable | DOtherable): string & CVarchar;
   /**@description Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring('Hello', 2, 2)*/
-  substring(start: DNumericable, length?: DNumericable | DOtherable): Partial<CVarchar>;
+  substring(start: DNumericable, length?: DNumericable | DOtherable): string & CVarchar;
   /**@description Extract substring of length grapheme clusters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)*/
-  substring_grapheme(start: DNumericable, length?: DNumericable | DOtherable): Partial<CVarchar>;
+  substring_grapheme(start: DNumericable, length?: DNumericable | DOtherable): string & CVarchar;
   suffix(col1: DVarcharable): DBoolField;
   /**@description Extract the timezone component from a date or timestamp	@example timezone(timestamp '2021-08-03 11:59:44.123456')*/
   timezone(col1: DDateable): DDateField;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  to_binary(): Partial<CVarchar>;
+  to_binary(): string & CVarchar;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  to_hex(): Partial<CVarchar>;
+  to_hex(): string & CVarchar;
   /**@description Replaces each character in string that matches a character in the from set with the corresponding character in the to set. If from is longer than to, occurrences of the extra characters in from are deleted	@example translate('12345', '143', 'ax')*/
-  translate(from: DVarcharable, to: DVarcharable): Partial<CVarchar>;
+  translate(from: DVarcharable, to: DVarcharable): string & CVarchar;
   /**@description Removes any occurrences of any of the characters from either side of the string	@example trim('>>>>test<<', '><')*/
-  trim(characters?: DOtherable | DVarcharable): Partial<CVarchar>;
+  trim(characters?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Converts the string text to timestamp according to the format string. Returns NULL on failure.	@example try_strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')*/
   try_strptime(format: DArrayable | DVarcharable): DDateField;
   /**@description Convert string to upper case.	@example upper('Hello')*/
-  ucase(): Partial<CVarchar>;
+  ucase(): string & CVarchar;
   /**@description Converts a value from binary representation to a blob	@example unbin('0110')*/
   unbin(): DBlobField;
   /**@description Converts a value from hexadecimal representation to a blob	@example unhex('2A')*/
   unhex(): DBlobField;
   /**@description Returns the unicode codepoint of the first character of the string	@example unicode('ü')*/
-  unicode(): Partial<number> & Partial<CNumeric>;
+  unicode(): number & CNumeric;
   /**@description Convert string to upper case.	@example upper('Hello')*/
-  upper(): Partial<CVarchar>;
+  upper(): string & CVarchar;
   /**@description Unescapes the URL encoded input.	@example url_decode('this%20string%20is%2BFencoded')*/
-  url_decode(): Partial<CVarchar>;
+  url_decode(): string & CVarchar;
   /**@description Escapes the input string by encoding it so that it can be included in a URL query parameter.	@example url_encode('this string has/ special+ characters>')*/
-  url_encode(): Partial<CVarchar>;
+  url_encode(): string & CVarchar;
   /**@description Writes to the logger	@example write_log('Hello')*/
   write_log(...args: DAnyable[]): Partial<CAny>;
   /**@example Like(val, matcher)*/
@@ -2849,79 +2864,80 @@ export interface CVarchar extends CAny {
   /**@example In(val, matcher)*/
   In(matcher: DAnyable): DBoolField;
 }
-export type DVarcharComp = Partial<CVarchar>;
 
-export interface CNumeric extends CAny {
+export type DVarcharComp = string & CVarchar;
+
+interface CNumeric extends CAny {
   [sInferred]: number;
   /**@description Absolute value	@example abs(-17.4)*/
-  abs(): Partial<number> & Partial<CNumeric>;
+  abs(): number & CNumeric;
   /**@description Computes the arccosine of x	@example acos(0.5)*/
-  acos(): Partial<number> & Partial<CNumeric>;
+  acos(): number & CNumeric;
   /**@description Computes the inverse hyperbolic cos of x	@example acosh(2.3)*/
-  acosh(): Partial<number> & Partial<CNumeric>;
-  add(col1?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  acosh(): number & CNumeric;
+  add(col1?: DNumericable | DOtherable): number & CNumeric;
   add(col1: DDateable): DDateField;
   /**@description Computes the arcsine of x	@example asin(0.5)*/
-  asin(): Partial<number> & Partial<CNumeric>;
+  asin(): number & CNumeric;
   /**@description Computes the inverse hyperbolic sin of x	@example asinh(0.5)*/
-  asinh(): Partial<number> & Partial<CNumeric>;
+  asinh(): number & CNumeric;
   /**@description Computes the arctangent of x	@example atan(0.5)*/
-  atan(): Partial<number> & Partial<CNumeric>;
+  atan(): number & CNumeric;
   /**@description Computes the arctangent (y, x)	@example atan2(1.0, 0.0)*/
-  atan2(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  atan2(x: DNumericable): number & CNumeric;
   /**@description Computes the inverse hyperbolic tan of x	@example atanh(0.5)*/
-  atanh(): Partial<number> & Partial<CNumeric>;
+  atanh(): number & CNumeric;
   /**@description Draws a band whose width is proportional to (x - min) and equal to width characters when x = max. width defaults to 80	@example bar(5, 0, 20, 10)*/
-  bar(min: DNumericable, max: DNumericable, width?: DNumericable | DOtherable): Partial<CVarchar>;
+  bar(min: DNumericable, max: DNumericable, width?: DNumericable | DOtherable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  bin(): Partial<CVarchar>;
+  bin(): string & CVarchar;
   /**@description Returns the number of bits that are set	@example bit_count(31)*/
-  bit_count(): Partial<number> & Partial<CNumeric>;
+  bit_count(): number & CNumeric;
   /**@description Returns the cube root of x	@example cbrt(8)*/
-  cbrt(): Partial<number> & Partial<CNumeric>;
+  cbrt(): number & CNumeric;
   /**@description Rounds the number up	@example ceil(17.4)*/
-  ceil(): Partial<number> & Partial<CNumeric>;
+  ceil(): number & CNumeric;
   /**@description Rounds the number up	@example ceil(17.4)*/
-  ceiling(): Partial<number> & Partial<CNumeric>;
+  ceiling(): number & CNumeric;
   /**@description Returns a character which is corresponding the ASCII code value or Unicode code point	@example chr(65)*/
-  chr(): Partial<CVarchar>;
+  chr(): string & CVarchar;
   /**@description Computes the cos of x	@example cos(90)*/
-  cos(): Partial<number> & Partial<CNumeric>;
+  cos(): number & CNumeric;
   /**@description Computes the hyperbolic cos of x	@example cosh(1)*/
-  cosh(): Partial<number> & Partial<CNumeric>;
+  cosh(): number & CNumeric;
   /**@description Computes the cotangent of x	@example cot(0.5)*/
-  cot(): Partial<number> & Partial<CNumeric>;
+  cot(): number & CNumeric;
   /**@description Converts radians to degrees	@example degrees(pi())*/
-  degrees(): Partial<number> & Partial<CNumeric>;
-  divide(col1: DNumericable): Partial<number> & Partial<CNumeric>;
+  degrees(): number & CNumeric;
+  divide(col1: DNumericable): number & CNumeric;
   /**@description Extract the epoch component in milliseconds from a temporal type	@example epoch_ms(timestamp '2021-08-03 11:59:44.123456')*/
   epoch_ms(): DDateField;
   /**@description Generates bin_count equi-width bins between the min and max. If enabled nice_rounding makes the numbers more readable/less jagged	@example equi_width_bins(0, 10, 2, true)*/
   equi_width_bins(max: DNumericable, binCount: DNumericable, niceRounding: DBoolable): DArrayField;
   /**@description Rounds x to next even number by rounding away from zero	@example even(2.9)*/
-  even(): Partial<number> & Partial<CNumeric>;
+  even(): number & CNumeric;
   /**@description Computes e to the power of x	@example exp(1)*/
-  exp(): Partial<number> & Partial<CNumeric>;
+  exp(): number & CNumeric;
   /**@description Factorial of x. Computes the product of the current integer and all integers below it	@example 4!*/
-  factorial(): Partial<number> & Partial<CNumeric>;
+  factorial(): number & CNumeric;
   /**@description Rounds the number down	@example floor(17.4)*/
-  floor(): Partial<number> & Partial<CNumeric>;
+  floor(): number & CNumeric;
   /**@description Converts bytes to a human-readable presentation (e.g. 16000 -> 16.0 KB)	@example format_bytes(1000 * 16)*/
-  formatReadableDecimalSize(): Partial<CVarchar>;
+  formatReadableDecimalSize(): string & CVarchar;
   /**@description Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example format_bytes(1000 * 16)*/
-  formatReadableSize(): Partial<CVarchar>;
+  formatReadableSize(): string & CVarchar;
   /**@description Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example format_bytes(1000 * 16)*/
-  format_bytes(): Partial<CVarchar>;
+  format_bytes(): string & CVarchar;
   /**@description Interpolation of (x-1) factorial (so decimal inputs are allowed)	@example gamma(5.5)*/
-  gamma(): Partial<number> & Partial<CNumeric>;
+  gamma(): number & CNumeric;
   /**@description Computes the greatest common divisor of x and y	@example greatest_common_divisor(42, 57)*/
-  gcd(y: DNumericable): Partial<number> & Partial<CNumeric>;
+  gcd(y: DNumericable): number & CNumeric;
   /**@description Create a list of values between start and stop - the stop parameter is inclusive	@example generate_series(2, 5, 3)*/
   generate_series(stop?: DNumericable | DOtherable, step?: DNumericable | DOtherable): DArrayField;
   /**@description Computes the greatest common divisor of x and y	@example greatest_common_divisor(42, 57)*/
-  greatest_common_divisor(y: DNumericable): Partial<number> & Partial<CNumeric>;
+  greatest_common_divisor(y: DNumericable): number & CNumeric;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  hex(): Partial<CVarchar>;
+  hex(): string & CVarchar;
   /**@description Returns true if the floating point value is finite, false otherwise	@example isfinite(5.5)*/
   isfinite(): DBoolField;
   /**@description Returns true if the floating point value is infinite, false otherwise	@example isinf('Infinity'::float)*/
@@ -2929,19 +2945,19 @@ export interface CNumeric extends CAny {
   /**@description Returns true if the floating point value is not a number, false otherwise	@example isnan('NaN'::FLOAT)*/
   isnan(): DBoolField;
   /**@description Computes the least common multiple of x and y	@example least_common_multiple(42, 57)*/
-  lcm(y: DNumericable): Partial<number> & Partial<CNumeric>;
+  lcm(y: DNumericable): number & CNumeric;
   /**@description Computes the least common multiple of x and y	@example least_common_multiple(42, 57)*/
-  least_common_multiple(y: DNumericable): Partial<number> & Partial<CNumeric>;
+  least_common_multiple(y: DNumericable): number & CNumeric;
   /**@description Computes the log of the gamma function	@example lgamma(2)*/
-  lgamma(): Partial<number> & Partial<CNumeric>;
+  lgamma(): number & CNumeric;
   /**@description Computes the natural logarithm of x	@example ln(2)*/
-  ln(): Partial<number> & Partial<CNumeric>;
+  ln(): number & CNumeric;
   /**@description Computes the logarithm of x to base b. b may be omitted, in which case the default 10	@example log(2, 64)*/
-  log(x?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  log(x?: DNumericable | DOtherable): number & CNumeric;
   /**@description Computes the 10-log of x	@example log10(1000)*/
-  log10(): Partial<number> & Partial<CNumeric>;
+  log10(): number & CNumeric;
   /**@description Computes the 2-log of x	@example log2(8)*/
-  log2(): Partial<number> & Partial<CNumeric>;
+  log2(): number & CNumeric;
   make_date(): DDateField;
   /**@description The date for the given parts	@example make_date(1992, 9, 20)*/
   make_date(month: DNumericable, day: DNumericable): DDateField;
@@ -2954,42 +2970,42 @@ export interface CNumeric extends CAny {
   /**@description The timestamp for the given nanoseconds since epoch	@example make_timestamp(1732117793000000000)*/
   make_timestamp_ns(): DDateField;
   make_timestamptz(col1?: DNumericable | DOtherable, col2?: DNumericable | DOtherable, col3?: DNumericable | DOtherable, col4?: DNumericable | DOtherable, col5?: DNumericable | DOtherable, col6?: DOtherable | DVarcharable): DDateField;
-  mod(col1: DNumericable): Partial<number> & Partial<CNumeric>;
-  multiply(col1: DNumericable): Partial<number> & Partial<CNumeric>;
+  mod(col1: DNumericable): number & CNumeric;
+  multiply(col1: DNumericable): number & CNumeric;
   multiply(col1: DOtherable): DOtherField;
   /**@description Returns the next floating point value after x in the direction of y	@example nextafter(1::float, 2::float)*/
-  nextafter(y: DNumericable): Partial<number> & Partial<CNumeric>;
+  nextafter(y: DNumericable): number & CNumeric;
   /**@description Computes x to the power of y	@example pow(2, 3)*/
-  pow(y: DNumericable): Partial<number> & Partial<CNumeric>;
+  pow(y: DNumericable): number & CNumeric;
   /**@description Computes x to the power of y	@example pow(2, 3)*/
-  power(y: DNumericable): Partial<number> & Partial<CNumeric>;
+  power(y: DNumericable): number & CNumeric;
   /**@description Converts degrees to radians	@example radians(90)*/
-  radians(): Partial<number> & Partial<CNumeric>;
+  radians(): number & CNumeric;
   /**@description Create a list of values between start and stop - the stop parameter is exclusive	@example range(2, 5, 3)*/
   range(stop?: DNumericable | DOtherable, step?: DNumericable | DOtherable): DArrayField;
   /**@description Rounds x to s decimal places	@example round(42.4332, 2)*/
-  round(precision?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  round(precision?: DNumericable | DOtherable): number & CNumeric;
   /**@description Sets the seed to be used for the random function	@example setseed(0.42)*/
   setseed(): DOtherField;
   /**@description Returns the sign of x as -1, 0 or 1	@example sign(-349)*/
-  sign(): Partial<number> & Partial<CNumeric>;
+  sign(): number & CNumeric;
   /**@description Returns whether the signbit is set or not	@example signbit(-0.0)*/
   signbit(): DBoolField;
   /**@description Computes the sin of x	@example sin(90)*/
-  sin(): Partial<number> & Partial<CNumeric>;
+  sin(): number & CNumeric;
   /**@description Computes the hyperbolic sin of x	@example sinh(1)*/
-  sinh(): Partial<number> & Partial<CNumeric>;
+  sinh(): number & CNumeric;
   /**@description Returns the square root of x	@example sqrt(4)*/
-  sqrt(): Partial<number> & Partial<CNumeric>;
-  subtract(col1?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  sqrt(): number & CNumeric;
+  subtract(col1?: DNumericable | DOtherable): number & CNumeric;
   /**@description Computes the tan of x	@example tan(90)*/
-  tan(): Partial<number> & Partial<CNumeric>;
+  tan(): number & CNumeric;
   /**@description Computes the hyperbolic tan of x	@example tanh(1)*/
-  tanh(): Partial<number> & Partial<CNumeric>;
+  tanh(): number & CNumeric;
   /**@description Converts a value to a string in the given base radix, optionally padding with leading zeros to the minimum length	@example to_base(42, 16)*/
-  to_base(radix: DNumericable, minLength?: DNumericable | DOtherable): Partial<CVarchar>;
+  to_base(radix: DNumericable, minLength?: DNumericable | DOtherable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  to_binary(): Partial<CVarchar>;
+  to_binary(): string & CVarchar;
   /**@description Construct a century interval	@example to_centuries(5)*/
   to_centuries(): DOtherField;
   /**@description Construct a day interval	@example to_days(5)*/
@@ -2997,7 +3013,7 @@ export interface CNumeric extends CAny {
   /**@description Construct a decade interval	@example to_decades(5)*/
   to_decades(): DOtherField;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  to_hex(): Partial<CVarchar>;
+  to_hex(): string & CVarchar;
   /**@description Construct a hour interval	@example to_hours(5)*/
   to_hours(): DOtherField;
   /**@description Construct a microsecond interval	@example to_microseconds(5)*/
@@ -3021,32 +3037,33 @@ export interface CNumeric extends CAny {
   /**@description Construct a year interval	@example to_years(5)*/
   to_years(): DOtherField;
   /**@description Truncates the number	@example trunc(17.4)*/
-  trunc(): Partial<number> & Partial<CNumeric>;
+  trunc(): number & CNumeric;
   /**@description Bitwise XOR	@example xor(17, 5)*/
-  xor(right: DNumericable): Partial<number> & Partial<CNumeric>;
+  xor(right: DNumericable): number & CNumeric;
   /**@example Between(val, col1, col2)*/
   Between(col1: DNumericable, col2: DNumericable): DBoolField;
   /**@example NotBetween(val, col1, col2)*/
   NotBetween(col1: DNumericable, col2: DNumericable): DBoolField;
 }
-export type DNumericComp = Partial<number> & Partial<CNumeric>;
 
-export interface CGlobal {
-  cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): Partial<CVarchar>;
-  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+export type DNumericComp = number & CNumeric;
+
+interface CGlobal {
+  cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
+  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
   cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
-  cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
-  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): Partial<number> & Partial<CNumeric>;
   cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
+  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
 
   /**@description Absolute value	@example abs(-17.4)*/
-  abs(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  abs(x: DNumericable): number & CNumeric;
   /**@description Computes the arccosine of x	@example acos(0.5)*/
-  acos(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  acos(x: DNumericable): number & CNumeric;
   /**@description Computes the inverse hyperbolic cos of x	@example acosh(2.3)*/
-  acosh(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  acosh(x: DNumericable): number & CNumeric;
   add(col0: DDateable, col1: DDateable | DOtherable): DDateField;
-  add(col0: DNumericable, col1?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  add(col0: DNumericable, col1?: DNumericable | DOtherable): number & CNumeric;
   add(col0: DOtherable, col1: DDateable): DDateField;
   add(col0: DDateable, col1: DOtherable): DDateField;
   add(col0: DDateable, col1: DDateable | DNumericable | DOtherable): DDateField;
@@ -3058,7 +3075,7 @@ export interface CGlobal {
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   aggregate(list: DArrayable, name: DVarcharable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Returns the name of a given expression	@example alias(42 + 1)*/
-  alias(expr: DAnyable): Partial<CVarchar>;
+  alias(expr: DAnyable): string & CVarchar;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
   apply(list: DArrayable, lambda: DOtherable): DArrayField;
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
@@ -3074,21 +3091,21 @@ export interface CGlobal {
   /**@description Returns true if the list contains the element.	@example list_contains([1, 2, NULL], 1)*/
   array_contains(list: DArrayable, element: DAnyable): DBoolField;
   /**@description Compute the cosine distance between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example array_cosine_distance([1, 2, 3], [1, 2, 3])*/
-  array_cosine_distance(arr1: DArrayable, arr2: DArrayable): Partial<number> & Partial<CNumeric>;
+  array_cosine_distance(arr1: DArrayable, arr2: DArrayable): number & CNumeric;
   /**@description Compute the cosine similarity between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example array_cosine_similarity([1, 2, 3], [1, 2, 3])*/
-  array_cosine_similarity(arr1: DArrayable, arr2: DArrayable): Partial<number> & Partial<CNumeric>;
+  array_cosine_similarity(arr1: DArrayable, arr2: DArrayable): number & CNumeric;
   /**@description Compute the cross product of two arrays of size 3. The array elements can not be NULL.	@example array_cross_product([1, 2, 3], [1, 2, 3])*/
   array_cross_product(arr: DArrayable, arr__01: DArrayable): DArrayField;
   /**@description Compute the distance between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example array_distance([1, 2, 3], [1, 2, 3])*/
-  array_distance(arr1: DArrayable, arr2: DArrayable): Partial<number> & Partial<CNumeric>;
+  array_distance(arr1: DArrayable, arr2: DArrayable): number & CNumeric;
   /**@description Removes all duplicates and NULLs from a list. Does not preserve the original order	@example list_distinct([1, 1, NULL, -3, 1, 5])*/
   array_distinct(list: DArrayable): DArrayField;
   /**@description Compute the inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example array_inner_product([1, 2, 3], [1, 2, 3])*/
-  array_dot_product(arr1: DArrayable, arr2: DArrayable): Partial<number> & Partial<CNumeric>;
+  array_dot_product(arr1: DArrayable, arr2: DArrayable): number & CNumeric;
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
   array_extract(list: DArrayable, index: DNumericable): Partial<CAny>;
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
-  array_extract(list: DVarcharable, index: DNumericable): Partial<CVarchar>;
+  array_extract(list: DVarcharable, index: DNumericable): string & CVarchar;
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
   array_extract(list: DStructable, index: DNumericable | DVarcharable): Partial<CAny>;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
@@ -3102,17 +3119,17 @@ export interface CGlobal {
   /**@description Returns true if the lists have any element in common. NULLs are ignored.	@example list_has_any([1, 2, 3], [2, 3, 4])*/
   array_has_any(l1: DArrayable, l2: DArrayable): DBoolField;
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
-  array_indexof(list: DArrayable, element: DAnyable): Partial<number> & Partial<CNumeric>;
+  array_indexof(list: DArrayable, element: DAnyable): number & CNumeric;
   /**@description Compute the inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example array_inner_product([1, 2, 3], [1, 2, 3])*/
-  array_inner_product(arr1: DArrayable, arr2: DArrayable): Partial<number> & Partial<CNumeric>;
+  array_inner_product(arr1: DArrayable, arr2: DArrayable): number & CNumeric;
   /**@description Returns the length of the list.	@example array_length([1,2,3])*/
-  array_length(list: DArrayable, col1?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  array_length(list: DArrayable, col1?: DNumericable | DOtherable): number & CNumeric;
   /**@description Compute the negative inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example array_negative_inner_product([1, 2, 3], [1, 2, 3])*/
-  array_negative_dot_product(arr1: DArrayable, arr2: DArrayable): Partial<number> & Partial<CNumeric>;
+  array_negative_dot_product(arr1: DArrayable, arr2: DArrayable): number & CNumeric;
   /**@description Compute the negative inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example array_negative_inner_product([1, 2, 3], [1, 2, 3])*/
-  array_negative_inner_product(arr1: DArrayable, arr2: DArrayable): Partial<number> & Partial<CNumeric>;
+  array_negative_inner_product(arr1: DArrayable, arr2: DArrayable): number & CNumeric;
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
-  array_position(list: DArrayable, element: DAnyable): Partial<number> & Partial<CNumeric>;
+  array_position(list: DArrayable, element: DAnyable): number & CNumeric;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
   array_reduce(list: DArrayable, lambda: DOtherable): Partial<CAny>;
   /**@description Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example list_resize([1, 2, 3], 5, 0)*/
@@ -3129,7 +3146,7 @@ export interface CGlobal {
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
   array_transform(list: DArrayable, lambda: DOtherable): DArrayField;
   /**@description Counts the unique elements of a list	@example list_unique([1, 1, NULL, -3, 1, 5])*/
-  array_unique(list: DArrayable): Partial<number> & Partial<CNumeric>;
+  array_unique(list: DArrayable): number & CNumeric;
   /**@description Create an ARRAY containing the argument values.	@example array_value(4, 5, 6)*/
   array_value(...args: DAnyable[]): DArrayField;
   /**@description Returns a list with the BOOLEANs in mask_list applied as a mask to the value_list.	@example list_where([10, 20, 30, 40], [true, false, false, true])*/
@@ -3137,35 +3154,35 @@ export interface CGlobal {
   /**@description Zips k LISTs to a new LIST whose length will be that of the longest list. Its elements are structs of k elements from each list list_1, …, list_k, missing elements are replaced with NULL. If truncate is set, all lists are truncated to the smallest list length.	@example list_zip([1, 2], [3, 4], [5, 6])*/
   array_zip(...args: DAnyable[]): DArrayField;
   /**@description Returns an integer that represents the Unicode code point of the first character of the string	@example ascii('Ω')*/
-  ascii(string: DVarcharable): Partial<number> & Partial<CNumeric>;
+  ascii(string: DVarcharable): number & CNumeric;
   /**@description Computes the arcsine of x	@example asin(0.5)*/
-  asin(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  asin(x: DNumericable): number & CNumeric;
   /**@description Computes the inverse hyperbolic sin of x	@example asinh(0.5)*/
-  asinh(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  asinh(x: DNumericable): number & CNumeric;
   /**@description Computes the arctangent of x	@example atan(0.5)*/
-  atan(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  atan(x: DNumericable): number & CNumeric;
   /**@description Computes the arctangent (y, x)	@example atan2(1.0, 0.0)*/
-  atan2(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  atan2(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Computes the inverse hyperbolic tan of x	@example atanh(0.5)*/
-  atanh(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  atanh(x: DNumericable): number & CNumeric;
   /**@description Draws a band whose width is proportional to (x - min) and equal to width characters when x = max. width defaults to 80	@example bar(5, 0, 20, 10)*/
-  bar(x: DNumericable, min: DNumericable, max: DNumericable, width?: DNumericable | DOtherable): Partial<CVarchar>;
+  bar(x: DNumericable, min: DNumericable, max: DNumericable, width?: DNumericable | DOtherable): string & CVarchar;
   /**@description Convert a blob to a base64 encoded string	@example base64('A'::blob)*/
-  base64(blob: DBlobable): Partial<CVarchar>;
+  base64(blob: DBlobable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  bin(value: DNumericable): Partial<CVarchar>;
+  bin(value: DNumericable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  bin(value: DVarcharable): Partial<CVarchar>;
+  bin(value: DVarcharable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  bin(value: DOtherable): Partial<CVarchar>;
+  bin(value: DOtherable): string & CVarchar;
   /**@description Returns the number of bits that are set	@example bit_count(31)*/
-  bit_count(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  bit_count(x: DNumericable): number & CNumeric;
   /**@description Returns the number of bits that are set	@example bit_count(31)*/
-  bit_count(x: DOtherable): Partial<number> & Partial<CNumeric>;
-  bit_length(col0: DVarcharable): Partial<number> & Partial<CNumeric>;
-  bit_length(col0: DOtherable): Partial<number> & Partial<CNumeric>;
+  bit_count(x: DOtherable): number & CNumeric;
+  bit_length(col0: DVarcharable): number & CNumeric;
+  bit_length(col0: DOtherable): number & CNumeric;
   /**@description Returns first starting index of the specified substring within bits, or zero if it is not present. The first (leftmost) bit is indexed 1	@example bit_position('010'::BIT, '1110101'::BIT)*/
-  bit_position(substring: DOtherable, bitstring: DOtherable): Partial<number> & Partial<CNumeric>;
+  bit_position(substring: DOtherable, bitstring: DOtherable): number & CNumeric;
   /**@description Pads the bitstring until the specified length	@example bitstring('1010'::BIT, 7)*/
   bitstring(bitstring: DVarcharable, length: DNumericable): DOtherField;
   /**@description Pads the bitstring until the specified length	@example bitstring('1010'::BIT, 7)*/
@@ -3173,24 +3190,24 @@ export interface CGlobal {
   /**@description Whether or not we can implicitly cast from the source type to the other type	@example can_implicitly_cast(NULL::INTEGER, NULL::BIGINT)*/
   can_cast_implicitly(sourceType: DAnyable, targetType: DAnyable): DBoolField;
   /**@description Returns the size of the map (or the number of entries in the map)	@example cardinality( map([4, 2], ['a', 'b']) );*/
-  cardinality(map: DAnyable, ...args: DAnyable[]): Partial<number> & Partial<CNumeric>;
+  cardinality(map: DAnyable, ...args: DAnyable[]): number & CNumeric;
   /**@description Returns the cube root of x	@example cbrt(8)*/
-  cbrt(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  cbrt(x: DNumericable): number & CNumeric;
   /**@description Rounds the number up	@example ceil(17.4)*/
-  ceil(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  ceil(x: DNumericable): number & CNumeric;
   /**@description Rounds the number up	@example ceil(17.4)*/
-  ceiling(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  ceiling(x: DNumericable): number & CNumeric;
   /**@description Extract the century component from a date or timestamp	@example century(timestamp '2021-08-03 11:59:44.123456')*/
-  century(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  century(ts: DDateable): number & CNumeric;
   /**@description Extract the century component from a date or timestamp	@example century(timestamp '2021-08-03 11:59:44.123456')*/
-  century(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  century(ts: DOtherable): number & CNumeric;
   /**@description Returns a character which is corresponding the ASCII code value or Unicode code point	@example chr(65)*/
-  chr(codePoint: DNumericable): Partial<CVarchar>;
+  chr(codePoint: DNumericable): string & CVarchar;
   combine(col0: DOtherable, col1: DAnyable): DOtherField;
   /**@description Concatenate many strings together.	@example concat('Hello', ' ', 'World')*/
-  concat(string: DAnyable, ...args: DAnyable[]): Partial<CVarchar>;
+  concat(string: DAnyable, ...args: DAnyable[]): string & CVarchar;
   /**@description Concatenate strings together separated by the specified separator.	@example concat_ws(', ', 'Banana', 'Apple', 'Melon')*/
-  concat_ws(separator: DVarcharable, string: DAnyable, ...args: DAnyable[]): Partial<CVarchar>;
+  concat_ws(separator: DVarcharable, string: DAnyable, ...args: DAnyable[]): string & CVarchar;
   /**@description If arg2 is NULL, return NULL. Otherwise, return arg1.	@example constant_or_null(42, NULL)*/
   constant_or_null(arg1: DAnyable, arg2: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Checks if a map contains a given key.	@example contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')*/
@@ -3200,83 +3217,83 @@ export interface CGlobal {
   /**@description Returns true if the list contains the element.	@example contains([1, 2, NULL], 1)*/
   contains(list: DArrayable, element: DAnyable): DBoolField;
   /**@description Computes the cos of x	@example cos(90)*/
-  cos(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  cos(x: DNumericable): number & CNumeric;
   /**@description Computes the hyperbolic cos of x	@example cosh(1)*/
-  cosh(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  cosh(x: DNumericable): number & CNumeric;
   /**@description Computes the cotangent of x	@example cot(0.5)*/
-  cot(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  cot(x: DNumericable): number & CNumeric;
   /**@description Constructs a binary-comparable sort key based on a set of input parameters and sort qualifiers	@example create_sort_key('A', 'DESC')*/
   create_sort_key(parameters: DAnyable, ...args: DAnyable[]): DBlobField;
   /**@description Returns the name of the currently active database	@example current_database()*/
-  current_database(): Partial<CVarchar>;
+  current_database(): string & CVarchar;
   current_date(): DDateField;
   current_localtime(): DDateField;
   current_localtimestamp(): DDateField;
   /**@description Returns the current query as a string	@example current_query()*/
-  current_query(): Partial<CVarchar>;
+  current_query(): string & CVarchar;
   /**@description Returns the name of the currently active schema. Default is main	@example current_schema()*/
-  current_schema(): Partial<CVarchar>;
+  current_schema(): string & CVarchar;
   /**@description Returns list of schemas. Pass a parameter of True to include implicit schemas	@example current_schemas(true)*/
   current_schemas(includeImplicit: DBoolable): DArrayField;
   /**@description Returns the current value of the configuration setting	@example current_setting('access_mode')*/
   current_setting(settingName: DVarcharable): Partial<CAny>;
   /**@description Return the current value of the sequence. Note that nextval must be called at least once prior to calling currval.	@example currval('my_sequence_name')*/
-  currval(sequenceName: DVarcharable): Partial<number> & Partial<CNumeric>;
+  currval(sequenceName: DVarcharable): number & CNumeric;
   /**@description Extension of Levenshtein distance to also include transposition of adjacent characters as an allowed edit operation. In other words, the minimum number of edit operations (insertions, deletions, substitutions or transpositions) required to change one string to another. Different case is considered different	@example damerau_levenshtein('hello', 'world')*/
-  damerau_levenshtein(str1: DVarcharable, str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  damerau_levenshtein(str1: DVarcharable, str2: DVarcharable): number & CNumeric;
   /**@description The number of partition boundaries between the timestamps	@example date_diff('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')*/
-  date_diff(part: DVarcharable, startdate: DDateable, enddate: DDateable): Partial<number> & Partial<CNumeric>;
+  date_diff(part: DVarcharable, startdate: DDateable, enddate: DDateable): number & CNumeric;
   /**@description Get subfield (equivalent to extract)	@example date_part('minute', TIMESTAMP '1992-09-20 20:38:40')*/
-  date_part(ts: DVarcharable, col1: DDateable | DOtherable): Partial<number> & Partial<CNumeric>;
+  date_part(ts: DVarcharable, col1: DDateable | DOtherable): number & CNumeric;
   /**@description Get subfield (equivalent to extract)	@example date_part('minute', TIMESTAMP '1992-09-20 20:38:40')*/
   date_part(ts: DArrayable, col1: DDateable | DOtherable): DStructField;
   /**@description The number of complete partitions between the timestamps	@example date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')*/
-  date_sub(part: DVarcharable, startdate: DDateable, enddate: DDateable): Partial<number> & Partial<CNumeric>;
+  date_sub(part: DVarcharable, startdate: DDateable, enddate: DDateable): number & CNumeric;
   /**@description Truncate to specified precision	@example date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')*/
   date_trunc(part: DVarcharable, timestamp: DDateable): DDateField;
   /**@description Truncate to specified precision	@example date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')*/
   date_trunc(part: DVarcharable, timestamp: DOtherable): DOtherField;
   /**@description The number of partition boundaries between the timestamps	@example date_diff('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')*/
-  datediff(part: DVarcharable, startdate: DDateable, enddate: DDateable): Partial<number> & Partial<CNumeric>;
+  datediff(part: DVarcharable, startdate: DDateable, enddate: DDateable): number & CNumeric;
   /**@description Get subfield (equivalent to extract)	@example date_part('minute', TIMESTAMP '1992-09-20 20:38:40')*/
-  datepart(ts: DVarcharable, col1: DDateable | DOtherable): Partial<number> & Partial<CNumeric>;
+  datepart(ts: DVarcharable, col1: DDateable | DOtherable): number & CNumeric;
   /**@description Get subfield (equivalent to extract)	@example date_part('minute', TIMESTAMP '1992-09-20 20:38:40')*/
   datepart(ts: DArrayable, col1: DDateable | DOtherable): DStructField;
   /**@description The number of complete partitions between the timestamps	@example date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')*/
-  datesub(part: DVarcharable, startdate: DDateable, enddate: DDateable): Partial<number> & Partial<CNumeric>;
+  datesub(part: DVarcharable, startdate: DDateable, enddate: DDateable): number & CNumeric;
   /**@description Truncate to specified precision	@example date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')*/
   datetrunc(part: DVarcharable, timestamp: DDateable): DDateField;
   /**@description Truncate to specified precision	@example date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')*/
   datetrunc(part: DVarcharable, timestamp: DOtherable): DOtherField;
   /**@description Extract the day component from a date or timestamp	@example day(timestamp '2021-08-03 11:59:44.123456')*/
-  day(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  day(ts: DDateable): number & CNumeric;
   /**@description Extract the day component from a date or timestamp	@example day(timestamp '2021-08-03 11:59:44.123456')*/
-  day(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  day(ts: DOtherable): number & CNumeric;
   /**@description The (English) name of the weekday	@example dayname(TIMESTAMP '1992-03-22')*/
-  dayname(ts: DDateable): Partial<CVarchar>;
+  dayname(ts: DDateable): string & CVarchar;
   /**@description Extract the dayofmonth component from a date or timestamp	@example dayofmonth(timestamp '2021-08-03 11:59:44.123456')*/
-  dayofmonth(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  dayofmonth(ts: DDateable): number & CNumeric;
   /**@description Extract the dayofmonth component from a date or timestamp	@example dayofmonth(timestamp '2021-08-03 11:59:44.123456')*/
-  dayofmonth(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  dayofmonth(ts: DOtherable): number & CNumeric;
   /**@description Extract the dayofweek component from a date or timestamp	@example dayofweek(timestamp '2021-08-03 11:59:44.123456')*/
-  dayofweek(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  dayofweek(ts: DOtherable): number & CNumeric;
   /**@description Extract the dayofweek component from a date or timestamp	@example dayofweek(timestamp '2021-08-03 11:59:44.123456')*/
-  dayofweek(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  dayofweek(ts: DDateable): number & CNumeric;
   /**@description Extract the dayofyear component from a date or timestamp	@example dayofyear(timestamp '2021-08-03 11:59:44.123456')*/
-  dayofyear(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  dayofyear(ts: DDateable): number & CNumeric;
   /**@description Extract the dayofyear component from a date or timestamp	@example dayofyear(timestamp '2021-08-03 11:59:44.123456')*/
-  dayofyear(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  dayofyear(ts: DOtherable): number & CNumeric;
   /**@description Extract the decade component from a date or timestamp	@example decade(timestamp '2021-08-03 11:59:44.123456')*/
-  decade(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  decade(ts: DDateable): number & CNumeric;
   /**@description Extract the decade component from a date or timestamp	@example decade(timestamp '2021-08-03 11:59:44.123456')*/
-  decade(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  decade(ts: DOtherable): number & CNumeric;
   /**@description Convert blob to varchar. Fails if blob is not valid utf-8	@example decode('\xC3\xBC'::BLOB)*/
-  decode(blob: DBlobable): Partial<CVarchar>;
+  decode(blob: DBlobable): string & CVarchar;
   /**@description Converts radians to degrees	@example degrees(pi())*/
-  degrees(x: DNumericable): Partial<number> & Partial<CNumeric>;
-  divide(col0: DNumericable, col1: DNumericable): Partial<number> & Partial<CNumeric>;
+  degrees(x: DNumericable): number & CNumeric;
+  divide(col0: DNumericable, col1: DNumericable): number & CNumeric;
   /**@description The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example levenshtein('duck','db')*/
-  editdist3(str1: DVarcharable, str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  editdist3(str1: DVarcharable, str2: DVarcharable): number & CNumeric;
   /**@description Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example map_extract(map(['key'], ['val']), 'key')*/
   element_at(map: DAnyable, key: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Convert varchar to blob. Converts utf-8 characters into literal encoding	@example encode('my_string_with_ü')*/
@@ -3285,31 +3302,31 @@ export interface CGlobal {
   /**@description Returns the numeric value backing the given enum value	@example enum_code('happy'::mood)*/
   enum_code(enm: DAnyable): Partial<CAny>;
   /**@description Returns the first value of the input enum type	@example enum_first(NULL::mood)*/
-  enum_first(enm: DAnyable): Partial<CVarchar>;
+  enum_first(enm: DAnyable): string & CVarchar;
   /**@description Returns the last value of the input enum type	@example enum_last(NULL::mood)*/
-  enum_last(enm: DAnyable): Partial<CVarchar>;
+  enum_last(enm: DAnyable): string & CVarchar;
   /**@description Returns all values of the input enum type as an array	@example enum_range(NULL::mood)*/
   enum_range(enm: DAnyable): DArrayField;
   /**@description Returns the range between the two given enum values as an array. The values must be of the same enum type. When the first parameter is NULL, the result starts with the first value of the enum type. When the second parameter is NULL, the result ends with the last value of the enum type	@example enum_range_boundary(NULL, 'happy'::mood)*/
   enum_range_boundary(start: DAnyable, end: DAnyable): DArrayField;
   /**@description Extract the epoch component from a temporal type	@example epoch(timestamp '2021-08-03 11:59:44.123456')*/
-  epoch(temporal: DDateable): Partial<number> & Partial<CNumeric>;
+  epoch(temporal: DDateable): number & CNumeric;
   /**@description Extract the epoch component from a temporal type	@example epoch(timestamp '2021-08-03 11:59:44.123456')*/
-  epoch(temporal: DOtherable): Partial<number> & Partial<CNumeric>;
+  epoch(temporal: DOtherable): number & CNumeric;
   /**@description Extract the epoch component in milliseconds from a temporal type	@example epoch_ms(timestamp '2021-08-03 11:59:44.123456')*/
-  epoch_ms(temporal: DDateable): Partial<number> & Partial<CNumeric>;
+  epoch_ms(temporal: DDateable): number & CNumeric;
   /**@description Extract the epoch component in milliseconds from a temporal type	@example epoch_ms(timestamp '2021-08-03 11:59:44.123456')*/
-  epoch_ms(temporal: DOtherable): Partial<number> & Partial<CNumeric>;
+  epoch_ms(temporal: DOtherable): number & CNumeric;
   /**@description Extract the epoch component in milliseconds from a temporal type	@example epoch_ms(timestamp '2021-08-03 11:59:44.123456')*/
   epoch_ms(temporal: DNumericable): DDateField;
   /**@description Extract the epoch component in nanoseconds from a temporal type	@example epoch_ns(timestamp '2021-08-03 11:59:44.123456')*/
-  epoch_ns(temporal: DDateable): Partial<number> & Partial<CNumeric>;
+  epoch_ns(temporal: DDateable): number & CNumeric;
   /**@description Extract the epoch component in nanoseconds from a temporal type	@example epoch_ns(timestamp '2021-08-03 11:59:44.123456')*/
-  epoch_ns(temporal: DOtherable): Partial<number> & Partial<CNumeric>;
+  epoch_ns(temporal: DOtherable): number & CNumeric;
   /**@description Extract the epoch component in microseconds from a temporal type	@example epoch_us(timestamp '2021-08-03 11:59:44.123456')*/
-  epoch_us(temporal: DDateable): Partial<number> & Partial<CNumeric>;
+  epoch_us(temporal: DDateable): number & CNumeric;
   /**@description Extract the epoch component in microseconds from a temporal type	@example epoch_us(timestamp '2021-08-03 11:59:44.123456')*/
-  epoch_us(temporal: DOtherable): Partial<number> & Partial<CNumeric>;
+  epoch_us(temporal: DOtherable): number & CNumeric;
   /**@description Generates bin_count equi-width bins between the min and max. If enabled nice_rounding makes the numbers more readable/less jagged	@example equi_width_bins(0, 10, 2, true)*/
   equi_width_bins(min: DAnyable, max: DAnyable, binCount: DNumericable, niceRounding: DBoolable): DArrayField;
   /**@description Generates bin_count equi-width bins between the min and max. If enabled nice_rounding makes the numbers more readable/less jagged	@example equi_width_bins(0, 10, 2, true)*/
@@ -3317,32 +3334,32 @@ export interface CGlobal {
   /**@description Generates bin_count equi-width bins between the min and max. If enabled nice_rounding makes the numbers more readable/less jagged	@example equi_width_bins(0, 10, 2, true)*/
   equi_width_bins(min: DNumericable, max: DNumericable, binCount: DNumericable, niceRounding: DBoolable): DArrayField;
   /**@description Extract the era component from a date or timestamp	@example era(timestamp '2021-08-03 11:59:44.123456')*/
-  era(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  era(ts: DDateable): number & CNumeric;
   /**@description Extract the era component from a date or timestamp	@example era(timestamp '2021-08-03 11:59:44.123456')*/
-  era(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  era(ts: DOtherable): number & CNumeric;
   /**@description Throws the given error message	@example error('access_mode')*/
   error(message: DVarcharable): DOtherField;
   /**@description Rounds x to next even number by rounding away from zero	@example even(2.9)*/
-  even(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  even(x: DNumericable): number & CNumeric;
   /**@description Computes e to the power of x	@example exp(1)*/
-  exp(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  exp(x: DNumericable): number & CNumeric;
   /**@description Factorial of x. Computes the product of the current integer and all integers below it	@example 4!*/
-  factorial(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  factorial(x: DNumericable): number & CNumeric;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
   filter(list: DArrayable, lambda: DOtherable): DArrayField;
   finalize(col0: DOtherable): DOtherField;
   /**@description Flatten a nested list by one level	@example flatten([[1, 2, 3], [4, 5]])*/
   flatten(nestedList: DArrayable): DArrayField;
   /**@description Rounds the number down	@example floor(17.4)*/
-  floor(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  floor(x: DNumericable): number & CNumeric;
   /**@description Formats a string using fmt syntax	@example format('Benchmark "{}" took {} seconds', 'CSV', 42)*/
-  format(format: DVarcharable, ...args: DAnyable[]): Partial<CVarchar>;
+  format(format: DVarcharable, ...args: DAnyable[]): string & CVarchar;
   /**@description Converts bytes to a human-readable presentation (e.g. 16000 -> 16.0 KB)	@example format_bytes(1000 * 16)*/
-  formatReadableDecimalSize(bytes: DNumericable): Partial<CVarchar>;
+  formatReadableDecimalSize(bytes: DNumericable): string & CVarchar;
   /**@description Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example format_bytes(1000 * 16)*/
-  formatReadableSize(bytes: DNumericable): Partial<CVarchar>;
+  formatReadableSize(bytes: DNumericable): string & CVarchar;
   /**@description Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example format_bytes(1000 * 16)*/
-  format_bytes(bytes: DNumericable): Partial<CVarchar>;
+  format_bytes(bytes: DNumericable): string & CVarchar;
   /**@description Convert a base64 encoded string to a character string	@example from_base64('QQ==')*/
   from_base64(string: DVarcharable): DBlobField;
   /**@description Converts a value from binary representation to a blob	@example unbin('0110')*/
@@ -3354,9 +3371,9 @@ export interface CGlobal {
   from_json_strict(col0: DVarcharable, col1: DVarcharable): Partial<CAny>;
   from_json_strict(col0: DJsonable, col1: DVarcharable): Partial<CAny>;
   /**@description Interpolation of (x-1) factorial (so decimal inputs are allowed)	@example gamma(5.5)*/
-  gamma(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  gamma(x: DNumericable): number & CNumeric;
   /**@description Computes the greatest common divisor of x and y	@example greatest_common_divisor(42, 57)*/
-  gcd(x: DNumericable, y: DNumericable): Partial<number> & Partial<CNumeric>;
+  gcd(x: DNumericable, y: DNumericable): number & CNumeric;
   /**@description Returns a random UUID similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example uuid()*/
   gen_random_uuid(): DOtherField;
   /**@description Create a list of values between start and stop - the stop parameter is inclusive	@example generate_series(2, 5, 3)*/
@@ -3364,7 +3381,7 @@ export interface CGlobal {
   /**@description Create a list of values between start and stop - the stop parameter is inclusive	@example generate_series(2, 5, 3)*/
   generate_series(start: DDateable, stop: DDateable, step: DOtherable): DArrayField;
   /**@description Extracts the nth bit from bitstring; the first (leftmost) bit is indexed 0	@example get_bit('0110010'::BIT, 2)*/
-  get_bit(bitstring: DOtherable, index: DNumericable): Partial<number> & Partial<CNumeric>;
+  get_bit(bitstring: DOtherable, index: DNumericable): number & CNumeric;
   get_current_time(): DDateField;
   /**@description Returns the current timestamp	@example get_current_timestamp()*/
   get_current_timestamp(): DDateField;
@@ -3374,30 +3391,30 @@ export interface CGlobal {
   /**@description Returns the highest value of the set of input parameters	@example greatest(42, 84)*/
   greatest(arg1: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Computes the greatest common divisor of x and y	@example greatest_common_divisor(42, 57)*/
-  greatest_common_divisor(x: DNumericable, y: DNumericable): Partial<number> & Partial<CNumeric>;
+  greatest_common_divisor(x: DNumericable, y: DNumericable): number & CNumeric;
   /**@description The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example hamming('duck','luck')*/
-  hamming(str1: DVarcharable, str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  hamming(str1: DVarcharable, str2: DVarcharable): number & CNumeric;
   /**@description Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example hash('🦆')*/
-  hash(param: DAnyable, ...args: DAnyable[]): Partial<number> & Partial<CNumeric>;
+  hash(param: DAnyable, ...args: DAnyable[]): number & CNumeric;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  hex(value: DBlobable): Partial<CVarchar>;
+  hex(value: DBlobable): string & CVarchar;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  hex(value: DNumericable): Partial<CVarchar>;
+  hex(value: DNumericable): string & CVarchar;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  hex(value: DOtherable): Partial<CVarchar>;
+  hex(value: DOtherable): string & CVarchar;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  hex(value: DVarcharable): Partial<CVarchar>;
+  hex(value: DVarcharable): string & CVarchar;
   /**@description Extract the hour component from a date or timestamp	@example hour(timestamp '2021-08-03 11:59:44.123456')*/
-  hour(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  hour(ts: DDateable): number & CNumeric;
   /**@description Extract the hour component from a date or timestamp	@example hour(timestamp '2021-08-03 11:59:44.123456')*/
-  hour(ts: DOtherable): Partial<number> & Partial<CNumeric>;
-  icu_sort_key(col0: DVarcharable, col1: DVarcharable): Partial<CVarchar>;
+  hour(ts: DOtherable): number & CNumeric;
+  icu_sort_key(col0: DVarcharable, col1: DVarcharable): string & CVarchar;
   /**@description Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example ilike_escape('A%c', 'a$%C', '$')*/
   ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /**@description Returns whether or not the database/schema are in the search path	@example in_search_path('memory', 'main')*/
   in_search_path(databaseName: DVarcharable, schemaName: DVarcharable): DBoolField;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
-  instr(haystack: DVarcharable, needle: DVarcharable): Partial<number> & Partial<CNumeric>;
+  instr(haystack: DVarcharable, needle: DVarcharable): number & CNumeric;
   /**@description Whether or not the provided value is the histogram "other" bin (used for values not belonging to any provided bin)	@example is_histogram_other_bin(v)*/
   is_histogram_other_bin(val: DAnyable): DBoolField;
   /**@description Returns true if the floating point value is finite, false otherwise	@example isfinite(5.5)*/
@@ -3411,27 +3428,27 @@ export interface CGlobal {
   /**@description Returns true if the floating point value is not a number, false otherwise	@example isnan('NaN'::FLOAT)*/
   isnan(x: DNumericable): DBoolField;
   /**@description Extract the isodow component from a date or timestamp	@example isodow(timestamp '2021-08-03 11:59:44.123456')*/
-  isodow(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  isodow(ts: DDateable): number & CNumeric;
   /**@description Extract the isodow component from a date or timestamp	@example isodow(timestamp '2021-08-03 11:59:44.123456')*/
-  isodow(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  isodow(ts: DOtherable): number & CNumeric;
   /**@description Extract the isoyear component from a date or timestamp	@example isoyear(timestamp '2021-08-03 11:59:44.123456')*/
-  isoyear(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  isoyear(ts: DDateable): number & CNumeric;
   /**@description Extract the isoyear component from a date or timestamp	@example isoyear(timestamp '2021-08-03 11:59:44.123456')*/
-  isoyear(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  isoyear(ts: DOtherable): number & CNumeric;
   /**@description The Jaccard similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example jaccard('duck','luck')*/
-  jaccard(str1: DVarcharable, str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  jaccard(str1: DVarcharable, str2: DVarcharable): number & CNumeric;
   /**@description The Jaro similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example jaro_similarity('duck', 'duckdb', 0.5)*/
-  jaro_similarity(str1: DVarcharable, str2: DVarcharable, scoreCutoff?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  jaro_similarity(str1: DVarcharable, str2: DVarcharable, scoreCutoff?: DNumericable | DOtherable): number & CNumeric;
   /**@description The Jaro-Winkler similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example jaro_winkler_similarity('duck', 'duckdb', 0.5)*/
-  jaro_winkler_similarity(str1: DVarcharable, str2: DVarcharable, scoreCutoff?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  jaro_winkler_similarity(str1: DVarcharable, str2: DVarcharable, scoreCutoff?: DNumericable | DOtherable): number & CNumeric;
   json_array(...args: DAnyable[]): DJsonField;
   json_array_length(col0: DVarcharable, col1: DArrayable): DArrayField;
   json_array_length(col0: DJsonable, col1: DArrayable): DArrayField;
-  json_array_length(col0: DJsonable, col1?: DOtherable | DVarcharable): Partial<number> & Partial<CNumeric>;
-  json_array_length(col0: DVarcharable, col1?: DOtherable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  json_array_length(col0: DJsonable, col1?: DOtherable | DVarcharable): number & CNumeric;
+  json_array_length(col0: DVarcharable, col1?: DOtherable | DVarcharable): number & CNumeric;
   json_contains(col0: DJsonable, col1: DJsonable | DVarcharable): DBoolField;
   json_contains(col0: DVarcharable, col1: DJsonable | DVarcharable): DBoolField;
-  json_deserialize_sql(col0: DJsonable): Partial<CVarchar>;
+  json_deserialize_sql(col0: DJsonable): string & CVarchar;
   json_exists(col0: DJsonable, col1: DVarcharable): DBoolField;
   json_exists(col0: DVarcharable, col1: DVarcharable): DBoolField;
   json_exists(col0: DVarcharable, col1: DArrayable): DArrayField;
@@ -3444,19 +3461,19 @@ export interface CGlobal {
   json_extract_path(col0: DJsonable, col1: DArrayable): DArrayField;
   json_extract_path(col0: DVarcharable, col1: DNumericable | DVarcharable): DJsonField;
   json_extract_path(col0: DVarcharable, col1: DArrayable): DArrayField;
-  json_extract_path_text(col0: DVarcharable, col1: DNumericable | DVarcharable): Partial<CVarchar>;
+  json_extract_path_text(col0: DVarcharable, col1: DNumericable | DVarcharable): string & CVarchar;
   json_extract_path_text(col0: DVarcharable, col1: DArrayable): DArrayField;
-  json_extract_path_text(col0: DJsonable, col1: DNumericable | DVarcharable): Partial<CVarchar>;
+  json_extract_path_text(col0: DJsonable, col1: DNumericable | DVarcharable): string & CVarchar;
   json_extract_path_text(col0: DJsonable, col1: DArrayable): DArrayField;
   json_extract_string(col0: DVarcharable, col1: DArrayable): DArrayField;
-  json_extract_string(col0: DVarcharable, col1: DNumericable | DVarcharable): Partial<CVarchar>;
-  json_extract_string(col0: DJsonable, col1: DNumericable | DVarcharable): Partial<CVarchar>;
+  json_extract_string(col0: DVarcharable, col1: DNumericable | DVarcharable): string & CVarchar;
+  json_extract_string(col0: DJsonable, col1: DNumericable | DVarcharable): string & CVarchar;
   json_extract_string(col0: DJsonable, col1: DArrayable): DArrayField;
   json_keys(col0: DVarcharable, col1?: DArrayable | DOtherable | DVarcharable): DArrayField;
   json_keys(col0: DJsonable, col1?: DArrayable | DOtherable | DVarcharable): DArrayField;
   json_merge_patch(...args: DAnyable[]): DJsonField;
   json_object(...args: DAnyable[]): DJsonField;
-  json_pretty(col0: DJsonable): Partial<CVarchar>;
+  json_pretty(col0: DJsonable): string & CVarchar;
   json_quote(...args: DAnyable[]): DJsonField;
   json_serialize_plan(col0: DVarcharable, col1?: DBoolable | DOtherable, col2?: DBoolable | DOtherable, col3?: DBoolable | DOtherable, col4?: DBoolable | DOtherable): DJsonField;
   json_serialize_sql(col0: DVarcharable, col1?: DBoolable | DOtherable, col2?: DBoolable | DOtherable, col3?: DBoolable | DOtherable): DJsonField;
@@ -3466,48 +3483,48 @@ export interface CGlobal {
   json_transform(col0: DJsonable, col1: DVarcharable): Partial<CAny>;
   json_transform_strict(col0: DVarcharable, col1: DVarcharable): Partial<CAny>;
   json_transform_strict(col0: DJsonable, col1: DVarcharable): Partial<CAny>;
-  json_type(col0: DVarcharable, col1?: DOtherable | DVarcharable): Partial<CVarchar>;
+  json_type(col0: DVarcharable, col1?: DOtherable | DVarcharable): string & CVarchar;
   json_type(col0: DJsonable, col1: DArrayable): DArrayField;
-  json_type(col0: DJsonable, col1?: DOtherable | DVarcharable): Partial<CVarchar>;
+  json_type(col0: DJsonable, col1?: DOtherable | DVarcharable): string & CVarchar;
   json_type(col0: DVarcharable, col1: DArrayable): DArrayField;
   json_valid(col0: DVarcharable): DBoolField;
   json_valid(col0: DJsonable): DBoolField;
-  json_value(col0: DJsonable, col1: DNumericable | DVarcharable): Partial<CVarchar>;
+  json_value(col0: DJsonable, col1: DNumericable | DVarcharable): string & CVarchar;
   json_value(col0: DJsonable, col1: DArrayable): DArrayField;
   json_value(col0: DVarcharable, col1: DArrayable): DArrayField;
-  json_value(col0: DVarcharable, col1: DNumericable | DVarcharable): Partial<CVarchar>;
+  json_value(col0: DVarcharable, col1: DNumericable | DVarcharable): string & CVarchar;
   /**@description Extract the Julian Day number from a date or timestamp	@example julian(timestamp '2006-01-01 12:00')*/
-  julian(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  julian(ts: DDateable): number & CNumeric;
   /**@description Returns the last day of the month	@example last_day(TIMESTAMP '1992-03-22 01:02:03.1234')*/
   last_day(ts: DDateable): DDateField;
   /**@description Convert string to lower case	@example lower('Hello')*/
-  lcase(string: DVarcharable): Partial<CVarchar>;
+  lcase(string: DVarcharable): string & CVarchar;
   /**@description Computes the least common multiple of x and y	@example least_common_multiple(42, 57)*/
-  lcm(x: DNumericable, y: DNumericable): Partial<number> & Partial<CNumeric>;
+  lcm(x: DNumericable, y: DNumericable): number & CNumeric;
   /**@description Returns the lowest value of the set of input parameters	@example least(42, 84)*/
   least(arg1: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Computes the least common multiple of x and y	@example least_common_multiple(42, 57)*/
-  least_common_multiple(x: DNumericable, y: DNumericable): Partial<number> & Partial<CNumeric>;
+  least_common_multiple(x: DNumericable, y: DNumericable): number & CNumeric;
   /**@description Extract the left-most count characters	@example left('Hello🦆', 2)*/
-  left(string: DVarcharable, count: DNumericable): Partial<CVarchar>;
+  left(string: DVarcharable, count: DNumericable): string & CVarchar;
   /**@description Extract the left-most count grapheme clusters	@example left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)*/
-  left_grapheme(string: DVarcharable, count: DNumericable): Partial<CVarchar>;
+  left_grapheme(string: DVarcharable, count: DNumericable): string & CVarchar;
   /**@description Number of characters in string.	@example length('Hello🦆')*/
-  len(string: DArrayable): Partial<number> & Partial<CNumeric>;
+  len(string: DArrayable): number & CNumeric;
   /**@description Number of characters in string.	@example length('Hello🦆')*/
-  len(string: DOtherable): Partial<number> & Partial<CNumeric>;
+  len(string: DOtherable): number & CNumeric;
   /**@description Number of characters in string.	@example length('Hello🦆')*/
-  len(string: DVarcharable): Partial<number> & Partial<CNumeric>;
+  len(string: DVarcharable): number & CNumeric;
   /**@description Number of characters in string.	@example length('Hello🦆')*/
-  length(string: DArrayable): Partial<number> & Partial<CNumeric>;
+  length(string: DArrayable): number & CNumeric;
   /**@description Number of characters in string.	@example length('Hello🦆')*/
-  length(string: DOtherable): Partial<number> & Partial<CNumeric>;
+  length(string: DOtherable): number & CNumeric;
   /**@description Number of grapheme clusters in string.	@example length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')*/
-  length_grapheme(string: DVarcharable): Partial<number> & Partial<CNumeric>;
+  length_grapheme(string: DVarcharable): number & CNumeric;
   /**@description The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example levenshtein('duck','db')*/
-  levenshtein(str1: DVarcharable, str2: DVarcharable): Partial<number> & Partial<CNumeric>;
+  levenshtein(str1: DVarcharable, str2: DVarcharable): number & CNumeric;
   /**@description Computes the log of the gamma function	@example lgamma(2)*/
-  lgamma(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  lgamma(x: DNumericable): number & CNumeric;
   /**@description Returns true if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example like_escape('a%c', 'a$%c', '$')*/
   like_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
@@ -3523,21 +3540,21 @@ export interface CGlobal {
   /**@description Returns true if the list contains the element.	@example list_contains([1, 2, NULL], 1)*/
   list_contains(list: DArrayable, element: DAnyable): DBoolField;
   /**@description Compute the cosine distance between two lists	@example list_cosine_distance([1, 2, 3], [1, 2, 3])*/
-  list_cosine_distance(list1: DArrayable, list2: DArrayable): Partial<number> & Partial<CNumeric>;
+  list_cosine_distance(list1: DArrayable, list2: DArrayable): number & CNumeric;
   /**@description Compute the cosine similarity between two lists	@example list_cosine_similarity([1, 2, 3], [1, 2, 3])*/
-  list_cosine_similarity(list1: DArrayable, list2: DArrayable): Partial<number> & Partial<CNumeric>;
+  list_cosine_similarity(list1: DArrayable, list2: DArrayable): number & CNumeric;
   /**@description Compute the distance between two lists	@example list_distance([1, 2, 3], [1, 2, 3])*/
-  list_distance(list1: DArrayable, list2: DArrayable): Partial<number> & Partial<CNumeric>;
+  list_distance(list1: DArrayable, list2: DArrayable): number & CNumeric;
   /**@description Removes all duplicates and NULLs from a list. Does not preserve the original order	@example list_distinct([1, 1, NULL, -3, 1, 5])*/
   list_distinct(list: DArrayable): DArrayField;
   /**@description Compute the inner product between two lists	@example list_inner_product([1, 2, 3], [1, 2, 3])*/
-  list_dot_product(list1: DArrayable, list2: DArrayable): Partial<number> & Partial<CNumeric>;
+  list_dot_product(list1: DArrayable, list2: DArrayable): number & CNumeric;
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
-  list_element(list: DVarcharable, index: DNumericable): Partial<CVarchar>;
+  list_element(list: DVarcharable, index: DNumericable): string & CVarchar;
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
   list_element(list: DArrayable, index: DNumericable): Partial<CAny>;
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
-  list_extract(list: DVarcharable, index: DNumericable): Partial<CVarchar>;
+  list_extract(list: DVarcharable, index: DNumericable): string & CVarchar;
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
   list_extract(list: DArrayable, index: DNumericable): Partial<CAny>;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
@@ -3551,17 +3568,17 @@ export interface CGlobal {
   /**@description Returns true if the lists have any element in common. NULLs are ignored.	@example list_has_any([1, 2, 3], [2, 3, 4])*/
   list_has_any(l1: DArrayable, l2: DArrayable): DBoolField;
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
-  list_indexof(list: DArrayable, element: DAnyable): Partial<number> & Partial<CNumeric>;
+  list_indexof(list: DArrayable, element: DAnyable): number & CNumeric;
   /**@description Compute the inner product between two lists	@example list_inner_product([1, 2, 3], [1, 2, 3])*/
-  list_inner_product(list1: DArrayable, list2: DArrayable): Partial<number> & Partial<CNumeric>;
+  list_inner_product(list1: DArrayable, list2: DArrayable): number & CNumeric;
   /**@description Compute the negative inner product between two lists	@example list_negative_inner_product([1, 2, 3], [1, 2, 3])*/
-  list_negative_dot_product(list1: DArrayable, list2: DArrayable): Partial<number> & Partial<CNumeric>;
+  list_negative_dot_product(list1: DArrayable, list2: DArrayable): number & CNumeric;
   /**@description Compute the negative inner product between two lists	@example list_negative_inner_product([1, 2, 3], [1, 2, 3])*/
-  list_negative_inner_product(list1: DArrayable, list2: DArrayable): Partial<number> & Partial<CNumeric>;
+  list_negative_inner_product(list1: DArrayable, list2: DArrayable): number & CNumeric;
   /**@description Create a LIST containing the argument values	@example list_value(4, 5, 6)*/
   list_pack(...args: DAnyable[]): DArrayField;
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
-  list_position(list: DArrayable, element: DAnyable): Partial<number> & Partial<CNumeric>;
+  list_position(list: DArrayable, element: DAnyable): number & CNumeric;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
   list_reduce(list: DArrayable, lambda: DOtherable): Partial<CAny>;
   /**@description Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example list_resize([1, 2, 3], 5, 0)*/
@@ -3577,7 +3594,7 @@ export interface CGlobal {
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
   list_transform(list: DArrayable, lambda: DOtherable): DArrayField;
   /**@description Counts the unique elements of a list	@example list_unique([1, 1, NULL, -3, 1, 5])*/
-  list_unique(list: DArrayable): Partial<number> & Partial<CNumeric>;
+  list_unique(list: DArrayable): number & CNumeric;
   /**@description Create a LIST containing the argument values	@example list_value(4, 5, 6)*/
   list_value(...args: DAnyable[]): DArrayField;
   /**@description Returns a list with the BOOLEANs in mask_list applied as a mask to the value_list.	@example list_where([10, 20, 30, 40], [true, false, false, true])*/
@@ -3585,19 +3602,19 @@ export interface CGlobal {
   /**@description Zips k LISTs to a new LIST whose length will be that of the longest list. Its elements are structs of k elements from each list list_1, …, list_k, missing elements are replaced with NULL. If truncate is set, all lists are truncated to the smallest list length.	@example list_zip([1, 2], [3, 4], [5, 6])*/
   list_zip(...args: DAnyable[]): DArrayField;
   /**@description Computes the natural logarithm of x	@example ln(2)*/
-  ln(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  ln(x: DNumericable): number & CNumeric;
   /**@description Computes the logarithm of x to base b. b may be omitted, in which case the default 10	@example log(2, 64)*/
-  log(b: DNumericable, x?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  log(b: DNumericable, x?: DNumericable | DOtherable): number & CNumeric;
   /**@description Computes the 10-log of x	@example log10(1000)*/
-  log10(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  log10(x: DNumericable): number & CNumeric;
   /**@description Computes the 2-log of x	@example log2(8)*/
-  log2(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  log2(x: DNumericable): number & CNumeric;
   /**@description Convert string to lower case	@example lower('Hello')*/
-  lower(string: DVarcharable): Partial<CVarchar>;
+  lower(string: DVarcharable): string & CVarchar;
   /**@description Pads the string with the character from the left until it has count characters	@example lpad('hello', 10, '>')*/
-  lpad(string: DVarcharable, count: DNumericable, character: DVarcharable): Partial<CVarchar>;
+  lpad(string: DVarcharable, count: DNumericable, character: DVarcharable): string & CVarchar;
   /**@description Removes any occurrences of any of the characters from the left side of the string	@example ltrim('>>>>test<<', '><')*/
-  ltrim(string: DVarcharable, characters?: DOtherable | DVarcharable): Partial<CVarchar>;
+  ltrim(string: DVarcharable, characters?: DOtherable | DVarcharable): string & CVarchar;
   make_date(col0: DNumericable): DDateField;
   /**@description The date for the given parts	@example make_date(1992, 9, 20)*/
   make_date(year: DNumericable, month: DNumericable, day: DNumericable): DDateField;
@@ -3629,51 +3646,51 @@ export interface CGlobal {
   /**@description Returns the values of a map as a list	@example map_values(map(['key'], ['val']))*/
   map_values(...args: DAnyable[]): DArrayField;
   /**@description Returns the MD5 hash of the value as a string	@example md5('123')*/
-  md5(value: DVarcharable): Partial<CVarchar>;
+  md5(value: DVarcharable): string & CVarchar;
   /**@description Returns the MD5 hash of the value as a string	@example md5('123')*/
-  md5(value: DBlobable): Partial<CVarchar>;
+  md5(value: DBlobable): string & CVarchar;
   /**@description Returns the MD5 hash of the value as an INT128	@example md5_number('123')*/
-  md5_number(value: DVarcharable): Partial<number> & Partial<CNumeric>;
+  md5_number(value: DVarcharable): number & CNumeric;
   /**@description Returns the MD5 hash of the value as an INT128	@example md5_number('123')*/
-  md5_number(value: DBlobable): Partial<number> & Partial<CNumeric>;
+  md5_number(value: DBlobable): number & CNumeric;
   /**@description Extract the microsecond component from a date or timestamp	@example microsecond(timestamp '2021-08-03 11:59:44.123456')*/
-  microsecond(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  microsecond(ts: DDateable): number & CNumeric;
   /**@description Extract the microsecond component from a date or timestamp	@example microsecond(timestamp '2021-08-03 11:59:44.123456')*/
-  microsecond(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  microsecond(ts: DOtherable): number & CNumeric;
   /**@description Extract the millennium component from a date or timestamp	@example millennium(timestamp '2021-08-03 11:59:44.123456')*/
-  millennium(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  millennium(ts: DDateable): number & CNumeric;
   /**@description Extract the millennium component from a date or timestamp	@example millennium(timestamp '2021-08-03 11:59:44.123456')*/
-  millennium(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  millennium(ts: DOtherable): number & CNumeric;
   /**@description Extract the millisecond component from a date or timestamp	@example millisecond(timestamp '2021-08-03 11:59:44.123456')*/
-  millisecond(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  millisecond(ts: DDateable): number & CNumeric;
   /**@description Extract the millisecond component from a date or timestamp	@example millisecond(timestamp '2021-08-03 11:59:44.123456')*/
-  millisecond(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  millisecond(ts: DOtherable): number & CNumeric;
   /**@description Extract the minute component from a date or timestamp	@example minute(timestamp '2021-08-03 11:59:44.123456')*/
-  minute(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  minute(ts: DOtherable): number & CNumeric;
   /**@description Extract the minute component from a date or timestamp	@example minute(timestamp '2021-08-03 11:59:44.123456')*/
-  minute(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  minute(ts: DDateable): number & CNumeric;
   /**@description The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example hamming('duck','luck')*/
-  mismatches(str1: DVarcharable, str2: DVarcharable): Partial<number> & Partial<CNumeric>;
-  mod(col0: DNumericable, col1: DNumericable): Partial<number> & Partial<CNumeric>;
+  mismatches(str1: DVarcharable, str2: DVarcharable): number & CNumeric;
+  mod(col0: DNumericable, col1: DNumericable): number & CNumeric;
   /**@description Extract the month component from a date or timestamp	@example month(timestamp '2021-08-03 11:59:44.123456')*/
-  month(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  month(ts: DDateable): number & CNumeric;
   /**@description Extract the month component from a date or timestamp	@example month(timestamp '2021-08-03 11:59:44.123456')*/
-  month(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  month(ts: DOtherable): number & CNumeric;
   /**@description The (English) name of the month	@example monthname(TIMESTAMP '1992-09-20')*/
-  monthname(ts: DDateable): Partial<CVarchar>;
-  multiply(col0: DNumericable, col1: DNumericable): Partial<number> & Partial<CNumeric>;
+  monthname(ts: DDateable): string & CVarchar;
+  multiply(col0: DNumericable, col1: DNumericable): number & CNumeric;
   multiply(col0: DOtherable, col1: DNumericable): DOtherField;
   multiply(col0: DNumericable, col1: DOtherable): DOtherField;
   /**@description Extract the nanosecond component from a date or timestamp	@example nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789*/
-  nanosecond(tsns: DDateable): Partial<number> & Partial<CNumeric>;
+  nanosecond(tsns: DDateable): number & CNumeric;
   /**@description Extract the nanosecond component from a date or timestamp	@example nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789*/
-  nanosecond(tsns: DOtherable): Partial<number> & Partial<CNumeric>;
+  nanosecond(tsns: DOtherable): number & CNumeric;
   /**@description Returns the next floating point value after x in the direction of y	@example nextafter(1::float, 2::float)*/
-  nextafter(x: DNumericable, y: DNumericable): Partial<number> & Partial<CNumeric>;
+  nextafter(x: DNumericable, y: DNumericable): number & CNumeric;
   /**@description Return the following value of the sequence.	@example nextval('my_sequence_name')*/
-  nextval(sequenceName: DVarcharable): Partial<number> & Partial<CNumeric>;
+  nextval(sequenceName: DVarcharable): number & CNumeric;
   /**@description Convert string to Unicode NFC normalized string. Useful for comparisons and ordering if text data is mixed between NFC normalized and not.	@example nfc_normalize('ardèch')*/
-  nfc_normalize(string: DVarcharable): Partial<CVarchar>;
+  nfc_normalize(string: DVarcharable): string & CVarchar;
   /**@description Normalizes an INTERVAL to an equivalent interval	@example normalized_interval(INTERVAL '30 days')*/
   normalized_interval(interval: DOtherable): DOtherField;
   /**@description Returns false if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example not_ilike_escape('A%c', 'a$%C', '$')*/
@@ -3683,38 +3700,38 @@ export interface CGlobal {
   /**@description Returns the current timestamp	@example get_current_timestamp()*/
   now(): DDateField;
   /**@description Number of bytes in blob.	@example octet_length('\xAA\xBB'::BLOB)*/
-  octet_length(blob: DBlobable): Partial<number> & Partial<CNumeric>;
+  octet_length(blob: DBlobable): number & CNumeric;
   /**@description Number of bytes in blob.	@example octet_length('\xAA\xBB'::BLOB)*/
-  octet_length(blob: DOtherable): Partial<number> & Partial<CNumeric>;
+  octet_length(blob: DOtherable): number & CNumeric;
   /**@description Returns the unicode codepoint of the first character of the string	@example unicode('ü')*/
-  ord(str: DVarcharable): Partial<number> & Partial<CNumeric>;
+  ord(str: DVarcharable): number & CNumeric;
   /**@description Returns the top-level directory name. separator options: system, both_slash (default), forward_slash, backslash	@example parse_dirname('path/to/file.csv', 'system')*/
-  parse_dirname(string: DVarcharable, separator?: DOtherable | DVarcharable): Partial<CVarchar>;
+  parse_dirname(string: DVarcharable, separator?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns the head of the path similarly to Python's os.path.dirname. separator options: system, both_slash (default), forward_slash, backslash	@example parse_dirpath('path/to/file.csv', 'system')*/
-  parse_dirpath(string: DVarcharable, separator?: DOtherable | DVarcharable): Partial<CVarchar>;
+  parse_dirpath(string: DVarcharable, separator?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns the last component of the path similarly to Python's os.path.basename. If trim_extension is true, the file extension will be removed (it defaults to false). separator options: system, both_slash (default), forward_slash, backslash	@example parse_filename('path/to/file.csv', true, 'forward_slash')*/
-  parse_filename(string: DVarcharable, trimExtension?: DBoolable | DOtherable | DVarcharable, separator?: DOtherable | DVarcharable): Partial<CVarchar>;
+  parse_filename(string: DVarcharable, trimExtension?: DBoolable | DOtherable | DVarcharable, separator?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns a list of the components (directories and filename) in the path similarly to Python's pathlib.PurePath::parts. separator options: system, both_slash (default), forward_slash, backslash	@example parse_path('path/to/file.csv', 'system')*/
   parse_path(string: DVarcharable, separator?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns the value of pi	@example pi()*/
-  pi(): Partial<number> & Partial<CNumeric>;
+  pi(): number & CNumeric;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
-  position(haystack: DVarcharable, needle: DVarcharable): Partial<number> & Partial<CNumeric>;
+  position(haystack: DVarcharable, needle: DVarcharable): number & CNumeric;
   /**@description Computes x to the power of y	@example pow(2, 3)*/
-  pow(x: DNumericable, y: DNumericable): Partial<number> & Partial<CNumeric>;
+  pow(x: DNumericable, y: DNumericable): number & CNumeric;
   /**@description Computes x to the power of y	@example pow(2, 3)*/
-  power(x: DNumericable, y: DNumericable): Partial<number> & Partial<CNumeric>;
+  power(x: DNumericable, y: DNumericable): number & CNumeric;
   prefix(col0: DVarcharable, col1: DVarcharable): DBoolField;
   /**@description Formats a string using printf syntax	@example printf('Benchmark "%s" took %d seconds', 'CSV', 42)*/
-  printf(format: DVarcharable, ...args: DAnyable[]): Partial<CVarchar>;
+  printf(format: DVarcharable, ...args: DAnyable[]): string & CVarchar;
   /**@description Extract the quarter component from a date or timestamp	@example quarter(timestamp '2021-08-03 11:59:44.123456')*/
-  quarter(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  quarter(ts: DDateable): number & CNumeric;
   /**@description Extract the quarter component from a date or timestamp	@example quarter(timestamp '2021-08-03 11:59:44.123456')*/
-  quarter(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  quarter(ts: DOtherable): number & CNumeric;
   /**@description Converts degrees to radians	@example radians(90)*/
-  radians(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  radians(x: DNumericable): number & CNumeric;
   /**@description Returns a random number between 0 and 1	@example random()*/
-  random(): Partial<number> & Partial<CNumeric>;
+  random(): number & CNumeric;
   /**@description Create a list of values between start and stop - the stop parameter is exclusive	@example range(2, 5, 3)*/
   range(start: DNumericable, stop?: DNumericable | DOtherable, step?: DNumericable | DOtherable): DArrayField;
   /**@description Create a list of values between start and stop - the stop parameter is exclusive	@example range(2, 5, 3)*/
@@ -3722,9 +3739,9 @@ export interface CGlobal {
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
   reduce(list: DArrayable, lambda: DOtherable): Partial<CAny>;
   /**@description Escapes all potentially meaningful regexp characters in the input string	@example regexp_escape('https://duckdb.org')*/
-  regexp_escape(string: DVarcharable): Partial<CVarchar>;
+  regexp_escape(string: DVarcharable): string & CVarchar;
   /**@description If string contains the regexp pattern, returns the capturing group specified by optional parameter group. The group must be a constant value. If no group is given, it defaults to 0. A set of optional options can be set.	@example regexp_extract('abc', '([a-z])(b)', 1)*/
-  regexp_extract(string: DVarcharable, pattern: DVarcharable | RegExpable, group0?: DArrayable | DNumericable | DOtherable, options?: DOtherable | DVarcharable): Partial<CVarchar>;
+  regexp_extract(string: DVarcharable, pattern: DVarcharable | RegExpable, group0?: DArrayable | DNumericable | DOtherable, options?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Split the string along the regex and extract all occurrences of group. A set of optional options can be set.	@example regexp_extract_all('hello_world', '([a-z ]+)_?', 1)*/
   regexp_extract_all(string: DVarcharable, regex: DVarcharable | RegExpable, group0?: DNumericable | DOtherable, options?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns true if the entire string matches the regex. A set of optional options can be set.	@example regexp_full_match('anabanana', '(an)*')*/
@@ -3732,70 +3749,70 @@ export interface CGlobal {
   /**@description Returns true if string contains the regexp pattern, false otherwise. A set of optional options can be set.	@example regexp_matches('anabanana', '(an)*')*/
   regexp_matches(string: DVarcharable, pattern: DVarcharable | RegExpable, options?: DOtherable | DVarcharable): DBoolField;
   /**@description If string contains the regexp pattern, replaces the matching part with replacement. A set of optional options can be set.	@example regexp_replace('hello', '[lo]', '-')*/
-  regexp_replace(string: DVarcharable, pattern: DVarcharable | RegExpable, replacement: DVarcharable, options?: DOtherable | DVarcharable): Partial<CVarchar>;
+  regexp_replace(string: DVarcharable, pattern: DVarcharable | RegExpable, replacement: DVarcharable, options?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
   regexp_split_to_array(string: DVarcharable, separator: DVarcharable | RegExpable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Repeats the string count number of times	@example repeat('A', 5)*/
-  repeat(string: DVarcharable, count: DNumericable): Partial<CVarchar>;
+  repeat(string: DVarcharable, count: DNumericable): string & CVarchar;
   /**@description Repeats the string count number of times	@example repeat('A', 5)*/
   repeat(string: DBlobable, count: DNumericable): DBlobField;
   /**@description Repeats the string count number of times	@example repeat('A', 5)*/
   repeat(string: DArrayable, count: DNumericable): DArrayField;
   /**@description Replaces any occurrences of the source with target in string	@example replace('hello', 'l', '-')*/
-  replace(string: DVarcharable, source: DVarcharable, target: DVarcharable): Partial<CVarchar>;
+  replace(string: DVarcharable, source: DVarcharable, target: DVarcharable): string & CVarchar;
   /**@description Reverses the string	@example reverse('hello')*/
-  reverse(string: DVarcharable): Partial<CVarchar>;
+  reverse(string: DVarcharable): string & CVarchar;
   /**@description Extract the right-most count characters	@example right('Hello🦆', 3)*/
-  right(string: DVarcharable, count: DNumericable): Partial<CVarchar>;
+  right(string: DVarcharable, count: DNumericable): string & CVarchar;
   /**@description Extract the right-most count grapheme clusters	@example right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)*/
-  right_grapheme(string: DVarcharable, count: DNumericable): Partial<CVarchar>;
+  right_grapheme(string: DVarcharable, count: DNumericable): string & CVarchar;
   /**@description Rounds x to s decimal places	@example round(42.4332, 2)*/
-  round(x: DNumericable, precision?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  round(x: DNumericable, precision?: DNumericable | DOtherable): number & CNumeric;
   /**@description Create an unnamed STRUCT (tuple) containing the argument values.	@example row(i, i % 4, i / 4)*/
   row(...args: DAnyable[]): DStructField;
   row_to_json(...args: DAnyable[]): DJsonField;
   /**@description Pads the string with the character from the right until it has count characters	@example rpad('hello', 10, '<')*/
-  rpad(string: DVarcharable, count: DNumericable, character: DVarcharable): Partial<CVarchar>;
+  rpad(string: DVarcharable, count: DNumericable, character: DVarcharable): string & CVarchar;
   /**@description Removes any occurrences of any of the characters from the right side of the string	@example rtrim('>>>>test<<', '><')*/
-  rtrim(string: DVarcharable, characters?: DOtherable | DVarcharable): Partial<CVarchar>;
+  rtrim(string: DVarcharable, characters?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Extract the second component from a date or timestamp	@example second(timestamp '2021-08-03 11:59:44.123456')*/
-  second(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  second(ts: DDateable): number & CNumeric;
   /**@description Extract the second component from a date or timestamp	@example second(timestamp '2021-08-03 11:59:44.123456')*/
-  second(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  second(ts: DOtherable): number & CNumeric;
   /**@description Sets the nth bit in bitstring to newvalue; the first (leftmost) bit is indexed 0. Returns a new bitstring	@example set_bit('0110010'::BIT, 2, 0)*/
   set_bit(bitstring: DOtherable, index: DNumericable, newValue: DNumericable): DOtherField;
   /**@description Sets the seed to be used for the random function	@example setseed(0.42)*/
   setseed(col0: DNumericable): DOtherField;
   /**@description Returns the SHA1 hash of the value	@example sha1('hello')*/
-  sha1(value: DVarcharable): Partial<CVarchar>;
+  sha1(value: DVarcharable): string & CVarchar;
   /**@description Returns the SHA1 hash of the value	@example sha1('hello')*/
-  sha1(value: DBlobable): Partial<CVarchar>;
+  sha1(value: DBlobable): string & CVarchar;
   /**@description Returns the SHA256 hash of the value	@example sha256('hello')*/
-  sha256(value: DVarcharable): Partial<CVarchar>;
+  sha256(value: DVarcharable): string & CVarchar;
   /**@description Returns the SHA256 hash of the value	@example sha256('hello')*/
-  sha256(value: DBlobable): Partial<CVarchar>;
+  sha256(value: DBlobable): string & CVarchar;
   /**@description Returns the sign of x as -1, 0 or 1	@example sign(-349)*/
-  sign(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  sign(x: DNumericable): number & CNumeric;
   /**@description Returns whether the signbit is set or not	@example signbit(-0.0)*/
   signbit(x: DNumericable): DBoolField;
   /**@description Computes the sin of x	@example sin(90)*/
-  sin(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  sin(x: DNumericable): number & CNumeric;
   /**@description Computes the hyperbolic sin of x	@example sinh(1)*/
-  sinh(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  sinh(x: DNumericable): number & CNumeric;
   /**@description Returns the square root of x	@example sqrt(4)*/
-  sqrt(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  sqrt(x: DNumericable): number & CNumeric;
   /**@description Returns true if string begins with search_string	@example starts_with('abc','a')*/
   starts_with(string: DVarcharable, searchString: DVarcharable): DBoolField;
   /**@description Returns a string with statistics about the expression. Expression can be a column, constant, or SQL expression	@example stats(5)*/
-  stats(expression: DAnyable): Partial<CVarchar>;
+  stats(expression: DAnyable): string & CVarchar;
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   str_split(string: DVarcharable, separator: DVarcharable): DArrayField;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
   str_split_regex(string: DVarcharable, separator: DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Converts a date to a string according to the format string.	@example strftime(date '1992-01-01', '%a, %-d %B %Y')*/
-  strftime(data: DDateable, format: DVarcharable): Partial<CVarchar>;
+  strftime(data: DDateable, format: DVarcharable): string & CVarchar;
   /**@description Converts a date to a string according to the format string.	@example strftime(date '1992-01-01', '%a, %-d %B %Y')*/
-  strftime(data: DVarcharable, format: DDateable): Partial<CVarchar>;
+  strftime(data: DVarcharable, format: DDateable): string & CVarchar;
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   string_split(string: DVarcharable, separator: DVarcharable): DArrayField;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
@@ -3803,11 +3820,11 @@ export interface CGlobal {
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   string_to_array(string: DVarcharable, separator: DVarcharable): DArrayField;
   /**@description Strips accents from string.	@example strip_accents('mühleisen')*/
-  strip_accents(string: DVarcharable): Partial<CVarchar>;
+  strip_accents(string: DVarcharable): string & CVarchar;
   /**@description Number of bytes in string.	@example strlen('🦆')*/
-  strlen(string: DVarcharable): Partial<number> & Partial<CNumeric>;
+  strlen(string: DVarcharable): number & CNumeric;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
-  strpos(haystack: DVarcharable, needle: DVarcharable): Partial<number> & Partial<CNumeric>;
+  strpos(haystack: DVarcharable, needle: DVarcharable): number & CNumeric;
   /**@description Converts the string text to timestamp applying the format strings in the list until one succeeds. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('4/15/2023 10:56:00', ['%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'])*/
   strptime(text: DVarcharable, formatList: DArrayable | DVarcharable): DDateField;
   /**@description Merge the multiple STRUCTs into a single STRUCT.	@example struct_concat(struct_pack(i := 4), struct_pack(s := 'string'))*/
@@ -3821,52 +3838,52 @@ export interface CGlobal {
   /**@description Create a STRUCT containing the argument values. The entry name will be the bound variable name.	@example struct_pack(i := 4, s := 'string')*/
   struct_pack(...args: DAnyable[]): DStructField;
   /**@description Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring('Hello', 2, 2)*/
-  substr(string: DVarcharable, start: DNumericable, length?: DNumericable | DOtherable): Partial<CVarchar>;
+  substr(string: DVarcharable, start: DNumericable, length?: DNumericable | DOtherable): string & CVarchar;
   /**@description Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring('Hello', 2, 2)*/
-  substring(string: DVarcharable, start: DNumericable, length?: DNumericable | DOtherable): Partial<CVarchar>;
+  substring(string: DVarcharable, start: DNumericable, length?: DNumericable | DOtherable): string & CVarchar;
   /**@description Extract substring of length grapheme clusters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)*/
-  substring_grapheme(string: DVarcharable, start: DNumericable, length?: DNumericable | DOtherable): Partial<CVarchar>;
-  subtract(col0: DNumericable, col1?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  substring_grapheme(string: DVarcharable, start: DNumericable, length?: DNumericable | DOtherable): string & CVarchar;
+  subtract(col0: DNumericable, col1?: DNumericable | DOtherable): number & CNumeric;
   subtract(col0: DDateable, col1: DOtherable): DDateField;
   subtract(col0: DDateable, col1: DNumericable | DOtherable): DDateField;
   subtract(col0: DOtherable, col1?: DOtherable): DOtherField;
   subtract(col0: DDateable, col1: DDateable): DOtherField;
-  subtract(col0: DDateable, col1: DDateable): Partial<number> & Partial<CNumeric>;
+  subtract(col0: DDateable, col1: DDateable): number & CNumeric;
   suffix(col0: DVarcharable, col1: DVarcharable): DBoolField;
   /**@description Computes the tan of x	@example tan(90)*/
-  tan(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  tan(x: DNumericable): number & CNumeric;
   /**@description Computes the hyperbolic tan of x	@example tanh(1)*/
-  tanh(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  tanh(x: DNumericable): number & CNumeric;
   /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
   time_bucket(bucketWidth: DOtherable, timestamp: DDateable, origin?: DDateable | DOtherable | DVarcharable): DDateField;
   /**@description Converts a TIME WITH TIME ZONE to an integer sort key	@example timetz_byte_comparable('18:18:16.21-07:00'::TIME_TZ)*/
-  timetz_byte_comparable(timeTz: DDateable): Partial<number> & Partial<CNumeric>;
+  timetz_byte_comparable(timeTz: DDateable): number & CNumeric;
   /**@description Extract the timezone component from a date or timestamp	@example timezone(timestamp '2021-08-03 11:59:44.123456')*/
   timezone(ts: DVarcharable, col1: DDateable): DDateField;
   /**@description Extract the timezone component from a date or timestamp	@example timezone(timestamp '2021-08-03 11:59:44.123456')*/
-  timezone(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  timezone(ts: DDateable): number & CNumeric;
   /**@description Extract the timezone component from a date or timestamp	@example timezone(timestamp '2021-08-03 11:59:44.123456')*/
   timezone(ts: DOtherable, col1: DDateable): DDateField;
   /**@description Extract the timezone component from a date or timestamp	@example timezone(timestamp '2021-08-03 11:59:44.123456')*/
-  timezone(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  timezone(ts: DOtherable): number & CNumeric;
   /**@description Extract the timezone_hour component from a date or timestamp	@example timezone_hour(timestamp '2021-08-03 11:59:44.123456')*/
-  timezone_hour(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  timezone_hour(ts: DDateable): number & CNumeric;
   /**@description Extract the timezone_hour component from a date or timestamp	@example timezone_hour(timestamp '2021-08-03 11:59:44.123456')*/
-  timezone_hour(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  timezone_hour(ts: DOtherable): number & CNumeric;
   /**@description Extract the timezone_minute component from a date or timestamp	@example timezone_minute(timestamp '2021-08-03 11:59:44.123456')*/
-  timezone_minute(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  timezone_minute(ts: DDateable): number & CNumeric;
   /**@description Extract the timezone_minute component from a date or timestamp	@example timezone_minute(timestamp '2021-08-03 11:59:44.123456')*/
-  timezone_minute(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  timezone_minute(ts: DOtherable): number & CNumeric;
   /**@description Converts a value to a string in the given base radix, optionally padding with leading zeros to the minimum length	@example to_base(42, 16)*/
-  to_base(number: DNumericable, radix: DNumericable, minLength?: DNumericable | DOtherable): Partial<CVarchar>;
+  to_base(number: DNumericable, radix: DNumericable, minLength?: DNumericable | DOtherable): string & CVarchar;
   /**@description Convert a blob to a base64 encoded string	@example base64('A'::blob)*/
-  to_base64(blob: DBlobable): Partial<CVarchar>;
+  to_base64(blob: DBlobable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  to_binary(value: DVarcharable): Partial<CVarchar>;
+  to_binary(value: DVarcharable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  to_binary(value: DOtherable): Partial<CVarchar>;
+  to_binary(value: DOtherable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
-  to_binary(value: DNumericable): Partial<CVarchar>;
+  to_binary(value: DNumericable): string & CVarchar;
   /**@description Construct a century interval	@example to_centuries(5)*/
   to_centuries(integer: DNumericable): DOtherField;
   /**@description Construct a day interval	@example to_days(5)*/
@@ -3874,13 +3891,13 @@ export interface CGlobal {
   /**@description Construct a decade interval	@example to_decades(5)*/
   to_decades(integer: DNumericable): DOtherField;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  to_hex(value: DVarcharable): Partial<CVarchar>;
+  to_hex(value: DVarcharable): string & CVarchar;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  to_hex(value: DNumericable): Partial<CVarchar>;
+  to_hex(value: DNumericable): string & CVarchar;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  to_hex(value: DBlobable): Partial<CVarchar>;
+  to_hex(value: DBlobable): string & CVarchar;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
-  to_hex(value: DOtherable): Partial<CVarchar>;
+  to_hex(value: DOtherable): string & CVarchar;
   /**@description Construct a hour interval	@example to_hours(5)*/
   to_hours(integer: DNumericable): DOtherField;
   to_json(...args: DAnyable[]): DJsonField;
@@ -3908,25 +3925,25 @@ export interface CGlobal {
   /**@description Returns the current timestamp	@example get_current_timestamp()*/
   transaction_timestamp(): DDateField;
   /**@description Replaces each character in string that matches a character in the from set with the corresponding character in the to set. If from is longer than to, occurrences of the extra characters in from are deleted	@example translate('12345', '143', 'ax')*/
-  translate(string: DVarcharable, from: DVarcharable, to: DVarcharable): Partial<CVarchar>;
+  translate(string: DVarcharable, from: DVarcharable, to: DVarcharable): string & CVarchar;
   /**@description Removes any occurrences of any of the characters from either side of the string	@example trim('>>>>test<<', '><')*/
-  trim(string: DVarcharable, characters?: DOtherable | DVarcharable): Partial<CVarchar>;
+  trim(string: DVarcharable, characters?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Truncates the number	@example trunc(17.4)*/
-  trunc(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  trunc(x: DNumericable): number & CNumeric;
   /**@description Converts the string text to timestamp according to the format string. Returns NULL on failure.	@example try_strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')*/
   try_strptime(text: DVarcharable, format: DArrayable | DVarcharable): DDateField;
   /**@description Returns the current transaction’s ID (a BIGINT). It will assign a new one if the current transaction does not have one already	@example txid_current()*/
-  txid_current(): Partial<number> & Partial<CNumeric>;
+  txid_current(): number & CNumeric;
   /**@description Returns the name of the data type of the result of the expression	@example typeof('abc')*/
-  typeof(expression: DAnyable): Partial<CVarchar>;
+  typeof(expression: DAnyable): string & CVarchar;
   /**@description Convert string to upper case.	@example upper('Hello')*/
-  ucase(string: DVarcharable): Partial<CVarchar>;
+  ucase(string: DVarcharable): string & CVarchar;
   /**@description Converts a value from binary representation to a blob	@example unbin('0110')*/
   unbin(value: DVarcharable): DBlobField;
   /**@description Converts a value from hexadecimal representation to a blob	@example unhex('2A')*/
   unhex(value: DVarcharable): DBlobField;
   /**@description Returns the unicode codepoint of the first character of the string	@example unicode('ü')*/
-  unicode(str: DVarcharable): Partial<number> & Partial<CNumeric>;
+  unicode(str: DVarcharable): number & CNumeric;
   /**@description Extract the value with the named tags from the union. NULL if the tag is not currently selected	@example union_extract(s, 'k')*/
   union_extract(union: DOtherable, tag: DVarcharable): Partial<CAny>;
   /**@description Retrieve the currently selected tag of the union as an ENUM	@example union_tag(union_value(k := 'foo'))*/
@@ -3936,47 +3953,47 @@ export interface CGlobal {
   /**@description Identical to list_value, but generated as part of unpivot for better error messages	@example unpivot_list(4, 5, 6)*/
   unpivot_list(...args: DAnyable[]): DArrayField;
   /**@description Convert string to upper case.	@example upper('Hello')*/
-  upper(string: DVarcharable): Partial<CVarchar>;
+  upper(string: DVarcharable): string & CVarchar;
   /**@description Unescapes the URL encoded input.	@example url_decode('this%20string%20is%2BFencoded')*/
-  url_decode(input: DVarcharable): Partial<CVarchar>;
+  url_decode(input: DVarcharable): string & CVarchar;
   /**@description Escapes the input string by encoding it so that it can be included in a URL query parameter.	@example url_encode('this string has/ special+ characters>')*/
-  url_encode(input: DVarcharable): Partial<CVarchar>;
+  url_encode(input: DVarcharable): string & CVarchar;
   /**@description Returns a random UUID similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example uuid()*/
   uuid(): DOtherField;
   /**@description Returns the VectorType of a given column	@example vector_type(col)*/
-  vector_type(col: DAnyable): Partial<CVarchar>;
+  vector_type(col: DAnyable): string & CVarchar;
   /**@description Returns the currently active version of DuckDB in this format: v0.3.2		@example version()*/
-  version(): Partial<CVarchar>;
+  version(): string & CVarchar;
   /**@description Extract the week component from a date or timestamp	@example week(timestamp '2021-08-03 11:59:44.123456')*/
-  week(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  week(ts: DDateable): number & CNumeric;
   /**@description Extract the week component from a date or timestamp	@example week(timestamp '2021-08-03 11:59:44.123456')*/
-  week(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  week(ts: DOtherable): number & CNumeric;
   /**@description Extract the weekday component from a date or timestamp	@example weekday(timestamp '2021-08-03 11:59:44.123456')*/
-  weekday(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  weekday(ts: DDateable): number & CNumeric;
   /**@description Extract the weekday component from a date or timestamp	@example weekday(timestamp '2021-08-03 11:59:44.123456')*/
-  weekday(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  weekday(ts: DOtherable): number & CNumeric;
   /**@description Extract the weekofyear component from a date or timestamp	@example weekofyear(timestamp '2021-08-03 11:59:44.123456')*/
-  weekofyear(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  weekofyear(ts: DDateable): number & CNumeric;
   /**@description Extract the weekofyear component from a date or timestamp	@example weekofyear(timestamp '2021-08-03 11:59:44.123456')*/
-  weekofyear(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  weekofyear(ts: DOtherable): number & CNumeric;
   /**@description Writes to the logger	@example write_log('Hello')*/
   write_log(string: DVarcharable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Bitwise XOR	@example xor(17, 5)*/
-  xor(left: DNumericable, right: DNumericable): Partial<number> & Partial<CNumeric>;
+  xor(left: DNumericable, right: DNumericable): number & CNumeric;
   /**@description Bitwise XOR	@example xor(17, 5)*/
   xor(left: DOtherable, right: DOtherable): DOtherField;
   /**@description Extract the year component from a date or timestamp	@example year(timestamp '2021-08-03 11:59:44.123456')*/
-  year(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  year(ts: DDateable): number & CNumeric;
   /**@description Extract the year component from a date or timestamp	@example year(timestamp '2021-08-03 11:59:44.123456')*/
-  year(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  year(ts: DOtherable): number & CNumeric;
   /**@description Extract the yearweek component from a date or timestamp	@example yearweek(timestamp '2021-08-03 11:59:44.123456')*/
-  yearweek(ts: DDateable): Partial<number> & Partial<CNumeric>;
+  yearweek(ts: DDateable): number & CNumeric;
   /**@description Extract the yearweek component from a date or timestamp	@example yearweek(timestamp '2021-08-03 11:59:44.123456')*/
-  yearweek(ts: DOtherable): Partial<number> & Partial<CNumeric>;
+  yearweek(ts: DOtherable): number & CNumeric;
   /**@example count()*/
-  count(): Partial<number> & Partial<CNumeric>;
+  count(): number & CNumeric;
   /**@example Bigint(val)*/
-  Bigint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Bigint(val: DOtherable): number & CNumeric;
   /**@example Bit(val)*/
   Bit(val: DOtherable): DOtherField;
   /**@example Blob(val)*/
@@ -3986,17 +4003,17 @@ export interface CGlobal {
   /**@example Date(val)*/
   Date(val: DOtherable): DDateField;
   /**@example Decimal(val)*/
-  Decimal(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Decimal(val: DOtherable): number & CNumeric;
   /**@example Double(val)*/
-  Double(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Double(val: DOtherable): number & CNumeric;
   /**@example Enum(val)*/
   Enum(val: DOtherable): DOtherField;
   /**@example Float(val)*/
-  Float(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Float(val: DOtherable): number & CNumeric;
   /**@example Hugeint(val)*/
-  Hugeint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Hugeint(val: DOtherable): number & CNumeric;
   /**@example Integer(val)*/
-  Integer(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Integer(val: DOtherable): number & CNumeric;
   /**@example Interval(val)*/
   Interval(val: DOtherable): DOtherField;
   /**@example List(val)*/
@@ -4006,7 +4023,7 @@ export interface CGlobal {
   /**@example Null(val)*/
   Null(val: DOtherable): DOtherField;
   /**@example Smallint(val)*/
-  Smallint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Smallint(val: DOtherable): number & CNumeric;
   /**@example Struct(val)*/
   Struct(val: DOtherable): DStructField;
   /**@example Time(val)*/
@@ -4020,23 +4037,23 @@ export interface CGlobal {
   /**@example Timestamp_s(val)*/
   Timestamp_s(val: DOtherable): DDateField;
   /**@example Tinyint(val)*/
-  Tinyint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Tinyint(val: DOtherable): number & CNumeric;
   /**@example Ubigint(val)*/
-  Ubigint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Ubigint(val: DOtherable): number & CNumeric;
   /**@example Uhugeint(val)*/
-  Uhugeint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Uhugeint(val: DOtherable): number & CNumeric;
   /**@example Uinteger(val)*/
-  Uinteger(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Uinteger(val: DOtherable): number & CNumeric;
   /**@example Union(val)*/
   Union(val: DOtherable): DOtherField;
   /**@example Usmallint(val)*/
-  Usmallint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Usmallint(val: DOtherable): number & CNumeric;
   /**@example Utinyint(val)*/
-  Utinyint(val: DOtherable): Partial<number> & Partial<CNumeric>;
+  Utinyint(val: DOtherable): number & CNumeric;
   /**@example Uuid(val)*/
   Uuid(val: DOtherable): DOtherField;
   /**@example Varchar(val)*/
-  Varchar(val: DOtherable): Partial<CVarchar>;
+  Varchar(val: DOtherable): string & CVarchar;
   /**@example Varint(val)*/
   Varint(val: DOtherable): DOtherField;
   /**@example Array(val)*/
@@ -4062,17 +4079,18 @@ export interface CGlobal {
   /**@example NotBetween(val, col1, col2)*/
   NotBetween(val: DNumericable, col1: DNumericable, col2: DNumericable): DBoolField;
 }
+
 export type DGlobalComp = Partial<CGlobal>;
 
-export interface CAggregate {
+interface CAggregate {
   /**@description Returns the first non-null value from arg. This function is affected by ordering.*/
-  any_value(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  any_value(arg: DNumericable): number & CNumeric;
   /**@description Returns the first non-null value from arg. This function is affected by ordering.*/
   any_value(arg: DAnyable): Partial<CAny>;
   /**@description Computes the approximate count of distinct elements using HyperLogLog.	@example approx_count_distinct(A)*/
-  approx_count_distinct(any: DAnyable): Partial<number> & Partial<CNumeric>;
+  approx_count_distinct(any: DAnyable): number & CNumeric;
   /**@description Computes the approximate quantile using T-Digest.	@example approx_quantile(x, 0.5)*/
-  approx_quantile(x: DNumericable, pos: DNumericable): Partial<number> & Partial<CNumeric>;
+  approx_quantile(x: DNumericable, pos: DNumericable): number & CNumeric;
   /**@description Computes the approximate quantile using T-Digest.	@example approx_quantile(x, 0.5)*/
   approx_quantile(x: DDateable, pos: DNumericable): DDateField;
   /**@description Computes the approximate quantile using T-Digest.	@example approx_quantile(x, 0.5)*/
@@ -4080,23 +4098,23 @@ export interface CAggregate {
   /**@description Finds the k approximately most occurring values in the data set	@example approx_top_k(x, 5)*/
   approx_top_k(val: DAnyable, k: DNumericable): DArrayField;
   /**@description Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example first(A)*/
-  arbitrary(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  arbitrary(arg: DNumericable): number & CNumeric;
   /**@description Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example first(A)*/
   arbitrary(arg: DAnyable): Partial<CAny>;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   arg_max(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
-  arg_max(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  arg_max(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
-  arg_max(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<CVarchar>;
+  arg_max(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): string & CVarchar;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   arg_max(arg: DAnyable, val: DAnyable | DBlobable | DDateable | DNumericable | DVarcharable): Partial<CAny>;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   arg_max(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
   /**@description Finds the row with the maximum val. Calculates the arg expression at that row.	@example arg_max_null(A,B)*/
-  arg_max_null(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  arg_max_null(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the maximum val. Calculates the arg expression at that row.	@example arg_max_null(A,B)*/
-  arg_max_null(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<CVarchar>;
+  arg_max_null(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): string & CVarchar;
   /**@description Finds the row with the maximum val. Calculates the arg expression at that row.	@example arg_max_null(A,B)*/
   arg_max_null(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the maximum val. Calculates the arg expression at that row.	@example arg_max_null(A,B)*/
@@ -4104,7 +4122,7 @@ export interface CAggregate {
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   arg_min(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
-  arg_min(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  arg_min(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   arg_min(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
@@ -4112,11 +4130,11 @@ export interface CAggregate {
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   arg_min(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
   /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
-  arg_min_null(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  arg_min_null(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
   arg_min_null(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
-  arg_min_null(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<CVarchar>;
+  arg_min_null(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): string & CVarchar;
   /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
   arg_min_null(arg: DAnyable, val: DAnyable | DBlobable | DDateable | DNumericable | DVarcharable): Partial<CAny>;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
@@ -4128,9 +4146,9 @@ export interface CAggregate {
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   argmax(arg: DAnyable, val: DAnyable | DBlobable | DDateable | DNumericable | DVarcharable): Partial<CAny>;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
-  argmax(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  argmax(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
-  argmin(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  argmin(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   argmin(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
@@ -4142,17 +4160,17 @@ export interface CAggregate {
   /**@description Returns a LIST containing all the values of a column.	@example list(A)*/
   array_agg(arg: DAnyable): DArrayField;
   /**@description Calculates the average value for all tuples in x.	@example SUM(x) / COUNT(*)*/
-  avg(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  avg(x: DNumericable): number & CNumeric;
   /**@description Returns the bitwise AND of all bits in a given expression.	@example bit_and(A)*/
-  bit_and(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  bit_and(arg: DNumericable): number & CNumeric;
   /**@description Returns the bitwise AND of all bits in a given expression.	@example bit_and(A)*/
   bit_and(arg: DOtherable): DOtherField;
   /**@description Returns the bitwise OR of all bits in a given expression.	@example bit_or(A)*/
-  bit_or(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  bit_or(arg: DNumericable): number & CNumeric;
   /**@description Returns the bitwise OR of all bits in a given expression.	@example bit_or(A)*/
   bit_or(arg: DOtherable): DOtherField;
   /**@description Returns the bitwise XOR of all bits in a given expression.	@example bit_xor(A)*/
-  bit_xor(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  bit_xor(arg: DNumericable): number & CNumeric;
   /**@description Returns the bitwise XOR of all bits in a given expression.	@example bit_xor(A)*/
   bit_xor(arg: DOtherable): DOtherField;
   /**@description Returns a bitstring with bits set for each distinct value.	@example bitstring_agg(A)*/
@@ -4162,52 +4180,52 @@ export interface CAggregate {
   /**@description Returns TRUE if any input value is TRUE, otherwise FALSE.	@example bool_or(A)*/
   bool_or(arg: DBoolable): DBoolField;
   /**@description Returns the correlation coefficient for non-null pairs in a group.	@example COVAR_POP(y, x) / (STDDEV_POP(x) * STDDEV_POP(y))*/
-  corr(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  corr(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the number of non-null values in arg.	@example count(A)*/
-  count(arg?: DAnyable | DOtherable): Partial<number> & Partial<CNumeric>;
+  count(arg?: DAnyable | DOtherable): number & CNumeric;
   /**@description Counts the total number of TRUE values for a boolean column	@example count_if(A)*/
-  count_if(arg: DBoolable): Partial<number> & Partial<CNumeric>;
-  count_star(): Partial<number> & Partial<CNumeric>;
+  count_if(arg: DBoolable): number & CNumeric;
+  count_star(): number & CNumeric;
   /**@description Counts the total number of TRUE values for a boolean column	@example count_if(A)*/
-  countif(arg: DBoolable): Partial<number> & Partial<CNumeric>;
+  countif(arg: DBoolable): number & CNumeric;
   /**@description Returns the population covariance of input values.	@example (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / COUNT(*)*/
-  covar_pop(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  covar_pop(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the sample covariance for non-null pairs in a group.	@example (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / (COUNT(*) - 1)*/
-  covar_samp(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  covar_samp(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the log-2 entropy of count input-values.*/
-  entropy(x: DAnyable): Partial<number> & Partial<CNumeric>;
+  entropy(x: DAnyable): number & CNumeric;
   /**@description Calculates the average using a more accurate floating point summation (Kahan Sum)	@example favg(A)*/
-  favg(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  favg(x: DNumericable): number & CNumeric;
   /**@description Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example first(A)*/
   first(arg: DAnyable): Partial<CAny>;
   /**@description Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example first(A)*/
-  first(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  first(arg: DNumericable): number & CNumeric;
   /**@description Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example kahan_sum(A)*/
-  fsum(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  fsum(arg: DNumericable): number & CNumeric;
   /**@description Concatenates the column string values with an optional separator.	@example string_agg(A, '-')*/
-  group_concat(str: DAnyable, arg?: DOtherable | DVarcharable): Partial<CVarchar>;
+  group_concat(str: DAnyable, arg?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns a LIST of STRUCTs with the fields bucket and count.	@example histogram(A)*/
   histogram(arg: DAnyable, col1?: DArrayable | DOtherable): DMapField;
   /**@description Returns a LIST of STRUCTs with the fields bucket and count matching the buckets exactly.	@example histogram_exact(A, [0, 1, 2])*/
   histogram_exact(arg: DAnyable, bins: DArrayable): DMapField;
   /**@description Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example kahan_sum(A)*/
-  kahan_sum(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  kahan_sum(arg: DNumericable): number & CNumeric;
   /**@description Returns the excess kurtosis (Fisher’s definition) of all input values, with a bias correction according to the sample size*/
-  kurtosis(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  kurtosis(x: DNumericable): number & CNumeric;
   /**@description Returns the excess kurtosis (Fisher’s definition) of all input values, without bias correction*/
-  kurtosis_pop(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  kurtosis_pop(x: DNumericable): number & CNumeric;
   /**@description Returns the last value of a column. This function is affected by ordering.	@example last(A)*/
-  last(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  last(arg: DNumericable): number & CNumeric;
   /**@description Returns the last value of a column. This function is affected by ordering.	@example last(A)*/
   last(arg: DAnyable): Partial<CAny>;
   /**@description Returns a LIST containing all the values of a column.	@example list(A)*/
   list(arg: DAnyable): DArrayField;
   /**@description Concatenates the column string values with an optional separator.	@example string_agg(A, '-')*/
-  listagg(str: DAnyable, arg?: DOtherable | DVarcharable): Partial<CVarchar>;
+  listagg(str: DAnyable, arg?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example mad(x)*/
   mad(x: DDateable): DOtherField;
   /**@description Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example mad(x)*/
-  mad(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  mad(x: DNumericable): number & CNumeric;
   /**@description Returns the maximum value present in arg.	@example max(A)*/
   max(arg: DAnyable, col1: DNumericable): DArrayField;
   /**@description Returns the maximum value present in arg.	@example max(A)*/
@@ -4217,13 +4235,13 @@ export interface CAggregate {
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   max_by(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
-  max_by(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  max_by(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   max_by(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   max_by(arg: DAnyable, val: DAnyable | DBlobable | DDateable | DNumericable | DVarcharable): Partial<CAny>;
   /**@description Calculates the average value for all tuples in x.	@example SUM(x) / COUNT(*)*/
-  mean(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  mean(x: DNumericable): number & CNumeric;
   /**@description Returns the middle value of the set. NULL values are ignored. For even value counts, quantitative values are averaged and ordinal values return the lower value.	@example median(x)*/
   median(x: DAnyable): Partial<CAny>;
   /**@description Returns the minimum value present in arg.	@example min(A)*/
@@ -4233,9 +4251,9 @@ export interface CAggregate {
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   min_by(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
-  min_by(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<number> & Partial<CNumeric>;
+  min_by(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
-  min_by(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): Partial<CVarchar>;
+  min_by(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): string & CVarchar;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   min_by(arg: DAnyable, val: DAnyable | DBlobable | DDateable | DNumericable | DVarcharable): Partial<CAny>;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
@@ -4243,62 +4261,63 @@ export interface CAggregate {
   /**@description Returns the most frequent value for the values within x. NULL values are ignored.*/
   mode(x: DAnyable): Partial<CAny>;
   /**@description Calculates the product of all tuples in arg.	@example product(A)*/
-  product(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  product(arg: DNumericable): number & CNumeric;
   /**@description Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.	@example quantile_disc(x, 0.5)*/
   quantile(x: DAnyable, pos?: DArrayable | DNumericable | DOtherable): Partial<CAny>;
   /**@description Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example quantile_cont(x, 0.5)*/
-  quantile_cont(x: DNumericable, pos: DArrayable | DNumericable): Partial<number> & Partial<CNumeric>;
+  quantile_cont(x: DNumericable, pos: DArrayable | DNumericable): number & CNumeric;
   /**@description Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example quantile_cont(x, 0.5)*/
   quantile_cont(x: DDateable, pos: DArrayable | DNumericable): DDateField;
   /**@description Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.	@example quantile_disc(x, 0.5)*/
   quantile_disc(x: DAnyable, pos?: DArrayable | DNumericable | DOtherable): Partial<CAny>;
   /**@description Returns the average of the independent variable for non-null pairs in a group, where x is the independent variable and y is the dependent variable.*/
-  regr_avgx(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_avgx(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the average of the dependent variable for non-null pairs in a group, where x is the independent variable and y is the dependent variable.*/
-  regr_avgy(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_avgy(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the number of non-null number pairs in a group.	@example (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / COUNT(*)*/
-  regr_count(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_count(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the intercept of the univariate linear regression line for non-null pairs in a group.	@example AVG(y)-REGR_SLOPE(y,x)*AVG(x)*/
-  regr_intercept(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_intercept(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the coefficient of determination for non-null pairs in a group.*/
-  regr_r2(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_r2(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the slope of the linear regression line for non-null pairs in a group.	@example COVAR_POP(x,y) / VAR_POP(x)*/
-  regr_slope(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_slope(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@example REGR_COUNT(y, x) * VAR_POP(x)*/
-  regr_sxx(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_sxx(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Returns the population covariance of input values	@example REGR_COUNT(y, x) * COVAR_POP(y, x)*/
-  regr_sxy(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_sxy(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@example REGR_COUNT(y, x) * VAR_POP(y)*/
-  regr_syy(y: DNumericable, x: DNumericable): Partial<number> & Partial<CNumeric>;
+  regr_syy(y: DNumericable, x: DNumericable): number & CNumeric;
   /**@description Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example reservoir_quantile(A,0.5,1024)*/
-  reservoir_quantile(x: DNumericable, quantile: DNumericable, sampleSize?: DNumericable | DOtherable): Partial<number> & Partial<CNumeric>;
+  reservoir_quantile(x: DNumericable, quantile: DNumericable, sampleSize?: DNumericable | DOtherable): number & CNumeric;
   /**@description Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example reservoir_quantile(A,0.5,1024)*/
   reservoir_quantile(x: DNumericable, quantile: DArrayable, sampleSize?: DNumericable | DOtherable): DArrayField;
   /**@description Returns the standard error of the mean*/
-  sem(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  sem(x: DNumericable): number & CNumeric;
   /**@description Returns the skewness of all input values.	@example skewness(A)*/
-  skewness(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  skewness(x: DNumericable): number & CNumeric;
   /**@description Returns the sample standard deviation	@example sqrt(var_samp(x))*/
-  stddev(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  stddev(x: DNumericable): number & CNumeric;
   /**@description Returns the population standard deviation.	@example sqrt(var_pop(x))*/
-  stddev_pop(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  stddev_pop(x: DNumericable): number & CNumeric;
   /**@description Returns the sample standard deviation	@example sqrt(var_samp(x))*/
-  stddev_samp(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  stddev_samp(x: DNumericable): number & CNumeric;
   /**@description Concatenates the column string values with an optional separator.	@example string_agg(A, '-')*/
-  string_agg(str: DAnyable, arg?: DOtherable | DVarcharable): Partial<CVarchar>;
+  string_agg(str: DAnyable, arg?: DOtherable | DVarcharable): string & CVarchar;
   /**@description Calculates the sum value for all tuples in arg.	@example sum(A)*/
-  sum(arg: DBoolable | DNumericable): Partial<number> & Partial<CNumeric>;
+  sum(arg: DBoolable | DNumericable): number & CNumeric;
   /**@description Internal only. Calculates the sum value for all tuples in arg without overflow checks.	@example sum_no_overflow(A)*/
-  sum_no_overflow(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  sum_no_overflow(arg: DNumericable): number & CNumeric;
   /**@description Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example kahan_sum(A)*/
-  sumkahan(arg: DNumericable): Partial<number> & Partial<CNumeric>;
+  sumkahan(arg: DNumericable): number & CNumeric;
   /**@description Returns the population variance.*/
-  var_pop(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  var_pop(x: DNumericable): number & CNumeric;
   /**@description Returns the sample variance of all input values.	@example (SUM(x^2) - SUM(x)^2 / COUNT(x)) / (COUNT(x) - 1)*/
-  var_samp(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  var_samp(x: DNumericable): number & CNumeric;
   /**@description Returns the sample variance of all input values.	@example (SUM(x^2) - SUM(x)^2 / COUNT(x)) / (COUNT(x) - 1)*/
-  variance(x: DNumericable): Partial<number> & Partial<CNumeric>;
+  variance(x: DNumericable): number & CNumeric;
 }
+
 export type DAggregateComp = Partial<CAggregate>;
 
 export interface DSettings {

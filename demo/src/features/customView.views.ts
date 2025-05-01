@@ -1,39 +1,10 @@
-import {
-  IDialogService,
-  EditorInput,
-  createInstance,
-  IInstantiationService,
-  IEditorGroup
-} from '@codingame/monaco-vscode-api'
-import {
-  IEditorSerializer,
-  registerCustomView,
-  registerEditorPane,
-  registerEditor,
-  registerEditorSerializer,
-  ViewContainerLocation,
-  SimpleEditorPane,
-  SimpleEditorInput,
-  RegisteredEditorPriority,
-} from '@codingame/monaco-vscode-views-service-override'
+import { IDialogService, EditorInput, createInstance, IInstantiationService, IEditorGroup } from '@codingame/monaco-vscode-api'
+import { IEditorSerializer, registerCustomView, registerEditorPane, registerEditor, registerEditorSerializer, ViewContainerLocation, SimpleEditorPane, SimpleEditorInput, RegisteredEditorPriority, } from '@codingame/monaco-vscode-views-service-override'
 import * as monaco from 'monaco-editor'
-// Import AG Grid
 import { themeBalham } from 'ag-grid-community';
 import { colorSchemeDark } from 'ag-grid-community';
 const theme = themeBalham.withPart(colorSchemeDark);
-import {
-  GridOptions,
-  ColDef,
-  createGrid,
-  ModuleRegistry,
-  ClientSideRowModelModule,
-  ValidationModule,
-  TextFilterModule,
-  TooltipModule,
-  NumberFilterModule
-} from 'ag-grid-community'
-import { keyBy } from 'es-toolkit';
-
+import { GridOptions, ColDef, createGrid, ModuleRegistry, ClientSideRowModelModule, ValidationModule, TextFilterModule, TooltipModule, NumberFilterModule } from 'ag-grid-community'
 // Register required modules
 ModuleRegistry.registerModules([
   ClientSideRowModelModule,

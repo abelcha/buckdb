@@ -125,7 +125,7 @@ export const transformedProvider = new class implements TextDocumentContentProvi
     onDidChange = this.onDidChangeEmitter.event;
 
     provideTextDocumentContent(uri: Uri): string {
-        // Find the original document based on the path in the transformed URI
+        // Find the original document based on the path in the transformed URI (Reverted)
         const originalUriString = uri.path.substring(1); // Remove leading '/'
         const originalUri = Uri.parse(originalUriString, true);
 
@@ -153,22 +153,32 @@ export const transformedProvider = new class implements TextDocumentContentProvi
                 }
             }
         }
-        const extractedParts = extractFromStatementsAST(code);
-        console.log('EXTRACTED', { extractedParts })
-        // const resssp = fileSystemProvider.readFile(Uri.file(`/workspace/.buck/table.json`))
-        // console.log({ resssp })
 
-        // console.log({ resssp })
-        for (const st of extractedParts) {
-            schemes.upsert(st)
-            // console.log('==>', st)
-            // console.log('st', st)
-            // console.log('code', code)
-            // console.log('res', res)
-            // console.log('res', res)
-            // console.log('res', res)
+        // --- Restore Original Transformation Logic with Error Handling ---
+        try {
+            const extractedParts = extractFromStatementsAST(code);
+            // console.log('EXTRACTED', { extractedParts }); // Keep for debugging if needed
+
+            // Process schemes with individual error handling
+            for (const st of extractedParts) {
+                try {
+                    schemes.upsert(st);
+                } catch (schemeError) {
+                    console.error(`[TransformedProvider] Error during schemes.upsert for statement:`, st, schemeError);
+                    // Log error but continue processing other statements
+                }
+            }
+
+            // Transform the code with error handling inside transformCode
+            const transformedContent = transformCode(extractedParts);
+            return transformedContent;
+
+        } catch (error) {
+             console.error(`[TransformedProvider] Error during transformation for ${uri.toString()}:`, error);
+             // Return an error message if extraction or transformation fails globally
+             return `// Error processing document ${originalUriString}:\n// ${error instanceof Error ? error.message : String(error)}`;
         }
-        return transformCode(extractedParts);
+        // --- End Restore ---
     }
 
     // Method to signal that content for a URI has changed

@@ -2,33 +2,18 @@ import { from, Buck } from './buckdb'
 const toto = ""
 
 const buckCon = Buck('', {
-    // s3_access_key_id: '003c75dcbeca6a00000000007',
-    // s3_endpoint: 's3.eu-central-003.backblazeb2.com',
-    // s3_secret_access_key: 'K003n5UU4CoY2I/D6fG369raprkO3uM',
     s3_access_key_id: 'GXSS9O33ILIPZ9YVSKE0',
     s3_secret_access_key: 'Uqs1er2IXhzd9mcdnPKEzNzzaCy4f1EhEbX30ufE',
     s3_endpoint: 's3.eu-west-2.wasabisys.com',
 })
 
-// buckCon.from('s3://dallas/xx.parquet').select().execute()
-
-const rr = await buckCon.from('duckdb_functions()')
-    .select(() => `*, 123 as namex, 'toto' as database_name`)
-    // .where(e => e.function_name === 'len')
-    // .copyTo('s3://dallas/uu.csv', {
-    //     delim: '\\t',
-    // })
-    .copyTo('xxx.parquet', {
-        partition_by: ['data', 'xx']
-    })
-    .execute()
-
 await buckCon.from('duckdb_functions()')
-    .select(({database_name, database_oid, ...fns}) => ({ ...fns, schema_name: 'xxxx'  }))
+    .select(({database_name, database_oid, ...fns}) => ({ ...fns, schema_name: 'xxxxxx'  }))
     // .where(e => e.function_name === 'len')
     // .copyTo('s3://dallas/uu.csv', {
     //     delim: '\\t',
     // })
+    
     .execute()
     
 

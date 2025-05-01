@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor';
-import { TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace, TextEditor, ViewColumn } from 'vscode';
+// Import languages API
+import { TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace, TextEditor, ViewColumn, languages as VsCodeLanguages } from 'vscode';
 import type { IDisposable } from 'monaco-editor';
 
 
@@ -25,11 +26,11 @@ export async function openTransformedViewAndSync(
     const originalUri = editor.document.uri;
     const originalUriString = originalUri.toString();
 
-    // Construct the URI for the TextDocumentContentProvider
+    // Construct the URI for the TextDocumentContentProvider (Reverted to original)
     const targetUri = Uri.parse(`${transformedScheme}:/${originalUri.toString()}`);
 
     try {
-        // console.log(`[AutoOpenProvider] Opening/syncing transformed view for: ${originalUri.toString()} as ${targetUri.toString()}`);
+        // console.log(`[AutoOpenProvider] Opening/syncing transformed view for: ${originalUri.toString()} as ${targetUri.toString()}`); // Original log commented
         // Ensure the provider is updated *before* opening the document
         transformedProvider.update(targetUri);
         const doc = await VsCodeWorkspace.openTextDocument(targetUri); // Open document from provider
@@ -48,10 +49,42 @@ export async function openTransformedViewAndSync(
             });
             // console.log({ res })
             // console.log(`[AutoOpenProvider] Successfully showed transformed document: ${targetUri.toString()}`);
+
+            // --- Set Language to SQL (Removed due to "Unknown language id: sql" error) ---
+            // const targetEditor = VsCodeWindow.visibleTextEditors.find(
+            //     e => e.document.uri.toString() === targetUri.toString()
+            // );
+            // if (targetEditor) {
+            //     try {
+            //         await VsCodeLanguages.setTextDocumentLanguage(targetEditor.document, 'sql');
+            //         console.log(`[AutoOpenProvider] Set language to SQL for ${targetUri.toString()}`);
+            //     } catch (langError) {
+            //          console.error(`[AutoOpenProvider] Error setting language to SQL for ${targetUri.toString()}:`, langError);
+            //     }
+            // } else {
+            //      console.warn(`[AutoOpenProvider] Could not find target editor instance to set language for ${targetUri.toString()}`);
+            // }
+            // --- End Set Language ---
+
         } else {
             // console.log(`[AutoOpenProvider] Transformed document already visible: ${targetUri.toString()}`);
             // Ensure content is updated even if already visible by firing provider update
             transformedProvider.update(targetUri);
+
+            // --- Set Language to SQL (Removed due to "Unknown language id: sql" error) ---
+            //  const targetEditor = VsCodeWindow.visibleTextEditors.find(
+            //     e => e.document.uri.toString() === targetUri.toString()
+            // );
+            // if (targetEditor && targetEditor.document.languageId !== 'sql') {
+            //      try {
+            //          await VsCodeLanguages.setTextDocumentLanguage(targetEditor.document, 'sql');
+            //          console.log(`[AutoOpenProvider] Set language to SQL for already visible editor ${targetUri.toString()}`);
+            //      } catch (langError) {
+            //          console.error(`[AutoOpenProvider] Error setting language to SQL for already visible editor ${targetUri.toString()}:`, langError);
+            //      }
+            // }
+            // --- End Set Language ---
+            transformedProvider.update(targetUri); // Keep the update call
         }
 
 
@@ -81,8 +114,9 @@ export async function openTransformedViewAndSync(
                 const editors = monaco.editor.getEditors();
                 // Find source editor based on the original URI
                 sourceMonacoEditor = editors.find(e => e.getModel()?.uri.toString() === originalUriString);
-                // Find transformed editor based on the provider URI
+                // Find transformed editor based on the provider URI (Reverted to original)
                 transformedMonacoEditor = editors.find(e => e.getModel()?.uri.toString() === transformedUriString);
+
 
                 if ((sourceMonacoEditor && transformedMonacoEditor) || attempts >= maxAttempts) {
                     clearInterval(findEditorsInterval);

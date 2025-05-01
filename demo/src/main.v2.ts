@@ -9,7 +9,7 @@ import './imports.ts';
 import { TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace, EventEmitter, TextEditor, Disposable, OutputChannel, languages, Position, CancellationToken, CompletionContext, CompletionItem, CompletionItemKind, Range, TextDocument } from 'vscode'; // Added imports, TextDocument
 import { BuckFromChain, transformedProvider } from './transform-text';
 // Import the extraction function from the refactored file
-import { extractFromStatementsAST } from '../extract-from-statements';
+import { extractFromStatementsAST } from './extract-from-statements';
 
 
 // Removed local definitions of findVariableInitializerText and extractFromStatementsAST
@@ -125,10 +125,10 @@ void getApi().then(async (vscode: VsCodeApi) => { // vscode here is the resolved
             // This assumes the source document might be active, but not necessarily
             const sourceEditor = VsCodeWindow.visibleTextEditors.find(e => e.document.uri === event.document.uri) ?? VsCodeWindow.activeTextEditor;
 
-            if (sourceEditor && sourceEditor.document.uri === event.document.uri) {
+            if (sourceEditor && sourceEditor.document.uri === event.document.uri) { // Reverted condition check
                 const targetUri = getTransformedUri(sourceEditor);
                 if (targetUri) {
-                    // console.log(`[OnDidChangeTextDocument] Firing provider update for ${targetUri.toString()}`);
+                    // console.log(`[OnDidChangeTextDocument] Firing provider update for ${targetUri.toString()}`); // Keep original log commented
                     transformedProvider.update(targetUri); // Fire provider update
                 }
             } else {
@@ -153,12 +153,11 @@ void getApi().then(async (vscode: VsCodeApi) => { // vscode here is the resolved
 
     const initialEditor = VsCodeWindow.activeTextEditor;
     if (initialEditor) {
-        // console.log("[Initial] Attempting to open read-only transformed view for initially active editor.");
-        // await sleep(3000)
+        // console.log("[Initial] Attempting to open read-only transformed view for initially active editor."); // Restore original log
         // Pass the provider instance
+        // Removed sleep(500) again
         await openTransformedViewAndSync(initialEditor, transformedProvider, vscode);
-        // runActiveTypeScriptFile(VsCodeWindow, runOutputChannel!, 13);
-
+        // runActiveTypeScriptFile(VsCodeWindow, runOutputChannel!, 13); // Keep commented out or adjust if needed
     }
     commandDisposables.push(onSaveCommand(vscode)); // Correct closing for push(vscode.workspace.onDidSaveTextDocument(...))
     // --- Run TypeScript Command Registration ---

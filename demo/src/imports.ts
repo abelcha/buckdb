@@ -1,4 +1,4 @@
-// import './features/intellisense';
+import './features/intellisense';
 // import './features/ai';
 import '@codingame/monaco-vscode-configuration-editing-default-extension'
 import '@codingame/monaco-vscode-css-default-extension'
@@ -9,6 +9,7 @@ import '@codingame/monaco-vscode-markdown-math-default-extension'
 import '@codingame/monaco-vscode-media-preview-default-extension'
 import '@codingame/monaco-vscode-references-view-default-extension'
 import '@codingame/monaco-vscode-search-result-default-extension'
+import '../theme'
 import '@codingame/monaco-vscode-sql-default-extension'
 import '@codingame/monaco-vscode-theme-defaults-default-extension'
 import '@codingame/monaco-vscode-theme-kimbie-dark-default-extension'

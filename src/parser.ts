@@ -281,7 +281,7 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         if (node.operator === '!' && node.argument.type === 'Literal' && typeof node.argument.value === 'number') {
           return !node.argument.value
         }
-        if (node.operator === '!' && node.argument.callee.property.name === 'IsNull') {
+        if (node.operator === '!' && node.argument?.callee?.property?.name === 'IsNull') {
           return transformNode(node.argument).replace('IS NULL ', 'IS NOT NULL')
         }
         // console.log(node.argument?.callee?.property)

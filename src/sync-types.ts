@@ -192,7 +192,7 @@ const generateSettings = async () => {
     let out = `export interface DSettings {\n`
     out += resp.map(e => buildJSDoc(e) + `  ${e.name}: ${mapTypesProps(e.input_type).rawType},`).join('\n')
     out += '\n}\n'
-    out += `export const DExtensions = ` + JSON.stringify(await from('duckdb_extensions()').execute(), null, 2) + ' as const' + '\n'
+    out += `export const DExtensions = ` + JSON.stringify(await from('duckdb_extensions()').select('extension_name', 'description', 'installed_from').execute(), null, 2) + ' as const' + '\n'
     // out += `\nexport const DTypes = ` + JSON.stringify(await from('duckdb_types()').select('type_name', 'type_size', 'logical_type', 'type_category').execute(), null, 2) + ' as const' + '\n'
     return out;
 }
@@ -215,6 +215,7 @@ if (import.meta.main) {
             // .where(`function_name SIMILAR TO '[a-z]\\w+' AND function_name NOT LIKE 'icu_collate%'`)
             .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
             .orderBy('function_name')
+            .sample('10%')
         console.log(query.toSql({ pretty: true }))
         let results = (await query.execute()).concat(anyFuncs).concat(addFuncs)
         // console.log({ results: results.length })

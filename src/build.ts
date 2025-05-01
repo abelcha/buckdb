@@ -116,10 +116,10 @@ function toSql(state: DState) {
         serializeTuple(' GROUP BY')(state.groupBy),
         serializeConditions('HAVING')(state.having),
         "\n",
+        serializeValue('USING SAMPLE')(state.sample),
         serializeOrder('ORDER BY')(state.orderBy),
         serializeValue('LIMIT')(state.limit),
         serializeValue('OFFSET')(state.offset),
-        serializeValue('USING SAMPLE')(state.sample),
     ].filter(Boolean)
     // const add = settings ? (settings.join(';') + '\n') : ''
     const comps = components.join(' ').trim();

@@ -5,10 +5,12 @@ import { runActiveTypeScriptFile } from './features/runTs';
 import type * as vsCodeApi from "vscode";
 import { transformedScheme, scrollSyncMap, openTransformedViewAndSync } from './sync-view';
 import './imports.ts';
-import { TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace, EventEmitter, TextEditor, Disposable, OutputChannel } from 'vscode'; // Added imports, TextDocument
+import { TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace, EventEmitter, TextEditor, Disposable, OutputChannel, CodeLensProvider } from 'vscode'; // Added imports, TextDocument, CodeLensProvider
 import { transformedProvider } from './transform-text';
 import { extractFromStatementsAST } from './extract-from-statements';
 import { s3CompletionProvider } from './completion-provider.ts';
+import { SqlCodeLensProvider } from './features/sqlCodeLensProvider'; // Import the new CodeLensProvider
+// import { runActiveTypeScriptFile } from './features/runTs'; // Removed duplicate import
 type VsCodeApi = typeof vsCodeApi;
 
 const { getApi } = registerExtension(
@@ -45,10 +47,14 @@ void getApi().then(async (vscode: VsCodeApi) => {
         return activeEditor ? await openTransformedViewAndSync(activeEditor, transformedProvider, vscode) : vscode.window.showWarningMessage('No active editor found to show transformed view for.');
     }));
 
+    // Updated getTransformedUri to match the new structure used in sync-view.ts
     const getTransformedUri = (editor: TextEditor | undefined): Uri | undefined => {
         if (editor && editor.document.uri.scheme !== transformedScheme && editor.document.uri.scheme !== 'transx') {
             const originalUri = editor.document.uri;
-            return Uri.parse(`${transformedScheme}:/${originalUri.toString()}`);
+            const originalUriString = originalUri.toString();
+            // Construct the URI with .sql path and original URI in query
+            const targetPath = originalUri.path.replace(/\.(ts|tsx)$/, '.sql');
+            return Uri.parse(`${transformedScheme}:${targetPath}?original=${encodeURIComponent(originalUriString)}`);
         }
         return undefined;
     };
@@ -80,11 +86,22 @@ void getApi().then(async (vscode: VsCodeApi) => {
     if (!runOutputChannel) {
         runOutputChannel = vscode.window.createOutputChannel("TypeScript Runner");
     }
-    commandDisposables.push(vscode.commands.registerCommand('run.activeTypeScriptFile', () => runActiveTypeScriptFile(VsCodeWindow, runOutputChannel!)));
+    // Keep existing commands, but note runActiveTypeScriptFile signature changed
+    commandDisposables.push(vscode.commands.registerCommand('run.activeTypeScriptFile', () => {
+        if (!runOutputChannel) { runOutputChannel = vscode.window.createOutputChannel("TypeScript Runner"); } // Keep channel for this command for now
+        runActiveTypeScriptFile(VsCodeWindow, /* No channel needed */); // Call updated function
+    }));
 
     commandDisposables.push(vscode.commands.registerCommand('run.activeCell', async (a, b, c) => {
         const cursorPosition = VsCodeWindow.activeTextEditor?.selection.active;
-        await runActiveTypeScriptFile(VsCodeWindow, runOutputChannel!, cursorPosition.line);
+        if (!runOutputChannel) { runOutputChannel = vscode.window.createOutputChannel("TypeScript Runner"); } // Keep channel for this command for now
+        await runActiveTypeScriptFile(VsCodeWindow, /* No channel needed */ cursorPosition.line); // Call updated function
+    }));
+
+    // Register the command triggered by the CodeLens
+    commandDisposables.push(vscode.commands.registerCommand('buckdb.runQueryFromLine', async (lineIndex: number) => {
+        // Call the updated runActiveTypeScriptFile function without the channel
+        await runActiveTypeScriptFile(VsCodeWindow, lineIndex);
     }));
 
     commandDisposables.push(vscode.commands.registerCommand('extract.fromStatements', () => {
@@ -112,5 +129,9 @@ void getApi().then(async (vscode: VsCodeApi) => {
 
 
     commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, s3CompletionProvider, '/'));
+
+    // Register the CodeLensProvider for TypeScript files
+    const tsFileSelector = [{ language: 'typescript' }, { language: 'typescriptreact' }];
+    commandDisposables.push(vscode.languages.registerCodeLensProvider(tsFileSelector, new SqlCodeLensProvider()));
 
 })

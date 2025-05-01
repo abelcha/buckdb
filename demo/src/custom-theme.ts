@@ -13,7 +13,7 @@ export const customEditorOptions = {
   fontSize: 14,
   lineHeight: 22,
   cursorBlinking: 'smooth' as 'smooth',
-  minimap: { enabled: true },
+  minimap: { enabled: false },
   scrollBeyondLastLine: false,
   renderLineHighlight: 'all' as 'all',
   renderWhitespace: 'selection' as 'selection',

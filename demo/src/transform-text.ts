@@ -1,189 +1,115 @@
-import { TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace, EventEmitter, TextEditor, ViewColumn } from 'vscode';
+import { TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace, EventEmitter } from 'vscode';
 import type { IDisposable } from 'monaco-editor';
 import { debounce, memoize } from 'es-toolkit';
 import { extractFromStatementsAST, FromStatementParts } from '../src/extract-from-statements';
-import { fileSystemProvider, writeFile } from './setup.common';
-import { generateInterface } from '@external/src/interface-generator'
-import contentjson from '@external/.buck/table.json'
-// import { fileSystemProvider } from './setup.common';
+import { writeFile } from './setup.common';
+import { generateInterface } from '../../src/interface-generator'; // Use relative path
+import contentjson from '../../.buck/table.json'; // Use relative path
+
 export const transformedScheme = 'transformed';
-export const scrollSyncMap = new Map<string, { sourceDisposable: IDisposable, targetDisposable: IDisposable }>();
+export const scrollSyncMap = new Map<string, { sourceDisposable: IDisposable; targetDisposable: IDisposable }>();
 
 const execToSql = memoize((cleanFromChain: string) => {
-    // console.log('RECALC', str)
-    const str = `return ${cleanFromChain}.toSql()`
-    // console.log({ str })
-    const fn = new Function(str)
-    return fn()
-})
+    const fn = new Function(`return ${cleanFromChain}.toSql()`);
+    return fn();
+});
+
 export const BuckFromChain = (opts: { chain: string }) => {
-    // console.log('RECALC', str)
-    if (!opts.chain) {
-        throw new Error('No chain provided')
-    }
-    // const str = .toSql()`
-    return new Function(`return (${opts.chain})`)()
-}
+    if (!opts.chain) throw new Error('No chain provided');
+    return new Function(`return (${opts.chain})`)();
+};
 
-
-function transformCode(extractedParts: { cleanFromChain: string, lineStart: number }[]): string {
-    let arr = new Array().fill(null)
-    for (const st of extractedParts || []) {
-        let res = []
+function transformCode(parts: { cleanFromChain: string; lineStart: number }[]): string {
+    const arr = new Array().fill(null);
+    for (const st of parts || []) {
+        let res: string[] = [];
         try {
-            res = execToSql(st.cleanFromChain).split('\n')
-            // console.log('res', res)
+            res = execToSql(st.cleanFromChain).split('\n');
         } catch (err) {
-            // console.log('Error', { st, err })
-            res = ['Error: ', st, err]
+            res = ['Error: ', String(st), String(err)];
         }
-        let occupiedIndex = 0
-        while (arr[st.lineStart + occupiedIndex]) {
-            occupiedIndex++
-        }
-        res.forEach((e, i) => {
-            arr[st.lineStart + i + occupiedIndex] = e
-        })
+        let offset = 0;
+        while (arr[st.lineStart + offset]) offset++;
+        res.forEach((line, i) => arr[st.lineStart + i + offset] = line);
     }
-    return arr.map(e => e || '').join('\n')
+    return arr.map(e => e || '').join('\n');
 }
+
 class Schemes {
-    content = {}
-    // init() {
-    //     // this.content = JSON.parse((await import('@external/.buck/table.json?raw')).default)
-    //     console.log('CONT', this.content)
-    // }
-    constructor() {
-        this.content = contentjson
-    }
-
+    content = contentjson;
     writeFile = async (filePath: string, content: string) => {
-        const r1 = await writeFile(filePath, content)
-        console.log(filePath, { r1 })
-        const r2 = await fetch('/save-file', {
+        await writeFile(filePath, content);
+        await fetch('/save-file', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ filePath: '/workspace/' + filePath, content })
-        })
-        console.log(filePath, { r2 })
-
+        });
     }
     merge = debounce(async (statement) => {
-        const ressource = statement.resource || ''
-
         try {
-            const str = `return ${statement.chain || `Buck('')`}.fetchSchema('${statement.param}')`
-            // console.log({ str })
-            const fn = new Function(str)
-            const schema = await fn()
-            console.log('FUNC', schema)
-            if (!this.content[ressource]) {
-                this.content[ressource] = {};
-            }
-            this.content[ressource][statement.param] = schema
-            console.log('saving table.json...')
-            this.writeFile('.buck/table.json', JSON.stringify(this.content, null, 2))
-            const tsfile = generateInterface(this.content)
-            console.log({ tsfile })
-            // const fd = fileSystemProvider.open()
-            this.writeFile('.buck/table3.ts', tsfile)
-            // const writerESP =
-            //     console.log({ writerESP })
-            // // const resp4 = await fileSystemProvider.readFile(Uri.file(`/workspace/.buck/table3.ts`))
-            // const response =
-            //     console.log({ response })
-
-            // await Bun.file('./.buck/table3.ts').write(tsfile)
-
+            const fn = new Function(`return ${statement.chain || "Buck('')"}.fetchSchema('${statement.param}')`);
+            const schema = await fn();
+            const resource = statement.resource || '';
+            if (!this.content[resource]) this.content[resource] = {};
+            this.content[resource][statement.param] = schema;
+            this.writeFile('.buck/table.json', JSON.stringify(this.content, null, 2));
+            const tsfile = generateInterface(this.content);
+            this.writeFile('.buck/table3.ts', tsfile);
         } catch (err) {
-            console.log('Error', { err })
+            console.error('Merge error', err);
         }
     }, 3000)
-
     upsert(statement: FromStatementParts) {
-        const ressource = statement.resource || ''
-
-        if (this.content[statement.resource || '']?.[statement.param]) {
-            // console.log('UPSEEERT', statement)
-            return true
-        }
-        this.merge(statement)
-
-        return false
+        if (this.content[statement.resource || '']?.[statement.param]) return true;
+        this.merge(statement);
+        return false;
     }
 }
 
-const schemes = new Schemes()
+const schemes = new Schemes();
 
-
-// --- Reintroduce Transformed Content Provider Implementation ---
 export const transformedProvider = new class implements TextDocumentContentProvider {
-    // emitter and its event
     onDidChangeEmitter = new EventEmitter<Uri>();
     onDidChange = this.onDidChangeEmitter.event;
-
     provideTextDocumentContent(uri: Uri): string {
-        // Find the original document based on the path in the transformed URI (Reverted)
-        const originalUriString = uri.path.substring(1); // Remove leading '/'
-        const originalUri = Uri.parse(originalUriString, true);
+        // Extract original URI from the query parameter
+        const queryParams = new URLSearchParams(uri.query);
+        const originalUriString = queryParams.get('original');
 
-        // Find the corresponding editor or document
-        const editor = VsCodeWindow.visibleTextEditors.find(e => e.document.uri.toString() === originalUri.toString());
+        if (!originalUriString) {
+            return `// Error: Could not find original URI in query for ${uri.toString()}`;
+        }
+
+        const originalUri = Uri.parse(decodeURIComponent(originalUriString), true);
         let code = '';
+        const editor = VsCodeWindow.visibleTextEditors.find(e => e.document.uri.toString() === originalUri.toString());
         if (editor) {
             code = editor.document.getText();
-            // console.log(`[TransformedProvider] Providing content for ${uri.toString()} from visible editor.`);
         } else {
-            // Fallback: Try finding the document in the workspace if not visible
             const doc = VsCodeWorkspace.textDocuments.find(d => d.uri.toString() === originalUri.toString());
             if (doc) {
                 code = doc.getText();
-                // console.log(`[TransformedProvider] Providing content for ${uri.toString()} from workspace document.`);
             } else {
-                // Fallback: Try getting content from the active editor if URIs match (less reliable)
-                const activeEditor = VsCodeWindow.activeTextEditor;
-                if (activeEditor && activeEditor.document.uri.toString() === originalUri.toString()) {
-                    code = activeEditor.document.getText();
-                    // console.log(`[TransformedProvider] Providing content for ${uri.toString()} from active editor.`);
-                } else {
-                    // console.warn(`[TransformedProvider] Original document not found: ${originalUriString}`);
-                    return `// Original document not found: ${originalUriString}`;
-                }
+                const active = VsCodeWindow.activeTextEditor;
+                if (active && active.document.uri.toString() === originalUri.toString()) code = active.document.getText();
+                else return `// Original document not found: ${originalUriString}`;
             }
         }
-
-        // --- Restore Original Transformation Logic with Error Handling ---
         try {
-            const extractedParts = extractFromStatementsAST(code);
-            // console.log('EXTRACTED', { extractedParts }); // Keep for debugging if needed
-
-            // Process schemes with individual error handling
-            for (const st of extractedParts) {
+            const parts = extractFromStatementsAST(code);
+            for (const st of parts) {
                 try {
                     schemes.upsert(st);
-                } catch (schemeError) {
-                    console.error(`[TransformedProvider] Error during schemes.upsert for statement:`, st, schemeError);
-                    // Log error but continue processing other statements
+                } catch (err) {
+                    console.error('upsert error', st, err);
                 }
             }
-
-            // Transform the code with error handling inside transformCode
-            const transformedContent = transformCode(extractedParts);
-            return transformedContent;
-
+            return transformCode(parts);
         } catch (error) {
-             console.error(`[TransformedProvider] Error during transformation for ${uri.toString()}:`, error);
-             // Return an error message if extraction or transformation fails globally
-             return `// Error processing document ${originalUriString}:\n// ${error instanceof Error ? error.message : String(error)}`;
+            return `// Error processing document ${originalUriString}:\n// ${error instanceof Error ? error.message : String(error)}`;
         }
-        // --- End Restore ---
     }
-
-    // Method to signal that content for a URI has changed
     update(uri: Uri) {
-        // console.log(`[TransformedProvider] Firing change for: ${uri.toString()}`);
         this.onDidChangeEmitter.fire(uri);
     }
 };

@@ -4,8 +4,9 @@ const toto = ""
 const buckCon = Buck('', {
     s3_access_key_id: 'GXSS9O33ILIPZ9YVSKE0',
     s3_secret_access_key: 'Uqs1er2IXhzd9mcdnPKEzNzzaCy4f1EhEbX30ufE',
-    s3_endpoint: 's3.eu-west-2.wasabisys.com',
+    s3_endpoint: 's3.eu-west-2.wasabisys.com'
 })
+
 
 await buckCon.from('duckdb_functions()')
     .select(({database_name, database_oid, ...fns}) => ({ ...fns, schema_name: 'xxxxxx'  }))
@@ -19,8 +20,9 @@ await buckCon.from('duckdb_functions()')
 
 
 await buckCon.from('duckdb_functions()', 'ddf')
-    .join('data/final.csv', e => e.final.pid === e.ddf.database_oid)
+    // .join('data/final.csv', e => e.final.pid === e.ddf.database_oid)
     .select((e, D) => ({
+        xxzz: e.ddf.database_oid.ascii() + 'lol',
         // ['zz']: e.parameters['abel'],
         name: e.function_name,
         xxx: D.Varchar("ab'el"),
@@ -34,6 +36,8 @@ await buckCon.from('duckdb_functions()', 'ddf')
     //  .limit(10)
 
     .execute()
+
+
 
 
 await from('duckdb_settings()').select((p, D) => [p.name, p.description, D.SimilarTo(p.name, /.+ll.+/g) ? 'en' : 'ko'])
@@ -58,7 +62,7 @@ from('s3://dallas/zzz.parquet')
 
 await from('https://m.abe.lc/public/opendata/geopop.csv', 'leo')
     .select((p, D) => ({
-        l: D.SimilarTo(p.name, /12\d+/) ? p.lat : D.Bigint(42),
+        l: D.SimilarTo(p.name, /12\d+/) ? p.lat.acosh() : D.Bigint(42),
         lg: p.lng,
         nm: p.name,
         dd: D.Bigint(12)

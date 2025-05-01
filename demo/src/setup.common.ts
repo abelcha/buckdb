@@ -127,7 +127,7 @@ export const constructOptions: IWorkbenchConstructionOptions = {
   developmentOptions: { logLevel: LogLevel.Info },
   configurationDefaults: {
     'window.title': 'Monaco-Vscode-Api${separator}${dirty}${activeEditorShort}',
-    "editor.minimap.enabled": true,
+    "editor.minimap.enabled": false,
     "files.hotExit": "off"
   },
   defaultLayout: {

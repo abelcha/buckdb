@@ -94,7 +94,6 @@ registerCustomView({
   order: 0,
   renderBody: function (container: HTMLElement): monaco.IDisposable {
 
-    console.log('here')
     container.style.display = 'block'
     container.style.height = '100%'
     container.style.overflow = '' // Remove overflow:auto to let AG Grid handle scrolling

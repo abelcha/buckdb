@@ -1,91 +1,15 @@
 import { transform } from "sucrase";
-import getConfigurationServiceOverride, {
-  IStoredWorkspace,
-  initUserConfiguration
-} from '@codingame/monaco-vscode-configuration-service-override'
-import getKeybindingsServiceOverride, {
-  initUserKeybindings
-} from '@codingame/monaco-vscode-keybindings-service-override'
-import {
-  RegisteredFileSystemProvider,
-  RegisteredMemoryFile,
-  createIndexedDBProviders,
-  registerHTMLFileSystemProvider,
-  registerFileSystemOverlay,
-  initFile
-} from '@codingame/monaco-vscode-files-service-override'
-import * as monaco from 'monaco-editor'
-import {
-  IWorkbenchConstructionOptions,
-  LogLevel,
-  IEditorOverrideServices
-} from '@codingame/monaco-vscode-api'
-import * as vscode from 'vscode'
-import getModelServiceOverride from '@codingame/monaco-vscode-model-service-override'
-// import getNotificationServiceOverride from '@codingame/monaco-vscode-notifications-service-override'
-import getDialogsServiceOverride from '@codingame/monaco-vscode-dialogs-service-override'
-import getTextmateServiceOverride from '@codingame/monaco-vscode-textmate-service-override'
-import getThemeServiceOverride from '@codingame/monaco-vscode-theme-service-override'
-import getLanguagesServiceOverride from '@codingame/monaco-vscode-languages-service-override'
-import getSecretStorageServiceOverride from '@codingame/monaco-vscode-secret-storage-service-override'
-import getAuthenticationServiceOverride from '@codingame/monaco-vscode-authentication-service-override'
-import getScmServiceOverride from '@codingame/monaco-vscode-scm-service-override'
-import getExtensionGalleryServiceOverride from '@codingame/monaco-vscode-extension-gallery-service-override'
-import getBannerServiceOverride from '@codingame/monaco-vscode-view-banner-service-override'
-import getStatusBarServiceOverride from '@codingame/monaco-vscode-view-status-bar-service-override'
-import getTitleBarServiceOverride from '@codingame/monaco-vscode-view-title-bar-service-override'
-import getDebugServiceOverride from '@codingame/monaco-vscode-debug-service-override'
-import getPreferencesServiceOverride from '@codingame/monaco-vscode-preferences-service-override'
-import getSnippetServiceOverride from '@codingame/monaco-vscode-snippets-service-override'
-import getOutputServiceOverride from '@codingame/monaco-vscode-output-service-override'
-import getTerminalServiceOverride from '@codingame/monaco-vscode-terminal-service-override'
-import getSearchServiceOverride from '@codingame/monaco-vscode-search-service-override'
-import getMarkersServiceOverride from '@codingame/monaco-vscode-markers-service-override'
-import getAccessibilityServiceOverride from '@codingame/monaco-vscode-accessibility-service-override'
-import getLanguageDetectionWorkerServiceOverride from '@codingame/monaco-vscode-language-detection-worker-service-override'
-import getStorageServiceOverride from '@codingame/monaco-vscode-storage-service-override'
-import getExtensionServiceOverride from '@codingame/monaco-vscode-extensions-service-override'
-import getRemoteAgentServiceOverride from '@codingame/monaco-vscode-remote-agent-service-override'
-import getEnvironmentServiceOverride from '@codingame/monaco-vscode-environment-service-override'
-import getLifecycleServiceOverride from '@codingame/monaco-vscode-lifecycle-service-override'
-import getWorkspaceTrustOverride from '@codingame/monaco-vscode-workspace-trust-service-override'
-import getLogServiceOverride from '@codingame/monaco-vscode-log-service-override'
-import getWorkingCopyServiceOverride from '@codingame/monaco-vscode-working-copy-service-override'
-import getTestingServiceOverride from '@codingame/monaco-vscode-testing-service-override'
-import getChatServiceOverride from '@codingame/monaco-vscode-chat-service-override'
-import getNotebookServiceOverride from '@codingame/monaco-vscode-notebook-service-override'
-import getWelcomeServiceOverride from '@codingame/monaco-vscode-welcome-service-override'
-import getWalkThroughServiceOverride from '@codingame/monaco-vscode-walkthrough-service-override'
-import getUserDataSyncServiceOverride from '@codingame/monaco-vscode-user-data-sync-service-override'
-import getUserDataProfileServiceOverride from '@codingame/monaco-vscode-user-data-profile-service-override'
-import getAiServiceOverride from '@codingame/monaco-vscode-ai-service-override'
-import getTaskServiceOverride from '@codingame/monaco-vscode-task-service-override'
-import getOutlineServiceOverride from '@codingame/monaco-vscode-outline-service-override'
-import getTimelineServiceOverride from '@codingame/monaco-vscode-timeline-service-override'
-import getCommentsServiceOverride from '@codingame/monaco-vscode-comments-service-override'
-import getEditSessionsServiceOverride from '@codingame/monaco-vscode-edit-sessions-service-override'
-import getEmmetServiceOverride from '@codingame/monaco-vscode-emmet-service-override'
-import getInteractiveServiceOverride from '@codingame/monaco-vscode-interactive-service-override'
-import getIssueServiceOverride from '@codingame/monaco-vscode-issue-service-override'
-import getMultiDiffEditorServiceOverride from '@codingame/monaco-vscode-multi-diff-editor-service-override'
-import getPerformanceServiceOverride from '@codingame/monaco-vscode-performance-service-override'
-import getRelauncherServiceOverride from '@codingame/monaco-vscode-relauncher-service-override'
-import getShareServiceOverride from '@codingame/monaco-vscode-share-service-override'
-import getSpeechServiceOverride from '@codingame/monaco-vscode-speech-service-override'
-import getSurveyServiceOverride from '@codingame/monaco-vscode-survey-service-override'
-import getUpdateServiceOverride from '@codingame/monaco-vscode-update-service-override'
-import getExplorerServiceOverride from '@codingame/monaco-vscode-explorer-service-override'
-import getLocalizationServiceOverride from '@codingame/monaco-vscode-localization-service-override'
-import getTreeSitterServiceOverride from '@codingame/monaco-vscode-treesitter-service-override'
-import getTelemetryServiceOverride from '@codingame/monaco-vscode-telemetry-service-override'
-import getMcpServiceOverride from '@codingame/monaco-vscode-mcp-service-override'
-import { EnvironmentOverride } from '@codingame/monaco-vscode-api/workbench'
-import { Worker } from './tools/crossOriginWorker'
-import defaultKeybindings from './user/keybindings.json?raw'
-import defaultConfiguration from './user/configuration.json?raw'
-import { TerminalBackend } from './features/terminal'
-import { workerConfig } from './tools/extHostWorker'
-import 'vscode/localExtensionHost'
+import { IStoredWorkspace, initUserConfiguration } from '@codingame/monaco-vscode-configuration-service-override';
+import { initUserKeybindings } from '@codingame/monaco-vscode-keybindings-service-override';
+import { RegisteredFileSystemProvider, RegisteredMemoryFile, createIndexedDBProviders, registerFileSystemOverlay } from '@codingame/monaco-vscode-files-service-override';
+import * as monaco from 'monaco-editor';
+import { IWorkbenchConstructionOptions, LogLevel } from '@codingame/monaco-vscode-api';
+import * as vscode from 'vscode';
+import { EnvironmentOverride } from '@codingame/monaco-vscode-api/workbench';
+import { Worker } from './tools/crossOriginWorker';
+import defaultKeybindings from './user/keybindings.json?raw';
+import defaultConfiguration from './user/configuration.json';
+import 'vscode/localExtensionHost';
 
 const url = new URL(document.location.href)
 const params = url.searchParams
@@ -100,22 +24,14 @@ params.delete('resetLayout')
 window.history.replaceState({}, document.title, url.href)
 
 export let workspaceFile = monaco.Uri.file('/workspace.code-workspace')
-
 export const userDataProvider = await createIndexedDBProviders()
-
 export const fileSystemProvider = new RegisteredFileSystemProvider(false)
-
-
-// const mods = await import.meta.glob('@external/*')
-// console.log(mods)
-// const xx = await import(`@external/src/parser.ts?raw`)
-// console.log({ xx: xx.default })
 
 const loadFile = (content: any, path: string) => {
   fileSystemProvider.registerFile(new RegisteredMemoryFile(vscode.Uri.file(`/workspace/${path}`), content))
+  return true
 }
 
-// Modified writeFile function
 export async function writeFile(
   path: string,
   content: string // Assuming string content for simplicity
@@ -142,48 +58,16 @@ const buckdb = (await import('@external/buckdb.wasm.ts?raw')).default
 const demo = (await import('@external/demo.ts?raw')).default
 const tsconf = JSON.stringify({
   compilerOptions: {
-    strict: true,
-    "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
-    "target": "ESNext",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    strict: true, "resolveJsonModule": true, "allowImportingTsExtensions": true, "target": "ESNext", "module": "ESNext", "moduleResolution": "bundler",
   }
 })
-loadFile(tsconf, 'tsconfig.json',)
-loadFile(parser, 'src/parser.ts')
-loadFile(jsep, 'src/jsep.ts',)
-loadFile(copy, 'src/copy.ts',)
-loadFile(types, '.buck/types.ts',)
-loadFile(tablejson, '.buck/table.json',)
-loadFile(utils, 'src/utils.ts',)
-loadFile(table3, '.buck/table3.ts',)
-loadFile(buildTypes, 'src/build.types.ts',)
-loadFile(build, 'src/build.ts',)
-loadFile(buckdb, 'buckdb.ts',)
-// loadFile(await import('@external/adapters/DuckDBWasmAdapter.ts?raw'), 'adapters/DuckDBWasmAdapter.ts',)
-loadFile(demo, 'demo.ts',)
+loadFile(tsconf, 'tsconfig.json',) && loadFile(parser, 'src/parser.ts') && loadFile(jsep, 'src/jsep.ts',) && loadFile(copy, 'src/copy.ts',) && loadFile(types, '.buck/types.ts',) && loadFile(tablejson, '.buck/table.json',)
+loadFile(utils, 'src/utils.ts',) && loadFile(table3, '.buck/table3.ts',) && loadFile(buildTypes, 'src/build.types.ts',) && loadFile(build, 'src/build.ts',) && loadFile(buckdb, 'buckdb.ts',) && loadFile(demo, 'demo.ts',)
 
-
-// const parser = await Bun.file('src/parser.ts').text()
-// const jsep = await Bun.file('src/jsep.ts').text()
-// const types = await Bun.file('.buck/types.ts').text()
-// const utils = await Bun.file('src/utils.ts').text()
-// const table3 = await Bun.file('.buck/table3.ts').text()
-// const buildv2 = await Bun.file('src/build-v2.ts').text()
-// const bdb = await Bun.file('buckdb.wasm.ts').text()
-// const w = await Bun.file('adapters/DuckDBWasmAdapter.ts').text()
 const removeImports = (str: string) => str.split('\n').filter(e => !(e.match(/^\s*\/\//) || (e.startsWith('import') && e.includes('./')))).join('\n')
 const namespaceify = (name, str: string) => `namespace ${name}  {\n ${str}\n} \n`
 export const getFullBundle = () => {
-  const content = [
-    jsep,
-    parser,
-    utils,
-    table3,
-    build,
-    // buckdb
-  ].map(e => removeImports(e)).join('\n')
+  const content = [jsep, parser, utils, table3, build].map(e => removeImports(e)).join('\n')
     .replaceAll(/export\sdefault/g, '')
     .replaceAll(/\n\s*export\s/g, '\n')
   return namespaceify('t', types) + content
@@ -191,190 +75,23 @@ export const getFullBundle = () => {
 }
 // fileSystemProvider
 export const bundle = transform(getFullBundle(), { transforms: ["typescript"] })
-// console.log({ bundle })
-// loadFile(bundle, 'full-bundle.ts')
-
-
-
-
-
-
-// loadFile(await import('@external/adapters/DuckDBWasmAdapter.ts?raw'), 'adapters/DuckDBWasmAdapter.ts',)
-
-// for (const file of files) {
-//   const content = await import(`@external${file}?raw`)
-
-// }
-
-// fileSystemProvider.registerFile(
-//   new RegisteredMemoryFile(
-//     vscode.Uri.file('/workspace/demo.ts'),
-//     ``
-//   )
-// )
-
-//   const content = new TextEncoder().encode('This is a readonly static file')
-//   fileSystemProvider.registerFile(
-//     new RegisteredReadOnlyFile(
-//       vscode.Uri.file('/workspace/test_readonly.js'),
-//       async () => content,
-//       content.length
-//     )
-//   )
-
-//   fileSystemProvider.registerFile(
-//     new RegisteredMemoryFile(
-//       vscode.Uri.file('/workspace/jsconfig.json'),
-//       `{
-//   "compilerOptions": {
-//     "target": "es2020",
-//     "module": "esnext",
-//     "lib": [
-//       "es2021",
-//       "DOM"
-//     ]
-//   }
-// }`
-//     )
-//   )
-
-//   fileSystemProvider.registerFile(
-//     new RegisteredMemoryFile(
-//       vscode.Uri.file('/workspace/index.html'),
-//       `
-// <!DOCTYPE html>
-// <html lang="en">
-//   <head>
-//     <meta charset="UTF-8" />
-//     <title>monaco-vscode-api demo</title>
-//     <link rel="stylesheet" href="test.css">
-//   </head>
-//   <body>
-//     <style type="text/css">
-//       h1 {
-//         color: DeepSkyBlue;
-//       }
-//     </style>
-
-//     <h1>Hello, world!</h1>
-//   </body>
-// </html>`
-//     )
-//   )
-
-// fileSystemProvider.registerFile(
-//   new RegisteredMemoryFile(
-//     vscode.Uri.file('/workspace/test.md'),
-//     `
-//   ***Hello World***
-
-//   Math block:
-//   $$
-//   \\displaystyle
-//   \\left( \\sum_{k=1}^n a_k b_k \\right)^2
-//   \\leq
-//   \\left( \\sum_{k=1}^n a_k^2 \\right)
-//   \\left( \\sum_{k=1}^n b_k^2 \\right)
-//   $$
-
-//   # Easy Math
-
-//   2 + 2 = 4 // this test will pass
-//   2 + 2 = 5 // this test will fail
-
-//   # Harder Math
-
-//   230230 + 5819123 = 6049353
-//   `
-//   )
-// )
-
-// fileSystemProvider.registerFile(
-//   new RegisteredMemoryFile(
-//     vscode.Uri.file('/workspace/test.customeditor'),
-//     `
-//   Custom Editor!`
-//   )
-// )
-
-//   fileSystemProvider.registerFile(
-//     new RegisteredMemoryFile(
-//       vscode.Uri.file('/workspace/test.css'),
-//       `
-// h1 {
-//   color: DeepSkyBlue;
-// }`
-//     )
-//   )
-
 // Use a workspace file to be able to add another folder later (for the "Attach filesystem" button)
 fileSystemProvider.registerFile(
-  new RegisteredMemoryFile(
-    workspaceFile,
-    JSON.stringify(
-      <IStoredWorkspace>{
-        folders: [
-          {
-            path: '/workspace'
-          }
-        ]
-      },
-      null,
-      2
-    )
-  )
+  new RegisteredMemoryFile(workspaceFile, JSON.stringify(<IStoredWorkspace>{ folders: [{ path: '/workspace' }] }, null, 2))
 )
 
 fileSystemProvider.registerFile(
-  new RegisteredMemoryFile(
-    monaco.Uri.file('/workspace/.vscode/extensions.json'),
-    JSON.stringify(
-      {
-        recommendations: [],// ['vscodevim.vim']
-      },
-      null,
-      2
-    )
-  )
+  new RegisteredMemoryFile(monaco.Uri.file('/workspace/.vscode/extensions.json'), JSON.stringify({ recommendations: [], }, null, 2))
 )
-
 registerFileSystemOverlay(1, fileSystemProvider)
 
-// Workers
 export type WorkerLoader = () => Worker
 const workerLoaders: Partial<Record<string, WorkerLoader>> = {
-  TextEditorWorker: () =>
-    new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url), {
-      type: 'module'
-    }),
-  TextMateWorker: () =>
-    new Worker(
-      new URL('@codingame/monaco-vscode-textmate-service-override/worker', import.meta.url),
-      { type: 'module' }
-    ),
-  OutputLinkDetectionWorker: () =>
-    new Worker(
-      new URL('@codingame/monaco-vscode-output-service-override/worker', import.meta.url),
-      { type: 'module' }
-    ),
-  // LanguageDetectionWorker: () =>
-  //   new Worker(
-  //     new URL(
-  //       '@codingame/monaco-vscode-language-detection-worker-service-override/worker',
-  //       import.meta.url
-  //     ),
-  //     { type: 'module' }
-  //   ),
-  // NotebookEditorWorker: () =>
-  //   new Worker(
-  //     new URL('@codingame/monaco-vscode-notebook-service-override/worker', import.meta.url),
-  //     { type: 'module' }
-  //   ),
-  LocalFileSearchWorker: () =>
-    new Worker(
-      new URL('@codingame/monaco-vscode-search-service-override/worker', import.meta.url),
-      { type: 'module' }
-    )
+  TextEditorWorker: () => new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url), { type: 'module' }),
+  TextMateWorker: () => new Worker(new URL('@codingame/monaco-vscode-textmate-service-override/worker', import.meta.url), { type: 'module' }),
+  OutputLinkDetectionWorker: () => new Worker(new URL('@codingame/monaco-vscode-output-service-override/worker', import.meta.url), { type: 'module' }),
+  LanguageDetectionWorker: () => new Worker(new URL('@codingame/monaco-vscode-language-detection-worker-service-override/worker', import.meta.url), { type: 'module' }),
+  LocalFileSearchWorker: () => new Worker(new URL('@codingame/monaco-vscode-search-service-override/worker', import.meta.url), { type: 'module' })
 }
 window.MonacoEnvironment = {
   getWorker: function (moduleId, label) {
@@ -386,181 +103,45 @@ window.MonacoEnvironment = {
   }
 }
 
-// Set configuration before initializing service so it's directly available (especially for the theme, to prevent a flicker)
 await Promise.all([
-  initUserConfiguration(defaultConfiguration),
+  // initCustomThemeRegister(),
+  initUserConfiguration(JSON.stringify({
+    ...defaultConfiguration,
+
+  })),
   initUserKeybindings(defaultKeybindings)
 ])
 
 export const constructOptions: IWorkbenchConstructionOptions = {
   remoteAuthority,
   enableWorkspaceTrust: false,
-  connectionToken,
-  windowIndicator: {
-    label: 'monaco-vscode-api',
-    tooltip: '',
-    command: ''
-  },
-
+  connectionToken, windowIndicator: { label: 'monaco-vscode-api', tooltip: '', command: '' },
   workspaceProvider: {
     trusted: true,
     async open() {
       window.open(window.location.href)
       return true
     },
-    workspace:
-      remotePath == null
-        ? {
-          workspaceUri: workspaceFile
-        }
-        : {
-          folderUri: monaco.Uri.from({
-            scheme: 'vscode-remote',
-            path: remotePath,
-            authority: remoteAuthority
-          })
-        }
+    workspace: remotePath == null ? { workspaceUri: workspaceFile } : { folderUri: monaco.Uri.from({ scheme: 'vscode-remote', path: remotePath, authority: remoteAuthority }) }
   },
-  developmentOptions: {
-    logLevel: LogLevel.Info // Default value
-  },
+  developmentOptions: { logLevel: LogLevel.Info },
   configurationDefaults: {
     'window.title': 'Monaco-Vscode-Api${separator}${dirty}${activeEditorShort}',
-    // Hide the minimap by default
     "editor.minimap.enabled": true,
-    // Disable hot exit to prevent confirmation prompts on reload/close with unsaved changes
     "files.hotExit": "off"
   },
   defaultLayout: {
-    editors: useHtmlFileSystemProvider
-      ? undefined
-      : [
-        {
-          uri: monaco.Uri.file('/workspace/demo.ts'),
-          // viewColumn: 1
-        },
-        // {
-        //   uri: monaco.Uri.file('/workspace/test.md'),
-        //   viewColumn: 2
-        // }
-      ],
-    layout: useHtmlFileSystemProvider
-      ? undefined
-      : {
-        editors: {
-          orientation: 0,
-          groups: [{ size: 1 }, { size: 1 }]
-        }
-      },
-    views: [
-      {
-        id: 'custom-view'
-      }
-    ],
+    editors: useHtmlFileSystemProvider ? undefined : [{ uri: monaco.Uri.file('/workspace/demo.ts'), },], layout: useHtmlFileSystemProvider ? undefined : { editors: { orientation: 0, groups: [{ size: 1 }, { size: 1 }] } }, views: [{ id: 'custom-view' }],
     force: resetLayout
   },
-  welcomeBanner: {
-    message: 'Welcome in monaco-vscode-api demo'
-  },
+  welcomeBanner: { message: 'Welcome in monaco-vscode-api demo' },
   productConfiguration: {
     nameShort: 'monaco-vscode-api',
     nameLong: 'monaco-vscode-api',
-    extensionsGallery: {
-      serviceUrl: 'https://open-vsx.org/vscode/gallery',
-      resourceUrlTemplate: 'https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}',
-      extensionUrlTemplate: 'https://open-vsx.org/vscode/gallery/{publisher}/{name}/latest', // https://github.com/eclipse/openvsx/issues/1036#issuecomment-2476449435
-      controlUrl: '',
-      nlsBaseUrl: ''
-    }
+    extensionsGallery: { serviceUrl: 'https://open-vsx.org/vscode/gallery', resourceUrlTemplate: 'https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}', extensionUrlTemplate: 'https://open-vsx.org/vscode/gallery/{publisher}/{name}/latest', controlUrl: '', nlsBaseUrl: '' }
   }
 }
 
-export const envOptions: EnvironmentOverride = {
-  // Otherwise, VSCode detect it as the first open workspace folder
-  // which make the search result extension fail as it's not able to know what was detected by VSCode
-  // userHome: vscode.Uri.file('/')
-}
 
-export const commonServices: IEditorOverrideServices = {
-  ...getAuthenticationServiceOverride(),
-  ...getLogServiceOverride(),
-  ...getExtensionServiceOverride(workerConfig),
-  ...getExtensionGalleryServiceOverride({ webOnly: false }),
-  ...getModelServiceOverride(),
-  // ...getNotificationServiceOverride(),
-  ...getDialogsServiceOverride(),
-  ...getConfigurationServiceOverride(),
-  ...getKeybindingsServiceOverride(),
-  ...getTextmateServiceOverride(),
-  ...getTreeSitterServiceOverride(),
-  ...getThemeServiceOverride(),
-  ...getLanguagesServiceOverride(),
-  ...getDebugServiceOverride(),
-  ...getPreferencesServiceOverride(),
-  ...getOutlineServiceOverride(),
-  ...getTimelineServiceOverride(),
-  ...getBannerServiceOverride(),
-  ...getStatusBarServiceOverride(),
-  ...getTitleBarServiceOverride(),
-  ...getSnippetServiceOverride(),
-  ...getOutputServiceOverride(),
-  ...getTerminalServiceOverride(new TerminalBackend()),
-  ...getSearchServiceOverride(),
-  ...getMarkersServiceOverride(),
-  ...getAccessibilityServiceOverride(),
-  ...getLanguageDetectionWorkerServiceOverride(),
-  ...getStorageServiceOverride({
-    fallbackOverride: {
-      'workbench.activity.showAccounts': false
-    }
-  }),
-  ...getRemoteAgentServiceOverride({ scanRemoteExtensions: true }),
-  ...getLifecycleServiceOverride(),
-  ...getEnvironmentServiceOverride(),
-  ...getWorkspaceTrustOverride(),
-  ...getWorkingCopyServiceOverride(),
-  ...getScmServiceOverride(),
-  ...getTestingServiceOverride(),
-  ...getChatServiceOverride(),
-  ...getNotebookServiceOverride(),
-  ...getWelcomeServiceOverride(),
-  ...getWalkThroughServiceOverride(),
-  ...getUserDataProfileServiceOverride(),
-  ...getUserDataSyncServiceOverride(),
-  ...getAiServiceOverride(),
-  ...getTaskServiceOverride(),
-  ...getCommentsServiceOverride(),
-  ...getEditSessionsServiceOverride(),
-  ...getEmmetServiceOverride(),
-  ...getInteractiveServiceOverride(),
-  ...getIssueServiceOverride(),
-  ...getMultiDiffEditorServiceOverride(),
-  ...getPerformanceServiceOverride(),
-  ...getRelauncherServiceOverride(),
-  ...getShareServiceOverride(),
-  ...getSpeechServiceOverride(),
-  ...getSurveyServiceOverride(),
-  ...getUpdateServiceOverride(),
-  ...getExplorerServiceOverride(),
-  ...getLocalizationServiceOverride({
-    async clearLocale() {
-      const url = new URL(window.location.href)
-      url.searchParams.delete('locale')
-      window.history.pushState(null, '', url.toString())
-    },
-    async setLocale(id) {
-      const url = new URL(window.location.href)
-      url.searchParams.set('locale', id)
-      window.history.pushState(null, '', url.toString())
-    },
-    availableLanguages: [
-      {
-        locale: 'en',
-        languageName: 'English'
-      },
-    ]
-  }),
-  ...getSecretStorageServiceOverride(),
-  ...getTelemetryServiceOverride(),
-  ...getMcpServiceOverride()
+export const envOptions: EnvironmentOverride = {
 }

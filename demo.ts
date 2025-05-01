@@ -41,7 +41,7 @@ await from('duckdb_settings()').select((p, D) => [p.name, p.description, D.Simil
 
 await from('duckdb_functions()')
     .select(e => ({
-        at: e.function_name.regexp_extract_all(/(e)/g, 1),
+        at: e.function_name.regexp_extract_all(/(e)/, 1),
         ggg: e.database_name + 'lol',
         ggx: `${e.database_name}lol${'123'}`,
         xxz: e.database_name.len() + 12,

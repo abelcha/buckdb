@@ -5,12 +5,13 @@ import { DBuilder, DExtensionsId } from "./build.types";
 
 
 export type DCondition = { condition: string, operator?: 'OR' | 'AND' }
-export type DSelectee = { field: string, as?: string }
+export type DSelectee = { field: string, as?: string, raw?: string }
 export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST' | 'ASC NULLS LAST' | 'DESC NULLS LAST'
 export type DOrder = { field: string, direction?: DDirection }
 export type DDatasource = { catalog: string, uri: string, alias?: string, joinOn?: string, join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' }
-
+export type DCopyTo = { uri: string, options?: Record<string, any> }
 export const dstate = {
+    copyTo: [] as DCopyTo[],
     context: {} as Record<string, any>,
     datasources: [] as DDatasource[],
     selected: [] as DSelectee[],
@@ -63,6 +64,26 @@ const formatAs = (source: { field: string, as?: string }) => {
     }
     return source.field
 }
+export const formatOptions = (options?: Record<string, any>): string => {
+    if (!options || Object.keys(options).length === 0) return '';
+    if (typeof options === 'string') return `'${options}'`;
+
+    const formatValue = (value: any): string => {
+        if (typeof value === 'string') return `'${value}'`;
+        if (typeof value !== 'object' || value === null) return String(value);
+        if (Array.isArray(value)) {
+            return `(${value.join(', ')})`;
+        }
+        return `{${Object.entries(value).map(([k, v]) =>
+            `${k}: ${formatValue(v)}`
+        ).join(', ')}}`;
+    };
+
+    return Object.entries(options).map(([key, value]) =>
+        `${key.toUpperCase()} ${formatValue(value)}`
+    ).join(',\n');
+}
+export const wrapIfNotEmpty = (value: string) => value ? `(${value})` : ''
 const serializeDatasource = (datasources: DDatasource[]) => {
     return datasources.map((d) => d.join ? `${d.join} ${formatAlias(d)} ON (${d.joinOn})` : formatAlias(d)).join('\n ')
 }
@@ -70,7 +91,7 @@ const serializeSelected = (selected: DSelectee[]) => {
     if (!selected.length) {
         return '*'
     }
-    return (selected).map(formatAs).map(e => `${e}`).join(', \n        ')
+    return (selected).map(e => e.raw || `${formatAs(e)}`).join(', \n        ')
     // return prettifyPrintSQL(selected.map(([v, k]) => !k?.match(/[^\d]/) ? v : `${v} AS ${k}`).join(", ") || "*", pretty);
 }
 const newLine = (e: string) => {
@@ -99,9 +120,13 @@ function toSql(state: DState) {
         serializeValue('LIMIT')(state.limit),
         serializeValue('OFFSET')(state.offset),
         serializeValue('USING SAMPLE')(state.sample),
-    ]
+    ].filter(Boolean)
     // const add = settings ? (settings.join(';') + '\n') : ''
-    return components.filter(Boolean).join(' ').trim();
+    const comps = components.join(' ').trim();
+    if (state.copyTo.length) {
+        return state.copyTo.map(e => `COPY (\n${comps}\n) TO '${e.uri}' ${wrapIfNotEmpty(formatOptions(e.options))}`).join('\n')
+    }
+    return comps
     // }
 }
 type Parseable = string | Function
@@ -148,11 +173,15 @@ export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
             select: function (...keys: Parseable[]) {
                 const selected = keys.flatMap(k => {
                     if (typeof k === 'function') {
-                        return parseObject(k).map(([value, key]) => ({ field: key, as: value })) as DSelectee[]
+                        const parsed = parseObject(k, state.context)
+                        return parsed.map(([value, key, raw]) => ({ field: key, as: value, raw })) as DSelectee[]
                     }
                     return { field: k }
                 })
                 return fromRes({ ...state, selected })
+            },
+            copyTo: function (uri: string, options: Record<string, any> = {}) {
+                return fromRes({ ...state, copyTo: [...state.copyTo, { uri, options }] })
             },
             where: _where('AND'),
             or: _where('OR'),
@@ -206,7 +235,7 @@ export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
                 if (props?.dump || props?.pretty) {
                     this.dump()
                 }
-                if (state.selected.length === 1 && !state.selected[0]?.as) {
+                if (state.selected.length === 1 && !state.selected[0]?.as && !state.selected[0]?.raw) {
                     return ddb.query(str, { rows: true, ...props }).then(e => e.map(e => e[0]))
                 }
                 if (state.selected.length && state.selected.every((e) => typeof e.as === 'number')) {

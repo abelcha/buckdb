@@ -4,6 +4,7 @@ import { parse, parseObject } from './parser'
 import jsep from './jsep';
 
 
+
 test('should parse basic condition', () => {
     const result = parse((e, D) => e.age > 12);
     expect(result).toBe('age > 12');
@@ -113,7 +114,7 @@ test('ternary', () => {
 
 
 test('pattermatcher', () => {
-    expect(parse((e) => e.num.SimilarTo(/.+\w+/img))).toBe("regexp_match(num, '.+\\w+', 'gim')");
+    expect(parse((e) => e.num.SimilarTo(/.+\w+/img))).toBe("regexp_matches(num, '.+\\w+', 'gim')");
 
     expect(parse((e) => e.num.Like('%12'))).toBe("num LIKE '%12'");
     expect(parse((e) => e.num.SimilarTo(/.+\w+/))).toBe("num SIMILAR TO '.+\\w+'");
@@ -236,6 +237,33 @@ test('properties', () => {
     expect(parseBody(`{'toto':"43"}`)).toBe("{'toto': '43'}");
     expect(parseBody(`{toto:/45/g, x:15}`)).toBe("{toto: '45', x: 15}");
     expect(parseBody(`{['toto']:42}`)).toBe("{'toto': 42}");
+})
+test('parseObject destructuring', () => {
+    expect(parseObject(({ elem, ...rest }, DDD) => ({ ...rest, toto: rest.tata }))).toEqual([
+        ["", "", "* EXCLUDE(elem)"],
+        ["toto", "tata"]
+    ])
+    expect(parseObject(({ elem, abcd, ...rest }, DDD) => ({ ...rest, toto: rest.tata, abcd }))).toEqual([
+        ["", "", "* EXCLUDE(elem, abcd)"],
+        ["toto", "tata"],
+        ["abcd", "abcd"]
+    ])
+    expect(parseObject(({ ...rest }, DDD) => ({ ...rest }))).toEqual([
+        ["", "", "*"],
+    ])
+    expect(parseObject(({ ...rest }, DDD) => ({ ...rest, abc: DDD.whatever.value() }))).toEqual([
+        ["", "", "*"],
+        ["abc", "whatever.value()"]
+    ])
+    expect(parseObject(({ ...rest }, DDD) => rest)).toEqual([
+        ["", "", "*"],
+    ])
+    expect(parseObject((rest, DDD) => rest)).toEqual([
+        ["", "", "*"],
+    ])
+    expect(parseObject((rest, DDD) => rest.toto)).toEqual([
+        ["", "toto"],
+    ])
 })
 
 // test('+ sign', () => {

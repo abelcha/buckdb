@@ -18,4 +18,18 @@ test('order', () => {
     xx.select().orderBy(['database_name'], ['description', 'ASC NULLS LAST'])
     , 'SELECT * ORDER BY database_name, description ASC NULLS LAST'
   )
+  cexpect(
+    xx.select(({ comment, description, ...rest }) => `*, "tata" as xxx, 123 as yyy`)
+    , 'SELECT *, "tata" as xxx, 123 as yyy'
+  )
+  cexpect(
+    xx.select(({ comment, description, ...rest }) => ({ lol: 13, ...rest, description: 'xxx' }))
+    , `SELECT 13 AS lol, * EXCLUDE(comment, description), 'xxx' AS description`
+  )
+  // // cexpect(                                         SELECT  * EXCLUDE(comment, description) 
+
+  cexpect(
+    xx.select(({ comment, description, ...rest }) => rest)
+    , 'SELECT *'
+  )
 });

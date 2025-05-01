@@ -2,6 +2,7 @@ import { DField, DRawField, DuckDBClient, DuckdbCon, formatSource, keyBy } from 
 import { Models } from '../.buck/table3';
 import * as t from "../.buck/types";
 import { DDirection } from "./build";
+import { CopyTo } from "./copy"; // Import the generic CopyTo
 
 type StripSpecialChars<S extends string> = S extends `${infer First}${infer Rest}` ? First extends AlphaNumeric ? `${First}${StripSpecialChars<Rest>}` : StripSpecialChars<Rest> : '';
 type DeriveName<Path extends string> = Path extends `${infer _}/${infer Rest}` ? DeriveName<Rest> : Path extends `${infer Name}.${string}` ? StripSpecialChars<Name> : StripSpecialChars<Path>;
@@ -186,7 +187,36 @@ export interface MaterializedResult<S extends MState, C extends StrictCollection
         Record<string, ToExecuted<S>[]> :
         ToExecuted<S>[]
     >
+    copyTo: CopyTo<S['available'] & S['selected']>['copyTo'] // Pass available fields to CopyTo
+    // Overload 1: Matches destinations ending in .csv
+    // copyTo:
+    // ... other methods
+    // copyTo: (destination: `${string}.csv`, options?: CopyOptions) => Promise<void>,
+    // copyTo: (destination: Exclude<string, `${string}.csv`>, options?: CopyOptions) => Promise<void>
 }
+
+
+// DBuilder('').from('data/people.parquet').select(e => ({ toto: e.age.acos() }))
+// .copyTo('s3://dallas/uu.csv', { partition_by: ['toto'],  })
+//     .copyTo('toot.jsonl.gz', {
+//         array: true
+//     }).execute()
+//     .copyTo('toto.parquet', {
+//         rowGroupSize: 1000,
+
+//     })
+//     .copyTo('toto.csv.gz', {
+//         delim: ',',
+
+
+//     })
+//     .copyTo('xxx.json', {
+
+//     })
+
+// .copyTo()
+
+
 export type ToRecord2<T> = T extends readonly any[]
     ? { [K in keyof T as K extends `${number}` | number ? K : never]: T[K] }
     : T
@@ -240,7 +270,14 @@ async function checkSelect(db: FromResult<'', [{ catalog: '', uri: 'data/people.
 }
 
 
-// With(DBuilder('').from('data/people.parquet').select(e => ({ toto: e.age.acos() })), e => e)
+DBuilder('').from('duckdb_functions()')
+    .select(e => [e.comment, e.database_name, e.description])
+    // .where(e => e.function_name === 'len')
+    .copyTo('s3://dallas/uu.csv', {
+        
+    })
+    .execute()
+
 // DBuilder('').from('data/people.parquet').select(e => ({ toto: e.age.acos() })).groupBy('toto').execute().then(e => e[0].toto))
 
 // Define the type alias before DBuilder
@@ -254,7 +291,7 @@ export type DExtensionsId = typeof t.DExtensions[number]['extension_name']
 // Define the return type for DBuilder
 type DBuilderResult<T extends keyof Models> = {
     ddb: DuckdbCon,
-    settings(s: t.DSettings): DuckdbCon,
+    settings(s: Partial<t.DSettings>): DBuilderResult<T>,
     // loadExtension(s: t.DSettings): typeof DBuilder<T>,
     from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>, A extends string>(table: K1, alias: A):
         FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: A }>]> &

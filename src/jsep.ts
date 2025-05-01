@@ -70,7 +70,7 @@ export interface Property extends BaseExpression {
 
 export interface ObjectExpression extends BaseExpression {
 	type: 'ObjectExpression';
-	properties: (Property | Expression)[]; // Allow SpreadElement etc.
+	properties: (Property | Expression | SpreadElement)[]; // Allow SpreadElement etc.
 }
 
 export interface ThisExpression extends BaseExpression {
@@ -101,7 +101,7 @@ export interface BinaryExpression extends BaseExpression {
 
 export interface ArrowFunctionExpression extends BaseExpression {
 	type: 'ArrowFunctionExpression';
-	params: (Identifier | MemberExpression)[] | null; // Allow null for () => ...
+	params: (ObjectExpression | Identifier | MemberExpression)[] | null; // Allow null for () => ...
 	body: Expression;
 }
 

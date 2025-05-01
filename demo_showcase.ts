@@ -52,6 +52,7 @@ try {
             f.schema_name.In(allowedSchemas) && // IN operator with context array
             (f.parameters.length >= minParams || f.return_type === 'BOOLEAN') && // Logical OR, >=, context number
             !f.function_name.Like(excludePattern) && // NOT LIKE with context string
+            D.Between(1, 12, 41) &&
             f.description !== null && // IS NOT NULL
             f.function_oid > D.Bigint(thresholdOid) && // Greater than with context number + explicit type
             f.function_name.SimilarTo(/^[a-z_]+$/i) && // SimilarTo with Regex (case-insensitive flag)

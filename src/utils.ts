@@ -87,9 +87,9 @@ export const mapTypes = (type: string) => {
   return 'DOther';
 }
 
-export const mapTypesProps = (type: string) => {
+export const mapTypesProps = (type: string, details = false) => {
   const mtype = mapTypes(type)
-  if (mtype === 'DArray') {
+  if (mtype === 'DArray' && details === true) {
     const [_, subtype] = type.match(/^([A-Z]+)\[\]$/) || []
     if (subtype) {
       const s = mapTypesProps(subtype)
@@ -255,3 +255,4 @@ export const keyBy = <T extends object, K extends keyof T>(array: T[], key: K): 
     return acc;
   }, {} as Record<string, T>);
 }
+

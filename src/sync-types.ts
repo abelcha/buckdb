@@ -274,6 +274,9 @@ if (import.meta.main) {
         output.push(...symbols.map(e => `export declare const ${e}: unique symbol;`))
         for (const maintype of new Set(xkeys)) {
             const { man, ...f } = TypeProps[maintype]
+            if (maintype === 'DArray') {
+                console.log(grouped[maintype])
+            }
             const d = (grouped[maintype] || []).filter(e => !PatternMatchers[e.function_name])
             let s = genInterface(d, f, 1, true)
             if (maintype === 'DAny') {

@@ -55,7 +55,7 @@ function mapOperator(jsOperator) {
     '-': '-',
     '*': '*',
     '/': '/',
-    '&&': '\nAND',   // Logical AND
+    '&&': 'AND',   // Logical AND
     '||': 'OR',    // Logical OR
     '>': '>',
     '<': '<',
@@ -281,6 +281,9 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         if (node.operator === '!' && node.argument.type === 'Literal' && typeof node.argument.value === 'number') {
           return !node.argument.value
         }
+        if (node.operator === '!' && node.argument.callee.property.name === 'IsNull') {
+          return transformNode(node.argument).replace('IS NULL ', 'IS NOT NULL')
+        }
         // console.log(node.argument?.callee?.property)
         return `${mapUnaryOperator(node.operator)} ${transformNode(node.argument)}`;
       case 'BinaryExpression':
@@ -312,13 +315,25 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
 
   return transformNode(node);
 }
+
+type DParam = { depth: number, position: number, destuctured?: boolean, excluded?: string[] }
+const isWildcardParam = (d: DParam) => {
+  return d.depth === 0 && d.position === 0
+}
 const extractParams = (ast: Expression) => {
   // const params: string[] = [];
-  const params = new Map<string, { depth: number, position: number }>();
+  const params = new Map<string, DParam>();
 
   function walk(node: any, depth: number, position: number) {
     if (!node || typeof node !== 'object') return;
 
+    if (node.type === 'ObjectExpression') {
+      const excluded = node.properties.filter((e) => e.type === 'Property').map(e => e.key.name)
+      const spreadId = node.properties.find((e) => e.type === 'SpreadElement')?.argument?.name
+      params.set(spreadId, { depth, position, destuctured: true, excluded });
+      excluded.forEach(e => params.set(e, { depth: depth + 1, position }))
+      return
+    }
     if (node.type === 'Identifier') {
       params.set(node.name, { depth, position });
       return;
@@ -335,7 +350,6 @@ const extractParams = (ast: Expression) => {
       }
     }
   }
-
   walk(ast, -1, 0);
   return params;
 }
@@ -359,13 +373,42 @@ export const parse = (expr: Function | string, context = {}) => {
   return duckdbExpr
 }
 
+const extractSpreadedParams = (ast: Expression) => {
+  const excluded = ast.params[0].properties.filter((e: Property) => e.type === 'Property').map(e => e.key.name)
+  const spreadId = ast.params[0]?.properties.find((e: Property) => e.type === 'SpreadElement')?.argument?.name
+  return { excluded, spreadId }
+  // console.log('tttttttttttttttt', { excluded, spreadId })
+}
+
 export const parseObject = (expr: Function | string, context = {}) => {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()
   const ast = jsep(fnstr) as ArrowFunctionExpression
   const params = extractParamsContext(ast)
+  // console.log('==>', JSON.stringify(ast, null, 2))
+
+  // console.log({ params })
   const node = ast.body
+  if (node.type === 'Literal') {
+    return [['', '', node.value]]
+  }
+  if (node.type === 'TemplateLiteral') {
+    return [['', '', node.quasis[0]?.value?.cooked]]
+  }
+  if (node.type === 'Identifier' && params.has(node.name)) {
+    const p = params.get(node.name)
+    if (p?.depth === 0 && p?.position === 0) {
+      return [['', '', '*']]
+    }
+    // console.log('IDENTIFIERRR', params.get(node.name))
+  }
   if (node.type === 'ObjectExpression') {
     return node.properties.map((prop: any) => {
+      if (prop.type === 'SpreadElement') {
+        const { excluded, spreadId } = extractSpreadedParams(ast)
+        if (prop.argument.name === spreadId) {
+          return ['', '', '*' + (excluded?.length ? ` EXCLUDE(${excluded.join(', ')})` : '')]
+        }
+      }
       return [prop.key?.name, transformDuckdb(prop.value, params, context)]
     });
   } else if (node.type === 'CallExpression' || node.type === 'MemberExpression') {

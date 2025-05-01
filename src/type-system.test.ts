@@ -273,10 +273,12 @@ test('multiple joins type checking', async () => {
 
 test('ambiguous type inference - conditional expressions', async () => {
   // Test case where a conditional expression could result in different types
-  await MemoryDB.from('duckdb_functions()')
-    .select(e => ({
+  const rrr = await MemoryDB.from('duckdb_functions()')
+    .select((e, D) => ({
       // This should be inferred as string | number
-      conditional_result: e.function_name.Is(null) ? 'TEST' : e.function_name
+      conditional_result: e.function_name === D.Varchar('342') ? 'TEST' : e.function_name,
+      conditional_result2: e.function_oid === 23 ? 'TEST' : e.function_name,
+      conditional_result3: e.function_oid > 23 ? 'TEST' : e.function_name
     }))
     .execute() satisfies E<{
       conditional_result: string | number;

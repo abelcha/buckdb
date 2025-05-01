@@ -1,56 +1,17 @@
 import * as duckdb from '@duckdb/duckdb-wasm';
-// @ts-ignore
-
 import { builder } from './src/build'
 import * as t from './.buck/types'; // Import types with alias 't'
 
 const resolve = (path = "") => import.meta.resolve(path).replace('file://', '')
-
-// const duckDBWasmAdapter = async (handle: string): Promise<DuckdbFactory> => {
-//     const duckdb = await import('@duckdb/duckdb-wasm');
-
-//     const MANUAL_BUNDLES: DuckDBBundles =  {
-//         mvp: {
-//             mainModule: (await import('@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url')).default,
-//             mainWorker: (await import('@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url')).default,
-//         },
-//         eh: {
-//             mainModule: (await import('@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url')).default,
-//             mainWorker: (await import('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url')).default,
-//         },
-//     };
-//     console.log({ MANUAL_BUNDLES })
-//     // Select a bundle based on browser checks
-//     const bundle = await duckdb.selectBundle(MANUAL_BUNDLES);
-//     // Instantiate the asynchronus version of DuckDB-wasm
-//     const worker = new Worker(bundle.mainWorker!);
-//     const logger = new duckdb.ConsoleLogger();
-//     const db = new duckdb.AsyncDuckDB(logger, worker);
-//     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-//     const connection = await db.connect();
-//     return {
-//         query: async function (sql: string, opts = {}) {
-//             const result = await connection.query(sql);
-//             return result.toArray();
-//         },
-//         run: async function (sql: string) {
-//             return connection.send(sql);
-//         }
-//     }
-// }
-
-
-// export const database = builder(duckDBWasmAdapter)
-// export const MemoryDB = database('')
-// // console.log({MemoryDB})
-// export const from = MemoryDB.from
-
-
+BigInt.prototype.toJSON = function () {
+  // return this.toString()
+  return Number(this)
+}
 
 import { CommandQueue, type DuckdbCon } from './src/utils'; // Import necessary types from utils
 
 const getDB = async () => {
-  var logger = new duckdb.ConsoleLogger()
+  var logger = new duckdb.ConsoleLogger(duckdb.LogLevel.ERROR)
 
   if (typeof Bun !== 'undefined') {
     const DD = {
@@ -64,8 +25,9 @@ const getDB = async () => {
       }
     }
     const bundle = await duckdb.selectBundle(DD);
+    const xlogger = new duckdb.ConsoleLogger(duckdb.LogLevel.ERROR)
     const worker = new Worker(bundle.mainWorker!);
-    const db = new duckdb.AsyncDuckDB(logger, worker);
+    const db = new duckdb.AsyncDuckDB(xlogger, worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
     return db
   }
@@ -81,30 +43,26 @@ const getDB = async () => {
 // Wrapper function to adapt DuckDBWasmAdapter to the DConstructor signature
 const duckDBWasmAdapter = async (handle?: string, settings?: Partial<t.DSettings>): Promise<DuckdbCon> => { // Use t.DSettings
   const cmdQueue = new CommandQueue()
-
   // await db.open({
   //   path: 'opfs://duckdb-wasm-parquet.db',
   //   accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
   // })
   const db = await getDB()
   const con = await db.connect()
-  console.log({ con })
-  // const resp = await con.query('SELECT * FROM duckdb_settings()')
-  // console.log([...resp.toArray()])
 
-  return {
+  const duckdbCon: DuckdbCon = {
     cmdQueue,
     upsertSchema: async (model: string, schema: Record<string, string>) => {
       console.log('xxx', 'upsertSchema',)
     },
     settings: (s) => {
       cmdQueue.pushSettings(s)
-      return this;
+      return duckdbCon;
     },
     loadExtensions: (...extensions: string[]) => {
       console.log('loading extensions...', extensions)
       cmdQueue.pushExtensions(...extensions)
-      return this;
+      return duckdbCon;
     },
     query: async function (sql: string, opts = {}) {
       const cmds = cmdQueue.flush()
@@ -112,19 +70,34 @@ const duckDBWasmAdapter = async (handle?: string, settings?: Partial<t.DSettings
         console.log('Flushing ', cmds, '...')
         // console.log('loading settings:', cmds)
         const sresp = await con.query(cmds)
-        // console.log('settings loaded:', sresp)
+        // sql = cmds + ';\n' + sql
+        console.log('settings loaded:', sresp)
       }
+      // console.log({ sql })
       const reader = await con.query(sql)
+      // console.log({ reader })
+      // console.log({ reader, summa })
       // reader.
+      // if (opts?.withShema) {
+      //   return [reader.schema, reader.toArray().map(e => e.toJSON())]
+      // }
+
+      let rtn = reader.toArray().map(e => e.toJSON())
+      console.log('oooopts', { opts })
       if (opts?.rows) {
-        return reader.toArray().map(row => Object.values(row))
+        rtn = rtn.map(row => Object.values(row))
       }
-      return reader.toArray().map(e => e.toJSON())
+      if (opts?.withSchema && !sql.startsWith('COPY')) {
+        const schema = await con.query('DESCRIBE ' + sql).then(e => e.toArray().map(e => e.toJSON()))
+        Object.defineProperty(rtn, 'schema', { value: schema })
+      }
+      return rtn
     },
     run: async function (sql: string) {
       return con.send(sql)
     }
   }
+  return duckdbCon
 };
 
 

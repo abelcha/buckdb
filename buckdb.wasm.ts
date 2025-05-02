@@ -1,4 +1,4 @@
-import * as duckdb from '@duckdb/duckdb-wasm';
+import * as Duckdb from '@duckdb/duckdb-wasm';
 import { builder } from './src/build'
 import * as t from './.buck/types'; // Import types with alias 't'
 
@@ -11,7 +11,7 @@ BigInt.prototype.toJSON = function () {
 import { CommandQueue, type DuckdbCon } from './src/utils'; // Import necessary types from utils
 
 const getDB = async () => {
-  var logger = new duckdb.ConsoleLogger(duckdb.LogLevel.ERROR)
+  var logger = new Duckdb.ConsoleLogger(Duckdb.LogLevel.ERROR)
 
   if (typeof Bun !== 'undefined') {
     const DD = {
@@ -24,10 +24,10 @@ const getDB = async () => {
         mainWorker: resolve('@duckdb/duckdb-wasm/dist/duckdb-node-eh.worker.cjs'),
       }
     }
-    const bundle = await duckdb.selectBundle(DD);
-    const xlogger = new duckdb.ConsoleLogger(duckdb.LogLevel.ERROR)
+    const bundle = await Duckdb.selectBundle(DD);
+    const xlogger = new Duckdb.ConsoleLogger(Duckdb.LogLevel.ERROR)
     const worker = new Worker(bundle.mainWorker!);
-    const db = new duckdb.AsyncDuckDB(xlogger, worker);
+    const db = new Duckdb.AsyncDuckDB(xlogger, worker);
     await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
     return db
   }
@@ -35,7 +35,7 @@ const getDB = async () => {
   const { default: duckdb_worker } = await import('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?worker&inline')
   const { default: duckdb_wasm } = await import('@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url')
   const worker = new duckdb_worker()
-  const db = new duckdb.AsyncDuckDB(logger, worker)
+  const db = new Duckdb.AsyncDuckDB(logger, worker)
   await db.instantiate(duckdb_wasm)
   return db
 }
@@ -45,7 +45,7 @@ const duckDBWasmAdapter = async (handle?: string, settings?: Partial<t.DSettings
   const cmdQueue = new CommandQueue()
   // await db.open({
   //   path: 'opfs://duckdb-wasm-parquet.db',
-  //   accessMode: duckdb.DuckDBAccessMode.READ_WRITE,
+  //   accessMode: Duckdb.DuckDBAccessMode.READ_WRITE,
   // })
   const db = await getDB()
   const con = await db.connect()
@@ -114,7 +114,8 @@ const duckDBWasmAdapter = async (handle?: string, settings?: Partial<t.DSettings
 // // const DAdapter = typeof globalThis.DuckDBWasmAdapter === 'undefined' ? DuckDBWasmFaker : globalThis.DuckDBWasmAdapter)
 
 // Pass the adapter factory function to the builder.
-export const Buck = builder(await duckDBWasmAdapter())
+export const duckdb = await duckDBWasmAdapter()
+export const Buck = builder(duckdb)
 export const MemoryDB = Buck('') // Call the function returned by builder
 export const from = MemoryDB.from
 // // const resp = await from('duckdb_settings()').select().execute()

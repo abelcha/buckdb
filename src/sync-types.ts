@@ -27,12 +27,11 @@ const TypeProps = {
 
 
 
-const mapTypes = (type: string) => {
+export const mapTypes = (type: string) => {
     if (type === 'ANY') return 'DAny';
     if (!type) return 'DOther';
 
     if (type.endsWith('[]') || type === 'LIST' || type === 'ARRAY' || type.match(/\w+\[\w+\]/)) {
-        // console.log({ type, xx, _ })
         return 'DArray';
     }
     if (type?.match(/\b((U)?(BIG|HUGE|TINY|SMALL)?INT(EGER)?|DOUBLE|DECIMAL|FLOAT)\b/))
@@ -115,6 +114,7 @@ const NativeInverseMap = Object.fromEntries(Object.entries(NativeMap).map(([k, v
 const resp3 = await from('duckdb_types()')
     .select((e, D) => ({ typenames: D.array_agg(e.type_name) }))
     .keyBy(e => e.type_category)
+    .orderBy('type_category')
     .execute()
 let acsheaders = ''
 let funcas = ''
@@ -136,7 +136,7 @@ for (let i in resp3) {
 
 }
 
-type ftype = typeof TypeProps['DNumeric']
+type ftype = typeof TypeProps['DNumeric'] & typeof TypeProps['DArray']
 const fkey = key => camelCase(key).match(/\w+/)[0].replace('array', 'arr').replace('enum', 'enm')
 const getFuncHeader = (row: any, ot: ftype) => {
     const tt = TypeProps[mapTypes(row.return_type)] as ftype
@@ -211,24 +211,17 @@ const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number']
 
 const generateSettings = async () => {
     const db = Buck('')
-    // console.log(db.load) 
-    // console.log('generating..')
     const extts = await db.from('duckdb_extensions()')
         .select(e => e.extension_name)
         .where(e => !e.loaded && e.installed)
         .execute()
-    // console.log({ extts })
     db.loadExtensions("arrow", "aws", "azure", "delta", "excel", "fts", "h3", "httpfs", "iceberg", "inet", "spatial", "sqlite_scanner", "ui")
-    // console.log('keekek')
     const resp = await db.from('duckdb_settings()')
         .execute()
-    // console.log('lslslss', resp.length)
-    // console.log({resp})
     let out = `export interface DSettings {\n`
     out += resp.map(e => buildJSDoc(e) + `  ${e.name}: ${mapTypesProps(e.input_type).rawType},`).join('\n')
     out += '\n}\n'
     out += `export const DExtensions = ` + JSON.stringify(await from('duckdb_extensions()').select('extension_name', 'description', 'installed_from').execute(), null, 2) + ' as const' + '\n'
-    // out += `\nexport const DTypes = ` + JSON.stringify(await from('duckdb_types()').select('type_name', 'type_size', 'logical_type', 'type_category').execute(), null, 2) + ' as const' + '\n'
     return out;
 }
 
@@ -237,32 +230,18 @@ if (import.meta.main) {
     const main = async () => {
 
         let output = []
-        // const xdb = database('', {
 
-
-        // })
-
-        // console.log({ rres })
         const db = Buck('').loadExtensions('httpfs').from('duckdb_functions()')
-        // db._settings = ['install h3;', 'load h3;']
         const query = db
             .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters')
-            // .where(`function_name SIMILAR TO '[a-z]\\w+' AND function_name NOT LIKE 'icu_collate%'`)
             .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
             .orderBy('function_name')
-        // .sample('10%')
-        console.log(query.toSql({ pretty: true }))
         let results = (await query.execute()).concat(anyFuncs).concat(addFuncs)
-        // console.log({ results: results.length })
-        // console.log(results.filter(e => e.function_name == 'count'))
-        // return
         const mergeFuncNames = () => {
             const groups = Object.groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-'))
             return Object.entries(groups)
                 .filter(([key, values]) => !OmittedFuncs.includes(key))
                 .flatMap(([key, values]) => {
-                    // console.log('-->', key)
-                    // maxParams.
                     let maxParams = maxBy(values, e => e.parameter_types.length as number)
                     const args = range(maxParams.parameters.length).map((type, i) => {
                         let pname = fkey(maxParams.parameters[i]) //.match(/\w+/)[0]
@@ -272,9 +251,6 @@ if (import.meta.main) {
 
                         const ptypes = uniq(values.map(e => e.parameter_types[i]))
                         const required = !ptypes.includes(undefined)
-                        // if (maxParams.function_name === 'count') {
-                        //     console.log({ ptypes, required })
-                        // }
                         let dtypes = uniq(ptypes.map(e => mapTypes(e)) || [])
                         if (maxParams.function_name.includes('regexp')) {
                             if (['pattern', 'separator', 'regex'].includes(pname)) {
@@ -285,19 +261,15 @@ if (import.meta.main) {
                     })
                     const return_type = maxParams.function_name === 'concat' ? 'VARCHAR' : maxParams.return_type
                     const output = !return_type ? 'void' : `${mapTypes(return_type)}Field`
-                    // console.log({ return_type, output })
                     return { ...maxParams, return_type, args, output }
                 })
         }
         results = mergeFuncNames()
 
-        // console.log({ results })
         let resp = groupBy(results, e => e.function_type as 'scalar' | 'table' | 'aggregate' | 'window' | 'udf')
 
-        // console.log(resp.)
         const grouped = Object.groupBy(resp.scalar.filter(e => !e.function_name.startsWith('h3')), e => mapTypes(e.parameter_types[0]))
         const xkeys = ['DVarchar', 'DNumeric', 'DDate', ...Object.keys(grouped)]
-        // console.log(resp)
         let header = Object.entries(TypeProps).map(([key, value]) => {
             return `export type ${value.able} = ${value.inferredTo || value.rawType} | ${value.field} | _${value.field};`
         })
@@ -310,29 +282,19 @@ if (import.meta.main) {
         output.push(...symbols.map(e => `export declare const ${e}: unique symbol;`))
         for (const maintype of new Set(xkeys)) {
             const { man, ...f } = TypeProps[maintype]
-            if (maintype === 'DArray') {
-                console.log(grouped[maintype])
-            }
             const d = (grouped[maintype] || []).filter(e => !PatternMatchers[e.function_name])
             let s = genInterface(d, f, 1, true)
             if (maintype === 'DAny') {
-                // console.log('dannnyyyy')
                 s = s.replace('{', '{\n' + funcas)
-                // console.log('------dd-----')
-                // console.log(s)
-                // console.log('-------ddd----')
             }
             output.push(s)
         }
-        // console.log(resp.aggregate.slice(-3))
         const globalInter = genInterface(resp.scalar, { id: 'global' }, 0)
             .replace('{', '{\n' + globas)
         const scal = globalInter.matchAll(/\n\s*\w+?\([^\;]+/g).toArray().map((e) => e[0].replace('\n', 'export declare function ')).join('\n')
-        // console.log(header + '\n' + scal)
 
         output.push(globalInter)
         output.push(genInterface(resp.aggregate, { id: 'aggregate' }, 0))
-        // console.log(resp.table)@
         output.push(genInterface(resp.table, { id: 'table' }, 0))
 
         const dany = genInterface(grouped.DAny, TypeProps.DAny, 1, false)
@@ -345,7 +307,6 @@ if (import.meta.main) {
         output.push(globalInterComp)
 
         const aff = genInterface(resp.aggregate, { id: 'aggregate', man: 'CAggregate' }, 0)
-        // console.log(aff)
         output.push(aff)
         output.push(await generateSettings())
         writefile('types', output.join('\n'))

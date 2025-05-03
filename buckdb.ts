@@ -43,10 +43,8 @@ class BuckDBNode implements DuckdbCon {
         }
 
         this._initPromise = (async () => {
-            console.log("Initializing DuckDB Node...");
             this._instance = await DuckDBInstance.create(this.handle);
             this._connection = await this._instance.connect();
-            console.log("DuckDB Node Initialized and Connected.");
         })();
 
         return this._initPromise;

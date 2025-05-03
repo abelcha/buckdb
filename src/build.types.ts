@@ -52,7 +52,6 @@ export type StrictCollection = { catalog: string, uri: string, alias: string }
 // Utility type to merge two types into a single object
 export type Merge<T, U> = { [K in keyof T | keyof U]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never;
 };
-export type FirstValue<T extends Record<string, any>> = T[keyof T] // | undefined;
 export type DefaultizeCollection<C> = // Renamed 'Collection' to 'C' for clarity
     // 1. If all properties (catalog, uri, alias) are present, return as is.
     C extends { catalog: string, uri: string, alias: string } ? C :
@@ -86,7 +85,6 @@ type NestedField<V> = V extends SelectModel ? ToExecutedObject<V> : (V extends a
 
 export type ToExecutedObject<SelectedFields extends SelectModel> = SelectedFields extends GenericRecursive<DField> ? {
     [P in keyof SelectedFields]:
-    SelectedFields[P] extends Symbol ? 123 :
     SelectedFields[P] extends DField ? (SelectedFields[P] extends { [t.sInferred]: infer V } ? NestedField<V> : SelectedFields[P]) :
     SelectedFields[P] extends SelectModel ? ToExecutedObject<SelectedFields[P]>
     : SelectedFields[P] extends string ? any
@@ -111,7 +109,7 @@ export type ToExecutedArray<SelectedRows> = {
 
 export type ToExecuted<S extends MState> = S['selectedRows'] extends any[] ? ToExecutedArray<S['selectedRows']> : ToExecutedObject<S['selected']>;
 
-type res = Assert<ExpectEqual<ToExecutedObject<{ xxx: t.DJsonField<{ ["lol"]: t.DVarcharField;["ss"]: t.DStructField<{ nested: t.DBoolField }>;["toto"]: t.DArrayField<t.DNumericField>;["tata"]: t.DArrayField<{ vgvg: t.DVarcharField, ll: t.DStructField<{ nested: t.DBoolField }> }>; }>; }>, { xxx: { lol: string; ss: { nested: boolean; }; toto: number[]; tata: { vgvg: string; ll: { nested: boolean; }; }[]; }; }>>
+// type res = Assert<ExpectEqual<ToExecutedObject<{ xxx: t.DJsonField<{ ["lol"]: t.DVarcharField;["ss"]: t.DStructField<{ nested: t.DBoolField }>;["toto"]: t.DArrayField<t.DNumericField>;["tata"]: t.DArrayField<{ vgvg: t.DVarcharField, ll: t.DStructField<{ nested: t.DBoolField }> }>; }>; }>, { xxx: { lol: string; ss: { nested: boolean; }; toto: number[]; tata: { vgvg: string; ll: { nested: boolean; }; }[]; }; }>>
 
 
 type RemoveSymbolKeys<T> = T extends object
@@ -245,7 +243,7 @@ type TupleToRecord<T extends readonly unknown[]> = { [K in keyof T & `${number}`
 type DFieldTuple = readonly [...DField[]];
 
 
-export interface FromResult<T extends & string, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
+export interface FromResult<T extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
     join<K extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>, A extends string>(table: K, alias: A, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: T, uri: K, alias: A }>]>>, D: DMetaComp) => any):
         FromResult<T, [...C, DefaultizeCollection<{ catalog: T, uri: K, alias: A }>]>;
     join<K extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>, Z extends string>(table: K, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: T, uri: K, alias: DeriveName<K> }>]>>, D: DMetaComp) => any):
@@ -255,6 +253,7 @@ export interface FromResult<T extends & string, C extends StrictCollection[] = [
     crossJoin: this['join'],
     naturalJoin: this['join'],
     select(): MSR<{ selected: ShallowModelFromCollectionList<C>, available: P }, C>;
+    select<U extends SelectModel>/*   */(fn: (p: P & Record<string, any>, D: DMetaField) => U): MSR<{ selected: U, available: P }, C>;
     select<U extends (NestedKeyOf<P>)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<{ selected: { [K in U[number] & keyof P]: P[K] }, available: P }, C>
     select<T1/**//**//**//**/>(fn: (p: P, D: DMetaField) => [T1/**//**//**//**/]): MSR<{ selected: {}, selectedRows: [T1/**//**//**//**/], available: P }, C>;
     select<T1, T2/**//**//**/>(fn: (p: P, D: DMetaField) => [T1, T2/**//**//**/]): MSR<{ selected: {}, selectedRows: [T1, T2/**//**//**/], available: P }, C>;
@@ -264,7 +263,6 @@ export interface FromResult<T extends & string, C extends StrictCollection[] = [
 
     select<U extends string>/*        */(fn: (p: P, D: DMetaField) => U): MaterializedResult<{ selectedValue: t.DAnyField, selected: {}, available: P }, C>;
     select<U extends DField>/*        */(fn: (p: P, D: DMetaField) => U): MaterializedResult<{ selectedValue: U, selected: {}, available: P }, C>;
-    select<U extends SelectModel>/*   */(fn: (p: P & Record<string, any>, D: string) => U): MSR<{ selected: U, available: P }, C>;
     select<U extends (NestedKeyOf<P>)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<{ selected: { [K in U[number] & keyof P]: P[K] }, available: P, }, C>
     ensureSchemas(): Promise<void>
 
@@ -345,3 +343,4 @@ export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Pa
 // const xdb = DBuilder('data/ex.duckdb').load('autocomplete', 'arrow')
 // xdb.from('')
 // 
+// DBuilder()('s')

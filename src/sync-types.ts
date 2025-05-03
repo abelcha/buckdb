@@ -236,6 +236,7 @@ if (import.meta.main) {
             .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters')
             .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
             .orderBy('function_name')
+            .limit(380)
         let results = (await query.execute()).concat(anyFuncs).concat(addFuncs)
         const mergeFuncNames = () => {
             const groups = Object.groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-'))

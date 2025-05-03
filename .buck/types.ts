@@ -85,6 +85,8 @@ interface _DVarcharField extends DAnyField {
   hamming(str2: DVarcharable): DNumericField;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
   hex(): DVarcharField;
+  html_escape(col1?: DBoolable | DOtherable): DVarcharField;
+  html_unescape(): DVarcharField;
   icu_sort_key(col1: DVarcharable): DVarcharField;
   /**@description Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example ilike_escape('A%c', 'a$%C', '$')*/
   ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
@@ -209,6 +211,7 @@ interface _DVarcharField extends DAnyField {
   sha256(): DVarcharField;
   /**@description Returns true if string begins with search_string	@example starts_with('abc','a')*/
   starts_with(searchString: DVarcharable): DBoolField;
+  stem(col1: DVarcharable): DVarcharField;
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   str_split(separator: DVarcharable): DArrayField;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
@@ -227,8 +230,8 @@ interface _DVarcharField extends DAnyField {
   strlen(): DNumericField;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
   strpos(needle: DVarcharable): DNumericField;
-  /**@description Converts the string text to timestamp applying the format strings in the list until one succeeds. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('4/15/2023 10:56:00', ['%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'])*/
-  strptime(formatList: DArrayable | DVarcharable): DDateField;
+  /**@description Converts the string text to timestamp according to the format string. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')*/
+  strptime(format: DArrayable | DVarcharable): DDateField;
   /**@description Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring('Hello', 2, 2)*/
   substr(start: DNumericable, length?: DNumericable | DOtherable): DVarcharField;
   /**@description Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring('Hello', 2, 2)*/
@@ -316,6 +319,7 @@ interface _DNumericField extends DAnyField {
   equi_width_bins(max: DNumericable, binCount: DNumericable, niceRounding: DBoolable): DArrayField;
   /**@description Rounds x to next even number by rounding away from zero	@example even(2.9)*/
   even(): DNumericField;
+  excel_text(col1: DVarcharable): DVarcharField;
   /**@description Computes e to the power of x	@example exp(1)*/
   exp(): DNumericField;
   /**@description Factorial of x. Computes the product of the current integer and all integers below it	@example 4!*/
@@ -402,6 +406,7 @@ interface _DNumericField extends DAnyField {
   tan(): DNumericField;
   /**@description Computes the hyperbolic tan of x	@example tanh(1)*/
   tanh(): DNumericField;
+  text(col1: DVarcharable): DVarcharField;
   /**@description Converts a value to a string in the given base radix, optionally padding with leading zeros to the minimum length	@example to_base(42, 16)*/
   to_base(radix: DNumericable, minLength?: DNumericable | DOtherable): DVarcharField;
   /**@description Converts the value to binary representation	@example bin(42)*/
@@ -625,6 +630,7 @@ interface _DOtherField extends DAnyField {
   bit_position(bitstring: DOtherable): DNumericField;
   /**@description Pads the bitstring until the specified length	@example bitstring('1010'::BIT, 7)*/
   bitstring(length: DNumericable): DOtherField;
+  broadcast(): DOtherField;
   /**@description Extract the century component from a date or timestamp	@example century(timestamp '2021-08-03 11:59:44.123456')*/
   century(): DNumericField;
   combine(col1: DAnyable): DOtherField;
@@ -659,6 +665,7 @@ interface _DOtherField extends DAnyField {
   epoch_us(): DNumericField;
   /**@description Extract the era component from a date or timestamp	@example era(timestamp '2021-08-03 11:59:44.123456')*/
   era(): DNumericField;
+  family(): DNumericField;
   finalize(): DOtherField;
   /**@description Returns a random UUID similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example uuid()*/
   gen_random_uuid(): DOtherField;
@@ -667,8 +674,10 @@ interface _DOtherField extends DAnyField {
   get_current_time(): DDateField;
   /**@description Returns the current timestamp	@example get_current_timestamp()*/
   get_current_timestamp(): DDateField;
+  get_delta_test_expression(): DArrayField;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
   hex(): DVarcharField;
+  host(): DVarcharField;
   /**@description Extract the hour component from a date or timestamp	@example hour(timestamp '2021-08-03 11:59:44.123456')*/
   hour(): DNumericField;
   /**@description Extract the isodow component from a date or timestamp	@example isodow(timestamp '2021-08-03 11:59:44.123456')*/
@@ -714,6 +723,8 @@ interface _DOtherField extends DAnyField {
   multiply(col1: DNumericable): DOtherField;
   /**@description Extract the nanosecond component from a date or timestamp	@example nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789*/
   nanosecond(): DNumericField;
+  netmask(): DOtherField;
+  network(): DOtherField;
   /**@description Normalizes an INTERVAL to an equivalent interval	@example normalized_interval(INTERVAL '30 days')*/
   normalized_interval(): DOtherField;
   /**@description Returns the current timestamp	@example get_current_timestamp()*/
@@ -1310,6 +1321,7 @@ interface _DGlobalField {
   bitstring(bitstring: DOtherable, length: DNumericable): DOtherField;
   /**@description Pads the bitstring until the specified length	@example bitstring('1010'::BIT, 7)*/
   bitstring(bitstring: DVarcharable, length: DNumericable): DOtherField;
+  broadcast(col0: DOtherable): DOtherField;
   /**@description Whether or not we can implicitly cast from the source type to the other type	@example can_implicitly_cast(NULL::INTEGER, NULL::BIGINT)*/
   can_cast_implicitly(sourceType: DAnyable, targetType: DAnyable): DBoolField;
   /**@description Returns the size of the map (or the number of entries in the map)	@example cardinality( map([4, 2], ['a', 'b']) );*/
@@ -1466,10 +1478,12 @@ interface _DGlobalField {
   error(message: DVarcharable): DOtherField;
   /**@description Rounds x to next even number by rounding away from zero	@example even(2.9)*/
   even(x: DNumericable): DNumericField;
+  excel_text(col0: DNumericable, col1: DVarcharable): DVarcharField;
   /**@description Computes e to the power of x	@example exp(1)*/
   exp(x: DNumericable): DNumericField;
   /**@description Factorial of x. Computes the product of the current integer and all integers below it	@example 4!*/
   factorial(x: DNumericable): DNumericField;
+  family(col0: DOtherable): DNumericField;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
   filter(list: DArrayable, lambda: DOtherable): DArrayField;
   finalize(col0: DOtherable): DOtherField;
@@ -1510,6 +1524,7 @@ interface _DGlobalField {
   get_current_time(): DDateField;
   /**@description Returns the current timestamp	@example get_current_timestamp()*/
   get_current_timestamp(): DDateField;
+  get_delta_test_expression(): DArrayField;
   getvariable(col0: DVarcharable): DAnyField;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
   grade_up(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
@@ -1517,6 +1532,107 @@ interface _DGlobalField {
   greatest(arg1: DAnyable, ...args: DAnyable[]): DAnyField;
   /**@description Computes the greatest common divisor of x and y	@example greatest_common_divisor(42, 57)*/
   greatest_common_divisor(x: DNumericable, y: DNumericable): DNumericField;
+  h3_are_neighbor_cells(col0: DNumericable, col1: DNumericable): DBoolField;
+  h3_are_neighbor_cells(col0: DVarcharable, col1: DVarcharable): DBoolField;
+  h3_cell_area(col0: DNumericable, col1: DVarcharable): DNumericField;
+  h3_cell_area(col0: DVarcharable, col1: DVarcharable): DNumericField;
+  h3_cell_to_boundary_wkt(col0: DNumericable): DVarcharField;
+  h3_cell_to_boundary_wkt(col0: DVarcharable): DVarcharField;
+  h3_cell_to_center_child(col0: DNumericable, col1: DNumericable): DNumericField;
+  h3_cell_to_center_child(col0: DVarcharable, col1: DNumericable): DVarcharField;
+  h3_cell_to_child_pos(col0: DNumericable, col1: DNumericable): DNumericField;
+  h3_cell_to_child_pos(col0: DVarcharable, col1: DNumericable): DNumericField;
+  h3_cell_to_children(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_cell_to_children(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_cell_to_lat(col0: DNumericable): DNumericField;
+  h3_cell_to_lat(col0: DVarcharable): DNumericField;
+  h3_cell_to_latlng(col0: DNumericable): DArrayField;
+  h3_cell_to_latlng(col0: DVarcharable): DArrayField;
+  h3_cell_to_lng(col0: DNumericable): DNumericField;
+  h3_cell_to_lng(col0: DVarcharable): DNumericField;
+  h3_cell_to_local_ij(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_cell_to_local_ij(col0: DVarcharable, col1: DVarcharable): DArrayField;
+  h3_cell_to_parent(col0: DNumericable, col1: DNumericable): DNumericField;
+  h3_cell_to_parent(col0: DVarcharable, col1: DNumericable): DVarcharField;
+  h3_cell_to_vertex(col0: DNumericable, col1: DNumericable): DNumericField;
+  h3_cell_to_vertex(col0: DVarcharable, col1: DNumericable): DVarcharField;
+  h3_cell_to_vertexes(col0: DNumericable): DArrayField;
+  h3_cell_to_vertexes(col0: DVarcharable): DArrayField;
+  h3_cells_to_directed_edge(col0: DNumericable, col1: DNumericable): DNumericField;
+  h3_cells_to_directed_edge(col0: DVarcharable, col1: DVarcharable): DVarcharField;
+  h3_cells_to_multi_polygon_wkt(col0: DArrayable): DVarcharField;
+  h3_child_pos_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNumericField;
+  h3_child_pos_to_cell(col0: DNumericable, col1: DVarcharable, col2: DNumericable): DVarcharField;
+  h3_compact_cells(col0: DArrayable): DArrayField;
+  h3_directed_edge_to_boundary_wkt(col0: DNumericable): DVarcharField;
+  h3_directed_edge_to_boundary_wkt(col0: DVarcharable): DVarcharField;
+  h3_directed_edge_to_cells(col0: DNumericable): DArrayField;
+  h3_directed_edge_to_cells(col0: DVarcharable): DArrayField;
+  h3_edge_length(col0: DNumericable, col1: DVarcharable): DNumericField;
+  h3_edge_length(col0: DVarcharable, col1: DVarcharable): DNumericField;
+  h3_get_base_cell_number(col0: DNumericable): DNumericField;
+  h3_get_base_cell_number(col0: DVarcharable): DNumericField;
+  h3_get_directed_edge_destination(col0: DNumericable): DNumericField;
+  h3_get_directed_edge_destination(col0: DVarcharable): DVarcharField;
+  h3_get_directed_edge_origin(col0: DNumericable): DNumericField;
+  h3_get_directed_edge_origin(col0: DVarcharable): DVarcharField;
+  h3_get_hexagon_area_avg(col0: DNumericable, col1: DVarcharable): DNumericField;
+  h3_get_hexagon_edge_length_avg(col0: DNumericable, col1: DVarcharable): DNumericField;
+  h3_get_icosahedron_faces(col0: DNumericable): DArrayField;
+  h3_get_icosahedron_faces(col0: DVarcharable): DArrayField;
+  h3_get_num_cells(col0: DNumericable): DNumericField;
+  h3_get_pentagons(col0: DNumericable): DArrayField;
+  h3_get_pentagons_string(col0: DNumericable): DArrayField;
+  h3_get_res0_cells(): DArrayField;
+  h3_get_res0_cells_string(): DArrayField;
+  h3_get_resolution(col0: DNumericable): DNumericField;
+  h3_get_resolution(col0: DVarcharable): DNumericField;
+  h3_great_circle_distance(col0: DNumericable, col1: DNumericable, col2: DNumericable, col3: DNumericable, col4: DVarcharable): DNumericField;
+  h3_grid_disk(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances_safe(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances_safe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_disk_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_distance(col0: DNumericable, col1: DNumericable): DNumericField;
+  h3_grid_distance(col0: DVarcharable, col1: DVarcharable): DNumericField;
+  h3_grid_path_cells(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_path_cells(col0: DVarcharable, col1: DVarcharable): DArrayField;
+  h3_grid_ring_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_ring_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_h3_to_string(col0: DNumericable): DVarcharField;
+  h3_is_pentagon(col0: DNumericable): DBoolField;
+  h3_is_pentagon(col0: DVarcharable): DBoolField;
+  h3_is_res_class_iii(col0: DNumericable): DBoolField;
+  h3_is_res_class_iii(col0: DVarcharable): DBoolField;
+  h3_is_valid_cell(col0: DNumericable): DBoolField;
+  h3_is_valid_cell(col0: DVarcharable): DBoolField;
+  h3_is_valid_directed_edge(col0: DNumericable): DBoolField;
+  h3_is_valid_directed_edge(col0: DVarcharable): DBoolField;
+  h3_is_valid_vertex(col0: DNumericable): DBoolField;
+  h3_is_valid_vertex(col0: DVarcharable): DBoolField;
+  h3_latlng_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNumericField;
+  h3_latlng_to_cell_string(col0: DNumericable, col1: DNumericable, col2: DNumericable): DVarcharField;
+  h3_local_ij_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNumericField;
+  h3_local_ij_to_cell(col0: DVarcharable, col1: DNumericable, col2: DNumericable): DVarcharField;
+  h3_origin_to_directed_edges(col0: DNumericable): DArrayField;
+  h3_origin_to_directed_edges(col0: DVarcharable): DArrayField;
+  h3_polygon_wkt_to_cells(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_polygon_wkt_to_cells_experimental(col0: DVarcharable, col1: DVarcharable, col2: DNumericable): DArrayField;
+  h3_polygon_wkt_to_cells_experimental_string(col0: DVarcharable, col1: DVarcharable, col2: DNumericable): DArrayField;
+  h3_polygon_wkt_to_cells_string(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_string_to_h3(col0: DVarcharable): DNumericField;
+  h3_uncompact_cells(col0: DArrayable, col1: DNumericable): DArrayField;
+  h3_vertex_to_lat(col0: DNumericable): DNumericField;
+  h3_vertex_to_lat(col0: DVarcharable): DNumericField;
+  h3_vertex_to_latlng(col0: DNumericable): DArrayField;
+  h3_vertex_to_latlng(col0: DVarcharable): DArrayField;
+  h3_vertex_to_lng(col0: DNumericable): DNumericField;
+  h3_vertex_to_lng(col0: DVarcharable): DNumericField;
   /**@description The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example hamming('duck','luck')*/
   hamming(str1: DVarcharable, str2: DVarcharable): DNumericField;
   /**@description Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example hash('🦆')*/
@@ -1529,10 +1645,13 @@ interface _DGlobalField {
   hex(value: DVarcharable): DVarcharField;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
   hex(value: DOtherable): DVarcharField;
+  host(col0: DOtherable): DVarcharField;
   /**@description Extract the hour component from a date or timestamp	@example hour(timestamp '2021-08-03 11:59:44.123456')*/
   hour(ts: DDateable): DNumericField;
   /**@description Extract the hour component from a date or timestamp	@example hour(timestamp '2021-08-03 11:59:44.123456')*/
   hour(ts: DOtherable): DNumericField;
+  html_escape(col0: DVarcharable, col1?: DBoolable | DOtherable): DVarcharField;
+  html_unescape(col0: DVarcharable): DVarcharField;
   icu_sort_key(col0: DVarcharable, col1: DVarcharable): DVarcharField;
   /**@description Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example ilike_escape('A%c', 'a$%C', '$')*/
   ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
@@ -1810,6 +1929,8 @@ interface _DGlobalField {
   nanosecond(tsns: DDateable): DNumericField;
   /**@description Extract the nanosecond component from a date or timestamp	@example nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789*/
   nanosecond(tsns: DOtherable): DNumericField;
+  netmask(col0: DOtherable): DOtherField;
+  network(col0: DOtherable): DOtherField;
   /**@description Returns the next floating point value after x in the direction of y	@example nextafter(1::float, 2::float)*/
   nextafter(x: DNumericable, y: DNumericable): DNumericField;
   /**@description Return the following value of the sequence.	@example nextval('my_sequence_name')*/
@@ -1930,6 +2051,7 @@ interface _DGlobalField {
   starts_with(string: DVarcharable, searchString: DVarcharable): DBoolField;
   /**@description Returns a string with statistics about the expression. Expression can be a column, constant, or SQL expression	@example stats(5)*/
   stats(expression: DAnyable): DVarcharField;
+  stem(col0: DVarcharable, col1: DVarcharable): DVarcharField;
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   str_split(string: DVarcharable, separator: DVarcharable): DArrayField;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
@@ -1950,8 +2072,8 @@ interface _DGlobalField {
   strlen(string: DVarcharable): DNumericField;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
   strpos(haystack: DVarcharable, needle: DVarcharable): DNumericField;
-  /**@description Converts the string text to timestamp applying the format strings in the list until one succeeds. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('4/15/2023 10:56:00', ['%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'])*/
-  strptime(text: DVarcharable, formatList: DArrayable | DVarcharable): DDateField;
+  /**@description Converts the string text to timestamp according to the format string. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')*/
+  strptime(text: DVarcharable, format: DArrayable | DVarcharable): DDateField;
   /**@description Merge the multiple STRUCTs into a single STRUCT.	@example struct_concat(struct_pack(i := 4), struct_pack(s := 'string'))*/
   struct_concat(...args: DAnyable[]): DStructField;
   /**@description Extract the named entry from the STRUCT.	@example struct_extract({'i': 3, 'v2': 3, 'v3': 0}, 'i')*/
@@ -1979,6 +2101,7 @@ interface _DGlobalField {
   tan(x: DNumericable): DNumericField;
   /**@description Computes the hyperbolic tan of x	@example tanh(1)*/
   tanh(x: DNumericable): DNumericField;
+  text(col0: DNumericable, col1: DVarcharable): DVarcharField;
   /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
   time_bucket(bucketWidth: DOtherable, timestamp: DDateable, origin?: DDateable | DOtherable | DVarcharable): DDateField;
   /**@description Converts a TIME WITH TIME ZONE to an integer sort key	@example timetz_byte_comparable('18:18:16.21-07:00'::TIME_TZ)*/
@@ -2163,7 +2286,7 @@ interface _DAggregateField {
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   arg_min(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): DNumericField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
-  arg_min(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
+  arg_min(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DVarcharField;
   /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
   arg_min_null(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
@@ -2181,7 +2304,7 @@ interface _DAggregateField {
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   argmax(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): DNumericField;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
-  argmax(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
+  argmax(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DVarcharField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   argmin(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
@@ -2191,7 +2314,7 @@ interface _DAggregateField {
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   argmin(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): DNumericField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
-  argmin(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
+  argmin(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DVarcharField;
   /**@description Returns a LIST containing all the values of a column.	@example list(A)*/
   array_agg(arg: DAnyable): DArrayField;
   /**@description Calculates the average value for all tuples in x.	@example SUM(x) / COUNT(*)*/
@@ -2274,7 +2397,7 @@ interface _DAggregateField {
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   max_by(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): DNumericField;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
-  max_by(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
+  max_by(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DVarcharField;
   /**@description Calculates the average value for all tuples in x.	@example SUM(x) / COUNT(*)*/
   mean(x: DNumericable): DNumericField;
   /**@description Returns the middle value of the set. NULL values are ignored. For even value counts, quantitative values are averaged and ordinal values return the lower value.	@example median(x)*/
@@ -2358,6 +2481,7 @@ interface _DTableField {
   arrow_scan_dumb(col0: DOtherable, col1: DOtherable, col2: DOtherable): void;
   check_peg_parser(col0: DVarcharable): void;
   checkpoint(col0?: DOtherable | DVarcharable): void;
+  delta_scan(col0: DArrayable | DVarcharable, opts?: Partial<{ binaryAsString: DBoolable; compression: DAnyable | DVarcharable; debugUseOpenssl: DAnyable | DBoolable; deltaFileNumber: DBoolable; encryptionConfig: DAnyable; explicitCardinality: DBoolable | DNumericable; fileRowNumber: DBoolable; filename: DAnyable | DBoolable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DVarcharable; hiveTypesAutocast: DBoolable; parquetVersion: DNumericable | DVarcharable; pushdownFilters: DVarcharable; pushdownPartitionInfo: DBoolable; unionByName: DBoolable }>): void;
   duckdb_columns(): void;
   duckdb_constraints(): void;
   duckdb_databases(): void;
@@ -2384,7 +2508,12 @@ interface _DTableField {
   force_checkpoint(col0?: DOtherable | DVarcharable): void;
   generate_series(col0: DDateable | DNumericable, col1?: DDateable | DNumericable | DOtherable, col2?: DNumericable | DOtherable): void;
   glob(col0: DArrayable | DVarcharable): void;
+  iceberg_metadata(col0: DVarcharable, col1: DDateable | DNumericable | DVarcharable, version: DBoolable | DVarcharable, versionNameFormat: DBoolable | DVarcharable, skipSchemaInference: DBoolable | DVarcharable, metadataCompressionCodec: DBoolable | DVarcharable, allowMovedPaths?: DBoolable | DOtherable | DVarcharable): void;
+  iceberg_scan(col0: DVarcharable, col1: DDateable | DNumericable | DVarcharable, versionNameFormat: DBoolable | DVarcharable, version: DBoolable | DVarcharable, metadataCompressionCodec: DVarcharable, mode: DBoolable | DVarcharable, allowMovedPaths: DBoolable | DVarcharable, skipSchemaInference?: DBoolable | DOtherable | DVarcharable): void;
+  iceberg_snapshots(col0: DVarcharable, opts?: Partial<{ metadataCompressionCodec: DVarcharable; skipSchemaInference: DBoolable; version: DVarcharable; versionNameFormat: DVarcharable }>): void;
   icu_calendar_names(): void;
+  json_execute_serialized_sql(col0: DVarcharable): void;
+  load_aws_credentials(col0: DBoolable | DVarcharable, opts?: Partial<{ redactSecret: DBoolable; setRegion?: DBoolable | DOtherable }>): void;
   parquet_bloom_probe(col0: DArrayable | DVarcharable, col1: DVarcharable, col2: DAnyable): void;
   parquet_file_metadata(col0: DArrayable | DVarcharable): void;
   parquet_kv_metadata(col0: DArrayable | DVarcharable): void;
@@ -2396,6 +2525,7 @@ interface _DTableField {
   pragma_database_size(): void;
   pragma_metadata_info(col0?: DOtherable | DVarcharable): void;
   pragma_platform(): void;
+  pragma_rtree_index_info(): void;
   pragma_show(col0: DVarcharable): void;
   pragma_storage_info(col0: DVarcharable): void;
   pragma_table_info(col0: DVarcharable): void;
@@ -2514,14 +2644,28 @@ interface _DTableField {
   read_ndjson_objects(col0: DArrayable | DVarcharable, opts?: Partial<{ compression: DVarcharable; filename: DAnyable | DVarcharable; format: DAnyable | DVarcharable; hivePartitioning: DBoolable | DNumericable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maximumObjectSize: DBoolable | DNumericable; unionByName: DAnyable | DBoolable }>): void;
   read_parquet(col0: DArrayable | DVarcharable, opts?: Partial<{ binaryAsString: DBoolable; compression: DBoolable | DVarcharable; debugUseOpenssl: DBoolable; encryptionConfig: DAnyable; explicitCardinality: DAnyable | DNumericable; fileRowNumber: DAnyable | DBoolable; filename: DAnyable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DAnyable | DBoolable; parquetVersion: DBoolable | DVarcharable; schema: DAnyable | DBoolable; unionByName: DBoolable | DVarcharable }>): void;
   read_text(col0: DArrayable | DVarcharable): void;
+  read_xlsx(col0: DVarcharable, opts?: Partial<{ allVarchar: DBoolable; emptyAsVarchar: DBoolable; header: DBoolable; ignoreErrors: DBoolable; normalizeNames: DBoolable; range: DVarcharable; sheet: DVarcharable; stopAtEmpty: DBoolable }>): void;
+  register_geoarrow_extensions(): void;
   repeat(col0: DAnyable, col1: DNumericable): void;
   repeat_row(numRows: DNumericable, ...args: DAnyable[]): void;
+  rtree_index_dump(col0: DVarcharable): void;
+  rtree_index_scan(): void;
+  scan_arrow_ipc(col0: DArrayable): void;
   seq_scan(): void;
+  shapefile_meta(col0: DArrayable | DVarcharable): void;
   sniff_csv(col0: DVarcharable, opts?: Partial<{ allVarchar: DBoolable; allowQuotedNulls: DBoolable; autoDetect: DBoolable; autoTypeCandidates: DAnyable; bufferSize: DNumericable; columnNames: DArrayable; columnTypes: DAnyable; columns: DAnyable; comment: DVarcharable; compression: DVarcharable; dateformat: DVarcharable; decimalSeparator: DVarcharable; delim: DVarcharable; dtypes: DAnyable; encoding: DVarcharable; escape: DVarcharable; filename: DAnyable; forceMatch: DBoolable; forceNotNull: DArrayable; header: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maxLineSize: DVarcharable; maximumLineSize: DVarcharable; names: DArrayable; newLine: DVarcharable; normalizeNames: DBoolable; nullPadding: DBoolable; nullstr: DAnyable; parallel: DBoolable; quote: DVarcharable; rejectsLimit: DNumericable; rejectsScan: DVarcharable; rejectsTable: DVarcharable; sampleSize: DNumericable; sep: DVarcharable; skip: DNumericable; storeRejects: DBoolable; strictMode: DBoolable; timestampformat: DVarcharable; types: DAnyable; unionByName: DBoolable }>): void;
   sql_auto_complete(col0: DVarcharable): void;
+  sqlite_attach(col0: DVarcharable, overwrite: DBoolable): void;
+  sqlite_query(col0: DVarcharable, col1: DVarcharable): void;
+  sqlite_scan(col0: DVarcharable, col1: DVarcharable): void;
+  start_ui(): void;
+  start_ui_server(): void;
+  stop_ui_server(): void;
   summary(col0: DOtherable): void;
   test_all_types(useLargeEnum: DBoolable): void;
   test_vector_types(col0: DAnyable, allFlat: DBoolable, ...args: DAnyable[]): void;
+  to_arrow_ipc(col0: DOtherable): void;
+  ui_is_started(): void;
   unnest(col0: DAnyable): void;
   which_secret(col0: DVarcharable, col1: DVarcharable): void;
 }
@@ -2662,6 +2806,8 @@ interface CVarchar extends CAny {
   hamming(str2: DVarcharable): number & CNumeric;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
   hex(): string & CVarchar;
+  html_escape(col1?: DBoolable | DOtherable): string & CVarchar;
+  html_unescape(): string & CVarchar;
   icu_sort_key(col1: DVarcharable): string & CVarchar;
   /**@description Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example ilike_escape('A%c', 'a$%C', '$')*/
   ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
@@ -2786,6 +2932,7 @@ interface CVarchar extends CAny {
   sha256(): string & CVarchar;
   /**@description Returns true if string begins with search_string	@example starts_with('abc','a')*/
   starts_with(searchString: DVarcharable): DBoolField;
+  stem(col1: DVarcharable): string & CVarchar;
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   str_split(separator: DVarcharable): DArrayField;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
@@ -2804,8 +2951,8 @@ interface CVarchar extends CAny {
   strlen(): number & CNumeric;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
   strpos(needle: DVarcharable): number & CNumeric;
-  /**@description Converts the string text to timestamp applying the format strings in the list until one succeeds. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('4/15/2023 10:56:00', ['%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'])*/
-  strptime(formatList: DArrayable | DVarcharable): DDateField;
+  /**@description Converts the string text to timestamp according to the format string. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')*/
+  strptime(format: DArrayable | DVarcharable): DDateField;
   /**@description Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring('Hello', 2, 2)*/
   substr(start: DNumericable, length?: DNumericable | DOtherable): string & CVarchar;
   /**@description Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example substring('Hello', 2, 2)*/
@@ -2898,6 +3045,7 @@ interface CNumeric extends CAny {
   equi_width_bins(max: DNumericable, binCount: DNumericable, niceRounding: DBoolable): DArrayField;
   /**@description Rounds x to next even number by rounding away from zero	@example even(2.9)*/
   even(): number & CNumeric;
+  excel_text(col1: DVarcharable): string & CVarchar;
   /**@description Computes e to the power of x	@example exp(1)*/
   exp(): number & CNumeric;
   /**@description Factorial of x. Computes the product of the current integer and all integers below it	@example 4!*/
@@ -2984,6 +3132,7 @@ interface CNumeric extends CAny {
   tan(): number & CNumeric;
   /**@description Computes the hyperbolic tan of x	@example tanh(1)*/
   tanh(): number & CNumeric;
+  text(col1: DVarcharable): string & CVarchar;
   /**@description Converts a value to a string in the given base radix, optionally padding with leading zeros to the minimum length	@example to_base(42, 16)*/
   to_base(radix: DNumericable, minLength?: DNumericable | DOtherable): string & CVarchar;
   /**@description Converts the value to binary representation	@example bin(42)*/
@@ -3249,6 +3398,7 @@ interface CGlobal {
   bitstring(bitstring: DOtherable, length: DNumericable): DOtherField;
   /**@description Pads the bitstring until the specified length	@example bitstring('1010'::BIT, 7)*/
   bitstring(bitstring: DVarcharable, length: DNumericable): DOtherField;
+  broadcast(col0: DOtherable): DOtherField;
   /**@description Whether or not we can implicitly cast from the source type to the other type	@example can_implicitly_cast(NULL::INTEGER, NULL::BIGINT)*/
   can_cast_implicitly(sourceType: DAnyable, targetType: DAnyable): DBoolField;
   /**@description Returns the size of the map (or the number of entries in the map)	@example cardinality( map([4, 2], ['a', 'b']) );*/
@@ -3405,10 +3555,12 @@ interface CGlobal {
   error(message: DVarcharable): DOtherField;
   /**@description Rounds x to next even number by rounding away from zero	@example even(2.9)*/
   even(x: DNumericable): number & CNumeric;
+  excel_text(col0: DNumericable, col1: DVarcharable): string & CVarchar;
   /**@description Computes e to the power of x	@example exp(1)*/
   exp(x: DNumericable): number & CNumeric;
   /**@description Factorial of x. Computes the product of the current integer and all integers below it	@example 4!*/
   factorial(x: DNumericable): number & CNumeric;
+  family(col0: DOtherable): number & CNumeric;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
   filter(list: DArrayable, lambda: DOtherable): DArrayField;
   finalize(col0: DOtherable): DOtherField;
@@ -3449,6 +3601,7 @@ interface CGlobal {
   get_current_time(): DDateField;
   /**@description Returns the current timestamp	@example get_current_timestamp()*/
   get_current_timestamp(): DDateField;
+  get_delta_test_expression(): DArrayField;
   getvariable(col0: DVarcharable): Partial<CAny>;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
   grade_up(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
@@ -3456,6 +3609,107 @@ interface CGlobal {
   greatest(arg1: DAnyable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Computes the greatest common divisor of x and y	@example greatest_common_divisor(42, 57)*/
   greatest_common_divisor(x: DNumericable, y: DNumericable): number & CNumeric;
+  h3_are_neighbor_cells(col0: DNumericable, col1: DNumericable): DBoolField;
+  h3_are_neighbor_cells(col0: DVarcharable, col1: DVarcharable): DBoolField;
+  h3_cell_area(col0: DNumericable, col1: DVarcharable): number & CNumeric;
+  h3_cell_area(col0: DVarcharable, col1: DVarcharable): number & CNumeric;
+  h3_cell_to_boundary_wkt(col0: DNumericable): string & CVarchar;
+  h3_cell_to_boundary_wkt(col0: DVarcharable): string & CVarchar;
+  h3_cell_to_center_child(col0: DNumericable, col1: DNumericable): number & CNumeric;
+  h3_cell_to_center_child(col0: DVarcharable, col1: DNumericable): string & CVarchar;
+  h3_cell_to_child_pos(col0: DNumericable, col1: DNumericable): number & CNumeric;
+  h3_cell_to_child_pos(col0: DVarcharable, col1: DNumericable): number & CNumeric;
+  h3_cell_to_children(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_cell_to_children(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_cell_to_lat(col0: DNumericable): number & CNumeric;
+  h3_cell_to_lat(col0: DVarcharable): number & CNumeric;
+  h3_cell_to_latlng(col0: DNumericable): DArrayField;
+  h3_cell_to_latlng(col0: DVarcharable): DArrayField;
+  h3_cell_to_lng(col0: DNumericable): number & CNumeric;
+  h3_cell_to_lng(col0: DVarcharable): number & CNumeric;
+  h3_cell_to_local_ij(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_cell_to_local_ij(col0: DVarcharable, col1: DVarcharable): DArrayField;
+  h3_cell_to_parent(col0: DNumericable, col1: DNumericable): number & CNumeric;
+  h3_cell_to_parent(col0: DVarcharable, col1: DNumericable): string & CVarchar;
+  h3_cell_to_vertex(col0: DNumericable, col1: DNumericable): number & CNumeric;
+  h3_cell_to_vertex(col0: DVarcharable, col1: DNumericable): string & CVarchar;
+  h3_cell_to_vertexes(col0: DNumericable): DArrayField;
+  h3_cell_to_vertexes(col0: DVarcharable): DArrayField;
+  h3_cells_to_directed_edge(col0: DNumericable, col1: DNumericable): number & CNumeric;
+  h3_cells_to_directed_edge(col0: DVarcharable, col1: DVarcharable): string & CVarchar;
+  h3_cells_to_multi_polygon_wkt(col0: DArrayable): string & CVarchar;
+  h3_child_pos_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): number & CNumeric;
+  h3_child_pos_to_cell(col0: DNumericable, col1: DVarcharable, col2: DNumericable): string & CVarchar;
+  h3_compact_cells(col0: DArrayable): DArrayField;
+  h3_directed_edge_to_boundary_wkt(col0: DNumericable): string & CVarchar;
+  h3_directed_edge_to_boundary_wkt(col0: DVarcharable): string & CVarchar;
+  h3_directed_edge_to_cells(col0: DNumericable): DArrayField;
+  h3_directed_edge_to_cells(col0: DVarcharable): DArrayField;
+  h3_edge_length(col0: DNumericable, col1: DVarcharable): number & CNumeric;
+  h3_edge_length(col0: DVarcharable, col1: DVarcharable): number & CNumeric;
+  h3_get_base_cell_number(col0: DNumericable): number & CNumeric;
+  h3_get_base_cell_number(col0: DVarcharable): number & CNumeric;
+  h3_get_directed_edge_destination(col0: DNumericable): number & CNumeric;
+  h3_get_directed_edge_destination(col0: DVarcharable): string & CVarchar;
+  h3_get_directed_edge_origin(col0: DNumericable): number & CNumeric;
+  h3_get_directed_edge_origin(col0: DVarcharable): string & CVarchar;
+  h3_get_hexagon_area_avg(col0: DNumericable, col1: DVarcharable): number & CNumeric;
+  h3_get_hexagon_edge_length_avg(col0: DNumericable, col1: DVarcharable): number & CNumeric;
+  h3_get_icosahedron_faces(col0: DNumericable): DArrayField;
+  h3_get_icosahedron_faces(col0: DVarcharable): DArrayField;
+  h3_get_num_cells(col0: DNumericable): number & CNumeric;
+  h3_get_pentagons(col0: DNumericable): DArrayField;
+  h3_get_pentagons_string(col0: DNumericable): DArrayField;
+  h3_get_res0_cells(): DArrayField;
+  h3_get_res0_cells_string(): DArrayField;
+  h3_get_resolution(col0: DNumericable): number & CNumeric;
+  h3_get_resolution(col0: DVarcharable): number & CNumeric;
+  h3_great_circle_distance(col0: DNumericable, col1: DNumericable, col2: DNumericable, col3: DNumericable, col4: DVarcharable): number & CNumeric;
+  h3_grid_disk(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances_safe(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances_safe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk_distances_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_disk_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_disk_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_grid_distance(col0: DNumericable, col1: DNumericable): number & CNumeric;
+  h3_grid_distance(col0: DVarcharable, col1: DVarcharable): number & CNumeric;
+  h3_grid_path_cells(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_path_cells(col0: DVarcharable, col1: DVarcharable): DArrayField;
+  h3_grid_ring_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
+  h3_grid_ring_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_h3_to_string(col0: DNumericable): string & CVarchar;
+  h3_is_pentagon(col0: DNumericable): DBoolField;
+  h3_is_pentagon(col0: DVarcharable): DBoolField;
+  h3_is_res_class_iii(col0: DNumericable): DBoolField;
+  h3_is_res_class_iii(col0: DVarcharable): DBoolField;
+  h3_is_valid_cell(col0: DNumericable): DBoolField;
+  h3_is_valid_cell(col0: DVarcharable): DBoolField;
+  h3_is_valid_directed_edge(col0: DNumericable): DBoolField;
+  h3_is_valid_directed_edge(col0: DVarcharable): DBoolField;
+  h3_is_valid_vertex(col0: DNumericable): DBoolField;
+  h3_is_valid_vertex(col0: DVarcharable): DBoolField;
+  h3_latlng_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): number & CNumeric;
+  h3_latlng_to_cell_string(col0: DNumericable, col1: DNumericable, col2: DNumericable): string & CVarchar;
+  h3_local_ij_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): number & CNumeric;
+  h3_local_ij_to_cell(col0: DVarcharable, col1: DNumericable, col2: DNumericable): string & CVarchar;
+  h3_origin_to_directed_edges(col0: DNumericable): DArrayField;
+  h3_origin_to_directed_edges(col0: DVarcharable): DArrayField;
+  h3_polygon_wkt_to_cells(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_polygon_wkt_to_cells_experimental(col0: DVarcharable, col1: DVarcharable, col2: DNumericable): DArrayField;
+  h3_polygon_wkt_to_cells_experimental_string(col0: DVarcharable, col1: DVarcharable, col2: DNumericable): DArrayField;
+  h3_polygon_wkt_to_cells_string(col0: DVarcharable, col1: DNumericable): DArrayField;
+  h3_string_to_h3(col0: DVarcharable): number & CNumeric;
+  h3_uncompact_cells(col0: DArrayable, col1: DNumericable): DArrayField;
+  h3_vertex_to_lat(col0: DNumericable): number & CNumeric;
+  h3_vertex_to_lat(col0: DVarcharable): number & CNumeric;
+  h3_vertex_to_latlng(col0: DNumericable): DArrayField;
+  h3_vertex_to_latlng(col0: DVarcharable): DArrayField;
+  h3_vertex_to_lng(col0: DNumericable): number & CNumeric;
+  h3_vertex_to_lng(col0: DVarcharable): number & CNumeric;
   /**@description The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example hamming('duck','luck')*/
   hamming(str1: DVarcharable, str2: DVarcharable): number & CNumeric;
   /**@description Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example hash('🦆')*/
@@ -3468,10 +3722,13 @@ interface CGlobal {
   hex(value: DVarcharable): string & CVarchar;
   /**@description Converts the value to hexadecimal representation	@example hex(42)*/
   hex(value: DOtherable): string & CVarchar;
+  host(col0: DOtherable): string & CVarchar;
   /**@description Extract the hour component from a date or timestamp	@example hour(timestamp '2021-08-03 11:59:44.123456')*/
   hour(ts: DDateable): number & CNumeric;
   /**@description Extract the hour component from a date or timestamp	@example hour(timestamp '2021-08-03 11:59:44.123456')*/
   hour(ts: DOtherable): number & CNumeric;
+  html_escape(col0: DVarcharable, col1?: DBoolable | DOtherable): string & CVarchar;
+  html_unescape(col0: DVarcharable): string & CVarchar;
   icu_sort_key(col0: DVarcharable, col1: DVarcharable): string & CVarchar;
   /**@description Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example ilike_escape('A%c', 'a$%C', '$')*/
   ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
@@ -3749,6 +4006,8 @@ interface CGlobal {
   nanosecond(tsns: DDateable): number & CNumeric;
   /**@description Extract the nanosecond component from a date or timestamp	@example nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789*/
   nanosecond(tsns: DOtherable): number & CNumeric;
+  netmask(col0: DOtherable): DOtherField;
+  network(col0: DOtherable): DOtherField;
   /**@description Returns the next floating point value after x in the direction of y	@example nextafter(1::float, 2::float)*/
   nextafter(x: DNumericable, y: DNumericable): number & CNumeric;
   /**@description Return the following value of the sequence.	@example nextval('my_sequence_name')*/
@@ -3869,6 +4128,7 @@ interface CGlobal {
   starts_with(string: DVarcharable, searchString: DVarcharable): DBoolField;
   /**@description Returns a string with statistics about the expression. Expression can be a column, constant, or SQL expression	@example stats(5)*/
   stats(expression: DAnyable): string & CVarchar;
+  stem(col0: DVarcharable, col1: DVarcharable): string & CVarchar;
   /**@description Splits the string along the separator	@example string_split('hello-world', '-')*/
   str_split(string: DVarcharable, separator: DVarcharable): DArrayField;
   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
@@ -3889,8 +4149,8 @@ interface CGlobal {
   strlen(string: DVarcharable): number & CNumeric;
   /**@description Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example instr('test test','es')*/
   strpos(haystack: DVarcharable, needle: DVarcharable): number & CNumeric;
-  /**@description Converts the string text to timestamp applying the format strings in the list until one succeeds. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('4/15/2023 10:56:00', ['%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'])*/
-  strptime(text: DVarcharable, formatList: DArrayable | DVarcharable): DDateField;
+  /**@description Converts the string text to timestamp according to the format string. Throws an error on failure. To return NULL on failure, use try_strptime.	@example strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')*/
+  strptime(text: DVarcharable, format: DArrayable | DVarcharable): DDateField;
   /**@description Merge the multiple STRUCTs into a single STRUCT.	@example struct_concat(struct_pack(i := 4), struct_pack(s := 'string'))*/
   struct_concat(...args: DAnyable[]): DStructField;
   /**@description Extract the named entry from the STRUCT.	@example struct_extract({'i': 3, 'v2': 3, 'v3': 0}, 'i')*/
@@ -3918,6 +4178,7 @@ interface CGlobal {
   tan(x: DNumericable): number & CNumeric;
   /**@description Computes the hyperbolic tan of x	@example tanh(1)*/
   tanh(x: DNumericable): number & CNumeric;
+  text(col0: DNumericable, col1: DVarcharable): string & CVarchar;
   /**@description Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')*/
   time_bucket(bucketWidth: DOtherable, timestamp: DDateable, origin?: DDateable | DOtherable | DVarcharable): DDateField;
   /**@description Converts a TIME WITH TIME ZONE to an integer sort key	@example timetz_byte_comparable('18:18:16.21-07:00'::TIME_TZ)*/
@@ -4104,7 +4365,7 @@ interface CAggregate {
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   arg_min(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
-  arg_min(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
+  arg_min(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): string & CVarchar;
   /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
   arg_min_null(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the minimum val. Calculates the arg expression at that row.	@example arg_min_null(A,B)*/
@@ -4122,7 +4383,7 @@ interface CAggregate {
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   argmax(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
-  argmax(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
+  argmax(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): string & CVarchar;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   argmin(arg: DDateable, val: DBlobable | DDateable | DNumericable | DVarcharable): DDateField;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
@@ -4132,7 +4393,7 @@ interface CAggregate {
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
   argmin(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example arg_min(A,B)*/
-  argmin(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
+  argmin(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): string & CVarchar;
   /**@description Returns a LIST containing all the values of a column.	@example list(A)*/
   array_agg(arg: DAnyable): DArrayField;
   /**@description Calculates the average value for all tuples in x.	@example SUM(x) / COUNT(*)*/
@@ -4215,7 +4476,7 @@ interface CAggregate {
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
   max_by(arg: DNumericable, val: DBlobable | DDateable | DNumericable | DVarcharable): number & CNumeric;
   /**@description Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example arg_max(A,B)*/
-  max_by(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): DBlobField;
+  max_by(arg: DBlobable | DVarcharable, val: DBlobable | DDateable | DNumericable | DVarcharable): string & CVarchar;
   /**@description Calculates the average value for all tuples in x.	@example SUM(x) / COUNT(*)*/
   mean(x: DNumericable): number & CNumeric;
   /**@description Returns the middle value of the set. NULL values are ignored. For even value counts, quantitative values are averaged and ordinal values return the lower value.	@example median(x)*/
@@ -4521,100 +4782,18 @@ export interface DSettings {
   user: string;
   /**@description The (average) length at which to enable ZSTD compression, defaults to 4096*/
   zstd_min_string_length: number;
-  /**@description Period of time between UI polling requests (in ms)*/
-  ui_polling_interval: number;
-  /**@description Remote URL to which the UI server forwards GET requests*/
-  ui_remote_url: string;
-  /**@description S3 Access Key ID*/
-  s3_access_key_id: string;
-  /**@description Enable globbing the filesystem (if possible) to find the latest version metadata. This could result in reading an uncommitted version.*/
-  unsafe_enable_version_guessing: boolean;
-  /**@description Override the azure endpoint for when the Azure credential providers are used.*/
-  azure_endpoint: string;
-  /**@description Proxy to use when login & performing request to azure. By default it will use the HTTP_PROXY environment variable if set.*/
-  azure_http_proxy: string;
-  /**@description Disable Globs and Query Parameters on S3 URLs*/
-  s3_url_compatibility_mode: boolean;
-  /**@description Forces upfront download of file*/
-  force_download: boolean;
-  /**@description S3 use SSL*/
-  s3_use_ssl: boolean;
-  /**@description S3 Access Key*/
-  s3_secret_access_key: string;
-  /**@description Local port on which the UI server listens*/
-  ui_local_port: number;
-  /**@description Path to a custom certificate file for self-signed certificates.*/
-  ca_cert_file: string;
-  /**@description Enable server side certificate verification.*/
-  enable_server_cert_verification: boolean;
-  /**@description Cache Parquet metadata - useful when reading the same files multiple times*/
-  parquet_metadata_cache: boolean;
-  /**@description Time between retries*/
-  http_retry_wait_ms: number;
-  /**@description S3 Uploader max parts per file (between 1 and 10000)*/
-  s3_uploader_max_parts_per_file: number;
-  /**@description Load all SQLite columns as VARCHAR columns*/
-  sqlite_all_varchar: boolean;
-  /**@description Keep alive connections. Setting this to false can help when running into connection failures*/
-  http_keep_alive: boolean;
-  /**@description Backoff factor for exponentially increasing retry wait time*/
-  http_retry_backoff: number;
-  /**@description Http proxy password if needed.*/
-  azure_proxy_password: string;
-  /**@description HTTP retries on I/O error*/
-  http_retries: number;
-  /**@description HTTP timeout read/write/connection/retry (in seconds)*/
-  http_timeout: number;
-  /**@description DEBUG SETTING: print all queries sent to SQLite to stdout*/
-  sqlite_debug_show_queries: boolean;
-  /**@description S3 Endpoint*/
-  s3_endpoint: string;
-  /**@description Azure connection string, used for authenticating and configuring azure requests*/
-  azure_storage_connection_string: string;
-  /**@description Forwards the internal logging of the Delta Kernel to the duckdb logger. Warning: this may impact performance even with DuckDB logging disabled.*/
-  delta_kernel_logging: boolean;
-  /**@description S3 URL style*/
-  s3_url_style: string;
   /**@description The current time zone*/
   TimeZone: string;
-  /**@description Use the prefetching mechanism for all types of parquet files*/
-  prefetch_all_parquet_files: boolean;
-  /**@description Include http info from the Azure Storage in the explain analyze statement.*/
-  azure_http_stats: boolean;
-  /**@description S3 Region*/
-  s3_region: string;
-  /**@description Http proxy user name if needed.*/
-  azure_proxy_user_name: string;
-  /**@description Size of the read buffer.  It is recommended that this is evenly divisible by azure_read_transfer_chunk_size.*/
-  azure_read_buffer_size: number;
-  /**@description Maximum size in bytes that the Azure client will read in a single request. It is recommended that this is a factor of azure_read_buffer_size.*/
-  azure_read_transfer_chunk_size: number;
-  /**@description Debug option to limit number of items returned in list requests*/
-  hf_max_per_page: number;
-  /**@description Maximum number of threads the Azure client can use for a single parallel read. If azure_read_transfer_chunk_size is less than azure_read_buffer_size then setting this > 1 will allow the Azure client to do concurrent requests to fill the buffer.*/
-  azure_read_transfer_concurrency: number;
-  /**@description S3 Uploader global thread limit*/
-  s3_uploader_thread_limit: number;
-  /**@description S3 Uploader max filesize (between 50GB and 5TB)*/
-  s3_uploader_max_filesize: string;
-  /**@description Ordered list of Azure credential providers, in string format separated by ';'. E.g. 'cli;workload_identity;managed_identity;env'*/
-  azure_credential_chain: string;
-  /**@description Enable/disable the caching of some context when performing queries. This cache is by default enable, and will for a given connection keep a local context when performing a query. If you suspect that the caching is causing some side effect you can try to disable it by setting this option to false.*/
-  azure_context_caching: boolean;
-  /**@description Disable the prefetching mechanism in Parquet*/
-  disable_parquet_prefetching: boolean;
-  /**@description S3 Session Token*/
-  s3_session_token: string;
   /**@description Attempt to decode/encode geometry data in/as GeoParquet files if the spatial extension is present.*/
   enable_geoparquet_conversion: boolean;
-  /**@description Azure account name, when set, the extension will attempt to automatically detect credentials*/
-  azure_account_name: string;
-  /**@description Adds the filtered files to the explain output. Warning: this may impact performance of delta scan during explain analyze queries.*/
-  delta_scan_explain_files_filtered: boolean;
   /**@description The current calendar*/
   Calendar: string;
-  /**@description Underlying adapter to use with the Azure SDK. Read more about the adapter at https://github.com/Azure/azure-sdk-for-cpp/blob/main/doc/HttpTransportAdapter.md. Valid values are: default, curl*/
-  azure_transport_option_type: string;
+  /**@description Cache Parquet metadata - useful when reading the same files multiple times*/
+  parquet_metadata_cache: boolean;
+  /**@description Use the prefetching mechanism for all types of parquet files*/
+  prefetch_all_parquet_files: boolean;
+  /**@description Disable the prefetching mechanism in Parquet*/
+  disable_parquet_prefetching: boolean;
   /**@description In Parquet files, interpret binary data as a string.*/
   binary_as_string: boolean;
 }

@@ -1,6 +1,7 @@
 import ts from "typescript";
 import * as t from '../.buck/types'; // Import the types namespace for TS API generation target
-import { mapTypes } from "./sync-types";
+// import { mapTypes } from "./sync-types";
+const mapTypes = () => 'DVarchar'; // Placeholder for the mapTypes function, replace with actual import if needed
 
 // --- Intermediate Schema Definition (Implicit) ---
 // serializeSchema output: { colName: MappedTypeString | StructObject, ... }

@@ -25,24 +25,23 @@ const TypeProps = {
 }
 
 
-
+const entriesSorted = <T>(items: Record<string, T>) => {
+    return Object.keys(items).sort().map(e => [e, items[e]]) as [string, T][]
+}
 
 export const mapTypes = (type: string) => {
-    if (type === 'ANY') return 'DAny';
     if (!type) return 'DOther';
-
-    if (type.endsWith('[]') || type === 'LIST' || type === 'ARRAY' || type.match(/\w+\[\w+\]/)) {
-        return 'DArray';
-    }
-    if (type?.match(/\b((U)?(BIG|HUGE|TINY|SMALL)?INT(EGER)?|DOUBLE|DECIMAL|FLOAT)\b/))
-        return 'DNumeric';
-    if (type?.match(/^(VARCHAR|CHAR|TEXT)$/)) return 'DVarchar';
-    if (type.startsWith('STRUCT')) return 'DStruct';
-    if (type.startsWith('JSON')) return 'DJson';
-    if (type.startsWith('BOOLEAN')) return 'DBool';
-    if (type.startsWith('MAP')) return 'DMap';
-    if (type.startsWith('BLOB')) return 'DBlob';
-    if (type.match(/^(DATE|TIME)[\w\s]*/)) return 'DDate'
+    const t = type.toUpperCase();
+    if (t.match(/^(ANY)$/)) return 'DAny';
+    if (t.match(/(\[\]$|^LIST$|^ARRAY$|\w+\[\w+\])/)) return 'DArray';
+    if (t.match(/\b((U)?(BIG|HUGE|TINY|SMALL)?INT(EGER)?|DOUBLE|DECIMAL|FLOAT)\b/)) return 'DNumeric';
+    if (t.match(/^(VARCHAR|CHAR|TEXT)$/)) return 'DVarchar';
+    if (t.match(/^STRUCT/)) return 'DStruct';
+    if (t.match(/^JSON/)) return 'DJson';
+    if (t.match(/^BOOLEAN/)) return 'DBool';
+    if (t.match(/^MAP/)) return 'DMap';
+    if (t.match(/^BLOB/)) return 'DBlob';
+    if (t.match(/^(DATE|TIME)[\w\s]*/)) return 'DDate';
     return 'DOther';
 }
 
@@ -92,7 +91,7 @@ const anyFuncs = []
 const addFuncs = [
     DuckFunction('count', {}, 'BIGINT'),
     ...resp.map(e => DuckFunction(e.logical_type, { val: 'OTHER' }, e.logical_type.toUpperCase())),
-    ...Object.entries(PatternMatchers).map(([k, e]) => DuckFunction(k, e.params, e.return_type)),
+    ...entriesSorted(PatternMatchers).map(([k, e]) => DuckFunction(k, e.params, e.return_type)),
 ]
 
 
@@ -215,7 +214,7 @@ const generateSettings = async () => {
         .select(e => e.extension_name)
         .where(e => !e.loaded && e.installed)
         .execute()
-    db.loadExtensions("arrow", "aws", "azure", "delta", "excel", "fts", "h3", "httpfs", "iceberg", "inet", "spatial", "sqlite_scanner", "ui")
+    // db.loadExtensions("arrow", "aws", "azure", "delta", "excel", "fts", "h3", "httpfs", "iceberg", "inet", "spatial", "sqlite_scanner", "ui")
     const resp = await db.from('duckdb_settings()')
         .execute()
     let out = `export interface DSettings {\n`
@@ -231,16 +230,18 @@ if (import.meta.main) {
 
         let output = []
 
-        const db = Buck('').loadExtensions('httpfs').from('duckdb_functions()')
+        const db = Buck('')
+            .loadExtensions("arrow", "aws", "azure", "delta", "excel", "fts", "h3", "httpfs", "iceberg", "inet", "spatial", "sqlite_scanner", "ui")
+            .from('duckdb_functions()')
         const query = db
             .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters')
             .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
             .orderBy('function_name')
-            .limit(380)
+        // .limit(380)
         let results = (await query.execute()).concat(anyFuncs).concat(addFuncs)
         const mergeFuncNames = () => {
             const groups = Object.groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-'))
-            return Object.entries(groups)
+            return entriesSorted(groups)
                 .filter(([key, values]) => !OmittedFuncs.includes(key))
                 .flatMap(([key, values]) => {
                     let maxParams = maxBy(values, e => e.parameter_types.length as number)
@@ -269,9 +270,11 @@ if (import.meta.main) {
 
         let resp = groupBy(results, e => e.function_type as 'scalar' | 'table' | 'aggregate' | 'window' | 'udf')
 
+
+
         const grouped = Object.groupBy(resp.scalar.filter(e => !e.function_name.startsWith('h3')), e => mapTypes(e.parameter_types[0]))
         const xkeys = ['DVarchar', 'DNumeric', 'DDate', ...Object.keys(grouped)]
-        let header = Object.entries(TypeProps).map(([key, value]) => {
+        let header = entriesSorted(TypeProps).map(([key, value]) => {
             return `export type ${value.able} = ${value.inferredTo || value.rawType} | ${value.field} | _${value.field};`
         })
             .concat('export type RegExpable = RegExp | string;')

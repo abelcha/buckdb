@@ -58,7 +58,7 @@ export class CommandQueue {
         return this
     }
     pushExtensions(...extensions: string[]) {
-        this.queue.push(extensions.map(e => `INSTALL '${e}';LOAD '${e}';`).join(' ; '))
+        this.queue.push(...extensions.map(e => `INSTALL '${e}';LOAD '${e}';`))
         return this
     }
     flush() {

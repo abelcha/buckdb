@@ -81,7 +81,7 @@ class Schemes {
         // return;
         let toUpdate = false
         for (const statement of statements) {
-            if (!statement.param.match(/^\w{2,13}$/)) {
+            if (!statement.param.match(/\w{2,13}$/)) {
                 continue
             }
             console.log('LOOP', statement)

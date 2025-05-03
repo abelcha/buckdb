@@ -10,11 +10,11 @@ export type DMapable = Map<string, any> | DMapField | _DMapField;
 export type DOtherable = any | DOtherField | _DOtherField;
 export type DAnyable = any | DAnyField | _DAnyField;
 export type RegExpable = RegExp | string;
+export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
+export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
 export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
 export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
 export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
-export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
-export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
 export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
 export type DSomeField = DVarcharField | DNumericField | DDateField | DNumericField | DDateField | DOtherField | DArrayField | DAnyField | DVarcharField | DStructField | DBlobField | DMapField | DBoolField | DJsonField;
 export declare const sId: unique symbol;
@@ -786,7 +786,7 @@ interface _DOtherField extends DAnyField {
   Json(): DJsonField;
 }
 export type DOtherField = _DOtherField;
-interface _DArrayField<T = any> extends DAnyField {
+interface _DArrayField<T = any> {
   [sInferred]: T[];
   [sComptype]: any[];
   add(col1: DArrayable): DArrayField;
@@ -941,13 +941,13 @@ interface _DArrayField<T = any> extends DAnyField {
   /**@description Repeats the string count number of times	@example repeat('A', 5)*/
   repeat(count: DNumericable): DArrayField;
 }
-export type DArrayField<T = any> = _DArrayField<T>;
+export type DArrayField<T = any> = _DArrayField<T> & T[];
 interface _DAnyField {
+  as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
   as(destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
   as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
   as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
-  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
-  as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
   as(destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
 
   [sInferred]: any;
@@ -1002,8 +1002,8 @@ interface _DAnyField {
   vector_type(): DVarcharField;
 }
 export type DAnyField = _DAnyField;
-interface _DStructField<T = any> extends DAnyField {
-  [sInferred]: Record<string, T>;
+interface _DStructField<T = {}> {
+  [sInferred]: T;
   [sComptype]: Record<string, any>;
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
   array_extract(index: DNumericable | DVarcharable): DAnyField;
@@ -1012,7 +1012,7 @@ interface _DStructField<T = any> extends DAnyField {
   /**@description Extract the entry from the STRUCT by position (starts at 1!).	@example struct_extract_at({'i': 3, 'v2': 3, 'v3': 0}, 2)*/
   struct_extract_at(entry: DNumericable): DAnyField;
 }
-export type DStructField<T = any> = _DStructField<T>;
+export type DStructField<T = {}> = _DStructField<T> & T;
 interface _DBlobField extends DAnyField {
   [sInferred]: string;
   [sComptype]: Blob;
@@ -1056,8 +1056,8 @@ interface _DBoolField extends DAnyField {
   current_schemas(): DArrayField;
 }
 export type DBoolField = _DBoolField;
-interface _DJsonField<T = any> extends DAnyField {
-  [sInferred]: Record<string, T>;
+interface _DJsonField<T = {}> {
+  [sInferred]: T;
   [sComptype]: Record<string, any>;
   from_json(col1: DVarcharable): DAnyField;
   from_json_strict(col1: DVarcharable): DAnyField;
@@ -1086,13 +1086,13 @@ interface _DJsonField<T = any> extends DAnyField {
   json_value(col1: DNumericable | DVarcharable): DVarcharField;
   json_value(col1: DArrayable): DArrayField;
 }
-export type DJsonField<T = any> = _DJsonField<T>;
+export type DJsonField<T = {}> = _DJsonField<T> & T;
 interface _DGlobalField {
+  cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
   cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
   cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
   cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
-  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
-  cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
   cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
 
   /**@description Absolute value	@example abs(-17.4)*/
@@ -2527,11 +2527,11 @@ interface _DTableField {
 }
 export type DTableField = _DTableField;
 interface CAny {
+  as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
   as(destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
   as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
   as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
-  as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
-  as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
   as(destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
 
   [sInferred]: any;
@@ -3027,11 +3027,11 @@ interface CNumeric extends CAny {
 export type DNumericComp = number & CNumeric;
 
 interface CGlobal {
+  cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
   cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
   cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
   cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
-  cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
-  cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
   cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
 
   /**@description Absolute value	@example abs(-17.4)*/
@@ -4529,94 +4529,94 @@ export interface DSettings {
   s3_access_key_id: string;
   /**@description Enable globbing the filesystem (if possible) to find the latest version metadata. This could result in reading an uncommitted version.*/
   unsafe_enable_version_guessing: boolean;
-  /**@description Disable Globs and Query Parameters on S3 URLs*/
-  s3_url_compatibility_mode: boolean;
   /**@description Override the azure endpoint for when the Azure credential providers are used.*/
   azure_endpoint: string;
   /**@description Proxy to use when login & performing request to azure. By default it will use the HTTP_PROXY environment variable if set.*/
   azure_http_proxy: string;
-  /**@description Size of the read buffer.  It is recommended that this is evenly divisible by azure_read_transfer_chunk_size.*/
-  azure_read_buffer_size: number;
-  /**@description Underlying adapter to use with the Azure SDK. Read more about the adapter at https://github.com/Azure/azure-sdk-for-cpp/blob/main/doc/HttpTransportAdapter.md. Valid values are: default, curl*/
-  azure_transport_option_type: string;
-  /**@description Enable/disable the caching of some context when performing queries. This cache is by default enable, and will for a given connection keep a local context when performing a query. If you suspect that the caching is causing some side effect you can try to disable it by setting this option to false.*/
-  azure_context_caching: boolean;
-  /**@description Use the prefetching mechanism for all types of parquet files*/
-  prefetch_all_parquet_files: boolean;
-  /**@description S3 Region*/
-  s3_region: string;
-  /**@description Http proxy user name if needed.*/
-  azure_proxy_user_name: string;
-  /**@description Include http info from the Azure Storage in the explain analyze statement.*/
-  azure_http_stats: boolean;
-  /**@description Adds the filtered files to the explain output. Warning: this may impact performance of delta scan during explain analyze queries.*/
-  delta_scan_explain_files_filtered: boolean;
-  /**@description Azure account name, when set, the extension will attempt to automatically detect credentials*/
-  azure_account_name: string;
-  /**@description S3 Uploader global thread limit*/
-  s3_uploader_thread_limit: number;
-  /**@description Maximum size in bytes that the Azure client will read in a single request. It is recommended that this is a factor of azure_read_buffer_size.*/
-  azure_read_transfer_chunk_size: number;
-  /**@description Load all SQLite columns as VARCHAR columns*/
-  sqlite_all_varchar: boolean;
-  /**@description Cache Parquet metadata - useful when reading the same files multiple times*/
-  parquet_metadata_cache: boolean;
-  /**@description Time between retries*/
-  http_retry_wait_ms: number;
-  /**@description S3 Uploader max parts per file (between 1 and 10000)*/
-  s3_uploader_max_parts_per_file: number;
-  /**@description Ordered list of Azure credential providers, in string format separated by ';'. E.g. 'cli;workload_identity;managed_identity;env'*/
-  azure_credential_chain: string;
-  /**@description S3 Uploader max filesize (between 50GB and 5TB)*/
-  s3_uploader_max_filesize: string;
+  /**@description Disable Globs and Query Parameters on S3 URLs*/
+  s3_url_compatibility_mode: boolean;
   /**@description Forces upfront download of file*/
   force_download: boolean;
   /**@description S3 use SSL*/
   s3_use_ssl: boolean;
   /**@description S3 Access Key*/
   s3_secret_access_key: string;
-  /**@description HTTP retries on I/O error*/
-  http_retries: number;
-  /**@description Http proxy password if needed.*/
-  azure_proxy_password: string;
-  /**@description S3 URL style*/
-  s3_url_style: string;
-  /**@description DEBUG SETTING: print all queries sent to SQLite to stdout*/
-  sqlite_debug_show_queries: boolean;
-  /**@description Forwards the internal logging of the Delta Kernel to the duckdb logger. Warning: this may impact performance even with DuckDB logging disabled.*/
-  delta_kernel_logging: boolean;
-  /**@description Azure connection string, used for authenticating and configuring azure requests*/
-  azure_storage_connection_string: string;
-  /**@description S3 Endpoint*/
-  s3_endpoint: string;
-  /**@description In Parquet files, interpret binary data as a string.*/
-  binary_as_string: boolean;
   /**@description Local port on which the UI server listens*/
   ui_local_port: number;
   /**@description Path to a custom certificate file for self-signed certificates.*/
   ca_cert_file: string;
-  /**@description HTTP timeout read/write/connection/retry (in seconds)*/
-  http_timeout: number;
-  /**@description Maximum number of threads the Azure client can use for a single parallel read. If azure_read_transfer_chunk_size is less than azure_read_buffer_size then setting this > 1 will allow the Azure client to do concurrent requests to fill the buffer.*/
-  azure_read_transfer_concurrency: number;
-  /**@description Debug option to limit number of items returned in list requests*/
-  hf_max_per_page: number;
-  /**@description Disable the prefetching mechanism in Parquet*/
-  disable_parquet_prefetching: boolean;
-  /**@description The current time zone*/
-  TimeZone: string;
   /**@description Enable server side certificate verification.*/
   enable_server_cert_verification: boolean;
+  /**@description Cache Parquet metadata - useful when reading the same files multiple times*/
+  parquet_metadata_cache: boolean;
+  /**@description Time between retries*/
+  http_retry_wait_ms: number;
+  /**@description S3 Uploader max parts per file (between 1 and 10000)*/
+  s3_uploader_max_parts_per_file: number;
+  /**@description Load all SQLite columns as VARCHAR columns*/
+  sqlite_all_varchar: boolean;
+  /**@description Keep alive connections. Setting this to false can help when running into connection failures*/
+  http_keep_alive: boolean;
+  /**@description Backoff factor for exponentially increasing retry wait time*/
+  http_retry_backoff: number;
+  /**@description Http proxy password if needed.*/
+  azure_proxy_password: string;
+  /**@description HTTP retries on I/O error*/
+  http_retries: number;
+  /**@description HTTP timeout read/write/connection/retry (in seconds)*/
+  http_timeout: number;
+  /**@description DEBUG SETTING: print all queries sent to SQLite to stdout*/
+  sqlite_debug_show_queries: boolean;
+  /**@description S3 Endpoint*/
+  s3_endpoint: string;
+  /**@description Azure connection string, used for authenticating and configuring azure requests*/
+  azure_storage_connection_string: string;
+  /**@description Forwards the internal logging of the Delta Kernel to the duckdb logger. Warning: this may impact performance even with DuckDB logging disabled.*/
+  delta_kernel_logging: boolean;
+  /**@description S3 URL style*/
+  s3_url_style: string;
+  /**@description The current time zone*/
+  TimeZone: string;
+  /**@description Use the prefetching mechanism for all types of parquet files*/
+  prefetch_all_parquet_files: boolean;
+  /**@description Include http info from the Azure Storage in the explain analyze statement.*/
+  azure_http_stats: boolean;
+  /**@description S3 Region*/
+  s3_region: string;
+  /**@description Http proxy user name if needed.*/
+  azure_proxy_user_name: string;
+  /**@description Size of the read buffer.  It is recommended that this is evenly divisible by azure_read_transfer_chunk_size.*/
+  azure_read_buffer_size: number;
+  /**@description Maximum size in bytes that the Azure client will read in a single request. It is recommended that this is a factor of azure_read_buffer_size.*/
+  azure_read_transfer_chunk_size: number;
+  /**@description Debug option to limit number of items returned in list requests*/
+  hf_max_per_page: number;
+  /**@description Maximum number of threads the Azure client can use for a single parallel read. If azure_read_transfer_chunk_size is less than azure_read_buffer_size then setting this > 1 will allow the Azure client to do concurrent requests to fill the buffer.*/
+  azure_read_transfer_concurrency: number;
+  /**@description S3 Uploader global thread limit*/
+  s3_uploader_thread_limit: number;
+  /**@description S3 Uploader max filesize (between 50GB and 5TB)*/
+  s3_uploader_max_filesize: string;
+  /**@description Ordered list of Azure credential providers, in string format separated by ';'. E.g. 'cli;workload_identity;managed_identity;env'*/
+  azure_credential_chain: string;
+  /**@description Enable/disable the caching of some context when performing queries. This cache is by default enable, and will for a given connection keep a local context when performing a query. If you suspect that the caching is causing some side effect you can try to disable it by setting this option to false.*/
+  azure_context_caching: boolean;
+  /**@description Disable the prefetching mechanism in Parquet*/
+  disable_parquet_prefetching: boolean;
   /**@description S3 Session Token*/
   s3_session_token: string;
   /**@description Attempt to decode/encode geometry data in/as GeoParquet files if the spatial extension is present.*/
   enable_geoparquet_conversion: boolean;
-  /**@description Backoff factor for exponentially increasing retry wait time*/
-  http_retry_backoff: number;
+  /**@description Azure account name, when set, the extension will attempt to automatically detect credentials*/
+  azure_account_name: string;
+  /**@description Adds the filtered files to the explain output. Warning: this may impact performance of delta scan during explain analyze queries.*/
+  delta_scan_explain_files_filtered: boolean;
   /**@description The current calendar*/
   Calendar: string;
-  /**@description Keep alive connections. Setting this to false can help when running into connection failures*/
-  http_keep_alive: boolean;
+  /**@description Underlying adapter to use with the Azure SDK. Read more about the adapter at https://github.com/Azure/azure-sdk-for-cpp/blob/main/doc/HttpTransportAdapter.md. Valid values are: default, curl*/
+  azure_transport_option_type: string;
+  /**@description In Parquet files, interpret binary data as a string.*/
+  binary_as_string: boolean;
 }
 export const DExtensions = [
   {
@@ -4661,7 +4661,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "h3",
-    "description": "H3 hierarchical hexagonal indexing system for geospatial data, v4.2.1",
+    "description": "",
     "installed_from": "community",
   },
   {

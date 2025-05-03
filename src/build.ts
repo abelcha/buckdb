@@ -1,10 +1,9 @@
-import { CommandQueue, DuckdbCon, formatSource, keyBy, mapTypes } from "./utils";
+import { formatSource, keyBy } from "./utils";
 import * as t from "../.buck/types";
 import { parse, parseObject } from './parser';
 import { DBuilder, deriveName, DExtensionsId } from "./build.types";
 import { serializeSchema } from "./interface-generator";
 import { upperFirst } from "es-toolkit";
-import Ressources from './.buck/table.json'
 
 
 export type DCondition = { condition: string, operator?: 'OR' | 'AND' }
@@ -30,9 +29,46 @@ export const dstate = {
     agg: null as string | null,
 }
 
-const d = {}
 
-// const toto = d[3.12] = 12
+
+export type DuckdbCon = {
+    cmdQueue: CommandQueue;
+    run: (sql: string) => Promise<any>;
+    lazyAttach: (path: string, alias: string) => any;
+    ensureSchema: (uri: string) => Promise<any>;
+    describe?: (uri: string) => Promise<Record<string, any>>;
+    query: (sql: string, opts?: Record<string, any>) => Promise<any[]>;
+    lazySettings: (s: Partial<t.DSettings>) => DuckdbCon;
+    lazyExtensions: (...extensions: string[]) => DuckdbCon;
+}
+
+export class CommandQueue {
+    constructor() {
+        this.queue = []
+    }
+    queue: string[]
+    pushSettings(settings: Partial<t.DSettings> = {}) {
+        const sts = Object.entries(settings).map(([key, value]) => `SET ${key} = '${value}'`)
+        if (sts.length)
+            this.queue.push(sts.join('; '))
+        return this;
+    }
+    pushAttach(path: string, alias: string) {
+        this.queue.push(`ATTACH '${path}' AS ${alias} (READONLY)`, `USE ${alias}`)
+        return this
+    }
+    pushExtensions(...extensions: string[]) {
+        this.queue.push(extensions.map(e => `INSTALL '${e}';LOAD '${e}';`).join(' ; '))
+        return this
+    }
+    flush() {
+        const s = this.queue
+        this.queue = []
+        return s
+    }
+
+}
+
 
 
 export type DState = typeof dstate
@@ -298,11 +334,10 @@ export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, 
             const resp = await ddb.query(`SELECT * FROM duckdb_tables()`)
             return Object.fromEntries(resp.map(e => [upperFirst(e.table_name), serializeSchema(e.sql)]))
         },
-        fetchSchema: async function (id: string) {
-            const resp = await ddb.query(`DESCRIBE '${id}'`)
-            return Object.fromEntries(resp.map(e => [e.column_name, mapTypes(e.column_type)]))
-
-        },
+        // fetchSchema: async function (id: string) {
+        //     const resp = await ddb.query(`DESCRIBE '${id}'`)
+        //     return Object.fromEntries(resp.map(e => [e.column_name, mapTypes(e.column_type)]))
+        // },
         loadExtensions: function (...ext: DExtensionsId[]) {
             ddb.lazyExtensions(...ext)
             return this

@@ -1,5 +1,26 @@
 import { from, Buck } from './buckdb.ts'
 
+from('s3://a1738/files/macif.parquet')
+    .select(e => ({ xx: e.modules }))
+    .execute()
+// .then(e => e[0].
+
+
+Buck('', {
+    s3_access_key_id: 'AKIAR6FAVD6WRREXAMPQ',
+    s3_region: 'eu-west-3',
+    s3_secret_access_key: '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',
+})
+    .from('duckdb_functions()')
+    .select((e, D) => ({ id: e.function_name, xxx: D.Json({ lol: 'str', toto: [1, 2, 3] }), ss: D.Struct({ vv: 'II', gg: 123, s: D.Struct({ values: [12, 41, 12] }) }) }))
+    .limit(10)
+    .copyTo('s3://a1738/testxs2.jsonl')
+
+
+from(`s3://a1738/testxs2.jsonl`)
+    .select()
+    .execute()
+    .then(e => e.map(z => z.))
 
 // const con2 = Buck('s3://a1738/xakila.duckdb', {
 //     s3_region: 'eu-west-3'
@@ -25,7 +46,7 @@ import { from, Buck } from './buckdb.ts'
 // from('')
 
 // const resp = await con2.from('Stations', 'ST').select(p => ({ pp p.code, xx: p.id, gg: p.geo_lat }))
-    // .execute()
+// .execute()
 
 // await buckCon.from('duckdb_functions()')
 //     .select(({database_name, datab, ...fns}) => ({ ...fns, schema_name: 'xxxxxx'  }))

@@ -8,9 +8,18 @@ import * as t from '../.buck/types'; // Import the types namespace for TS API ge
 type MappedTypeString = string; // e.g., "DVarchar", "DNumeric", "DArray", "DJson"
 interface IntermediateStructObject {
     __type: 'struct';
-    [fieldName: string]: MappedTypeString | IntermediateStructObject; // Allows nesting
+    [fieldName: string]: IntermediateColumnValue; // Allows nesting of any intermediate type
 }
-type IntermediateColumnValue = MappedTypeString | IntermediateStructObject;
+interface IntermediateJsonObject {
+    __type: 'json';
+    // Allow fields if defined using non-standard JSON(field: type, ...) syntax
+    [fieldName: string]: IntermediateColumnValue;
+}
+interface IntermediateArrayObject {
+    __type: 'array';
+    elementType: IntermediateColumnValue;
+}
+type IntermediateColumnValue = MappedTypeString | IntermediateStructObject | IntermediateJsonObject | IntermediateArrayObject;
 type IntermediateTableSchema = Record<string, IntermediateColumnValue>;
 
 // --- Parsing Logic (Statement -> Intermediate Schema for ONE table) ---
@@ -79,18 +88,32 @@ function parseTypeToIntermediateValue(duckdbType: string): IntermediateColumnVal
     let baseType = duckdbType.trim();
     let isArray = false;
 
-    // Unwrap arrays first and return the element's intermediate type
+    // Handle arrays first
     if (baseType.endsWith('[]')) {
         isArray = true;
         baseType = baseType.slice(0, -2).trim();
-        return parseTypeToIntermediateValue(baseType); // Return element type directly
     } else if (baseType.toUpperCase().startsWith('LIST(') && baseType.endsWith(')')) {
         isArray = true;
         baseType = baseType.slice(5, -1).trim();
-        return parseTypeToIntermediateValue(baseType); // Return element type directly
     }
 
-    // Now process the (potentially unwrapped) baseType
+    // Get the intermediate representation of the base type (element type if it was an array)
+    const elementIntermediateValue = parseBaseTypeToIntermediateValue(baseType);
+
+    // If it was an array, wrap the element type representation
+    if (isArray) {
+        return { __type: 'array', elementType: elementIntermediateValue };
+    } else {
+        return elementIntermediateValue; // Not an array, return the base type's representation
+    }
+}
+
+/**
+ * Parses the non-array base type string (e.g., "VARCHAR", "STRUCT(...)", "JSON")
+ * into its intermediate representation. Helper for parseTypeToIntermediateValue.
+ */
+function parseBaseTypeToIntermediateValue(baseType: string): IntermediateColumnValue {
+    // Now process the baseType
     const upperBaseType = baseType.toUpperCase();
 
     // Handle STRUCT -> generates nested object with __type marker
@@ -115,12 +138,35 @@ function parseTypeToIntermediateValue(duckdbType: string): IntermediateColumnVal
         } else { console.warn(`No opening parenthesis for STRUCT?: ${baseType}`); return mapTypes(baseType); }
     } else if (upperBaseType === 'STRUCT') { console.warn(`STRUCT keyword without parentheses: ${baseType}`); return mapTypes(baseType); }
 
-    // Handle JSON -> returns "DJson" string
-    if (upperBaseType === 'JSON') return mapTypes('JSON');
+    // Handle JSON -> potentially with inline structure definition (non-standard)
+    if (upperBaseType.startsWith('JSON(') && baseType.endsWith(')')) {
+        let openParenIndex = baseType.indexOf('(');
+        if (openParenIndex !== -1) {
+            let balance = 1, closeParenIndex = -1;
+            for (let i = openParenIndex + 1; i < baseType.length; i++) {
+                if (baseType[i] === '(') balance++; else if (baseType[i] === ')') balance--;
+                if (balance === 0) { closeParenIndex = i; break; }
+            }
+            if (closeParenIndex === baseType.length - 1) {
+                const jsonFieldsString = baseType.substring(openParenIndex + 1, closeParenIndex).trim();
+                const rawJsonColumns = parseColumnsRaw(jsonFieldsString);
+                const intermediateFields: IntermediateJsonObject = { __type: 'json' };
+                for (const [name, type] of Object.entries(rawJsonColumns)) {
+                    const cleanName = name.replace(/^"(.*)"$/, '$1'); // Clean name for key
+                    intermediateFields[cleanName] = parseTypeToIntermediateValue(type); // Recursive call
+                }
+                return intermediateFields;
+            } else { console.warn(`No matching parenthesis for JSON(...): ${baseType}`); return { __type: 'json' }; } // Fallback
+        } else { console.warn(`No opening parenthesis for JSON(...): ${baseType}`); return { __type: 'json' }; } // Fallback
+    } else if (upperBaseType === 'JSON') {
+        // Standard JSON type without inline structure
+        return { __type: 'json' };
+    }
 
     // Otherwise, map the simple type string (e.g., "VARCHAR" -> "DVarchar")
     return mapTypes(baseType);
 }
+
 
 /**
  * STEP 1: Parses a CREATE TABLE statement into an intermediate schema object for that table.
@@ -174,6 +220,70 @@ export function serializeDescribe(describeOutput: DescribeOutputItem[]): Interme
 // --- Generation Logic (Intermediate Schema -> TypeScript String using TS API) ---
 
 /**
+ * Creates a ts.TypeNode from an IntermediateColumnValue.
+ * Handles simple types, structs, JSON, and arrays recursively.
+ */
+function createTypeNodeFromIntermediate(value: IntermediateColumnValue, key?: string): ts.TypeNode {
+    if (typeof value === 'string') {
+        // Simple mapped type string (e.g., "DVarchar")
+        return ts.factory.createTypeReferenceNode(
+            ts.factory.createQualifiedName(ts.factory.createIdentifier("t"), ts.factory.createIdentifier(`${value}Field`))
+        );
+    } else if (typeof value === 'object' && value !== null) {
+        if (value.__type === 'struct' || value.__type === 'json') {
+            const fieldTypeName = value.__type === 'struct' ? 'DStructField' : 'DJsonField';
+            const fields = { ...value };
+            delete fields.__type; // Remove marker
+
+            // Check if 'elementType' exists - it shouldn't for struct/json, indicates potential issue
+            if ('elementType' in fields) {
+                 console.warn(`Unexpected 'elementType' found in struct/json object for key: ${key ?? 'unknown'}`, value);
+                 delete fields.elementType; // Attempt to clean up
+            }
+
+
+            if (Object.keys(fields).length > 0) {
+                // Struct or JSON with defined fields -> generate t.D<Type>Field<{...}>
+                const nestedProperties = createPropertySignaturesRecursive(fields); // Use existing recursive func for properties
+                const typeLiteral = ts.factory.createTypeLiteralNode(nestedProperties);
+                return ts.factory.createTypeReferenceNode(
+                    ts.factory.createQualifiedName(ts.factory.createIdentifier("t"), ts.factory.createIdentifier(fieldTypeName)),
+                    [typeLiteral]
+                );
+            } else {
+                 // Only JSON can have no fields defined (standard JSON type)
+                 if (value.__type === 'json') {
+                     return ts.factory.createTypeReferenceNode(
+                         ts.factory.createQualifiedName(ts.factory.createIdentifier("t"), ts.factory.createIdentifier(fieldTypeName))
+                     );
+                 } else {
+                     // Empty struct? Should not happen.
+                     console.warn(`Encountered struct-like object with no fields for key: ${key ?? 'unknown'}`);
+                     return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+                 }
+            }
+        } else if (value.__type === 'array') {
+            // Generate t.DArrayField<ElementType> by recursively calling this function for the element type
+            const elementTypeNode = createTypeNodeFromIntermediate(value.elementType, key); // Recursive call for element type
+            return ts.factory.createTypeReferenceNode(
+                ts.factory.createQualifiedName(ts.factory.createIdentifier("t"), ts.factory.createIdentifier('DArrayField')),
+                [elementTypeNode]
+            );
+        } else {
+             // It's a table or resource level object (shouldn't happen here, handled by caller)
+             // Or an intermediate object missing a __type marker
+             console.warn(`Unexpected object without __type marker or unknown __type at type generation level for key: ${key ?? 'unknown'}`, value);
+             return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        }
+    } else {
+      // Fallback for null/undefined/etc.
+      console.warn(`Unexpected value type at type generation level for key: ${key ?? 'unknown'}`, value);
+      return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+    }
+}
+
+
+/**
  * Creates TS PropertySignatures from various levels of the input data.
  * Handles resource keys, table names, and column definitions.
  */
@@ -181,34 +291,19 @@ function createPropertySignaturesRecursive(obj: Record<string, any>): ts.Propert
   return Object.entries(obj).map(([key, value]) => {
     let typeNode: ts.TypeNode;
 
-    if (typeof value === 'string') {
-      // It's a mapped type string like "DVarchar", "DArray", "DJson"
-      // Check if it's "DArray" - the parser now returns the element type for arrays
-      // So if we get a string here, it's NOT an array's element type, it's a simple type.
-      typeNode = ts.factory.createTypeReferenceNode(
-        ts.factory.createQualifiedName(ts.factory.createIdentifier("t"), ts.factory.createIdentifier(`${value}Field`))
-      );
+    // Determine if 'value' represents a column type or a nested structure (table/resource)
+    if (typeof value === 'string' || (typeof value === 'object' && value !== null && value.__type)) {
+        // It's an IntermediateColumnValue (string or object with __type marker)
+        // Generate the specific field type node using the helper
+        typeNode = createTypeNodeFromIntermediate(value as IntermediateColumnValue, key);
     } else if (typeof value === 'object' && value !== null) {
-        // Could be a table definition { col: type, ... }
-        // Or a struct definition { __type: 'struct', col: type, ... }
-        // Or the top-level resource object { tableName: {...}, ... }
-        if (value.__type === 'struct') {
-            // Generate t.DStructField<{...}>
-            const structFields = { ...value };
-            delete structFields.__type; // Remove marker before recursion
-            const nestedProperties = createPropertySignaturesRecursive(structFields);
-            const typeLiteral = ts.factory.createTypeLiteralNode(nestedProperties);
-            typeNode = ts.factory.createTypeReferenceNode(
-                ts.factory.createQualifiedName(ts.factory.createIdentifier("t"), ts.factory.createIdentifier(`DStructField`)),
-                [typeLiteral]
-            );
-        } else {
-             // It's a table or resource level object, create a TypeLiteral
-             typeNode = ts.factory.createTypeLiteralNode(createPropertySignaturesRecursive(value));
-        }
+        // It's a nested object (likely a table or resource level)
+        // Create a TypeLiteral by recursively calling this function
+        typeNode = ts.factory.createTypeLiteralNode(createPropertySignaturesRecursive(value));
     } else {
-      // Fallback
-      typeNode = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        // Fallback for unexpected types (null, undefined, etc.)
+        console.warn(`Unexpected value type in recursive generation for key: ${key}`, value);
+        typeNode = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
     }
 
     // Use computed property name for all keys to match the target format .buck/table3.ts

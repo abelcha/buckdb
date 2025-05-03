@@ -1,9 +1,8 @@
-import { builder } from './src/build';
+import { builder, CommandQueue, DuckdbCon } from './src/build';
 import * as t from './.buck/types';
 import type { AsyncDuckDB, AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
 // @ts-ignore
 import * as Duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm";
-import { CommandQueue, type DuckdbCon } from './src/utils';
 
 class BuckDBWasm implements DuckdbCon {
    _db: AsyncDuckDB | null = null;
@@ -42,7 +41,6 @@ class BuckDBWasm implements DuckdbCon {
         accessMode: Duckdb.DuckDBAccessMode.READONLY,
         filesystem: {
           allowFullHTTPReads: true,
-          reliableHeadRequests: true,
         },
         query: { castTimestampToDate: true, castBigIntToDouble: true }
       });
@@ -83,7 +81,7 @@ class BuckDBWasm implements DuckdbCon {
     if (uri.includes('://')) {
       uri = `'${uri}'`
     }
-    return this.query(`DESCRIBE (FROM ${uri});`)
+    return this.query(`DESCRIBE (FROM __${uri});`)
   }
 
   private async _executeQueuedCommands(): Promise<void> {

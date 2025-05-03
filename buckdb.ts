@@ -1,9 +1,8 @@
 
 import { DSettings } from './.buck/types';
-import { builder } from './src/build'
-import { CommandQueue, DuckdbCon } from './src/utils';
+import { builder, CommandQueue, DuckdbCon } from './src/build'
 import { generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
-import { DuckDBInstance } from '@duckdb/node-api';
+import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
 import Ressources from './.buck/table.json';
 
 const tempJsonFix = e => JSON.parse(JSON.stringify(e, (key, value) => {
@@ -24,8 +23,8 @@ const tempJsonFix = e => JSON.parse(JSON.stringify(e, (key, value) => {
 
 class BuckDBNode implements DuckdbCon {
     ensureType = false;
-    private _instance: any = null;
-    private _connection: any = null;
+    private _instance: DuckDBInstance | null = null;
+    private _connection: DuckDBConnection | null = null;
     private _initPromise: Promise<void> | null = null;
     readonly cmdQueue = new CommandQueue();
 
@@ -72,21 +71,20 @@ class BuckDBNode implements DuckdbCon {
         return this;
     }
     async describe(uri: string) {
-        if (uri.includes('://')) {
+        if ((uri.includes('://') || uri.match(/\.\w{2,20}$/))) {
             uri = `'${uri}'`
         }
-        return this.query(`DESCRIBE (FROM ${uri});`)
+        return this.query(`DESCRIBE FROM ${uri};`)
     }
 
     async ensureSchema(uri: string) {
+        // return
         const h = this.handle || '';
         // await this._initDB();
         if (Ressources[this.handle || ''][uri]) {
             return
         }
-        if (uri.includes('://')) {
-            uri = `'${uri}'`
-        }
+
         const describeResp = await this.describe(uri);
         const tableFile = Bun.file(`./.buck/table.json`);
         const tableContent = await tableFile.json();
@@ -116,10 +114,8 @@ class BuckDBNode implements DuckdbCon {
     async query(sql: string, opts: Record<string, any> = {}) {
         await this._initDB();
         const cmds = this.cmdQueue.flush();
-        console.log({ cmds })
-        if (cmds?.length) {
-            console.log('Flushing ', cmds, '...');
-            await this._connection.run(cmds);
+        for (const cmd of cmds) {
+            await this._connection.run(cmd);
         }
         const reader = await this._connection.runAndReadAll(sql);
         if (opts?.rows) {

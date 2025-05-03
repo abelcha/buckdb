@@ -82,32 +82,45 @@ export type ShallowModelFromCollectionList<C extends StrictCollection[]> =
     {} // Base case should be an empty object for merging
 // Recursive type to merge all models from collections, using alias as key
 
-
+type NestedField<V> = V extends SelectModel ? ToExecutedObject<V> : (V extends any[] ? ToExecutedArrayValues<V> : V)
 
 export type ToExecutedObject<SelectedFields extends SelectModel> = SelectedFields extends GenericRecursive<DField> ? {
     [P in keyof SelectedFields]:
-    SelectedFields[P] extends DField ? (SelectedFields[P] extends { [t.sInferred]: infer V } ? V : SelectedFields[P]) :
+    SelectedFields[P] extends Symbol ? 123 :
+    SelectedFields[P] extends DField ? (SelectedFields[P] extends { [t.sInferred]: infer V } ? NestedField<V> : SelectedFields[P]) :
     SelectedFields[P] extends SelectModel ? ToExecutedObject<SelectedFields[P]>
     : SelectedFields[P] extends string ? any
     : SelectedFields[P] extends number ? number
     : never
 } : never;
 
-export type ToExecutedValue<field extends DField> = field extends { [t.sInferred]: infer V } ? V : field;
+export type ToExecutedValue<field extends DField> = field extends { [t.sInferred]: infer V } ? NestedField<V> : field;
 
+// export type ToExecutedValue2<field extends DField> = ;
+export type ToExecutedArrayValues<FieldArray extends any[]> = {
+    [P in keyof FieldArray]: FieldArray[P] extends SelectModel ? ToExecutedObject<FieldArray[P]> : FieldArray[P] extends { [t.sInferred]: infer V } ? V : FieldArray[P]  //ToExecutedValue2<FieldArray[P]>
+};
 
 export type ToExecutedArray<SelectedRows> = {
     [P in keyof SelectedRows]: SelectedRows[P] extends DField
-    ? (SelectedRows[P] extends { [t.sInferred]: infer V } ? V : SelectedRows[P])
+    ? (SelectedRows[P] extends { [t.sInferred]: infer V } ? NestedField<V> : SelectedRows[P])
     : SelectedRows[P] extends SelectModel ? ToExecutedObject<SelectedRows[P]>
     : SelectedRows[P] extends string ? any
     : never
 };
 
 export type ToExecuted<S extends MState> = S['selectedRows'] extends any[] ? ToExecutedArray<S['selectedRows']> : ToExecutedObject<S['selected']>;
-// S extends Record<string, any> ? ToExecutedObject<S> : never;
-// ToExecutedObject or ToExecutedObject
 
+type res = Assert<ExpectEqual<ToExecutedObject<{ xxx: t.DJsonField<{ ["lol"]: t.DVarcharField;["ss"]: t.DStructField<{ nested: t.DBoolField }>;["toto"]: t.DArrayField<t.DNumericField>;["tata"]: t.DArrayField<{ vgvg: t.DVarcharField, ll: t.DStructField<{ nested: t.DBoolField }> }>; }>; }>, { xxx: { lol: string; ss: { nested: boolean; }; toto: number[]; tata: { vgvg: string; ll: { nested: boolean; }; }[]; }; }>>
+
+
+type RemoveSymbolKeys<T> = T extends object
+  ? T extends (...args: any[]) => any
+  ? T
+  : {
+    [K in keyof T as K extends symbol ? never : K]: RemoveSymbolKeys<T[K]>
+  }
+  : T;
 
 export type ToComp<SelectedFields extends SelectModel> = SelectedFields extends GenericRecursive<DField> ? {
     [P in keyof SelectedFields]: SelectedFields[P] extends DField ? (SelectedFields[P] extends { [t.sComptype]: infer V } ? V : never) :
@@ -251,7 +264,7 @@ export interface FromResult<T extends & string, C extends StrictCollection[] = [
 
     select<U extends string>/*        */(fn: (p: P, D: DMetaField) => U): MaterializedResult<{ selectedValue: t.DAnyField, selected: {}, available: P }, C>;
     select<U extends DField>/*        */(fn: (p: P, D: DMetaField) => U): MaterializedResult<{ selectedValue: U, selected: {}, available: P }, C>;
-    select<U extends SelectModel>/*   */(fn: (p: P, D: DMetaField) => U): MSR<{ selected: U, available: P }, C>;
+    select<U extends SelectModel>/*   */(fn: (p: P & Record<string, any>, D: string) => U): MSR<{ selected: U, available: P }, C>;
     select<U extends (NestedKeyOf<P>)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<{ selected: { [K in U[number] & keyof P]: P[K] }, available: P, }, C>
     ensureSchemas(): Promise<void>
 
@@ -259,6 +272,20 @@ export interface FromResult<T extends & string, C extends StrictCollection[] = [
 
 
 
+async function checkNested(db: FromResult<'', [{ catalog: '', uri: 's3://a1738/testxs2.jsonl', alias: 'tt' }]>) {
+    // const check1 = await db.select(e => e)/************************************/.execute() satisfies string
+    // const check3 = await db.select(e => [e.xxx.toto])/***************&********/.execute() satisfies { lol: t.DVarcharField }
+    // const check45 = await db.select(e => ({ zzz: e.ss }))/***************&********/.execute() satisfies { lol: t.DVarcharField }
+    // // check45[0].xxx.
+
+    // const check2 = await db.select(e => ({ zz: e.name, x: 123 }))/*****************/.execute() satisfies { zz: string, x: number }[]
+    // const check4 = await db.select(e => ({ zz: e.name, x: 'custom query' }))/******/.execute() satisfies { zz: string, x: any }[]
+    // const check5 = await db.select(e => [e.name, 'super longg query'])/************/.execute() satisfies [string, any][]
+    // const check6 = await db.select(e => [e.age, e.people.name, e.total])/**********/.execute() satisfies [number, string, number][]
+    // const check7 = await db.select(e => ({ a: e.age, n: e.name }))/****************/.execute() satisfies { a: number, n: string }[]
+    // const check8 = await db.select(e => ({ a: e.age, n: e.name })).keyBy(e => e.age).execute() satisfies Record<string, { a: number, n: string }[]>
+    // db.select().where(e => e.name).and('name > 12').and('toot')
+}
 async function checkSelect(db: FromResult<'', [{ catalog: '', uri: 'data/people.parquet', alias: 'people' }]>) {
     const check1 = await db.select(e => e.age)/************************************/.execute() satisfies number
     const check3 = await db.select(e => 'super logn query')/***********************/.execute() satisfies any
@@ -276,7 +303,7 @@ async function checkSelect(db: FromResult<'', [{ catalog: '', uri: 'data/people.
 //     .select(e => [e.comment, e.database_name, e.description])
 //     // .where(e => e.function_name === 'len')
 //     .copyTo('s3://dallas/uu.csv', {
-        
+
 //     })
 //     .execute()
 

@@ -59,6 +59,23 @@ declare global {
   }
 }
 
+const SubHeader = ({ columnType }) => (
+  `<div class="ag-cell-label-container" role="presentation">
+                  <span data-ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>
+                  <span data-ref="eFilterButton" class="ag-header-icon ag-header-cell-filter-button"></span>
+                  <div data-ref="eLabel" class="ag-header-cell-label" role="presentation">
+                    <span data-ref="eSortOrder" class="ag-header-icon ag-sort-order"></span>
+                    <span data-ref="eSortAsc" class="ag-header-icon ag-sort-ascending-icon"></span>
+                    <span data-ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon"></span>
+                    <span data-ref="eSortNone" class="ag-header-icon ag-sort-none-icon"></span>
+                    <div>
+                      <span data-ref="eText" class="ag-header-cell-text" role="columnheader"></span>
+                      <span data-ref="eFilter" class="ag-header-icon ag-filter-icon"></span>
+                      <div style="font-size: 0.8em; color: #888; margin-top: 2px">${columnType}</div>
+                    </div>
+                  </div>
+                </div>`
+)
 registerCustomView({
   id: 'custom-view',
   name: 'Custom demo view',
@@ -101,22 +118,7 @@ registerCustomView({
             headerName: headerName, // Display schema column name or fallback
             headerComponentParams: {
               // Pass column type to the custom header template
-              template:
-                `<div class="ag-cell-label-container" role="presentation">
-                  <span data-ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>
-                  <span data-ref="eFilterButton" class="ag-header-icon ag-header-cell-filter-button"></span>
-                  <div data-ref="eLabel" class="ag-header-cell-label" role="presentation">
-                    <span data-ref="eSortOrder" class="ag-header-icon ag-sort-order"></span>
-                    <span data-ref="eSortAsc" class="ag-header-icon ag-sort-ascending-icon"></span>
-                    <span data-ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon"></span>
-                    <span data-ref="eSortNone" class="ag-header-icon ag-sort-none-icon"></span>
-                    <div>
-                      <span data-ref="eText" class="ag-header-cell-text" role="columnheader"></span>
-                      <span data-ref="eFilter" class="ag-header-icon ag-filter-icon"></span>
-                      <div style="font-size: 0.8em; color: #888; margin-top: 2px">${columnType}</div>
-                    </div>
-                  </div>
-                </div>`
+              template: SubHeader({ columnType })
             },
             valueGetter: (params) => {
               // Access data by key (for objects) or index (for arrays)
@@ -134,6 +136,10 @@ registerCustomView({
       // Add row number column
       columnDefs.unshift({
         headerName: 'Row',
+        headerComponentParams: {
+          // Pass column type to the custom header template
+          template: SubHeader({ columnType: '/ ' + ((globalData?.length ?? 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')) }),
+        },
         valueGetter: (params) => {
           return params.node?.rowIndex !== undefined ? params.node.rowIndex + 1 : '';
         },

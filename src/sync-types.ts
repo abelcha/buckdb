@@ -1,13 +1,75 @@
-import { mapTypes, mapTypesProps, PatternMatchers, TypeProps, wrap, Ω } from './utils';
-import { camelCase, groupBy, mapValues, maxBy, omit, range, uniq, uniqBy, upperFirst } from 'es-toolkit';
+import { PatternMatchers, wrap } from './utils';
+import { camelCase, groupBy, maxBy, range, uniq, uniqBy, upperFirst } from 'es-toolkit';
 import { Buck, from } from '../buckdb';
+
+
+const TypeProps = {
+    'DNumeric': {
+        man: 'number & CNumeric',
+        comptype: 'number', id: 'numeric', able: 'DNumericable', field: 'DNumericField', rawType: 'number', inferredTo: 'number', anti: 'AntiNumber',
+        fieldSuffix: '& number'
+    },
+    'DVarchar': {
+        man: 'string & CVarchar',
+        id: 'varchar', able: 'DVarcharable', field: 'DVarcharField', rawType: 'string', inferredTo: 'string', anti: 'AntiString'
+    },
+    'DArray': { id: 'array', able: 'DArrayable', field: 'DArrayField', rawType: 'any[]', inferredTo: 'any[]', anti: 'Array', generic: { main: '<T = any>', inferred: 'T[]' } },
+    'DStruct': { id: 'struct', able: 'DStructable', field: 'DStructField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } },
+    'DJson': { id: 'json', able: 'DJsonable', field: 'DJsonField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } },
+    'DBool': { id: 'bool', able: 'DBoolable', field: 'DBoolField', rawType: 'boolean', inferredTo: 'boolean', anti: 'AntiBoolean' },
+    'DBlob': { id: 'blob', able: 'DBlobable', field: 'DBlobField', rawType: 'Blob', inferredTo: 'string', anti: 'AntiBlob' },
+    'DDate': { id: 'date', able: 'DDateable', field: 'DDateField', rawType: 'Date', inferredTo: 'Date', anti: 'AntiDate' },
+    'DMap': { id: 'map', able: 'DMapable', field: 'DMapField', rawType: 'Map<string,any>', inferredTo: 'Map<string,any>', anti: 'AntiMap' },
+    'DOther': { id: 'other', able: 'DOtherable', field: 'DOtherField', rawType: 'any', inferredTo: 'any' },
+    'DAny': { man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' },
+}
+
+
+
+
+const mapTypes = (type: string) => {
+    if (type === 'ANY') return 'DAny';
+    if (!type) return 'DOther';
+
+    if (type.endsWith('[]') || type === 'LIST' || type === 'ARRAY' || type.match(/\w+\[\w+\]/)) {
+        // console.log({ type, xx, _ })
+        return 'DArray';
+    }
+    if (type?.match(/\b((U)?(BIG|HUGE|TINY|SMALL)?INT(EGER)?|DOUBLE|DECIMAL|FLOAT)\b/))
+        return 'DNumeric';
+    if (type?.match(/^(VARCHAR|CHAR|TEXT)$/)) return 'DVarchar';
+    if (type.startsWith('STRUCT')) return 'DStruct';
+    if (type.startsWith('JSON')) return 'DJson';
+    if (type.startsWith('BOOLEAN')) return 'DBool';
+    if (type.startsWith('MAP')) return 'DMap';
+    if (type.startsWith('BLOB')) return 'DBlob';
+    if (type.match(/^(DATE|TIME)[\w\s]*/)) return 'DDate'
+    return 'DOther';
+}
+
+const mapTypesProps = (type: string, details = false) => {
+    const mtype = mapTypes(type)
+    if (mtype === 'DArray' && details === true) {
+        const [_, subtype] = type.match(/^([A-Z]+)\[\]$/) || []
+        if (subtype) {
+            const s = mapTypesProps(subtype)
+            const rtn = {
+                ...TypeProps.DArray, rawType: s.rawType + '[]', inferredTo: !s.inferredTo ? 'any[]' : s.inferredTo + '[]'
+            }
+            console.log({ subtype, rtn })
+            return rtn
+        }
+        return 'DArray';
+    }
+    return TypeProps[mtype]
+}
+
+
 const resp = await from('duckdb_types()')
     .select((e) => ({ logical_type: e.logical_type.left(1).concat(e.logical_type.right(-1).lower()) }))
     .distinctOn('logical_type')
     .where(e => e.logical_type.SimilarTo(/\w+/))
     .orderBy('logical_type')
-    // .keyBy(e => e.type_category)
-    // .toSql()
     .execute()
 resp.push({ logical_type: 'Array' })
 resp.push({ logical_type: 'Json' })
@@ -27,7 +89,6 @@ const DuckFunction = (function_name: string, params: Record<string, string>, ret
     }
 
 }
-
 const anyFuncs = []
 const addFuncs = [
     DuckFunction('count', {}, 'BIGINT'),
@@ -73,35 +134,7 @@ for (let i in resp3) {
     funcomp += (`as(destype: ${n}, ...args: DAnyable[]): ${dest?.man || dest?.field};\n`)
     globcomp += (`cast(val: ${dest.able}, destype: ${n}, ...args: DAnyable[]): ${dest?.man || dest?.field};\n`)
 
-
 }
-
-const genAs = async () => {
-    return "{"
-    const resp = await from('duckdb_types()')
-        .select((e, D) => ({ typenames: D.array_agg(e.type_name) }))
-        .keyBy(e => e.type_category)
-        .execute()
-    let rtn = '{\n'
-    for (let i in resp) {
-        let e = resp[i]
-        const enms = uniq(resp[i].typenames.map(upperFirst).map(e => wrap(e, "'"))).join(' | ')
-        const tmap = {
-            BOOLEAN: 'DBool',
-            NUMERIC: 'DNumeric',
-            STRING: 'DVarchar',
-            DATETIME: 'DDate',
-        }
-        const dest = tmap[i.toUpperCase()] || 'DAny'
-        const wildcard = '`${string}(${number}, ${number})` | `${string}[]` |  `[${string}]`'
-        rtn += (` as(destype: ${enms} | ${wildcard}): ${dest}Field;\n`)
-
-    }
-    return rtn
-}
-
-
-
 
 type ftype = typeof TypeProps['DNumeric']
 const fkey = key => camelCase(key).match(/\w+/)[0].replace('array', 'arr').replace('enum', 'enm')
@@ -148,9 +181,9 @@ const genInterface = (rows = [], f: ftype | { id: string } & Record<string, any>
     const comp = `D${upperFirst(f.id)}Comp`
     const ccomp = `C${upperFirst(f.id)}`
 
-    let str = `interface ${f.man ? ccomp : ('_' + field)} ${mergeAny && f.id !== 'any' ? `extends ${f.man ? 'CAny' : 'DAnyField'}` : ''} {\n`
+    let str = `interface ${f.man ? ccomp : ('_' + field)} ${f.generic?.main || ''} ${mergeAny && f.id !== 'any' && !f.generic ? `extends ${f.man ? 'CAny' : 'DAnyField'}` : ''} {\n`
     if (f.inferredTo)
-        str += `  [sInferred]: ${f.inferredTo}\n`
+        str += `  [sInferred]: ${f.generic?.inferred || f.inferredTo}\n`
     if (!f.man && f.rawType)
         str += `  [sComptype]: ${f.id === 'varchar' || f.id === 'numeric' ? comp : f.rawType}\n`
 
@@ -158,7 +191,9 @@ const genInterface = (rows = [], f: ftype | { id: string } & Record<string, any>
         str += genRowFunction(row, f, slice)
     }
     str += '}\n'
-    if (f.man)
+    if (f.generic?.main)
+        str += `export type ${field}${f.generic.main} = _${field}<T> & ${f.generic.inferred};`
+    else if (f.man)
         str += `\nexport type ${comp} = ${f.man} \n`
     else
         str += `export type ${field} = _${field}` + (f.fieldSuffix || '')
@@ -171,7 +206,7 @@ const writefile = (pname: string, content: string) => {
         .then(() => Bun.$`prettier --print-width=240 --write .buck/${pname}.ts`)
 }
 
-const OmittedFuncs = Ω('split-VARCHAR-any[]', 'length-VARCHAR-number')
+const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number']
 // const genFunctions = 
 
 const generateSettings = async () => {
@@ -215,7 +250,7 @@ if (import.meta.main) {
             // .where(`function_name SIMILAR TO '[a-z]\\w+' AND function_name NOT LIKE 'icu_collate%'`)
             .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
             .orderBy('function_name')
-            // .sample('10%')
+        // .sample('10%')
         console.log(query.toSql({ pretty: true }))
         let results = (await query.execute()).concat(anyFuncs).concat(addFuncs)
         // console.log({ results: results.length })
@@ -224,7 +259,7 @@ if (import.meta.main) {
         const mergeFuncNames = () => {
             const groups = Object.groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-'))
             return Object.entries(groups)
-                .filter(([key, values]) => !(key in OmittedFuncs))
+                .filter(([key, values]) => !OmittedFuncs.includes(key))
                 .flatMap(([key, values]) => {
                     // console.log('-->', key)
                     // maxParams.
@@ -242,7 +277,7 @@ if (import.meta.main) {
                         // }
                         let dtypes = uniq(ptypes.map(e => mapTypes(e)) || [])
                         if (maxParams.function_name.includes('regexp')) {
-                            if (pname in Ω('pattern', 'separator', 'regex')) {
+                            if (['pattern', 'separator', 'regex'].includes(pname)) {
                                 dtypes = dtypes.filter(e => e === 'DVarchar').concat('RegExp')
                             }
                         }

@@ -11,10 +11,10 @@ export type DOtherable = any | DOtherField | _DOtherField;
 export type DAnyable = any | DAnyField | _DAnyField;
 export type RegExpable = RegExp | string;
 export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
+export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
+export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
 export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
 export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
-export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
-export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
 export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
 export type DSomeField = DVarcharField | DNumericField | DDateField | DNumericField | DDateField | DOtherField | DArrayField | DAnyField | DVarcharField | DStructField | DBlobField | DMapField | DBoolField | DJsonField;
 export declare const sId: unique symbol;
@@ -944,10 +944,10 @@ interface _DArrayField<T = any> {
 export type DArrayField<T = any> = _DArrayField<T> & T[];
 interface _DAnyField {
   as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
+  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
   as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
   as(destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
-  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
-  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
   as(destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
 
   [sInferred]: any;
@@ -1089,10 +1089,10 @@ interface _DJsonField<T = {}> {
 export type DJsonField<T = {}> = _DJsonField<T> & T;
 interface _DGlobalField {
   cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
+  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
   cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNumericField;
   cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DVarcharField;
-  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
-  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField;
   cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField;
 
   /**@description Absolute value	@example abs(-17.4)*/
@@ -2528,10 +2528,10 @@ interface _DTableField {
 export type DTableField = _DTableField;
 interface CAny {
   as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
   as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
   as(destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
-  as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
-  as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
   as(destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
 
   [sInferred]: any;
@@ -3028,10 +3028,10 @@ export type DNumericComp = number & CNumeric;
 
 interface CGlobal {
   cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
+  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
   cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): number & CNumeric;
   cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): string & CVarchar;
-  cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
-  cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): Partial<CAny>;
   cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): Partial<CAny>;
 
   /**@description Absolute value	@example abs(-17.4)*/

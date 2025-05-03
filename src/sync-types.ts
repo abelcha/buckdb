@@ -3,26 +3,145 @@ import { camelCase, groupBy, maxBy, range, uniq, uniqBy, upperFirst } from 'es-t
 import { Buck, from } from '../buckdb';
 
 
-const TypeProps = {
-    'DNumeric': {
-        man: 'number & CNumeric',
-        comptype: 'number', id: 'numeric', able: 'DNumericable', field: 'DNumericField', rawType: 'number', inferredTo: 'number', anti: 'AntiNumber',
-        fieldSuffix: '& number'
-    },
-    'DVarchar': {
-        man: 'string & CVarchar',
-        id: 'varchar', able: 'DVarcharable', field: 'DVarcharField', rawType: 'string', inferredTo: 'string', anti: 'AntiString'
-    },
-    'DArray': { id: 'array', able: 'DArrayable', field: 'DArrayField', rawType: 'any[]', inferredTo: 'any[]', anti: 'Array', generic: { main: '<T = any>', inferred: 'T[]' } },
-    'DStruct': { id: 'struct', able: 'DStructable', field: 'DStructField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } },
-    'DJson': { id: 'json', able: 'DJsonable', field: 'DJsonField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } },
-    'DBool': { id: 'bool', able: 'DBoolable', field: 'DBoolField', rawType: 'boolean', inferredTo: 'boolean', anti: 'AntiBoolean' },
-    'DBlob': { id: 'blob', able: 'DBlobable', field: 'DBlobField', rawType: 'Blob', inferredTo: 'string', anti: 'AntiBlob' },
-    'DDate': { id: 'date', able: 'DDateable', field: 'DDateField', rawType: 'Date', inferredTo: 'Date', anti: 'AntiDate' },
-    'DMap': { id: 'map', able: 'DMapable', field: 'DMapField', rawType: 'Map<string,any>', inferredTo: 'Map<string,any>', anti: 'AntiMap' },
-    'DOther': { id: 'other', able: 'DOtherable', field: 'DOtherField', rawType: 'any', inferredTo: 'any' },
-    'DAny': { man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' },
+interface DNumericType {
+    man: 'number & CNumeric';
+    comptype: 'number';
+    id: 'numeric';
+    able: 'DNumericable';
+    field: 'DNumericField';
+    rawType: 'number';
+    inferredTo: 'number';
+    anti: 'AntiNumber';
+    fieldSuffix: '& number';
 }
+
+interface DVarcharType {
+    man: 'string & CVarchar';
+    id: 'varchar';
+    able: 'DVarcharable';
+    field: 'DVarcharField';
+    rawType: 'string';
+    inferredTo: 'string';
+    anti: 'AntiString';
+}
+
+interface DArrayType {
+    id: 'array';
+    able: 'DArrayable';
+    field: 'DArrayField';
+    rawType: 'any[]';
+    inferredTo: 'any[]';
+    anti: 'Array';
+    generic: { main: '<T = any>', inferred: 'T[]' };
+}
+
+interface DStructType {
+    id: 'struct';
+    able: 'DStructable';
+    field: 'DStructField';
+    rawType: 'Record<string,any>';
+    inferredTo: 'Record<string,any>';
+    anti: 'AntiObject';
+    generic: { main: '<T = {}>', inferred: 'T' };
+}
+
+interface DJsonType {
+    id: 'json';
+    able: 'DJsonable';
+    field: 'DJsonField';
+    rawType: 'Record<string,any>';
+    inferredTo: 'Record<string,any>';
+    anti: 'AntiObject';
+    generic: { main: '<T = {}>', inferred: 'T' };
+}
+
+interface DBoolType {
+    id: 'bool';
+    able: 'DBoolable';
+    field: 'DBoolField';
+    rawType: 'boolean';
+    inferredTo: 'boolean';
+    anti: 'AntiBoolean';
+}
+
+interface DBlobType {
+    id: 'blob';
+    able: 'DBlobable';
+    field: 'DBlobField';
+    rawType: 'Blob';
+    inferredTo: 'string';
+    anti: 'AntiBlob';
+}
+
+interface DDateType {
+    id: 'date';
+    able: 'DDateable';
+    field: 'DDateField';
+    rawType: 'Date';
+    inferredTo: 'Date';
+    anti: 'AntiDate';
+}
+
+interface DMapType {
+    id: 'map';
+    able: 'DMapable';
+    field: 'DMapField';
+    rawType: 'Map<string,any>';
+    inferredTo: 'Map<string,any>';
+    anti: 'AntiMap';
+}
+
+interface DOtherType {
+    id: 'other';
+    able: 'DOtherable';
+    field: 'DOtherField';
+    rawType: 'any';
+    inferredTo: 'any';
+}
+
+interface DAnyType {
+    man: 'Partial<CAny>';
+    id: 'any';
+    able: 'DAnyable';
+    field: 'DAnyField';
+    rawType: 'any';
+    inferredTo: 'any';
+}
+
+const DNumeric: DNumericType = {
+    man: 'number & CNumeric',
+    comptype: 'number', id: 'numeric', able: 'DNumericable', field: 'DNumericField', rawType: 'number', inferredTo: 'number', anti: 'AntiNumber',
+    fieldSuffix: '& number'
+};
+
+const DVarchar: DVarcharType = {
+    man: 'string & CVarchar',
+    id: 'varchar', able: 'DVarcharable', field: 'DVarcharField', rawType: 'string', inferredTo: 'string', anti: 'AntiString'
+};
+
+const DArray: DArrayType = { id: 'array', able: 'DArrayable', field: 'DArrayField', rawType: 'any[]', inferredTo: 'any[]', anti: 'Array', generic: { main: '<T = any>', inferred: 'T[]' } };
+const DStruct: DStructType = { id: 'struct', able: 'DStructable', field: 'DStructField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } };
+const DJson: DJsonType = { id: 'json', able: 'DJsonable', field: 'DJsonField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } };
+const DBool: DBoolType = { id: 'bool', able: 'DBoolable', field: 'DBoolField', rawType: 'boolean', inferredTo: 'boolean', anti: 'AntiBoolean' };
+const DBlob: DBlobType = { id: 'blob', able: 'DBlobable', field: 'DBlobField', rawType: 'Blob', inferredTo: 'string', anti: 'AntiBlob' };
+const DDate: DDateType = { id: 'date', able: 'DDateable', field: 'DDateField', rawType: 'Date', inferredTo: 'Date', anti: 'AntiDate' };
+const DMap: DMapType = { id: 'map', able: 'DMapable', field: 'DMapField', rawType: 'Map<string,any>', inferredTo: 'Map<string,any>', anti: 'AntiMap' };
+const DOther: DOtherType = { id: 'other', able: 'DOtherable', field: 'DOtherField', rawType: 'any', inferredTo: 'any' };
+const DAny: DAnyType = { man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' };
+
+const TypeProps = {
+    DNumeric,
+    DVarchar,
+    DArray,
+    DStruct,
+    DJson,
+    DBool,
+    DBlob,
+    DDate,
+    DMap,
+    DOther,
+    DAny
+};
 
 
 const entriesSorted = <T>(items: Record<string, T>) => {
@@ -52,14 +171,27 @@ const mapTypesProps = (type: string, details = false) => {
         if (subtype) {
             const s = mapTypesProps(subtype)
             const rtn = {
-                ...TypeProps.DArray, rawType: s.rawType + '[]', inferredTo: !s.inferredTo ? 'any[]' : s.inferredTo + '[]'
+                ...DArray, rawType: s.rawType + '[]', inferredTo: !s.inferredTo ? 'any[]' : s.inferredTo + '[]'
             }
             console.log({ subtype, rtn })
             return rtn
         }
         return 'DArray';
     }
-    return TypeProps[mtype]
+    switch(mtype) {
+        case 'DNumeric': return DNumeric;
+        case 'DVarchar': return DVarchar;
+        case 'DArray': return DArray;
+        case 'DStruct': return DStruct;
+        case 'DJson': return DJson;
+        case 'DBool': return DBool;
+        case 'DBlob': return DBlob;
+        case 'DDate': return DDate;
+        case 'DMap': return DMap;
+        case 'DOther': return DOther;
+        case 'DAny': return DAny;
+        default: return DOther;
+    }
 }
 
 
@@ -124,7 +256,10 @@ for (let i in resp3) {
     let e = resp3[i]
     const enms = uniq(resp3[i].typenames.map(upperFirst).map(e => wrap(e, "'"))).join(' | ')
 
-    const dest = TypeProps[NativeMap[i.toUpperCase()] || 'DAny']
+    const dest = NativeMap[i.toUpperCase()] === 'DNumeric' ? DNumeric :
+                 NativeMap[i.toUpperCase()] === 'DVarchar' ? DVarchar :
+                 NativeMap[i.toUpperCase()] === 'DBool' ? DBool :
+                 NativeMap[i.toUpperCase()] === 'DDate' ? DDate : DAny
     // const wildcard = '`${string}(${number}, ${number})` | `${string}[]` |  `[${string}]`'
     const n = `D${i.replace('null', 'ANY')}_NATIVE`
     acsheaders += (`export type ${n} = ${enms};\n`)
@@ -135,10 +270,21 @@ for (let i in resp3) {
 
 }
 
-type ftype = typeof TypeProps['DNumeric'] & typeof TypeProps['DArray']
 const fkey = key => camelCase(key).match(/\w+/)[0].replace('array', 'arr').replace('enum', 'enm')
-const getFuncHeader = (row: any, ot: ftype) => {
-    const tt = TypeProps[mapTypes(row.return_type)] as ftype
+const getFuncHeader = (row: any) => {
+    const typeName = mapTypes(row.return_type);
+    const tt =
+        typeName === 'DNumeric' ? DNumeric :
+        typeName === 'DVarchar' ? DVarchar :
+        typeName === 'DArray' ? DArray :
+        typeName === 'DStruct' ? DStruct :
+        typeName === 'DJson' ? DJson :
+        typeName === 'DBool' ? DBool :
+        typeName === 'DBlob' ? DBlob :
+        typeName === 'DDate' ? DDate :
+        typeName === 'DMap' ? DMap :
+        typeName === 'DAny' ? DAny :
+        DOther;
 
     return {
         args: row.args.map((arg) => [arg.pname, arg.dtypes.sort().map(e => e + 'able').join(' | ')].join(arg.required ? ': ' : '?: ')),
@@ -274,9 +420,19 @@ if (import.meta.main) {
 
         const grouped = Object.groupBy(resp.scalar.filter(e => !e.function_name.startsWith('h3')), e => mapTypes(e.parameter_types[0]))
         const xkeys = ['DVarchar', 'DNumeric', 'DDate', ...Object.keys(grouped)]
-        let header = entriesSorted(TypeProps).map(([key, value]) => {
-            return `export type ${value.able} = ${value.inferredTo || value.rawType} | ${value.field} | _${value.field};`
-        })
+        let header = [
+            `export type ${DVarchar.able} = ${DVarchar.inferredTo || DVarchar.rawType} | ${DVarchar.field} | _${DVarchar.field};`,
+            `export type ${DArray.able} = ${DArray.inferredTo || DArray.rawType} | ${DArray.field} | _${DArray.field};`,
+            `export type ${DStruct.able} = ${DStruct.inferredTo || DStruct.rawType} | ${DStruct.field} | _${DStruct.field};`,
+            `export type ${DJson.able} = ${DJson.inferredTo || DJson.rawType} | ${DJson.field} | _${DJson.field};`,
+            `export type ${DBool.able} = ${DBool.inferredTo || DBool.rawType} | ${DBool.field} | _${DBool.field};`,
+            `export type ${DBlob.able} = ${DBlob.inferredTo || DBlob.rawType} | ${DBlob.field} | _${DBlob.field};`,
+            `export type ${DDate.able} = ${DDate.inferredTo || DDate.rawType} | ${DDate.field} | _${DDate.field};`,
+            `export type ${DMap.able} = ${DMap.inferredTo || DMap.rawType} | ${DMap.field} | _${DMap.field};`,
+            `export type ${DOther.able} = ${DOther.inferredTo || DOther.rawType} | ${DOther.field} | _${DOther.field};`,
+            `export type ${DAny.able} = ${DAny.inferredTo || DAny.rawType} | ${DAny.field} | _${DAny.field};`,
+            `export type ${DNumeric.able} = ${DNumeric.inferredTo || DNumeric.rawType} | ${DNumeric.field} | _${DNumeric.field};`,
+        ].sort()
             .concat('export type RegExpable = RegExp | string;')
             .join('\n')
         header += acsheaders;

@@ -16,3 +16,10 @@ declare module '*?raw' {
   const content: string
   export default content
 }
+
+declare global {
+  import type { AsyncDuckDB } from '@duckdb/duckdb-wasm';
+  interface Window {
+    duckdb?: AsyncDuckDB;
+  }
+}

@@ -215,7 +215,7 @@ if (import.meta.main) {
             // .where(`function_name SIMILAR TO '[a-z]\\w+' AND function_name NOT LIKE 'icu_collate%'`)
             .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
             .orderBy('function_name')
-            .sample('10%')
+            // .sample('10%')
         console.log(query.toSql({ pretty: true }))
         let results = (await query.execute()).concat(anyFuncs).concat(addFuncs)
         // console.log({ results: results.length })

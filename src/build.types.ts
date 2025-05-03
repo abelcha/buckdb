@@ -7,6 +7,8 @@ import { CopyTo } from "./copy"; // Import the generic CopyTo
 type StripSpecialChars<S extends string> = S extends `${infer First}${infer Rest}` ? First extends AlphaNumeric ? `${First}${StripSpecialChars<Rest>}` : StripSpecialChars<Rest> : '';
 type DeriveName<Path extends string> = Path extends `${infer _}/${infer Rest}` ? DeriveName<Rest> : Path extends `${infer Name}.${string}` ? StripSpecialChars<Name> : StripSpecialChars<Path>;
 
+type TRessource = keyof Models | (string & {});
+
 type AlphaNumeric = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' | '-'
 export const deriveName = <T extends string>(value: T): DeriveName<T> => {
     const result = value.split('/').pop()?.split('.').shift() || value;
@@ -230,7 +232,7 @@ type TupleToRecord<T extends readonly unknown[]> = { [K in keyof T & `${number}`
 type DFieldTuple = readonly [...DField[]];
 
 
-export interface FromResult<T extends keyof Models & string, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
+export interface FromResult<T extends & string, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
     join<K extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>, A extends string>(table: K, alias: A, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: T, uri: K, alias: A }>]>>, D: DMetaComp) => any):
         FromResult<T, [...C, DefaultizeCollection<{ catalog: T, uri: K, alias: A }>]>;
     join<K extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>, Z extends string>(table: K, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: T, uri: K, alias: DeriveName<K> }>]>>, D: DMetaComp) => any):
@@ -251,7 +253,7 @@ export interface FromResult<T extends keyof Models & string, C extends StrictCol
     select<U extends DField>/*        */(fn: (p: P, D: DMetaField) => U): MaterializedResult<{ selectedValue: U, selected: {}, available: P }, C>;
     select<U extends SelectModel>/*   */(fn: (p: P, D: DMetaField) => U): MSR<{ selected: U, available: P }, C>;
     select<U extends (NestedKeyOf<P>)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<{ selected: { [K in U[number] & keyof P]: P[K] }, available: P, }, C>
-
+    ensureSchemas(): Promise<void>
 
 }
 
@@ -270,13 +272,13 @@ async function checkSelect(db: FromResult<'', [{ catalog: '', uri: 'data/people.
 }
 
 
-DBuilder('').from('duckdb_functions()')
-    .select(e => [e.comment, e.database_name, e.description])
-    // .where(e => e.function_name === 'len')
-    .copyTo('s3://dallas/uu.csv', {
+// DBuilder('').from('duckdb_functions()')
+//     .select(e => [e.comment, e.database_name, e.description])
+//     // .where(e => e.function_name === 'len')
+//     .copyTo('s3://dallas/uu.csv', {
         
-    })
-    .execute()
+//     })
+//     .execute()
 
 // DBuilder('').from('data/people.parquet').select(e => ({ toto: e.age.acos() })).groupBy('toto').execute().then(e => e[0].toto))
 
@@ -302,6 +304,7 @@ type DBuilderResult<T extends keyof Models> = {
         InitialMaterializedResult<[DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1> }>]>; // Use the alias
     loadExtensions(...ext: DExtensionsId[]): DBuilderResult<T> // Use the defined type here
     fetchSchema(id: string): Promise<Models>
+    describe(id: string): Promise<any>
 };
 
 // Overload for settings only
@@ -309,7 +312,9 @@ export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResul
 export declare function DBuilder(): DBuilderResult<''>;
 
 // Updated DBuilder declaration with catalog
-export declare function DBuilder<T extends keyof Models>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<T>;
+export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<T>;
+// DBuilder('s3://duckdb-blobs/databases/stations.duckdb', {}).from('')
 
 // const xdb = DBuilder('data/ex.duckdb').load('autocomplete', 'arrow')
 // xdb.from('')
+// 

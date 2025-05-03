@@ -2,7 +2,9 @@ import { IStorageService, IWorkbenchLayoutService, getService, initialize as ini
 import getQuickAccessServiceOverride from '@codingame/monaco-vscode-quickaccess-service-override'
 import { BrowserStorageService } from '@codingame/monaco-vscode-storage-service-override'
 import * as Buck from '@external/buckdb.wasm'
+
 Object.assign(window, Buck)
+// Buck.duckdb.db.
 import { ExtensionHostKind } from '@codingame/monaco-vscode-extensions-service-override'
 import { registerExtension } from '@codingame/monaco-vscode-api/extensions'
 import getViewsServiceOverride, {
@@ -39,7 +41,7 @@ setUnexpectedErrorHandler((e) => {
 for (const config of [
   { part: Parts.TITLEBAR_PART, element: '#titleBar', visible: false },
   { part: Parts.BANNER_PART, element: '#banner', visible: false },
-  { visible: false, part: Parts.SIDEBAR_PART, get element() { return getSideBarPosition() === Position.LEFT ? '#sidebar' : '#sidebar-right' }, onDidElementChange: onDidChangeSideBarPosition },
+  { visible: true, part: Parts.SIDEBAR_PART, get element() { return getSideBarPosition() === Position.LEFT ? '#sidebar' : '#sidebar-right' }, onDidElementChange: onDidChangeSideBarPosition },
   { visible: false, part: Parts.ACTIVITYBAR_PART, get element() { return getSideBarPosition() === Position.LEFT ? '#activityBar' : '#activityBar-right' }, onDidElementChange: onDidChangeSideBarPosition },
   { part: Parts.PANEL_PART, element: '#panel', visible: false },
   { part: Parts.EDITOR_PART, element: '#editors' },
@@ -55,11 +57,11 @@ for (const config of [
 }
 
 const layoutService = await getService(IWorkbenchLayoutService)
-document.querySelector('#togglePanel')!.addEventListener('click', async () => {
+document.querySelector('#togglePanel')?.addEventListener('click', async () => {
   layoutService.setPartHidden(layoutService.isVisible(Parts.PANEL_PART, window), Parts.PANEL_PART)
 })
 
-document.querySelector('#toggleAuxiliary')!.addEventListener('click', async () => {
+document.querySelector('#toggleAuxiliary')?.addEventListener('click', async () => {
   // const resp = await Buck.from('duckdb_settings()').select().execute()
   layoutService.setPartHidden(true, Parts.SIDEBAR_PART)
   layoutService.setPartHidden(true, Parts.BANNER_PART)

@@ -80,24 +80,27 @@ registerCustomView({
     // Function to create and update the grid
     const setupGrid = () => {
       const globalData = window.globalData ?? [] // Default to empty array if undefined
+      const schema = (globalData as any).schema // Assuming schema is attached to globalData
 
-      // Generate column definitions from the first data item
+      // Generate column definitions
       const columnDefs: ColDef[] = []
       if (globalData.length > 0) {
-        const typeMap = {} //keyBy(globalData.schema, e => e.column_name);
-        // console.log({ typeMap })
+        const firstRow = globalData[0]
+        const isArrayData = Array.isArray(firstRow)
+        const numCols = isArrayData ? firstRow.length : Object.keys(firstRow).length
+        const keys = isArrayData ? null : Object.keys(firstRow)
 
-        const keys = Object.keys(globalData[0])
-        keys.forEach(key => {
-          const columnType = !globalData.schema ? '??' : globalData.schema?.find(e => e.column_name === key)?.column_type
+        for (let i = 0; i < numCols; i++) {
+          const key = keys ? keys[i] : String(i) // Use object key or index as string for field
+          const schemaEntry = schema?.[i] // Get schema entry by index
+          const headerName = schemaEntry?.column_name ?? (keys ? key : `Column ${i + 1}`) // Use schema name or fallback
+          const columnType = schemaEntry?.column_type ?? '??' // Use schema type or fallback
+
           columnDefs.push({
-            field: key,
-            headerName: key,
+            field: key, // Use key (string) for field access
+            headerName: headerName, // Display schema column name or fallback
             headerComponentParams: {
-              // innerHeaderComponent: Custom,
-              // innerHeaderComponentParams: {
-              //   currencySymbol: '£' // the pound symbol will be placed into params
-              // },
+              // Pass column type to the custom header template
               template:
                 `<div class="ag-cell-label-container" role="presentation">
                   <span data-ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>
@@ -108,27 +111,24 @@ registerCustomView({
                     <span data-ref="eSortDesc" class="ag-header-icon ag-sort-descending-icon"></span>
                     <span data-ref="eSortNone" class="ag-header-icon ag-sort-none-icon"></span>
                     <div>
-                    <span data-ref="eText" class="ag-header-cell-text" role="columnheader"></span>
-                    <span data-ref="eFilter" class="ag-header-icon ag-filter-icon"></span>
-                  <div style="font-size: 0.8em; color: #888;margin-top:2px">${columnType || ''}</div>
-                  </div>
+                      <span data-ref="eText" class="ag-header-cell-text" role="columnheader"></span>
+                      <span data-ref="eFilter" class="ag-header-icon ag-filter-icon"></span>
+                      <div style="font-size: 0.8em; color: #888; margin-top: 2px">${columnType}</div>
+                    </div>
                   </div>
                 </div>`
             },
-            //   headerComponentParams: {
-            //   displayName: key,
-            //   columnType: (globalData as any).schema?.find(e => e.column_name === key)?.column_type || ''
-            // },
             valueGetter: (params) => {
-              const str = params.data[key]
-              return typeof str === 'string' && (str?.[0] === '{' || str?.[0] === '[') ? params.data[key] : JSON.stringify(params.data[key])
+              // Access data by key (for objects) or index (for arrays)
+              const value = isArrayData ? params.data[i] : params.data[key]
+              // Basic stringification for non-primitive types (optional, adjust as needed)
+              return (typeof value === 'object' && value !== null) ? JSON.stringify(value) : value
             },
-            // headerTooltip: (globalData as any).schema?.find(e => e.column_name === key)?.column_type,
+            headerTooltip: columnType, // Show type as tooltip
             sortable: true,
             filter: true
           })
-        })
-
+        }
       }
 
       // Add row number column

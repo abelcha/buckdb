@@ -1,5 +1,5 @@
 import { test, expect, describe } from 'bun:test';
-import { extractFromStatementsAST } from './extract-from-statements';
+import { extractFromStatementsAST, extractBuckStatement } from './extract-from-statements'; // Import the new function
 
 describe('extractFromStatementsAST', () => {
     test('should handle simple property access .from()', () => {
@@ -182,4 +182,154 @@ describe('extractFromStatementsAST', () => {
         expect(extractFromStatementsAST(testCode)).toEqual(expected);
     });
 
+});
+
+describe('extractBuckStatement', () => {
+    test('should extract Buck() with no arguments', () => {
+        const testCode = `
+            const db = Buck();
+            db.from('something'); // Should be ignored by extractBuckStatement
+        `;
+        const expected = [{
+            resource: null,
+            options: null,
+            fullCall: "Buck()",
+            lineStart: 2,
+            lineEnd: 2
+        }];
+        expect(extractBuckStatement(testCode)).toEqual(expected);
+    });
+
+    test('should extract Buck() with one string argument', () => {
+        const testCode = `
+            const db = Buck('my_resource.db');
+        `;
+        const expected = [{
+            resource: "my_resource.db",
+            options: null,
+            fullCall: "Buck('my_resource.db')",
+            lineStart: 2,
+            lineEnd: 2
+        }];
+        expect(extractBuckStatement(testCode)).toEqual(expected);
+    });
+
+     test('should extract Buck() with template literal argument', () => {
+        const testCode = "const db = Buck(`template_resource`);"; // Use template literal
+        const expected = [{
+            resource: "template_resource",
+            options: null,
+            fullCall: "Buck(`template_resource`)",
+            lineStart: 1,
+            lineEnd: 1
+        }];
+        expect(extractBuckStatement(testCode)).toEqual(expected);
+    });
+
+
+    test('should extract Buck() with string and options object', () => {
+        const testCode = `
+            const db = Buck('another/db', { setting1: 'xxx', readOnly: true, nested: { num: 1, arr: [10, "a", null] } });
+        `;
+        const expected = [{
+            resource: "another/db",
+            options: { setting1: 'xxx', readOnly: true, nested: { num: 1, arr: [10, "a", null] } }, // Expect JS object
+            fullCall: "Buck('another/db', { setting1: 'xxx', readOnly: true, nested: { num: 1, arr: [10, \"a\", null] } })", // Full call string remains
+            lineStart: 2,
+            lineEnd: 2
+        }];
+        expect(extractBuckStatement(testCode)).toEqual(expected);
+    });
+
+    test('should extract multiple Buck() calls', () => {
+        const testCode = `
+            const db1 = Buck(':memory:');
+            function setup() {
+                const db2 = Buck('persistent.db', { log: false }); // Options object
+            }
+            Buck(); // Direct call
+            Buck('unsupported', myVar); // Unsupported options type
+            Buck('shorthand', { shorthand }); // Unsupported shorthand
+        `;
+        const shorthand = 1; // Define for test code validity
+        const myVar = {}; // Define for test code validity
+        const expected = [
+            {
+                resource: ":memory:",
+                options: null, // No options object
+                fullCall: "Buck(':memory:')",
+                lineStart: 2,
+                lineEnd: 2
+            },
+            {
+                resource: "persistent.db",
+                options: { log: false }, // Expect JS object
+                fullCall: "Buck('persistent.db', { log: false })",
+                lineStart: 4,
+                lineEnd: 4
+            },
+            {
+                resource: null, // Direct call Buck()
+                options: null, // No options
+                fullCall: "Buck()",
+                lineStart: 6,
+                lineEnd: 6
+            },
+             { // Buck('unsupported', myVar) - options should be null as myVar is not an object literal
+                resource: "unsupported",
+                options: null,
+                fullCall: "Buck('unsupported', myVar)",
+                lineStart: 7,
+                lineEnd: 7
+            },
+             { // Buck('shorthand', { shorthand }) - options should be null as shorthand is not supported
+                resource: "shorthand",
+                options: null, // Evaluation fails due to shorthand
+                fullCall: "Buck('shorthand', { shorthand })",
+                lineStart: 8,
+                lineEnd: 8
+            }
+       ];
+        // Sort results by lineStart for consistent comparison
+        const actual = extractBuckStatement(testCode).sort((a, b) => a.lineStart - b.lineStart);
+        expect(actual).toEqual(expected);
+    });
+
+    test('should ignore non-Buck calls', () => {
+        const testCode = `
+            const x = NotBuck();
+            const y = from('table');
+            const z = Buckaroo('hello');
+        `;
+        const expected: any[] = []; // Expect empty array
+        expect(extractBuckStatement(testCode)).toEqual(expected);
+    });
+
+    test('should handle Buck call with only options object as first argument', () => {
+        const testCode = `
+            const db = Buck({ config: true, path: './data', nested: { count: 5 } });
+        `;
+        const expected = [{
+            resource: null, // No string resource provided
+            options: { config: true, path: './data', nested: { count: 5 } }, // Expect JS object
+            fullCall: "Buck({ config: true, path: './data', nested: { count: 5 } })",
+            lineStart: 2,
+            lineEnd: 2
+        }];
+        expect(extractBuckStatement(testCode)).toEqual(expected);
+    });
+
+    test('should handle Buck call with string and non-object second arg', () => {
+        const testCode = `
+            const db = Buck('my.db', 123); // Second arg is not object literal
+        `;
+        const expected = [{
+            resource: "my.db",
+            options: null, // Second arg is not object literal
+            fullCall: "Buck('my.db', 123)",
+            lineStart: 2,
+            lineEnd: 2
+        }];
+        expect(extractBuckStatement(testCode)).toEqual(expected);
+    });
 });

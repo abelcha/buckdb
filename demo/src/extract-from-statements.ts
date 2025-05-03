@@ -65,17 +65,89 @@ export interface FromStatementParts {
     lineEnd: number;          // 1-based end line number of the fromChain
 }
 
-// Helper function to get unquoted text from a string literal node
+// Define the structure for Buck() statement output
+export interface BuckStatementParts {
+    resource: string | null;  // The first argument (unquoted string)
+    options: Record<string, any> | null; // Parsed options object
+    fullCall: string;         // The full text of the Buck(...) call
+    lineStart: number;        // 1-based start line number
+    lineEnd: number;          // 1-based end line number
+}
+
+
+// Helper function to get unquoted text from a string literal or template literal node
 function getUnquotedText(node: ts.Node, sourceFile: ts.SourceFile): string {
-    let text = node.getText(sourceFile).trim();
-     if (text.length >= 2) {
-        const firstChar = text[0];
-        const lastChar = text[text.length - 1];
-        if ((firstChar === "'" && lastChar === "'") || (firstChar === '"' && lastChar === '"')) {
-            return text.substring(1, text.length - 1);
-        }
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+        // The 'text' property already holds the unquoted value for these node types
+        return node.text;
     }
-    return text; // Return original if not a standard quoted string
+    // Fallback for other node types (though typically we expect string/template literals here)
+    return node.getText(sourceFile).trim(); // Fallback should ideally not be hit for options
+}
+
+// Helper function to evaluate simple literal AST nodes to JS values
+function evaluateLiteralNode(node: ts.Expression, sourceFile: ts.SourceFile): any {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+        return node.text;
+    } else if (ts.isNumericLiteral(node)) {
+        return parseFloat(node.text);
+    } else if (node.kind === ts.SyntaxKind.TrueKeyword) {
+        return true;
+    } else if (node.kind === ts.SyntaxKind.FalseKeyword) {
+        return false;
+    } else if (node.kind === ts.SyntaxKind.NullKeyword) {
+        return null;
+    } else if (ts.isObjectLiteralExpression(node)) {
+        // Recursively evaluate object literals
+        return evaluateObjectLiteral(node, sourceFile);
+    } else if (ts.isArrayLiteralExpression(node)) {
+        // Recursively evaluate array literals
+        return node.elements.map(element => evaluateLiteralNode(element, sourceFile));
+    }
+    // Return undefined or throw error for unsupported types (like identifiers, calls)
+    console.warn(`Unsupported node type in literal evaluation: ${ts.SyntaxKind[node.kind]}`);
+    return undefined;
+}
+
+// Helper function to evaluate an ObjectLiteralExpression AST node into a JS object
+function evaluateObjectLiteral(node: ts.ObjectLiteralExpression, sourceFile: ts.SourceFile): Record<string, any> | null {
+    const obj: Record<string, any> = {};
+    let success = true;
+
+    node.properties.forEach(prop => {
+        if (ts.isPropertyAssignment(prop)) {
+            let propName: string | null = null;
+            if (ts.isIdentifier(prop.name)) {
+                propName = prop.name.text;
+            } else if (ts.isStringLiteral(prop.name)) {
+                propName = prop.name.text; // Already unquoted
+            }
+
+            if (propName) {
+                const value = evaluateLiteralNode(prop.initializer, sourceFile);
+                if (value !== undefined) { // Only add if evaluation succeeded
+                    obj[propName] = value;
+                } else {
+                    success = false; // Mark failure if any property fails
+                }
+            } else {
+                 console.warn(`Unsupported property name type: ${ts.SyntaxKind[prop.name.kind]}`);
+                 success = false;
+            }
+        } else if (ts.isShorthandPropertyAssignment(prop)) {
+             // Shorthand properties ({ myVar }) reference variables, harder to evaluate statically.
+             // For simplicity, we'll skip them or assign undefined.
+             console.warn(`Shorthand property assignment '${prop.name.text}' is not supported for static evaluation.`);
+             // obj[prop.name.text] = undefined; // Or skip entirely
+             success = false;
+        } else {
+            // Spread assignments, MethodDeclarations etc. are not supported
+            console.warn(`Unsupported property type in object literal evaluation: ${ts.SyntaxKind[prop.kind]}`);
+            success = false;
+        }
+    });
+
+    return success ? obj : null; // Return null if any part failed evaluation
 }
 
 
@@ -348,4 +420,75 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
 
     visit(sourceFile);
     return fromStatements;
+}
+
+
+// Function to extract 'Buck' statements using TypeScript AST
+export function extractBuckStatement(text: string): BuckStatementParts[] {
+    const sourceFile = ts.createSourceFile(
+        'tempFile.ts',
+        text,
+        ts.ScriptTarget.Latest,
+        true
+    );
+
+    const buckStatements: BuckStatementParts[] = [];
+    const processedCalls = new Set<number>(); // Store start position of processed calls
+
+    function visit(node: ts.Node) {
+        if (ts.isCallExpression(node)) {
+            const expression = node.expression;
+            // Check if it's a direct call to an identifier named 'Buck'
+            if (ts.isIdentifier(expression) && expression.text === 'Buck') {
+                const callStartPos = node.getStart(sourceFile);
+
+                // Avoid processing the same call multiple times if nested visits occur
+                if (processedCalls.has(callStartPos)) {
+                    return;
+                }
+
+                let resource: string | null = null;
+                let options: Record<string, any> | null = null; // Correct type declaration
+
+                // Determine resource and options based on argument types and positions
+                if (node.arguments.length > 0) {
+                    const arg0 = node.arguments[0];
+                    if (ts.isObjectLiteralExpression(arg0)) {
+                        // Case: Buck({ ... })
+                        options = evaluateObjectLiteral(arg0, sourceFile);
+                    } else if (ts.isStringLiteral(arg0) || ts.isNoSubstitutionTemplateLiteral(arg0)) {
+                        // Case: Buck('resource', ...) or Buck('resource')
+                        resource = getUnquotedText(arg0, sourceFile);
+                        // Check second argument for options
+                        if (node.arguments.length > 1) {
+                            const arg1 = node.arguments[1];
+                            if (ts.isObjectLiteralExpression(arg1)) {
+                                // Case: Buck('resource', { ... })
+                                options = evaluateObjectLiteral(arg1, sourceFile);
+                            }
+                        }
+                    }
+                    // Other cases (e.g., Buck(variable)) are ignored for resource/options extraction
+                }
+                // Case: Buck() handled by null defaults
+
+                const fullCall = node.getText(sourceFile);
+                const lineStart = sourceFile.getLineAndCharacterOfPosition(callStartPos).line + 1;
+                const lineEnd = sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1;
+
+                buckStatements.push({
+                    resource,
+                    options,
+                    fullCall,
+                    lineStart,
+                    lineEnd,
+                });
+                processedCalls.add(callStartPos); // Mark as processed
+            }
+        }
+        ts.forEachChild(node, visit);
+    }
+
+    visit(sourceFile);
+    return buckStatements;
 }

@@ -1,160 +1,161 @@
-import * as Duckdb from '@duckdb/duckdb-wasm';
-import { builder } from './src/build'
-import * as t from './.buck/types'; // Import types with alias 't'
+import { builder } from './src/build';
+import * as t from './.buck/types';
+import type { AsyncDuckDB, AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
+// @ts-ignore
+import * as Duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm";
+import { CommandQueue, type DuckdbCon } from './src/utils';
 
-const resolve = (path = "") => import.meta.resolve(path).replace('file://', '')
-BigInt.prototype.toJSON = function () {
-  // return this.toString()
-  return Number(this)
-}
+class BuckDBWasm implements DuckdbCon {
+   _db: AsyncDuckDB | null = null;
+   _con: AsyncDuckDBConnection | null = null;
+   _initPromise: Promise<void> | null = null;
+  readonly cmdQueue = new CommandQueue();
 
-import { CommandQueue, type DuckdbCon } from './src/utils'; // Import necessary types from utils
+  private _initDB(): Promise<void> {
+    // If initialization is already in progress or done, return the existing promise/resolved promise
+    if (this._initPromise) {
+      return this._initPromise;
+    }
+    if (this._db && this._con) {
+      return Promise.resolve();
+    }
 
-const getDB = async () => {
-  var logger = new Duckdb.ConsoleLogger(Duckdb.LogLevel.ERROR)
+    // Start initialization
+    this._initPromise = (async () => {
+      console.log("Initializing BuckDB WASM...");
+      const JSDELIVR_BUNDLES = Duckdb.getJsDelivrBundles();
+      const bundle = await Duckdb.selectBundle(JSDELIVR_BUNDLES);
 
-  if (typeof Bun !== 'undefined') {
-    const DD = {
-      mvp: {
-        mainModule: resolve('@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm'),
-        mainWorker: resolve('@duckdb/duckdb-wasm/dist/duckdb-node-mvp.worker.cjs')
-      },
-      eh: {
-        mainModule: resolve('@duckdb/duckdb-wasm/dist/duckdb-eh.wasm'),
-        mainWorker: resolve('@duckdb/duckdb-wasm/dist/duckdb-node-eh.worker.cjs'),
+      const worker_url = URL.createObjectURL(
+        new Blob([`importScripts("${bundle.mainWorker}");`], { type: 'text/javascript' })
+      );
+
+      const worker = new Worker(worker_url);
+      const logger = new Duckdb.ConsoleLogger();
+      const db: AsyncDuckDB = new Duckdb.AsyncDuckDB(logger, worker);
+
+      await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+      URL.revokeObjectURL(worker_url);
+
+      await db.open({
+        path: ':memory:',
+        accessMode: Duckdb.DuckDBAccessMode.READONLY,
+        filesystem: {
+          allowFullHTTPReads: true,
+          reliableHeadRequests: true,
+        },
+        query: { castTimestampToDate: true, castBigIntToDouble: true }
+      });
+
+      this._db = db;
+      this._con = await this._db.connect();
+      window.db = this._con
+      console.log("BuckDB WASM Initialized and Connected.");
+      // Don't clear the promise here, let it stay resolved
+    })();
+
+    return this._initPromise;
+  }
+
+  lazySettings(s: Partial<t.DSettings>) {
+    console.log(`Queueing settings ${s}`);
+    this.cmdQueue.pushSettings(s);
+    return this;
+  }
+
+  // Make attach lazy by queueing it
+  lazyAttach(path: string, alias: string): this {
+    console.log(`Queueing attach ${path} as ${alias}...`);
+    this.cmdQueue.pushAttach(path, alias);
+    return this;
+  }
+
+  lazyExtensions(...extensions: string[]): this {
+    console.log('Queueing extensions to load:', extensions);
+    this.cmdQueue.pushExtensions(...extensions);
+    return this;
+  }
+  async ensureSchema(uri: string) {
+    // todo
+
+  }
+  async describe(uri: string) {
+    if (uri.includes('://')) {
+      uri = `'${uri}'`
+    }
+    return this.query(`DESCRIBE (FROM ${uri});`)
+  }
+
+  private async _executeQueuedCommands(): Promise<void> {
+    if (!this._con) throw new Error("Database connection not initialized.");
+    const cmds = this.cmdQueue.flush();
+    if (cmds.length > 0) {
+      console.log("Executing queued commands:", cmds);
+      for await (const cmd of cmds) {
+        console.log('Running command:', cmd);
+        // Use query for setup commands like attach, extensions, settings
+        // send might be slightly more appropriate for non-select, but query works
+        await this._con.query(cmd);
       }
     }
-    const bundle = await Duckdb.selectBundle(DD);
-    const xlogger = new Duckdb.ConsoleLogger(Duckdb.LogLevel.ERROR)
-    const worker = new Worker(bundle.mainWorker!);
-    const db = new Duckdb.AsyncDuckDB(xlogger, worker);
-    await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
-    return db
   }
-  // @ts-ignore
-  const { default: duckdb_worker } = await import('@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?worker&inline')
-  const { default: duckdb_wasm } = await import('@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url')
-  const worker = new duckdb_worker()
-  const db = new Duckdb.AsyncDuckDB(logger, worker)
-  await db.instantiate(duckdb_wasm)
-  return db
+
+  async query<T = Record<string, any>>(sql: string, opts: { rows?: boolean, withSchema?: boolean } = {}): Promise<T[]> {
+    await this._initDB();
+    await this._executeQueuedCommands(); // Ensure setup commands run first
+    if (!this._con) throw new Error("Database connection not initialized."); // Should be initialized now
+
+    console.log('Executing query:', sql);
+    const reader = await this._con.query(sql);
+    let rtn = reader.toArray().map(e => e.toJSON() as T);
+
+    if (opts?.rows) {
+      rtn = rtn.map(row => Object.values(row)) as T[];
+    }
+    if (opts?.withSchema && !sql.trim().toUpperCase().startsWith('COPY')) {
+      const schemaReader = await this._con.query('DESCRIBE ' + sql);
+      const schema = schemaReader.toArray().map(e => e.toJSON());
+      Object.defineProperty(rtn, 'schema', { value: schema, enumerable: false });
+    }
+    return rtn;
+  }
+
+  async run(sql: string): Promise<void> {
+    await this._initDB();
+    await this._executeQueuedCommands(); // Ensure setup commands run first
+    if (!this._con) throw new Error("Database connection not initialized."); // Should be initialized now
+
+    console.log('Executing run:', sql);
+    await this._con.send(sql);
+  }
+
+  async close(): Promise<void> {
+    // Only close if initialized
+    if (this._initPromise) {
+      await this._initPromise; // Ensure init finishes before closing
+    }
+    if (this._con) {
+      await this._con.close();
+      this._con = null;
+      console.log("BuckDB WASM Connection closed.");
+    }
+    if (this._db) {
+      await this._db.terminate();
+      this._db = null;
+      console.log("BuckDB WASM Terminated.");
+    }
+    this._initPromise = null; // Reset init state
+  }
 }
 
-// Wrapper function to adapt DuckDBWasmAdapter to the DConstructor signature
-const duckDBWasmAdapter = async (handle?: string, settings?: Partial<t.DSettings>): Promise<DuckdbCon> => { // Use t.DSettings
-  const cmdQueue = new CommandQueue()
-  // await db.open({
-  //   path: 'opfs://duckdb-wasm-parquet.db',
-  //   accessMode: Duckdb.DuckDBAccessMode.READ_WRITE,
-  // })
-  const db = await getDB()
-  const con = await db.connect()
+// Create a single instance for export
 
-  const duckdbCon: DuckdbCon = {
-    cmdQueue,
-    upsertSchema: async (model: string, schema: Record<string, string>) => {
-      console.log('xxx', 'upsertSchema',)
-    },
-    settings: (s) => {
-      cmdQueue.pushSettings(s)
-      return duckdbCon;
-    },
-    loadExtensions: (...extensions: string[]) => {
-      console.log('loading extensions...', extensions)
-      cmdQueue.pushExtensions(...extensions)
-      return duckdbCon;
-    },
-    query: async function (sql: string, opts = {}) {
-      const cmds = cmdQueue.flush()
-      if (cmds?.length) {
-        console.log('Flushing ', cmds, '...')
-        // console.log('loading settings:', cmds)
-        const sresp = await con.query(cmds)
-        // sql = cmds + ';\n' + sql
-        console.log('settings loaded:', sresp)
-      }
-      // console.log({ sql })
-      const reader = await con.query(sql)
-      // console.log({ reader })
-      // console.log({ reader, summa })
-      // reader.
-      // if (opts?.withShema) {
-      //   return [reader.schema, reader.toArray().map(e => e.toJSON())]
-      // }
+// Pass the instance to the builder
+export const Buck = builder(BuckDBWasm);
 
-      let rtn = reader.toArray().map(e => e.toJSON())
-      console.log('oooopts', { opts })
-      if (opts?.rows) {
-        rtn = rtn.map(row => Object.values(row))
-      }
-      if (opts?.withSchema && !sql.startsWith('COPY')) {
-        const schema = await con.query('DESCRIBE ' + sql).then(e => e.toArray().map(e => e.toJSON()))
-        Object.defineProperty(rtn, 'schema', { value: schema })
-      }
-      return rtn
-    },
-    run: async function (sql: string) {
-      return con.send(sql)
-    }
-  }
-  return duckdbCon
-};
+// Maintain existing export pattern
+export const MemoryDB = Buck('');
+export const from = MemoryDB.from;
 
-
-// declare class DuckDBWasmFaker {
-//     constructor(handle: string, settings: Record<string, any>)
-//     initialize(): Promise<void>
-//     load(...extensions: string[]): Promise<void>
-//     query<T = any>(sql: string, params: any[]): Promise<T[]>
-//     run(sql: string): Promise<any>
-//     dump(sql: string): void
-//     close(): Promise<void>
-// }
-// // @ts-ignore
-// // const DAdapter = typeof globalThis.DuckDBWasmAdapter === 'undefined' ? DuckDBWasmFaker : globalThis.DuckDBWasmAdapter)
-
-// Pass the adapter factory function to the builder.
-export const duckdb = await duckDBWasmAdapter()
-export const Buck = builder(duckdb)
-export const MemoryDB = Buck('') // Call the function returned by builder
-export const from = MemoryDB.from
-// // const resp = await from('duckdb_settings()').select().execute()
-
-// // console.log(resp[0])
-// // console.log({  })
-
-
-
-// // const duckdb = require('@duckdb/duckdb-wasm');
-// // const path = require('path');
-// // const Worker = require('web-worker');
-// // const DUCKDB_DIST = path.dirname(require.resolve('@duckdb/duckdb-wasm'));
-
-// // (async () => {
-// //     try {
-// //         const DUCKDB_CONFIG = await duckdb.selectBundle({
-// //             mvp: {
-// //                 mainModule: path.resolve(DUCKDB_DIST, 'duckdb-mvp.wasm'),
-// //                 mainWorker: path.resolve(DUCKDB_DIST, 'duckdb-node-mvp.worker.cjs'),
-// //             },
-// //             eh: {
-// //                 mainModule: path.resolve(DUCKDB_DIST, 'duckdb-eh.wasm'),
-// //                 mainWorker: path.resolwve(DUCKDB_DIST, 'duckdb-node-eh.worker.cjs'),
-// //             },
-// //         });
-
-// //         const logger = new duckdb.ConsoleLogger();
-// //         const worker = new Worker(DUCKDB_CONFIG.mainWorker);
-// //         const db = new duckdb.AsyncDuckDB(logger, worker);
-// //         await db.instantiate(DUCKDB_CONFIG.mainModule, DUCKDB_CONFIG.pthreadWorker);
-
-// //         const conn = await db.connect();
-// //         await conn.query(`SELECT count(*)::INTEGER as v FROM generate_series(0, 100) t(v)`);
-
-// //         await conn.close();
-// //         await db.terminate();
-// //         await worker.terminate();
-// //     } catch (e) {
-// //         console.error(e);
-// //     }
-// // })();
+// Optional: Export the instance or class
+// export { BuckDBWasm, buckDBWasmInstance };

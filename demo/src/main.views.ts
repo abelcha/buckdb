@@ -7,7 +7,7 @@ import defaultKeybindings from './user/keybindings.json?raw'
 import './main.v2'
 
 
-document.querySelector('#clearStorage')!.addEventListener('click', async () => {
+document.querySelector('#clearStorage')?.addEventListener('click', async () => {
   await clearStorage()
 })
 

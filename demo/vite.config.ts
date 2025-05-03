@@ -8,7 +8,7 @@ const pkg = JSON.parse(
 import wasm from "vite-plugin-wasm";
 
 const localDependencies = Object.entries(pkg.dependencies as Record<string, string>)
-  .filter(([, version]) => version.startsWith('file:../'))
+  .filter(([, version]) => version.startsWith('file:../../monaco-vscode-api/'))
   .map(([name]) => name)
 export default defineConfig({
   build: {
@@ -135,7 +135,7 @@ export default defineConfig({
     port: 5173,
     host: '0.0.0.0',
     fs: {
-      allow: ['../'] // allow to load codicon.ttf from monaco-editor in the parent folder
+      allow: ['../../'] // allow to load codicon.ttf from monaco-editor in the parent folder and monaco-vscode-api package resources
     }
   },
   define: {
@@ -145,7 +145,7 @@ export default defineConfig({
     dedupe: ['vscode', ...localDependencies],
     alias: {
       // Map an alias to the external directory
-      '@external': path.resolve(__dirname, '/me/dev/buckdb'),
+      '@external': '/me/dev/buckdb',
     },
   }
 })

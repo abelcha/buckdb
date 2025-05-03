@@ -6,10 +6,12 @@ import * as t from '../.buck/types'
 export type DuckdbCon = {
   cmdQueue: CommandQueue;
   run: (sql: string) => Promise<any>;
+  lazyAttach: (path: string, alias: string) => any;
+  ensureSchema: (uri: string) => Promise<any>;
+  describe?: (uri: string) => Promise<Record<string, any>>;
   query: (sql: string, opts?: Record<string, any>) => Promise<any[]>;
-  upsertSchema: (model: string, schema: Record<string, any>) => Promise<void>;
-  settings: (s: Partial<t.DSettings>) => DuckdbCon;
-  loadExtensions: (...extensions: string[]) => DuckdbCon;
+  lazySettings: (s: Partial<t.DSettings>) => DuckdbCon;
+  lazyExtensions: (...extensions: string[]) => DuckdbCon;
 }
 
 export class CommandQueue {
@@ -18,16 +20,21 @@ export class CommandQueue {
   }
   queue: string[]
   pushSettings(settings: Partial<t.DSettings> = {}) {
-    // const q = 
-    this.queue.push(...Object.entries(settings).map(([key, value]) => `SET ${key} = '${value}';`))
+    const sts = Object.entries(settings).map(([key, value]) => `SET ${key} = '${value}'`)
+    if (sts.length)
+      this.queue.push(sts.join('; '))
     return this;
   }
+  pushAttach(path: string, alias: string) {
+    this.queue.push(`ATTACH '${path}' AS ${alias} (READONLY)`, `USE ${alias}`)
+    return this
+  }
   pushExtensions(...extensions: string[]) {
-    this.queue.push(...extensions.map(e => `INSTALL '${e}';LOAD '${e}';`))
+    this.queue.push(extensions.map(e => `INSTALL '${e}';LOAD '${e}';`).join(' ; '))
     return this
   }
   flush() {
-    const s = this.queue.join('\n')
+    const s = this.queue
     this.queue = []
     return s
   }

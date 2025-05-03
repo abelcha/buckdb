@@ -1,7 +1,10 @@
 import { CommandQueue, DuckdbCon, formatSource, keyBy, mapTypes } from "./utils";
 import * as t from "../.buck/types";
 import { parse, parseObject } from './parser';
-import { DBuilder, DExtensionsId } from "./build.types";
+import { DBuilder, deriveName, DExtensionsId } from "./build.types";
+import { serializeSchema } from "./interface-generator";
+import { upperFirst } from "es-toolkit";
+import Ressources from './.buck/table.json'
 
 
 export type DCondition = { condition: string, operator?: 'OR' | 'AND' }
@@ -144,12 +147,17 @@ const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>
 
 
 
-export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
+type DuckdbConConstructor = new (...args: any[]) => DuckdbCon;
+
+export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, b: any) {
     const handle = typeof a === 'string' ? a : ''
     const opts = (typeof a === 'object' ? a : (b || {})) as Partial<t.DSettings>
-
+    const ddb = new Ddb(handle, opts)
     if (opts && Object.keys(opts).length) {
-        ddb.settings(opts)
+        ddb.lazySettings(opts)
+    }
+    if (handle && typeof handle === 'string' && handle !== ':memory:') {
+        ddb.lazyAttach(handle, deriveName(handle))
     }
     const fromRes = (state = dstate) => {
         const _join = (joinType: DDatasource['join'] = 'JOIN') => function (table: any, alias: any, fn = undefined) {
@@ -164,7 +172,6 @@ export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
             return fromRes(deriveState(state, { conditions: conditions.map(v => formalize(v, state.context)) }, condition => ({ condition, operator })))
         }
         return {
-            // _join: ,
             join: _join('JOIN'),
             leftJoin: _join('LEFT JOIN'),
             rightJoin: _join('RIGHT JOIN'),
@@ -230,8 +237,15 @@ export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
             offset: function (offset: number) {
                 return fromRes({ ...state, offset })
             },
+            ensureSchemas: async function () {
+                for await (const dt of state.datasources) {
+                    await ddb.ensureSchema(dt.uri)
+                }
+            },
             execute: async function (props: Record<string, any> = {}) {
                 const str = toSql(Object.assign(state, props))
+
+                this.ensureSchemas();
                 if (props?.dump || props?.pretty) {
                     this.dump()
                 }
@@ -279,19 +293,21 @@ export const builder = (ddb: DuckdbCon) => function database(a: any, b: any) {
     // return function __DBuilder(catalog = '') {
     return {
         ddb,
-        settings: (s: Partial<t.DSettings>) => ddb.settings(s),
-
+        settings: (s: Partial<t.DSettings>) => ddb.lazySettings(s),
+        fetchTables: async function (id: string) {
+            const resp = await ddb.query(`SELECT * FROM duckdb_tables()`)
+            return Object.fromEntries(resp.map(e => [upperFirst(e.table_name), serializeSchema(e.sql)]))
+        },
         fetchSchema: async function (id: string) {
             const resp = await ddb.query(`DESCRIBE '${id}'`)
             return Object.fromEntries(resp.map(e => [e.column_name, mapTypes(e.column_type)]))
 
         },
-
         loadExtensions: function (...ext: DExtensionsId[]) {
-            // console.log('LOAD ', ext)
-            ddb.loadExtensions(...ext)
+            ddb.lazyExtensions(...ext)
             return this
         },
+        describe: (uri: string) => ddb.describe(uri),
         from: (table: string, alias?: string) => fromRes({
             ...dstate,
             datasources: [{

@@ -19,8 +19,8 @@
     "experimentalDecorators": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
-      "vscode/vscode/*": ["../dist/main/vscode/src/*"],
-      "vscode/*": ["../dist/main/*"]
+      "vscode/vscode/*": ["../../monaco-vscode-api/dist/main/vscode/src/*"],
+      "vscode/*": ["../../monaco-vscode-api/dist/main/*"]
     },
     "typeRoots": [
       "./node_modules/@types"

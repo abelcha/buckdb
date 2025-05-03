@@ -10,7 +10,7 @@ const { getApi } = registerExtension(
   ExtensionHostKind.LocalProcess
 )
 
-document.querySelector('#resetLayout')!.addEventListener('click', async () => {
+document.querySelector('#resetLayout')?.addEventListener('click', async () => {
 
 })
 void getApi().then(async (vscode) => {

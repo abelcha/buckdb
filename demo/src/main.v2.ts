@@ -19,8 +19,18 @@ const { getApi } = registerExtension(
         contributes: {
             "menus": {
                 "editor/title": [{ "command": "run.activeTypeScriptFile", "group": "navigation@1" }, { "command": "run.activeCell", "group": "navigation@1" }],
-                "commandPalette": [{ "command": "run.activeTypeScriptFile", "when": "resourceLangId == typescript" }, { "command": "extract.fromStatements", "when": "resourceLangId == typescript" }]
-            }, commands: [{ command: 'show-transformed-view', title: 'Show Transformed View' }, { command: 'run.activeTypeScriptFile', title: 'Run Active TypeScript File', icon: "$(play)" }, { command: 'run.activeCell', title: 'Run current cell', icon: "$(play)" }, { command: 'extract.fromStatements', title: 'Extract "from" Statements' }]
+                "commandPalette": [
+                    { "command": "run.activeTypeScriptFile", "when": "resourceLangId == typescript" },
+                    { "command": "extract.fromStatements", "when": "resourceLangId == typescript" },
+                    { "command": "buckdb.toggleDiskSave" } // Add command to palette
+                ]
+            }, commands: [
+                { command: 'show-transformed-view', title: 'Show Transformed View' },
+                { command: 'run.activeTypeScriptFile', title: 'Run Active TypeScript File', icon: "$(play)" },
+                { command: 'run.activeCell', title: 'Run current cell', icon: "$(play)" },
+                { command: 'extract.fromStatements', title: 'Extract "from" Statements' },
+                { command: 'buckdb.toggleDiskSave', title: 'Toggle Disk Save On/Off' } // Define command title
+            ]
         },
         enabledApiProposals: ['aiRelatedInformation'],
     },
@@ -31,7 +41,40 @@ const { getApi } = registerExtension(
 const commandDisposables: Disposable[] = [];
 let runOutputChannel: OutputChannel | undefined;
 
+// Initialize disk save state from localStorage, default to true
+const initialSaveState = localStorage.getItem('buckdbDiskSaveEnabled');
+let isDiskSaveEnabled = initialSaveState === null ? true : initialSaveState === 'true';
+
+// Helper function to load content from localStorage if needed, ONLY for demo.ts
+const loadVirtualContentIfNeeded = async (editor: TextEditor | undefined, vscodeApi: VsCodeApi) => {
+    // Check if editor exists, scheme is file, disk save is OFF, AND it's demo.ts
+    if (editor && editor.document.uri.scheme === 'file' && !isDiskSaveEnabled && editor.document.uri.fsPath.endsWith('/demo.ts')) {
+        const filePath = editor.document.uri.fsPath;
+        const storageKey = `buckdbVirtualFile:${filePath}`; // Key remains specific to the file path
+        const storedContent = localStorage.getItem(storageKey);
+
+        if (storedContent !== null && editor.document.getText() !== storedContent) {
+            const success = await editor.edit(editBuilder => {
+                const fullRange = new vscodeApi.Range(
+                    new vscodeApi.Position(0, 0),
+                    editor.document.positionAt(editor.document.getText().length)
+                );
+                editBuilder.replace(fullRange, storedContent);
+            });
+            if (success) {
+                 console.log(`Loaded virtual content for ${filePath}`); // Minimal log
+            } else {
+                 console.error(`Failed to apply virtual content for ${filePath}`);
+            }
+        }
+    }
+};
+
+
 void getApi().then(async (vscode: VsCodeApi) => {
+    // Show initial state on load (optional, but helpful for user)
+    vscode.window.showInformationMessage(`Disk Save is currently ${isDiskSaveEnabled ? 'Enabled' : 'Disabled'}.`);
+
     commandDisposables.forEach(d => d.dispose());
     commandDisposables.length = 0;
     runOutputChannel?.dispose();
@@ -59,8 +102,15 @@ void getApi().then(async (vscode: VsCodeApi) => {
         return undefined;
     };
 
-    commandDisposables.push(VsCodeWindow.onDidChangeActiveTextEditor(async editor => editor && await openTransformedViewAndSync(editor, transformedProvider, vscode)));
+    commandDisposables.push(VsCodeWindow.onDidChangeActiveTextEditor(async editor => {
+        // Load virtual content for demo.ts when it becomes active
+        if (editor) {
+            await openTransformedViewAndSync(editor, transformedProvider, vscode);
+            await loadVirtualContentIfNeeded(editor, vscode);
+        }
+    }));
     commandDisposables.push(VsCodeWorkspace.onDidChangeTextDocument(event => {
+        // This listener updates the transformed view, no changes needed here for virtual loading
         if (event.document.uri.scheme !== transformedScheme && event.document.uri.scheme !== 'transx') {
             const sourceEditor = VsCodeWindow.visibleTextEditors.find(e => e.document.uri === event.document.uri) ?? VsCodeWindow.activeTextEditor;
             if (sourceEditor && sourceEditor.document.uri === event.document.uri) {
@@ -81,8 +131,11 @@ void getApi().then(async (vscode: VsCodeApi) => {
     const initialEditor = VsCodeWindow.activeTextEditor;
     if (initialEditor) {
         await openTransformedViewAndSync(initialEditor, transformedProvider, vscode);
+        // Load virtual content for demo.ts if it's the initial editor
+        await loadVirtualContentIfNeeded(initialEditor, vscode);
     }
-    commandDisposables.push(onSaveCommand(vscode));
+    // Pass a function to check the current save state to onSaveCommand
+    commandDisposables.push(onSaveCommand(vscode, () => isDiskSaveEnabled));
     if (!runOutputChannel) {
         runOutputChannel = vscode.window.createOutputChannel("TypeScript Runner");
     }
@@ -127,11 +180,19 @@ void getApi().then(async (vscode: VsCodeApi) => {
         }
     }));
 
-
-    commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, s3CompletionProvider, '/'));
+    // Register the S3 completion provider for TypeScript files, but without explicit trigger characters.
+    // It will activate based on context matching within the provider itself or manual trigger.
+    commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, s3CompletionProvider));
 
     // Register the CodeLensProvider for TypeScript files
     const tsFileSelector = [{ language: 'typescript' }, { language: 'typescriptreact' }];
     commandDisposables.push(vscode.languages.registerCodeLensProvider(tsFileSelector, new SqlCodeLensProvider()));
 
+    // Register the command to toggle disk saving
+    commandDisposables.push(vscode.commands.registerCommand('buckdb.toggleDiskSave', () => {
+        isDiskSaveEnabled = !isDiskSaveEnabled;
+        // Update localStorage
+        localStorage.setItem('buckdbDiskSaveEnabled', String(isDiskSaveEnabled));
+        vscode.window.showInformationMessage(`Disk Save ${isDiskSaveEnabled ? 'Enabled' : 'Disabled'}`);
+    }));
 })

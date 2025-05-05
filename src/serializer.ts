@@ -121,5 +121,5 @@ const obj = { d: 1, z: { a: 1, b: '2' }, x: ['toto'], u: true } as const
 const t4 = serialize(obj) satisfies
   `d=1,z={a:1,b:'2'},x=['toto'],u=true`
 const type_check: `d=1,z={a:1,b:'2'},x=['toto'],u=true` = serialize(obj) // should be ok
-}
+
 

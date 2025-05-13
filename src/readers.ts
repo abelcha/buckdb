@@ -1,11 +1,10 @@
 // No specific imports needed from typedef for these declarations anymore
 
-import { isPlainObject, last } from "es-toolkit";
-import { __serialize, serialize, Serialize, SerializeValue } from "./serializer";
-import { wrap } from "./utils";
-
+import { SerializeOrdered, SerializeValue, __serialize, FilterKeys } from "./serializer.ts";
+export type CompressionOptions = 'none' | 'gzip' | 'zstd' | 'lz4' | 'lz4_raw' | 'brotli' | 'auto'
+// const __serialize = () => 
 /**
- * Options for the read_csv function, maintaining original camelCase naming and order.
+ * Options for the read-csv function, maintaining original camelCase naming and order.
  */
 export type ReadCsvOptions = {
   /**
@@ -70,7 +69,7 @@ export type ReadCsvOptions = {
    * Method used to compress CSV files. By default this is detected automatically from the file extension (e.g., `t.csv.gz` will use gzip, `t.csv` will use `none`).
    * @default 'auto'
    */
-  compression?: 'none' | 'gzip' | 'zstd' | 'auto'; // Corresponds to compression
+  compression?: CompressionOptions; // Corresponds to compression
 
   /**
    * Date format used when parsing and writing dates.
@@ -83,7 +82,7 @@ export type ReadCsvOptions = {
    * Decimal separator for numbers.
    * @default '.'
    */
-  decimalSeparator?: string; // Corresponds to decimal_separator
+  decimal_separator?: string; // Corresponds to decimal_separator
 
   /**
    * Delimiter character used to separate columns within each line, e.g., `,` `;` `\t`. The delimiter character can be up to 4 bytes, e.g., 🦆. Alias for `sep`.
@@ -111,12 +110,12 @@ export type ReadCsvOptions = {
   escape?: string; // Corresponds to escape
 
   /**
-   * Add path of the containing file to each row, as a string column named `filename`. Relative or absolute paths are returned depending on the path or glob pattern provided to `read_csv`, not just filenames.
+   * Add path of the containing file to each row, as a string column named `filename`. Relative or absolute paths are returned depending on the path or glob pattern provided to `read-csv`, not just filenames.
    * @default false
    */
   filename?: boolean; // Corresponds to filename
 
-  // forceMatch?: boolean; // Not found in provided table description
+  force_match?: boolean; // Not found in provided table description
 
   /**
    * Do not match values in the specified columns against the `NULL` string. In the default case where the `NULL` string is empty, this means that empty values are read as zero-length strings instead of `NULL`s.
@@ -300,10 +299,12 @@ export type ReadCsvOptions = {
   hive_types_autocast?: boolean;
 }
 
+type CsvKeys = ['all_varchar', 'allow_quoted_nulls', 'auto_detect', 'auto_type_candidates', 'buffer_size', 'column_names', 'column_types', 'columns', 'comment', 'compression', 'dateformat', 'decimal_separator', 'delim', 'dtypes', 'encoding', 'escape', 'filename', 'force_match', 'force_not_null', 'header', 'hive_partitioning', 'ignore_errors', 'max_line_size', 'maximum_line_size', 'names', 'new_line', 'normalize_names', 'null_padding', 'nullstr', 'parallel', 'quote', 'rejects_limit', 'rejects_scan', 'rejects_table', 'sample_size', 'sep', 'skip', 'store_rejects', 'strict_mode', 'timestampformat', 'types', 'union_by_name', 'date_format', 'delimiter', 'timestamp_format', 'force_match', 'hive_types', 'hive_types_autocast']
+
 
 
 /**
- * Options for the read_json function, maintaining original camelCase naming and order from signature.
+ * Options for the read-json function, maintaining original camelCase naming and order from signature.
  */
 export type ReadJsonOptions = {
   /**
@@ -321,7 +322,7 @@ export type ReadJsonOptions = {
   /**
    * Compression method (e.g., 'gzip'). Not in table, using VARCHAR from signature.
    */
-  compression?: string; // Not in table, using DVarcharable -> string
+  compression?: CompressionOptions; // Not in table, using DVarcharable -> string
 
   /**
    * Convert strings to integers. Not in table, using BOOL from signature.
@@ -348,9 +349,9 @@ export type ReadJsonOptions = {
   field_appearance_threshold?: number; // Corresponds to field_appearance_threshold (DOUBLE)
 
   /**
-   * Add filename column. Not in table, using ANY | BIGINT from signature -> boolean | number | bigint. Assuming boolean based on read_csv.
+   * Add filename column. Not in table, using ANY | BIGINT from signature -> boolean | number | bigint. Assuming boolean based on read-csv.
    */
-  filename?: boolean; // Not in table, guessing boolean based on read_csv
+  filename?: boolean; // Not in table, guessing boolean based on read-csv
 
   /**
    * JSON format (e.g., 'auto', 'newline_delimited', 'array'). Not in table, using VARCHAR | BIGINT from signature -> string | number | bigint. Assuming string.
@@ -358,9 +359,9 @@ export type ReadJsonOptions = {
   format?: 'auto' | 'newline_delimited' | 'array' | string; // Not in table, guessing string options
 
   /**
-   * Hive partitioning. Not in table, using BOOL | VARCHAR from signature -> boolean | string. Assuming boolean based on read_csv.
+   * Hive partitioning. Not in table, using BOOL | VARCHAR from signature -> boolean | string. Assuming boolean based on read-csv.
    */
-  hive_partitioning?: boolean; // Not in table, guessing boolean based on read_csv
+  hive_partitioning?: boolean; // Not in table, guessing boolean based on read-csv
 
   /**
    * Hive types. Not in table, using ANY | DOUBLE from signature -> any.
@@ -368,14 +369,14 @@ export type ReadJsonOptions = {
   hive_types?: any; // Not in table, using any
 
   /**
-   * Hive types autocast. Not in table, using BOOL | VARCHAR from signature -> boolean | string. Assuming boolean based on read_csv.
+   * Hive types autocast. Not in table, using BOOL | VARCHAR from signature -> boolean | string. Assuming boolean based on read-csv.
    */
-  hive_types_autocast?: boolean; // Not in table, guessing boolean based on read_csv
+  hive_types_autocast?: boolean; // Not in table, guessing boolean based on read-csv
 
   /**
-   * Ignore errors. Not in table, using BOOL | UINTEGER from signature -> boolean | number. Assuming boolean based on read_csv.
+   * Ignore errors. Not in table, using BOOL | UINTEGER from signature -> boolean | number. Assuming boolean based on read-csv.
    */
-  ignore_errors?: boolean; // Not in table, guessing boolean based on read_csv
+  ignore_errors?: boolean; // Not in table, guessing boolean based on read-csv
 
   /**
    * Controls the threshold for number of columns whose schema will be auto-detected; if JSON schema auto-detection would infer a `STRUCT` type for a field that has *more* than this threshold number of subfields, it infers a `MAP` type instead. Set to `-1` to disable `MAP` inference.
@@ -431,17 +432,18 @@ export type ReadJsonOptions = {
    */
   union_by_name?: boolean; // Corresponds to union_by_name (BOOL)
 };
+type JsonReadKeys = ['auto_detect', 'columns', 'compression', 'convert_strings_to_integers', 'date_format', 'dateformat', 'field_appearance_threshold', 'filename', 'format', 'hive_partitioning', 'hive_types', 'hive_types_autocast', 'ignore_errors', 'map_inference_threshold', 'maximum_depth', 'maximum_object_size', 'maximum_sample_files', 'records', 'sample_size', 'timestamp_format', 'timestampformat', 'union_by_name']
 
 
 /**
- * Options for the read_json_objects function, maintaining original camelCase naming and order from signature.
+ * Options for the read-json_objects function, maintaining original camelCase naming and order from signature.
  */
 export type ReadJsonObjectsOptions = {
   /**
    * The compression type for the file. By default this will be detected automatically from the file extension (e.g., `t.json.gz` will use gzip, `t.json` will use none). Options are `none`, `gzip`, `zstd` and `auto_detect`.
    * @default 'auto_detect'
    */
-  compression?: 'none' | 'gzip' | 'zstd' | 'auto_detect'; // Corresponds to compression (VARCHAR)
+  compression?: CompressionOptions // Corresponds to compression (VARCHAR)
 
   /**
    * Whether or not an extra `filename` column should be included in the result.
@@ -495,10 +497,12 @@ export type ReadJsonObjectsOptions = {
   union_by_name?: boolean; // Not in table, using boolean
 };
 
+type JsonReadObjectsKeys = ['compression', 'filename', 'format', 'hive_partitioning', 'hive_types', 'hive_types_autocast', 'ignore_errors', 'maximum_object_size', 'maximum_sample_files', 'union_by_name']
+
 
 
 /**
- * Options for the read_parquet function, maintaining original camelCase naming and order from signature.
+ * Options for the read-parquet function, maintaining original camelCase naming and order from signature.
  */
 export type ReadParquetOptions = {
   /**
@@ -510,7 +514,7 @@ export type ReadParquetOptions = {
   /**
    * Compression. Not in table, using VARCHAR | BOOL from signature -> string | boolean. Assuming string.
    */
-  compression?: string; // Not in table, guessing string
+  compression?: CompressionOptions; // Not in table, guessing string
 
   /**
    * Debug use OpenSSL. Not in table, using BOOL from signature -> boolean.
@@ -573,6 +577,7 @@ export type ReadParquetOptions = {
   union_by_name?: boolean; // Corresponds to union_by_name (BOOL)
 };
 
+type ParquetKeys = ['binary_as_string', 'compression', 'debug_use_openssl', 'encryption_config', 'explicit_cardinality', 'file_row_number', 'filename', 'hive_partitioning', 'hive_types', 'hive_types_autocast', 'parquet_version', 'schema', 'union_by_name']
 
 
 /**
@@ -580,7 +585,7 @@ export type ReadParquetOptions = {
  */
 export type DeltaScanOptions = {
   binary_as_string?: boolean;
-  compression?: string | any; // VARCHAR | ANY -> string | any
+  compression?: CompressionOptions; // VARCHAR | ANY -> string | any
   debug_use_openssl?: boolean | any; // BOOLEAN | ANY -> boolean | any
   delta_file_number?: boolean;
   encryption_config?: any;
@@ -595,10 +600,11 @@ export type DeltaScanOptions = {
   pushdown_partition_info?: boolean;
   union_by_name?: boolean;
 };
+type DeltaScanKeys = ['binary_as_string', 'compression', 'debug_use_openssl', 'delta_file_number', 'encryption_config', 'explicit_cardinality', 'file_row_number', 'filename', 'hive_partitioning', 'hive_types', 'hive_types_autocast', 'parquet_version', 'pushdown_filters', 'pushdown_partition_info', 'union_by_name']
 
 
 /**
- * Options for the read_xlsx function, inferred from signature.
+ * Options for the read-xlsx function, inferred from signature.
  */
 export type ReadXlsxOptions = {
   all_varchar?: boolean;
@@ -610,78 +616,190 @@ export type ReadXlsxOptions = {
   sheet?: string; // VARCHAR -> string
   stop_at_empty?: boolean;
 };
+
+type ReadXlsxKeys = ['all_varchar', 'empty_as_varchar', 'header', 'ignore_errors', 'normalize_names', 'range', 'sheet', 'stop_at_empty']
+type CsvKeyOpts = StringArrayToUnion<CsvKeys>
+
+type StringArrayToUnion<T extends readonly string[]> = T extends readonly [infer First, ...infer Rest extends readonly string[]]
+  ? First & string | StringArrayToUnion<Rest>
+  : never;
+
 type Opt<T> = T extends Record<string, any> ? T : never;
-type Parms<S extends string, F, U extends Record<string, any>> = `${S}(${SerializeValue<F>},${Serialize<U>})`
 
-export function read_csv<
-  const F extends string[],
-  const U extends Opt<ReadCsvOptions>
->(...args: [...F, (U | undefined)?]) {
-  return (fnSerial('read_csv', args)) as unknown as Parms<'read_csv', F, U>
+
+type Parms<S extends string, K extends readonly string[], F, U extends Record<string, any>> =
+  keyof U extends undefined
+  ? `${S}(${SerializeValue<F>})`
+  : `${S}(${SerializeValue<F>},${SerializeOrdered<FilterKeys<K, U>, U>})`
+
+
+type Fnx = {
+  read_csv<const F extends string, const U extends ReadCsvOptions>(args: F): Parms<'read_csv', CsvKeys, [F], {}>;
+  read_csv<const F extends readonly string[]>(...args: F[]): Parms<'read_csv', CsvKeys, F, {}>;
+  read_csv<const F extends string[], const U extends ReadCsvOptions>(...args: [...F, U]): Parms<'read_csv', CsvKeys, F, U>;
+  read_csv<const F extends readonly string[], const U extends ReadCsvOptions>(...args: [...F[], U]): Parms<'read_csv', CsvKeys, F, U>;
+
+  read_json<const F extends string, const U extends ReadJsonOptions>(args: F): Parms<'read_json', CsvKeys, [F], {}>;
+  read_json<const F extends readonly string[]>(...args: F[]): Parms<'read_json', CsvKeys, F, {}>;
+  read_json<const F extends string[], const U extends ReadJsonOptions>(...args: [...F, U]): Parms<'read_json', CsvKeys, F, U>;
+  read_json<const F extends readonly string[], const U extends ReadJsonOptions>(...args: [...F[], U]): Parms<'read_json', CsvKeys, F, U>;
+
+
+  read_json_objects<const F extends string, const U extends ReadJsonObjectsOptions>(args: F): Parms<'read_json_objects', CsvKeys, [F], {}>;
+  read_json_objects<const F extends readonly string[]>(...args: F[]): Parms<'read_json_objects', CsvKeys, F, {}>;
+  read_json_objects<const F extends string[], const U extends ReadJsonObjectsOptions>(...args: [...F, U]): Parms<'read_json_objects', CsvKeys, F, U>;
+  read_json_objects<const F extends readonly string[], const U extends ReadJsonObjectsOptions>(...args: [...F[], U]): Parms<'read_json_objects', CsvKeys, F, U>;
+
+
+  read_parquet<const F extends string, const U extends ReadParquetOptions>(args: F): Parms<'read_parquet', CsvKeys, [F], {}>;
+  read_parquet<const F extends readonly string[]>(...args: F[]): Parms<'read_parquet', CsvKeys, F, {}>;
+  read_parquet<const F extends string[], const U extends ReadParquetOptions>(...args: [...F, U]): Parms<'read_parquet', CsvKeys, F, U>;
+  read_parquet<const F extends readonly string[], const U extends ReadParquetOptions>(...args: [...F[], U]): Parms<'read_parquet', CsvKeys, F, U>;
+
+  delta_scan<const F extends string, const U extends DeltaScanOptions>(args: F): Parms<'delta_scan', DeltaScanKeys, [F], {}>;
+  delta_scan<const F extends readonly string[]>(...args: F[]): Parms<'delta_scan', DeltaScanKeys, F, {}>;
+  delta_scan<const F extends string[], const U extends DeltaScanOptions>(...args: [...F, U]): Parms<'delta_scan', DeltaScanKeys, F, U>;
+  delta_scan<const F extends readonly string[], const U extends DeltaScanOptions>(...args: [...F[], U]): Parms<'delta_scan', DeltaScanKeys, F, U>;
+
+  parquet_scan<const F extends string, const U extends ReadParquetOptions>(args: F): Parms<'parquet_scan', CsvKeys, [F], {}>;
+  parquet_scan<const F extends readonly string[]>(...args: F[]): Parms<'parquet_scan', CsvKeys, F, {}>;
+  parquet_scan<const F extends string[], const U extends ReadParquetOptions>(...args: [...F, U]): Parms<'parquet_scan', CsvKeys, F, U>;
+  parquet_scan<const F extends readonly string[], const U extends ReadParquetOptions>(...args: [...F[], U]): Parms<'parquet_scan', CsvKeys, F, U>;
+
+  read_xlsx<const F extends string, const U extends ReadXlsxKeys>(args: F): Parms<'read_xlsx', CsvKeys, [F], {}>;
+  read_xlsx<const F extends readonly string[]>(...args: F[]): Parms<'read_xlsx', CsvKeys, F, {}>;
+  read_xlsx<const F extends string[], const U extends ReadXlsxKeys>(...args: [...F, U]): Parms<'read_xlsx', CsvKeys, F, U>;
+  read_xlsx<const F extends readonly string[], const U extends ReadXlsxKeys>(...args: [...F[], U]): Parms<'read_xlsx', CsvKeys, F, U>;
+
+  read_text<const F extends string, const U extends {}>(args: F): Parms<'read_text', [], [F], {}>;
+  read_text<const F extends readonly string[]>(...args: F[]): Parms<'read_text', [], F, {}>;
+  read_text<const F extends string[], const U extends {}>(...args: [...F, U]): Parms<'read_text', [], F, U>;
+  read_text<const F extends readonly string[], const U extends {}>(...args: [...F[], U]): Parms<'read_text', [], F, U>;
+
 }
-
-// const r = read_csv('xx.csv', { allVarchar: true })
-
-export function read_json<
-  const F extends string[],
-  const U extends Opt<ReadJsonOptions>
->(...args: [...F, (U | undefined)?]) {
-  return (fnSerial('read_json', args)) as unknown as Parms<'read_json', F, U>;
-}
-
-export function read_json_objects<
-  const F extends string[],
-  const U extends Opt<ReadJsonObjectsOptions>
->(...args: [...F, (U | undefined)?]) {
-  return (fnSerial('read_json_objects', args)) as unknown as Parms<'read_json_objects', F, U>;
-}
-
-
-export function read_parquet<
-  const F extends string[],
-  const U extends Opt<ReadParquetOptions>
->(...args: [...F, (U | undefined)?]) {
-  return (fnSerial('read_parquet', args)) as unknown as Parms<'read_parquet', F, U>;
-}
-
-// const z = read_parquet('toto', { binaryAsString: true, })
 
 const fnSerial = (name = '', args: any[]) => {
   let opts = {}
-  if (isPlainObject(last(args))) {
+  const last = args[args.length - 1]
+  if (typeof last === 'object' && last !== null && !Array.isArray(last)) {
     opts = args.pop() || {}
   }
-  return `${name}([${args.map((e = '') => wrap(e, "'"))}],${__serialize(opts)})`
+  if (!Object.keys(opts).length) {
+    return `${name}([${args.map((e = '') => `'${e}'`)}])`
+  }
+  return `${name}([${args.map((e = '') => `'${e}'`)}],${__serialize(opts)})`
 }
+export const Fncx = {
+  read_csv: (...args: any) => fnSerial('read_csv', args),
+  read_json: (...args: any) => fnSerial('read_json', args),
+  read_json_objects: (...args: any) => fnSerial('read_json_objects', args),
+  read_parquet: (...args: any) => fnSerial('read_parquet', args),
+  delta_scan: (...args: any) => fnSerial('delta_scan', args),
+  parquet_scan: (...args: any) => fnSerial('parquet_scan', args),
+  read_xlsx: (...args: any) => fnSerial('read_xlsx', args),
+  read_text: (...args: any) => fnSerial('read_xlsx', args),
+} as unknown as Fnx
 
-export function delta_scan<
-  const F extends string[],
-  const U extends Opt<DeltaScanOptions>
->(...args: [...F, (U | undefined)?]) {
-  return (fnSerial('delta_scan', args)) as unknown as Parms<'delta_scan', F, U>;
-}
-// console.log(delta_scan('toto', { binaryAsString: true, compression: 'gzip' }))
+export const read_csv = Fncx.read_csv
+export const read_json = Fncx.read_json
+export const read_json_objects = Fncx.read_json_objects
+export const read_parquet = Fncx.read_parquet
+export const delta_scan = Fncx.delta_scan
+export const parquet_scan = Fncx.parquet_scan
+export const read_xlsx = Fncx.read_xlsx
+export const read_text = Fncx.read_text
 
-export function parquet_scan<
-  const F extends string[],
-  const U extends Opt<ReadParquetOptions>
->(...args: [...F, (U | undefined)?]) {
-  return (fnSerial('parquet_scan', args)) as unknown as Parms<'parquet_scan', F, U>;
-}
+// const zz = read_parquet(['lol'], {
+//   // compression: 'gzip'
+// })
 
 
+// const zz = read_csv('s3://tddo.csv', {})
+// const zxz = read_csv(['s3://tdddo.csv'])
+// const zxxxz = read_csv(['s3://tdddo.csv'], { compression: 'gzip' })
+// const zxxxsz = read_csv(['s3://tdddo.csv'], {})
+// const zzd = read_csv('s3://to.csv', { compression: 'gzip' })
+// console.log({ zz, zxz, zxxxz, zxxxsz, zzd })
 
-export function read_xlsx<
-  const F extends string[],
-  const U extends Opt<ReadXlsxOptions>
->(...args: [...F, (U | undefined)?]) {
-  return (fnSerial('read_xlsx', args)) as unknown as Parms<'read_xlsx', F, U>;
-}
+// export function read_csv(...args) {
+//   return (fnSerial('read_csv', args))// as unknown as Parms<'read_csv', CsvKeys, F, keyof U extends never ? { compression: 'aq' } : U>
+// } as unknown as Fnx['read_csv']
+
+// // export function read_csv<
+// //   const F extends string[],
+// // >(...args: [...F]) {
+// //   return (fnSerial('read_csv', args)) as unknown as Parms<'read_csv', CsvKeys, F, {}>
+// // }
+// const r = read_csv('s3://to.csv')
+// const z = read_csv('s3://toxxto.csv', { compression: 'gzip' })
+
+// // const zzz = read_csv('xx.csv', { auto_detect:true, all_varchar: true, buffer_size: 42 })
+
+// export function read_json<
+//   const F extends string[],
+//   const U extends Opt<ReadJsonOptions>
+// >(...args: [...F, (U | undefined)?]) {
+//   return (fnSerial('read_json', args)) as unknown as Parms<'read_json', JsonReadKeys, F, U>
+// }
+
+// // const zzzzz = read_json('qsdqsd', {
+// //   date_format: '/MEYY/',
+// //   toto: 1231
+// // })
+
+// export function read_json_objects<
+//   const F extends string[],
+//   const U extends Opt<ReadJsonObjectsOptions>
+// >(...args: [...F, (U | undefined)?]) {
+//   return (fnSerial('read_json_objects', args)) as unknown as Parms<'read_json_objects', JsonReadObjectsKeys, F, U>
+// }
 
 
-export function read_text<
-  const F extends string[],
-  const U extends Opt<{}>
->(...args: [...F, (U | undefined)?]) {
-  return (fnSerial('read_text', args)) as unknown as Parms<'read_text', F, U>;
-}
+// export function read_parquet<
+//   const F extends string[],
+//   const U extends Opt<ReadParquetOptions>
+// >(...args: [...F, (U | undefined)?]) {
+//   return (fnSerial('read_parquet', args)) as unknown as Parms<'read_parquet', ParquetKeys, F, U>
+// }
+
+// // const z = read_parquet('toto', { binaryAsString: true, })
+
+// const fnSerial = (name = '', args: any[]) => {
+//   let opts = {}
+//   if (isPlainObject(last(args))) {
+//     opts = args.pop() || {}
+//   }
+//   return `${name}([${args.map((e = '') => `'${e}'`)}],${__serialize(opts) || '{}'})`
+// }
+
+// export function delta_scan<
+//   const F extends string[],
+//   const U extends Opt<DeltaScanOptions>
+// >(...args: [...F, (U | undefined)?]) {
+//   return (fnSerial('delta_scan', args)) as unknown as Parms<'delta_scan', DeltaScanKeys, F, U>
+// }
+// // console.log(delta_scan('toto', { binaryAsString: true, compression: 'gzip' }))
+
+// export function parquet_scan<
+//   const F extends string[],
+//   const U extends Opt<ReadParquetOptions>
+// >(...args: [...F, (U | undefined)?]) {
+//   return (fnSerial('parquet_scan', args)) as unknown as Parms<'parquet_scan', ParquetKeys, F, U>
+// }
+
+
+
+// export function read_xlsx<
+//   const F extends string[],
+//   const U extends Opt<ReadXlsxOptions>
+// >(...args: [...F, (U | undefined)?]) {
+//   return (fnSerial('read_xlsx', args)) as unknown as Parms<'read_xlsx', ReadXlsxKeys, F, U>
+// }
+
+
+// export function read_text<
+//   const F extends string[],
+//   const U extends Opt<{}>
+// >(...args: [...F, (U | undefined)?]) {
+//   return (fnSerial('read_text', args)) as unknown as Parms<'read_text', [], F, U>
+// }

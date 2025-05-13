@@ -3,6 +3,7 @@ import { DSettings } from './.buck/types';
 import { builder, CommandQueue, DuckdbCon } from './src/build'
 import { generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
 import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
+export * as readers from './src/readers';
 import Ressources from './.buck/table.json';
 
 const tempJsonFix = e => JSON.parse(JSON.stringify(e, (key, value) => {

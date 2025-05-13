@@ -1,13 +1,33 @@
 import { builder, CommandQueue, DuckdbCon } from './src/build';
 import * as t from './.buck/types';
+import {
+  read_csv,
+  read_json,
+  read_json_objects,
+  read_parquet,
+  delta_scan,
+  parquet_scan,
+  read_xlsx,
+  read_text
+} from './src/readers';
+export {
+  read_csv,
+  read_json,
+  read_json_objects,
+  read_parquet,
+  delta_scan,
+  parquet_scan,
+  read_xlsx,
+  read_text
+}
 import type { AsyncDuckDB, AsyncDuckDBConnection } from '@duckdb/duckdb-wasm';
 // @ts-ignore
 import * as Duckdb from "https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm";
 
 class BuckDBWasm implements DuckdbCon {
-   _db: AsyncDuckDB | null = null;
-   _con: AsyncDuckDBConnection | null = null;
-   _initPromise: Promise<void> | null = null;
+  _db: AsyncDuckDB | null = null;
+  _con: AsyncDuckDBConnection | null = null;
+  _initPromise: Promise<void> | null = null;
   readonly cmdQueue = new CommandQueue();
 
   private _initDB(): Promise<void> {
@@ -78,10 +98,10 @@ class BuckDBWasm implements DuckdbCon {
 
   }
   async describe(uri: string) {
-    if (uri.includes('://')) {
+    if (!uri.trim().endsWith(')')) {
       uri = `'${uri}'`
     }
-    return this.query(`DESCRIBE (FROM __${uri});`)
+    return this.query(`DESCRIBE (FROM ${uri});`)
   }
 
   private async _executeQueuedCommands(): Promise<void> {

@@ -141,8 +141,6 @@ const newLine = (e: string) => {
     return e
 }
 function toSql(state: DState) {
-    // console.log({ state })
-    // console.log('====>', state.orderBy)
 
     const components = [
         'FROM',
@@ -257,6 +255,16 @@ export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, 
                 // return this.orderBy(fields, 'ASC').limit(10)
                 return fromRes(deriveState({ ...state, agg: 'min', limit: 1 }, { orderBy: fields }, field => ({ field, direction: 'ASC' })))
             },
+            countBy: function (gp: Parseable) {
+                const countBy = formalize(gp, state.context)
+                if (!state.selected.find(e => e.field === countBy)) {
+                    state.selected.push({ field: countBy, as: 'f' })
+                }
+                if (!state.selected.find(e => e.raw === countBy)) {
+                    state.selected.push({ field: 'count()', as: 'c' })
+                }
+                return fromRes(deriveState({ ...state, selected: state.selected, countBy }, { groupBy: [gp], orderBy: [{field: 'c', direction: 'DESC'}]}))
+            },
             maxBy: function (...fields: Parseable[]) {
                 // return this.orderBy(fields, 'ASC')
                 return fromRes(deriveState({ ...state, agg: 'max', limit: 1 }, { orderBy: fields }, field => ({ field, direction: 'DESC' })))
@@ -295,9 +303,7 @@ export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, 
                 if (state.agg) {
                     return resp[0]
                 }
-                // console.log('kbbbbb', state.keyBy)
                 if (state?.keyBy) {
-                    // console.log({ state })
                     return keyBy(resp, state.keyBy)
                 }
                 return resp
@@ -307,11 +313,9 @@ export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, 
             },
             dump: () => {
                 console.log(toSql(state))
-                // console.log(state)
                 return fromRes(state)
             },
             show: function () {
-                // console.log('GPPPP', state.groupBy)
                 console.log(toSql(state))
                 const res = fromRes(state).execute().then(e => console.log(e))
                 console.log(res)

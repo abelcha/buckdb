@@ -160,13 +160,13 @@ export interface MSR<S extends MState, C extends StrictCollection[]> extends Mat
     distinctOn: this['groupBy'],
 }
 
-export interface MaterializedResult<S extends MState, C extends StrictCollection[]> {
+export interface MaterializedResult<S extends MState, C extends StrictCollection[], Ky extends 'single' | 'map' | 'array' = 'array'> {
     // execute(): Promise<MapInferredType<ModelFromCollectionList<C>>>
     groupBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedGroupByResult<S & { grouped: Z }, C>
-    groupBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(...key: U[]): MaterializedGroupByResult<S, C>
-
-    keyBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedGroupByResult<S & { keyed: true }, C>
-    keyBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U): MaterializedGroupByResult<S & { keyed: true }, C>
+    groupBy<U extends ('ALL' | NestedKeyOf<S['available'] & S['selected']>)>(...key: U[]): MaterializedGroupByResult<S, C>
+    countBy: this['groupBy']
+    keyBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedResult<S, C, 'map'>
+    keyBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U): MaterializedResult<S, C, 'map'>
 
     minBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedResult<S & { single: true }, C>
     minBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U): MaterializedResult<S & { single: true }, C>

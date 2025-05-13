@@ -48,6 +48,7 @@ export interface Identifier extends BaseExpression {
 export interface MemberExpression extends BaseExpression {
 	type: 'MemberExpression';
 	computed: boolean;
+	accessor: string; // '.' or '['
 	object: Expression;
 	property: Expression; // Identifier or Literal usually, but can be any Expression if computed
 	optional?: boolean;
@@ -823,6 +824,7 @@ export class Jsep {
 				}
 				node = {
 					type: Jsep.MEMBER_EXP,
+					accessor: '[',
 					computed: true,
 					object: node,
 					property: propertyExpr
@@ -850,6 +852,7 @@ export class Jsep {
 				this.gobbleSpaces();
 				node = {
 					type: Jsep.MEMBER_EXP,
+					accessor: '.',
 					computed: false,
 					object: node,
 					property: this.gobbleIdentifier(),
@@ -1191,7 +1194,7 @@ Object.assign(Jsep, {
 		'||': 1, '??': 1,
 		'&&': 2, '|': 3, '^': 4, '&': 5,
 		'==': 6, '!=': 6, '===': 6, '!==': 6,
-		'<': 7, '>': 7, '<=': 7, '>=': 7,
+		'<': 7, '>': 7, '<=': 7, '>=': 7, 'in': 7,
 		'<<': 8, '>>': 8, '>>>': 8,
 		'+': 9, '-': 9,
 		'*': 10, '/': 10, '%': 10,

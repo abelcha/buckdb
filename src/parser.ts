@@ -1,5 +1,6 @@
 import jsep, { ArrowFunctionExpression, Expression, Property } from './jsep';
-import { LitteralTypesMap, PatternMatchers, wrap, Ω } from './utils'
+import { wrap, Ω } from './utils'
+import { LitteralTypesMap, PatternMatchers } from './typedef'
 
 const RegexpFuncsWthOptions = new Map([
   ['regexp_extract', 3],
@@ -8,20 +9,6 @@ const RegexpFuncsWthOptions = new Map([
   ['regexp_matches', 2],
   ['regexp_full_matches', 2],
 ])
-
-// {
-//   regexp_extract: 3,// (pattern: DVarcharable | RegExpable, group0?: DArrayable | DNumericable | DOtherable, options?: DOtherable | DVarcharable): DVarcharField;
-//     /**@description Split the string along the regex and extract all occurrences of group. A set of optional options can be set.	@example regexp_extract_all('hello_world', '([a-z ]+)_?', 1)*/
-//     regexp_extract_all: 3,//(regex: DVarcharable | RegExpable, group0?: DNumericable | DOtherable, options?: DOtherable | DVarcharable): DArrayField;
-//       /**@description Returns true if the entire string matches the regex. A set of optional options can be set.	@example regexp_full_match('anabanana', '(an)*')*/
-//       regexp_full_match: 2,//, (regex: DVarcharable | RegExpable, options?: DOtherable | DVarcharable): DBoolField;
-//         /**@description Returns true if string contains the regexp pattern, false otherwise. A set of optional options can be set.	@example regexp_matches('anabanana', '(an)*')*/
-//         regexp_matches: 2,//(pattern: DVarcharable | RegExpable, options?: DOtherable | DVarcharable): DBoolField;
-//           /**@description If string contains the regexp pattern, replaces the matching part with replacement. A set of optional options can be set.	@example regexp_replace('hello', '[lo]', '-')*/
-//           regexp_replace: 3,//(pattern: DVarcharable | RegExpable, replacement: DVarcharable, options?: DOtherable | DVarcharable): DVarcharField;
-//   /**@description Splits the string along the regex	@example string_split_regex('hello␣world; 42', ';?␣')*/
-//   // regexp_split_to_array: (separator: DVarcharable | RegExpable, col2?: DOtherable | DVarcharable): DArrayField;
-// }
 
 function mapUnaryOperator(jsOperator) {
   const unaryOperatorMap = {
@@ -61,6 +48,7 @@ function mapOperator(jsOperator) {
     '<': '<',
     '>=': '>=',
     '<=': '<=',
+    'in': 'IN'
   };
   if (!operatorMap[jsOperator]) {
     throw new Error(`Unsupported operator: ${jsOperator}`);
@@ -182,9 +170,15 @@ function processTemplateLiteral(node, transformer) {
   return parts.join(' || ');
 }
 
+type Topts = {
+  isFuncArg?: boolean
+  closureVars?: string[]
+}
 export function transformDuckdb(node, params = new Map<string, { depth: number, position: number }>(), context: Record<string, any> = {}) {
   // Main transformer function
-  function transformNode(node, opts = { isFuncArg: false }) {
+  // console.log(node)
+  function transformTree(node, opts: Topts = { isFuncArg: false }) {
+    const transformNode = (n, o = {}) => transformTree(n, Object.assign(opts, o))
     switch (node.type) {
       case 'ObjectExpression':
         return `{${node.properties.map(transformNode).join(', ')}}`;
@@ -193,10 +187,14 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
       case 'SequenceExpression':
         return node.expressions.map(transformNode).join(', ');
       case 'Identifier':
+        // console.log('IDENTIFIER', node)
         if (!node.isProperty) {
           if (params.has(node.name)) {
             if (params.get(node.name)?.depth === 0)
               return null
+            return node.name
+          }
+          else if (opts.closureVars?.includes(node.name)) {
             return node.name
           }
           else if (typeof globalThis[node.name] !== 'undefined') {
@@ -210,6 +208,13 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         }
         return node.name;
       case 'MemberExpression':
+        const hasSubMember = node.object?.type === 'MemberExpression'
+        if (hasSubMember && !node.subMemberExpression && node.property.name === 'length') {
+          node.property.name = 'len()' // tmp
+        }
+        if (hasSubMember) {
+          node.object.subMemberExpression = true
+        }
         node.property.isProperty = true
         const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean)
         return opts.isFuncArg ? rtn : joinMembers(rtn);
@@ -263,7 +268,7 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           return `${callee.slice(0, -1)}::${node.arguments[0].value}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
         }
 
-        if (callee[0].toLowerCase() === 'cast' && node.arguments.length === 2) {
+        if (typeof callee[0] === 'string' && callee[0].toLowerCase() === 'cast' && node.arguments.length === 2) {
           const supp = typeof args[2] !== 'undefined' ? `(${args.slice(2).join(', ')})` : ''
           return `CAST(${args[0]} AS ${node.arguments[1].value}${supp})`
         }
@@ -287,6 +292,9 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         // console.log(node.argument?.callee?.property)
         return `${mapUnaryOperator(node.operator)} ${transformNode(node.argument)}`;
       case 'BinaryExpression':
+        if (node.operator === 'in' && node.right.type === 'ArrayExpression') {
+          return `${transformNode(node.left)} IN (${node.right.elements.map(transformNode).join(', ')})`;
+        }
         // Special handling for string concatenation
         if (node.operator === '+' && hasStringLiteral(node)) {
           return transformStringConcat(node, transformNode);
@@ -305,6 +313,10 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         return processTemplateLiteral(node, transformNode);
       case 'TemplateElement':
         return `'${node.value.cooked.replaceAll(/'/g, "''")}'`;
+      case 'ArrowFunctionExpression':
+        // console.log('ArrowFunctionExpression', node)
+        const closureVars = node.params.map(x => x.name)
+        return `(${closureVars.join(', ')}) -> ${transformNode(node.body, { ...opts, closureVars })}`;
       default:
         if (context?.log !== false) {
           console.log(JSON.stringify(node, null, 2))
@@ -313,7 +325,7 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
     }
   }
 
-  return transformNode(node);
+  return transformTree(node);
 }
 
 type DParam = { depth: number, position: number, destuctured?: boolean, excluded?: string[] }
@@ -374,8 +386,8 @@ export const parse = (expr: Function | string, context = {}) => {
 }
 
 const extractSpreadedParams = (ast: Expression) => {
-  const excluded = ast.params[0].properties.filter((e: Property) => e.type === 'Property').map(e => e.key.name)
-  const spreadId = ast.params[0]?.properties.find((e: Property) => e.type === 'SpreadElement')?.argument?.name
+  const excluded = ast.params[0].properties.filter((e) => e.type === 'Property').map(e => e.key.name)
+  const spreadId = ast.params[0]?.properties.find((e) => e.type === 'SpreadElement')?.argument?.name
   return { excluded, spreadId }
   // console.log('tttttttttttttttt', { excluded, spreadId })
 }

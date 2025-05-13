@@ -266,12 +266,19 @@ test('parseObject destructuring', () => {
     ])
 })
 
-// test('+ sign', () => {
-//     [
-//         // [e => ({x:e.function_name + 'lol'}), "function_name || 'lol'"],
-//         [e => ({x:`${e.function_name}lol`}), "function_name || 'lol'"],
-//     ].forEach(item => {
-//         const [fn, expected] = item;
-//         expect(parseObject(fn)).toEqual([['x', expected]]);
-//     });
-// })
+test('inoperator', () => {
+    // expect(parse((e, D) => e.database_name in ['lol', 'toto', 42, null])).toBe("database_name IN ('lol', 'toto', 42, NULL)");
+    expect(() => parse((e, D) => e.arr.map(x => x + 1))).not.toThrowError()
+    console.log('==>', parse((e, D) => e.arr.map(x => x + 1)))
+})
+
+test('lenx', () => {
+    [
+        // [e => ({x:e.function_name + 'lol'}), "function_name || 'lol'"],
+        [e => ({ x: e.whatever.toto.length }), "whatever.toto.len()"],
+        //  [e => ({ x: e.whatever['length'] }), "whatever.toto.len()"],
+    ].forEach(item => {
+        const [fn, expected] = item;
+        expect(parseObject(fn)).toEqual([['x', expected]]);
+    });
+})

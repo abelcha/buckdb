@@ -19,7 +19,7 @@ import { constructOptions, envOptions, remoteAuthority, userDataProvider } from 
 const container = document.createElement('div')
 container.id = 'app'
 container.innerHTML = (await import('./inner.html?raw')).default
-document.body.append(container)
+document.body?.append(container)
 await initializeMonacoService(
   {
     ...commonServices,
@@ -55,18 +55,18 @@ for (const config of [
     document.querySelector<HTMLDivElement>(config.element)!.style.display = visible ? 'block' : 'none'
   })
 }
-
 const layoutService = await getService(IWorkbenchLayoutService)
-document.querySelector('#togglePanel')?.addEventListener('click', async () => {
-  layoutService.setPartHidden(layoutService.isVisible(Parts.PANEL_PART, window), Parts.PANEL_PART)
-})
+// layoutService.setPartHidden(TRUE, Parts.)
+// document.querySelector('#togglePanel')?.addEventListener('click', async () => {
+//   layoutService.setPartHidden(layoutService.isVisible(Parts.PANEL_PART, window), Parts.PANEL_PART)
+// })
 
-document.querySelector('#toggleAuxiliary')?.addEventListener('click', async () => {
-  // const resp = await Buck.from('duckdb_settings()').select().execute()
-  layoutService.setPartHidden(true, Parts.SIDEBAR_PART)
+// document.querySelector('#toggleAuxiliary')?.addEventListener('click', async () => {
+//   // const resp = await Buck.from('duckdb_settings()').select().execute()
+//   layoutService.setPartHidden(true, Parts.SIDEBAR_PART)
   layoutService.setPartHidden(true, Parts.BANNER_PART)
-  layoutService.setPartHidden(true, Parts.ACTIVITYBAR_PART)
-})
+//   layoutService.setPartHidden(true, Parts.ACTIVITYBAR_PART)
+// })
 
 export async function clearStorage(): Promise<void> {
   await userDataProvider.reset()

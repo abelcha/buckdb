@@ -132,6 +132,7 @@ export default defineConfig({
     }
   },
   server: {
+    allowedHosts: ['reel-wx-supreme-flame.trycloudflare.com'],
     port: 5173,
     host: '0.0.0.0',
     fs: {

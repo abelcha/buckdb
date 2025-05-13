@@ -180,9 +180,9 @@ void getApi().then(async (vscode: VsCodeApi) => {
         }
     }));
 
-    // Register the S3 completion provider for TypeScript files, but without explicit trigger characters.
-    // It will activate based on context matching within the provider itself or manual trigger.
-    commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, s3CompletionProvider));
+    // Register the S3 completion provider for TypeScript files.
+    // Trigger automatically when '/' is typed.
+    commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, s3CompletionProvider, '/'));
 
     // Register the CodeLensProvider for TypeScript files
     const tsFileSelector = [{ language: 'typescript' }, { language: 'typescriptreact' }];

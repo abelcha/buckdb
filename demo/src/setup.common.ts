@@ -1,4 +1,4 @@
-import { transform } from "sucrase";
+// import { transform } from "sucrase";
 import { IStoredWorkspace, initUserConfiguration } from '@codingame/monaco-vscode-configuration-service-override';
 import { initUserKeybindings } from '@codingame/monaco-vscode-keybindings-service-override';
 import { RegisteredFileSystemProvider, RegisteredMemoryFile, createIndexedDBProviders, registerFileSystemOverlay } from '@codingame/monaco-vscode-files-service-override';
@@ -47,6 +47,13 @@ export async function writeFile(
 
 const parser = (await import('@external/src/parser.ts?raw')).default
 const jsep = (await import('@external/src/jsep.ts?raw')).default
+
+const serializer = (await import('@external/src/serializer.ts?raw')).default
+const readers = (await import('@external/src/readers.ts?raw')).default
+
+const interfaceGenerator = (await import('@external/src/interface-generator?raw')).default
+const typedef = (await import('@external/src/typedef.ts?raw')).default
+
 const types = (await import('@external/.buck/types.ts?raw')).default
 const utils = (await import('@external/src/utils.ts?raw')).default
 const copy = (await import('@external/src/copy.ts?raw')).default
@@ -61,8 +68,24 @@ const tsconf = JSON.stringify({
     strict: true, "resolveJsonModule": true, "allowImportingTsExtensions": true, "target": "ESNext", "module": "ESNext", "moduleResolution": "bundler",
   }
 })
-loadFile(tsconf, 'tsconfig.json',) && loadFile(parser, 'src/parser.ts') && loadFile(jsep, 'src/jsep.ts',) && loadFile(copy, 'src/copy.ts',) && loadFile(types, '.buck/types.ts',) && loadFile(tablejson, '.buck/table.json',)
-loadFile(utils, 'src/utils.ts',) && loadFile(table3, '.buck/table3.ts',) && loadFile(buildTypes, 'src/build.types.ts',) && loadFile(build, 'src/build.ts',) && loadFile(buckdb, 'buckdb.ts',) && loadFile(demo, 'demo.ts',)
+
+loadFile(tsconf, 'tsconfig.json',)
+loadFile(parser, 'src/parser.ts')
+loadFile(jsep, 'src/jsep.ts',)
+loadFile(copy, 'src/copy.ts',)
+loadFile(types, '.buck/types.ts',)
+loadFile(tablejson, '.buck/table.json',)
+loadFile(utils, 'src/utils.ts',)
+loadFile(table3, '.buck/table3.ts',)
+loadFile(buildTypes, 'src/build.types.ts',)
+loadFile(build, 'src/build.ts',)
+loadFile(buckdb, 'buckdb.ts',)
+loadFile(demo, 'demo.ts',)
+loadFile(typedef, 'src/typedef.ts',)
+loadFile(serializer, 'src/serializer.ts',)
+loadFile(readers, 'src/readers.ts',)
+loadFile(interfaceGenerator, 'src/interface-generator.ts',)
+
 
 const removeImports = (str: string) => str.split('\n').filter(e => !(e.match(/^\s*\/\//) || (e.startsWith('import') && e.includes('./')))).join('\n')
 const namespaceify = (name, str: string) => `namespace ${name}  {\n ${str}\n} \n`
@@ -74,7 +97,7 @@ export const getFullBundle = () => {
 
 }
 // fileSystemProvider
-export const bundle = transform(getFullBundle(), { transforms: ["typescript"] })
+// export const bundle = transform(getFullBundle(), { transforms: ["typescript"] })
 // Use a workspace file to be able to add another folder later (for the "Attach filesystem" button)
 fileSystemProvider.registerFile(
   new RegisteredMemoryFile(workspaceFile, JSON.stringify(<IStoredWorkspace>{ folders: [{ path: '/workspace' }] }, null, 2))
@@ -107,7 +130,12 @@ await Promise.all([
   // initCustomThemeRegister(),
   initUserConfiguration(JSON.stringify({
     ...defaultConfiguration,
-
+    // Enable quick suggestions within strings
+    "editor.quickSuggestions": {
+      "other": true,
+      "comments": false,
+      "strings": true // <-- Enable here
+    }
   })),
   initUserKeybindings(defaultKeybindings)
 ])

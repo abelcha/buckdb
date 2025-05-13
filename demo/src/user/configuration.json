@@ -1,5 +1,5 @@
 {
-    "workbench.colorTheme": "Default Dark+",
+    "ddworkbench.colorTheme": "Default Dark+",
     "workbench.iconTheme": "vs-seti",
     "editor.autoClosingBrackets": "languageDefined",
     "editor.autoClosingQuotes": "languageDefined",
@@ -28,7 +28,7 @@
     "editor.experimental.preferTreeSitter": [
         "typescript"
     ],
-    "workbench.colorCustomizations": {
+    "__workbench.coldorCustomizations": {
         "editor.background": "#0d0d0d",
         "editor.foreground": "#f2f2f2",
         "sideBar.background": "#0d0d0d",

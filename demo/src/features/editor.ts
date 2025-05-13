@@ -30,8 +30,8 @@ export const openNewCodeEditor: OpenEditor = async (modelRef) => {
     editorElem.style.right =
       '0'
   editorElem.style.margin = 'auto'
-  editorElem.style.width = '80%'
-  editorElem.style.height = '80%'
+  editorElem.style.width = '100%'
+  editorElem.style.height = '100%'
 
   container.appendChild(editorElem)
 

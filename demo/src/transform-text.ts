@@ -3,10 +3,8 @@ import type { IDisposable } from 'monaco-editor';
 import { debounce, memoize } from 'es-toolkit';
 import { BuckStatementParts, extractBuckStatement, extractFromStatementsAST, FromStatementParts } from '../src/extract-from-statements';
 import { writeFile } from './setup.common';
-import { generateInterface, serializeDescribe } from '../../src/interface-generator'; // Use relative path
+import { generateInterface, serializeDescribe } from '../../src/interface-generator.ts'; // Use relative path
 import contentjson from '../../.buck/table.json'; // Use relative path
-import { DuckDBAccessMode, type AsyncDuckDB } from '@duckdb/duckdb-wasm';
-import { get } from 'es-toolkit/compat';
 
 export const transformedScheme = 'transformed';
 export const scrollSyncMap = new Map<string, { sourceDisposable: IDisposable; targetDisposable: IDisposable }>();
@@ -32,9 +30,18 @@ function transformCode(parts: { cleanFromChain: string; lineStart: number }[]): 
         }
         let offset = 0;
         while (arr[st.lineStart + offset]) offset++;
-        res.forEach((line, i) => arr[st.lineStart + i + offset] = line);
+        res.forEach((line, i) => arr[st.lineStart + i + offset + 1] = line);
     }
     return arr.map(e => e || '').join('\n');
+}
+
+const getStatementId = ({ param }) => {
+    if (param.match(/^(\w+_)?(read|scan)(_\w+)\(/)) {
+        console.log('getStatement nneeee')
+        return (new Function(` return ${param}`))();
+    }
+    console.log('getStatementxxxx', param)
+    return `${param}`
 }
 
 class Schemes {
@@ -53,7 +60,6 @@ class Schemes {
         await this.writeFile('.buck/table3.ts', tsfile);
     }
     upsertBuckStatements = async (statements: BuckStatementParts[]) => {
-        console.log('upsertBuckStatements', statements);
         let toUpdate = false
         for (const statement of statements) {
             if (this.content[statement.resource || ''] || !statement.resource.match(/\.\w{2,10}$/)) {
@@ -61,15 +67,14 @@ class Schemes {
             }
             try {
                 const fnx = `return ${statement.fullCall || "Buck('')"}.fetchTables()`
-                console.log({ fnx })
                 const fn = new Function(fnx);
                 const schemas = await fn();
-                // console.log('UPSERT BUCK STATEMENT', statement, schema);
                 const resource = statement.resource || '';
                 this.content[resource] = schemas;
                 toUpdate = true
             }
             catch (err) {
+                console.error(err)
                 console.error('STERR', statement, err);
             }
             // this.content[resource][statement.param] = schema;
@@ -77,28 +82,40 @@ class Schemes {
         return toUpdate && this.updateContent()
     }
     upsertFromStatements = async (statements: FromStatementParts[]) => {
-        console.log('upsertFromStatements', statements);
-        // return;
         let toUpdate = false
         for (const statement of statements) {
-            if (!statement.param.match(/\w{2,13}$/)) {
+            if (!statement.param.match(/(\w{2,13}|\))$/)) {
                 continue
             }
-            console.log('LOOP', statement)
             const resource = statement.resource || '';
             if (!this.content[resource]) {
                 this.content[resource] = {};
             }
-            if (!this.content[resource]?.[statement.param] && !failedSet.has(statement)) {
+
+            const stx = getStatementId(statement)
+            console.log('-------------------')
+            console.log({ stx, statement })
+            if (!this.content[resource]?.[stx] && !failedSet.has(statement)) {
                 try {
-                    const fn = new Function(`return ${statement.chain || "Buck('')"}.describe('${statement.param}')`);
+
+                    const fnn = `return ${statement.chain || "Buck('')"}.describe("${stx}")`
+                    console.log('fnn', fnn)
+                    const fn = new Function(fnn);
                     const schema = await fn()
-                    this.content[resource][statement.param] = serializeDescribe(schema);
+                    console.log('schema', schema)
+                    console.log('-------------------')
+                    this.content[resource][stx] = serializeDescribe(schema);
                     toUpdate = true
                 }
                 catch (err) {
-                    this.content[resource][statement.param] = {}
-                    console.error('STERR', statement, err);
+                    // this.content[resource][statement.param] = {}
+                    if (err.stack.includes('@duckdb/duckdb-wasm')) {
+                        this.content["error"][stx] = {
+                            [err.message]: 'DVarchar'
+                        }
+                        toUpdate = true
+                    }
+                    console.error(err)
                     failedSet.add(statement)
                 }
 
@@ -182,7 +199,9 @@ const getCode = (uri: Uri): string => {
 const refreshTypes = debounce(async (code: string) => {
     const parts = extractFromStatementsAST(code);
     const bsts = extractBuckStatement(code);
-    console.log({ bsts })
+    console.log('refreshtype', { parts, bsts })
+
+    // console.log({ bsts })
     schemes.upsertBuckStatements(bsts)
         .then(() => schemes.upsertFromStatements(parts))
         .catch(err => console.error(err));

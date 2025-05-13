@@ -1,3 +1,6 @@
+#workbench.parts.banner {
+  display: none;
+}
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
@@ -21,7 +24,7 @@ body {
 #editors {
   position: relative;
   min-width: 0;
-  height: 80vh;
+  height: 100vh;
   border: 1px solid var(--vscode-editorWidget-border);
 }
 

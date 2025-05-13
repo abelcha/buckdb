@@ -1,6 +1,14 @@
 <div id="workbench-container">
+  <style>
+    .banner {
+      display: none!important;
+    }
+    #banner {
+      display: none!important;
+    }
+  </style>
   <div id="titleBar"></div>
-  <div id="banner"></div>
+  <div id="banner" style="display:none;"></div>
   <div id="workbench-top">
     <div style="display: flex; flex: none; border: 1px solid var(--vscode-editorWidget-border)">
       <div id="activityBar"></div>
@@ -8,11 +16,11 @@
       <div id="auxiliaryBar-left" style="max-width: 300px"></div>
     </div>
     <div style="flex: 1; min-width: 0;flex-direction: row">
-      <h1>Editor</h1>
+      <!-- <h1>Editor</h1>
       <button id="clearStorage">Clear user data</button>
       <button id="togglePanel">Toggle Panel</button>
       <button id="toggleAuxiliary">Toggle Secondary Panel</button>
-      <button id="resetLayout">resetLayout</button>
+      <button id="resetLayout">resetLayout</button> -->
       <div id="editors"></div>
 
       <!-- <button id="toggleHTMLFileSystemProvider">Toggle HTML filesystem provider</button>

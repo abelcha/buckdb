@@ -1,135 +1,7 @@
-import { PatternMatchers, wrap } from './utils';
-import { camelCase, groupBy, maxBy, range, uniq, uniqBy, upperFirst } from 'es-toolkit';
-import { Buck, from } from '../buckdb';
-
-
-interface DNumericType {
-    man: 'number & CNumeric';
-    comptype: 'number';
-    id: 'numeric';
-    able: 'DNumericable';
-    field: 'DNumericField';
-    rawType: 'number';
-    inferredTo: 'number';
-    anti: 'AntiNumber';
-    fieldSuffix: '& number';
-}
-
-interface DVarcharType {
-    man: 'string & CVarchar';
-    id: 'varchar';
-    able: 'DVarcharable';
-    field: 'DVarcharField';
-    rawType: 'string';
-    inferredTo: 'string';
-    anti: 'AntiString';
-}
-
-interface DArrayType {
-    id: 'array';
-    able: 'DArrayable';
-    field: 'DArrayField';
-    rawType: 'any[]';
-    inferredTo: 'any[]';
-    anti: 'Array';
-    generic: { main: '<T = any>', inferred: 'T[]' };
-}
-
-interface DStructType {
-    id: 'struct';
-    able: 'DStructable';
-    field: 'DStructField';
-    rawType: 'Record<string,any>';
-    inferredTo: 'Record<string,any>';
-    anti: 'AntiObject';
-    generic: { main: '<T = {}>', inferred: 'T' };
-}
-
-interface DJsonType {
-    id: 'json';
-    able: 'DJsonable';
-    field: 'DJsonField';
-    rawType: 'Record<string,any>';
-    inferredTo: 'Record<string,any>';
-    anti: 'AntiObject';
-    generic: { main: '<T = {}>', inferred: 'T' };
-}
-
-interface DBoolType {
-    id: 'bool';
-    able: 'DBoolable';
-    field: 'DBoolField';
-    rawType: 'boolean';
-    inferredTo: 'boolean';
-    anti: 'AntiBoolean';
-}
-
-interface DBlobType {
-    id: 'blob';
-    able: 'DBlobable';
-    field: 'DBlobField';
-    rawType: 'Blob';
-    inferredTo: 'string';
-    anti: 'AntiBlob';
-}
-
-interface DDateType {
-    id: 'date';
-    able: 'DDateable';
-    field: 'DDateField';
-    rawType: 'Date';
-    inferredTo: 'Date';
-    anti: 'AntiDate';
-}
-
-interface DMapType {
-    id: 'map';
-    able: 'DMapable';
-    field: 'DMapField';
-    rawType: 'Map<string,any>';
-    inferredTo: 'Map<string,any>';
-    anti: 'AntiMap';
-}
-
-interface DOtherType {
-    id: 'other';
-    able: 'DOtherable';
-    field: 'DOtherField';
-    rawType: 'any';
-    inferredTo: 'any';
-}
-
-interface DAnyType {
-    man: 'Partial<CAny>';
-    id: 'any';
-    able: 'DAnyable';
-    field: 'DAnyField';
-    rawType: 'any';
-    inferredTo: 'any';
-}
-
-const DNumeric: DNumericType = {
-    man: 'number & CNumeric',
-    comptype: 'number', id: 'numeric', able: 'DNumericable', field: 'DNumericField', rawType: 'number', inferredTo: 'number', anti: 'AntiNumber',
-    fieldSuffix: '& number'
-};
-
-const DVarchar: DVarcharType = {
-    man: 'string & CVarchar',
-    id: 'varchar', able: 'DVarcharable', field: 'DVarcharField', rawType: 'string', inferredTo: 'string', anti: 'AntiString'
-};
-
-const DArray: DArrayType = { id: 'array', able: 'DArrayable', field: 'DArrayField', rawType: 'any[]', inferredTo: 'any[]', anti: 'Array', generic: { main: '<T = any>', inferred: 'T[]' } };
-const DStruct: DStructType = { id: 'struct', able: 'DStructable', field: 'DStructField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } };
-const DJson: DJsonType = { id: 'json', able: 'DJsonable', field: 'DJsonField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } };
-const DBool: DBoolType = { id: 'bool', able: 'DBoolable', field: 'DBoolField', rawType: 'boolean', inferredTo: 'boolean', anti: 'AntiBoolean' };
-const DBlob: DBlobType = { id: 'blob', able: 'DBlobable', field: 'DBlobField', rawType: 'Blob', inferredTo: 'string', anti: 'AntiBlob' };
-const DDate: DDateType = { id: 'date', able: 'DDateable', field: 'DDateField', rawType: 'Date', inferredTo: 'Date', anti: 'AntiDate' };
-const DMap: DMapType = { id: 'map', able: 'DMapable', field: 'DMapField', rawType: 'Map<string,any>', inferredTo: 'Map<string,any>', anti: 'AntiMap' };
-const DOther: DOtherType = { id: 'other', able: 'DOtherable', field: 'DOtherField', rawType: 'any', inferredTo: 'any' };
-const DAny: DAnyType = { man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' };
-
-const TypeProps = {
+import { wrap } from './utils';
+import {
+    mapTypes,
+    NativeMap,
     DNumeric,
     DVarchar,
     DArray,
@@ -140,62 +12,26 @@ const TypeProps = {
     DDate,
     DMap,
     DOther,
-    DAny
-};
+    DAny,
+    TypeProps,
+    mapTypesProps,
+    PatternMatchers,
+} from './typedef'
+import { camelCase, groupBy, maxBy, range, uniq, uniqBy, upperFirst, zipObject } from 'es-toolkit';
+import { Buck, from } from '../buckdb';
+import { Merge } from 'type-fest';
 
 
 const entriesSorted = <T>(items: Record<string, T>) => {
     return Object.keys(items).sort().map(e => [e, items[e]]) as [string, T][]
 }
 
-export const mapTypes = (type: string) => {
-    if (!type) return 'DOther';
-    const t = type.toUpperCase();
-    if (t.match(/^(ANY)$/)) return 'DAny';
-    if (t.match(/(\[\]$|^LIST$|^ARRAY$|\w+\[\w+\])/)) return 'DArray';
-    if (t.match(/\b((U)?(BIG|HUGE|TINY|SMALL)?INT(EGER)?|DOUBLE|DECIMAL|FLOAT)\b/)) return 'DNumeric';
-    if (t.match(/^(VARCHAR|CHAR|TEXT)$/)) return 'DVarchar';
-    if (t.match(/^STRUCT/)) return 'DStruct';
-    if (t.match(/^JSON/)) return 'DJson';
-    if (t.match(/^BOOLEAN/)) return 'DBool';
-    if (t.match(/^MAP/)) return 'DMap';
-    if (t.match(/^BLOB/)) return 'DBlob';
-    if (t.match(/^(DATE|TIME)[\w\s]*/)) return 'DDate';
-    return 'DOther';
-}
-
-const mapTypesProps = (type: string, details = false) => {
-    const mtype = mapTypes(type)
-    if (mtype === 'DArray' && details === true) {
-        const [_, subtype] = type.match(/^([A-Z]+)\[\]$/) || []
-        if (subtype) {
-            const s = mapTypesProps(subtype)
-            const rtn = {
-                ...DArray, rawType: s.rawType + '[]', inferredTo: !s.inferredTo ? 'any[]' : s.inferredTo + '[]'
-            }
-            console.log({ subtype, rtn })
-            return rtn
-        }
-        return 'DArray';
-    }
-    switch(mtype) {
-        case 'DNumeric': return DNumeric;
-        case 'DVarchar': return DVarchar;
-        case 'DArray': return DArray;
-        case 'DStruct': return DStruct;
-        case 'DJson': return DJson;
-        case 'DBool': return DBool;
-        case 'DBlob': return DBlob;
-        case 'DDate': return DDate;
-        case 'DMap': return DMap;
-        case 'DOther': return DOther;
-        case 'DAny': return DAny;
-        default: return DOther;
-    }
-}
+const instance = Buck('')
+    .loadExtensions("arrow", "aws", "azure", "delta", "excel", "fts", "h3", "httpfs", "iceberg", "inet", "spatial", "sqlite_scanner", "ui")
 
 
-const resp = await from('duckdb_types()')
+
+const resp = await instance.from('duckdb_types()')
     .select((e) => ({ logical_type: e.logical_type.left(1).concat(e.logical_type.right(-1).lower()) }))
     .distinctOn('logical_type')
     .where(e => e.logical_type.SimilarTo(/\w+/))
@@ -227,21 +63,6 @@ const addFuncs = [
 ]
 
 
-const tmap = {
-    BOOLEAN: 'DBool',
-    NUMERIC: 'DNumeric',
-    STRING: 'DVarchar',
-    DATETIME: 'DDate',
-}
-
-const NativeMap = {
-    BOOLEAN: 'DBool',
-    NUMERIC: 'DNumeric',
-    STRING: 'DVarchar',
-    DATETIME: 'DDate',
-}
-const NativeInverseMap = Object.fromEntries(Object.entries(NativeMap).map(([k, v]) => [v, k]))
-
 const resp3 = await from('duckdb_types()')
     .select((e, D) => ({ typenames: D.array_agg(e.type_name) }))
     .keyBy(e => e.type_category)
@@ -257,9 +78,9 @@ for (let i in resp3) {
     const enms = uniq(resp3[i].typenames.map(upperFirst).map(e => wrap(e, "'"))).join(' | ')
 
     const dest = NativeMap[i.toUpperCase()] === 'DNumeric' ? DNumeric :
-                 NativeMap[i.toUpperCase()] === 'DVarchar' ? DVarchar :
-                 NativeMap[i.toUpperCase()] === 'DBool' ? DBool :
-                 NativeMap[i.toUpperCase()] === 'DDate' ? DDate : DAny
+        NativeMap[i.toUpperCase()] === 'DVarchar' ? DVarchar :
+            NativeMap[i.toUpperCase()] === 'DBool' ? DBool :
+                NativeMap[i.toUpperCase()] === 'DDate' ? DDate : DAny
     // const wildcard = '`${string}(${number}, ${number})` | `${string}[]` |  `[${string}]`'
     const n = `D${i.replace('null', 'ANY')}_NATIVE`
     acsheaders += (`export type ${n} = ${enms};\n`)
@@ -270,24 +91,20 @@ for (let i in resp3) {
 
 }
 
+type ftype = Merge<typeof TypeProps['DNumeric'], typeof TypeProps['DArray']>
 const fkey = key => camelCase(key).match(/\w+/)[0].replace('array', 'arr').replace('enum', 'enm')
-const getFuncHeader = (row: any) => {
-    const typeName = mapTypes(row.return_type);
-    const tt =
-        typeName === 'DNumeric' ? DNumeric :
-        typeName === 'DVarchar' ? DVarchar :
-        typeName === 'DArray' ? DArray :
-        typeName === 'DStruct' ? DStruct :
-        typeName === 'DJson' ? DJson :
-        typeName === 'DBool' ? DBool :
-        typeName === 'DBlob' ? DBlob :
-        typeName === 'DDate' ? DDate :
-        typeName === 'DMap' ? DMap :
-        typeName === 'DAny' ? DAny :
-        DOther;
-
+const getFuncHeader = (row: any, ot: ftype) => {
+    // console.log({  })
+    const tt = TypeProps[mapTypes(row.return_type)] as ftype
+    // console.log(row.args);
+    // if (row.args)
+    // process.exit()
     return {
-        args: row.args.map((arg) => [arg.pname, arg.dtypes.sort().map(e => e + 'able').join(' | ')].join(arg.required ? ': ' : '?: ')),
+        pargs: row.args.map(e => e.ptypes.join(' | ')),
+        args: row.args.map((arg) => [
+            arg.pname,
+            arg.dtypes.sort().map(e => e + 'able').join(' | ')
+        ].join(arg.required ? ': ' : '?: ')),
         output: ot?.man && tt.man || (!row.return_type ? 'void' : tt?.field)
     }
 }
@@ -307,15 +124,54 @@ const buildJSDoc = (row: any) => {
         return wrap(items.join('\t'), '/**', '*/\n')
     return ''
 }
+/*
 
-const genRowFunction = (row: any, f: Partial<ftype> = {}, slice = 0) => {
-    let { args, output } = getFuncHeader(row, f)
+  filter(lambda: (x: T) => any): DArrayField<T>;
+  reduce<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): U;
+  apply<U>(lambda: (x: T) => U): DArrayField<U>;
+
+*/
+
+const getLambdaRow = (row: any, x: any) => {
+    if (row.function_name.match(/(list_|array_|)(apply|transform)$/)) {
+        if (x === 'array') {
+            return `${row.function_name}<U>(lambda: (x: T) => U): DArrayField<U>;\n`
+        }
+        return `${row.function_name}<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U> ;\n`
+    }
+    if (row.function_name.match(/(list_|array_|)(filter)$/)) {
+        if (x === 'array') {
+            return `${row.function_name}(lambda: (x: T) => any): DArrayField<T>;\n`
+        }
+        return `${row.function_name}<T>(list: T[], lambda: (x: T) => any): DArrayField<T> ;\n`
+    }
+    if (row.function_name.match(/(list_|array_|)(reduce)$/)) {
+        if (x === 'array') {
+            return `${row.function_name}<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): U;\n`
+        }
+        return `${row.function_name}<T,U>(list: T[], lambda: (accumulator: U, currentValue: T) => U, initialValue: U): DArrayField<T> ;\n`
+    }
+}
+
+const genRowFunction = (row: any, f: Partial<ftype>, slice = 0) => {
+    let { args, output, pargs } = getFuncHeader(row, f)
     if (row.varargs) {
         args.push(`...args: ${mapTypes(row.varargs)}able[]`)
     }
+    if (reverseAliases[row.function_name]) {
+        return `${buildJSDoc(row)}  ${row.function_name}: typeof ${reverseAliases[row.function_name]} ;\n`
+    }
+    if (row.parameter_types.includes('LAMBDA')) {
+        return `  ${buildJSDoc(row)}  ${getLambdaRow(row, f.id)}`
+    }
     if (row.parameters[0] === 'col0' && row.parameters.length > 2 && row.function_type === 'table' && row.parameters[1] !== 'col1') {
         const [p1, ...pall] = args
-        args = [p1, ['opts?:' + wrap(pall.toSorted().join(', '), 'Partial<{', '}>')]]
+        const vargs = pall.map((e, i) => `${e}, // ${pargs[i + 1]}\n`).toSorted();
+        console.log(vargs.join(''))
+        args = [p1, ['opts?:', wrap(vargs.join(''), 'Partial<{', '}>')].join('')]
+        // console.log(args.join(''))
+        console.log(pargs.join(', '))
+
     }
     const fargs = args.slice(slice).join(', ')
     return `${buildJSDoc(row)}  ${row.function_name}(${fargs}): ${output} ;\n`
@@ -355,122 +211,141 @@ const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number']
 // const genFunctions = 
 
 const generateSettings = async () => {
-    const db = Buck('')
-    const extts = await db.from('duckdb_extensions()')
-        .select(e => e.extension_name)
-        .where(e => !e.loaded && e.installed)
-        .execute()
-    // db.loadExtensions("arrow", "aws", "azure", "delta", "excel", "fts", "h3", "httpfs", "iceberg", "inet", "spatial", "sqlite_scanner", "ui")
-    const resp = await db.from('duckdb_settings()')
-        .execute()
+    const exts = await instance.from('duckdb_extensions()').select('extension_name', 'description', 'installed_from').execute()
+    const resp = await instance.from('duckdb_settings()').execute()
     let out = `export interface DSettings {\n`
     out += resp.map(e => buildJSDoc(e) + `  ${e.name}: ${mapTypesProps(e.input_type).rawType},`).join('\n')
     out += '\n}\n'
-    out += `export const DExtensions = ` + JSON.stringify(await from('duckdb_extensions()').select('extension_name', 'description', 'installed_from').execute(), null, 2) + ' as const' + '\n'
+    out += `export const DExtensions = ` + JSON.stringify(exts, null, 2) + ' as const' + '\n'
     return out;
 }
 
 
-if (import.meta.main) {
-    const main = async () => {
+const aliases = {
+    'read_json': ['read_json', 'read_json', 'read_json_auto', 'read_ndjson', 'read_ndjson_auto'],
+    'read_json_objects': ['read_json_objects', 'read_json_objects_auto', 'read_ndjson_objects'],
+    'read_csv': ['read_csv', 'read_csv_auto', 'sniff_csv'],
+    'parquet_scan': ["parquet_scan", "read_parquet"],
+    'read_xlsx': ['read_xlsx'],
+    'read_text': ['read_text'],
+}
 
-        let output = []
+const reverseAliases = Object.fromEntries(Object.entries(aliases).flatMap(([k, values]) => {
+    return values.map(x => [x, k])
+}))
 
-        const db = Buck('')
-            .loadExtensions("arrow", "aws", "azure", "delta", "excel", "fts", "h3", "httpfs", "iceberg", "inet", "spatial", "sqlite_scanner", "ui")
-            .from('duckdb_functions()')
-        const query = db
-            .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters')
-            .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
-            .orderBy('function_name')
-        // .limit(380)
-        let results = (await query.execute()).concat(anyFuncs).concat(addFuncs)
-        const mergeFuncNames = () => {
-            const groups = Object.groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-'))
-            return entriesSorted(groups)
-                .filter(([key, values]) => !OmittedFuncs.includes(key))
-                .flatMap(([key, values]) => {
-                    let maxParams = maxBy(values, e => e.parameter_types.length as number)
-                    const args = range(maxParams.parameters.length).map((type, i) => {
-                        let pname = fkey(maxParams.parameters[i]) //.match(/\w+/)[0]
-                        if (i && fkey(maxParams.parameters[i]) == fkey(maxParams.parameters[i - 1])) {
-                            pname += `__0${i}`
-                        }
+const main = async () => {
 
-                        const ptypes = uniq(values.map(e => e.parameter_types[i]))
-                        const required = !ptypes.includes(undefined)
-                        let dtypes = uniq(ptypes.map(e => mapTypes(e)) || [])
-                        if (maxParams.function_name.includes('regexp')) {
-                            if (['pattern', 'separator', 'regex'].includes(pname)) {
-                                dtypes = dtypes.filter(e => e === 'DVarchar').concat('RegExp')
-                            }
-                        }
-                        return { pname, ptypes, dtypes, required }
-                    })
-                    const return_type = maxParams.function_name === 'concat' ? 'VARCHAR' : maxParams.return_type
-                    const output = !return_type ? 'void' : `${mapTypes(return_type)}Field`
-                    return { ...maxParams, return_type, args, output }
-                })
+    // Sequential, template-like main process for type sync
+
+    // 1. Prepare output array
+    let output = [];
+
+    // 2. Connect to database and load extensions
+
+    // 3. Query for function metadata
+    const query = instance.from('duckdb_functions()')
+        .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters')
+        .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
+        .orderBy('function_name');
+
+    // 4. Execute query and merge with additional functions
+    let results = (await query.execute()).concat(anyFuncs).concat(addFuncs as any);
+
+    // 5. Merge function names and parameter types
+    const groups = Object.groupBy(results, e =>
+        [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-')
+    );
+    let mergedResults = entriesSorted(groups)
+        .filter(([key, values]) => !OmittedFuncs.includes(key))
+        .flatMap(([key, values]) => {
+            let maxParams = maxBy(values, e => e.parameter_types.length as number);
+            const args = range(maxParams.parameters.length).map((type, i) => {
+                let pname = fkey(maxParams.parameters[i]);
+                if (i && fkey(maxParams.parameters[i]) == fkey(maxParams.parameters[i - 1])) {
+                    pname += `__0${i}`;
+                }
+                const ptypes = uniq(values.map(e => e.parameter_types[i]));
+                const required = !ptypes.includes(undefined);
+                let dtypes = uniq(ptypes.map(e => mapTypes(e)) || []);
+                if (maxParams.function_name.includes('regexp')) {
+                    if (['pattern', 'separator', 'regex'].includes(pname)) {
+                        dtypes = dtypes.filter(e => e === 'DVarchar').concat('RegExp' as any);
+                    }
+                }
+                return { pname, ptypes, dtypes, required };
+            });
+            const return_type = maxParams.function_name === 'concat' ? 'VARCHAR' : maxParams.return_type;
+            const output = !return_type ? 'void' : `${mapTypes(return_type)}Field`;
+            return { ...maxParams, return_type, args, output };
+        });
+
+    // 6. Group results by function type
+    let resp = groupBy(mergedResults, e => e.function_type as 'scalar' | 'table' | 'aggregate' | 'window' | 'udf');
+
+    // 7. Group scalar functions by parameter type
+    const grouped = Object.groupBy(resp.scalar.filter(e => !e.function_name.startsWith('h3')), e => mapTypes(e.parameter_types[0]));
+    const xkeys = ['DVarchar', 'DNumeric', 'DDate', ...Object.keys(grouped)];
+
+    // 8. Generate type headers
+
+    let header = [DVarchar, DArray, DStruct, DJson, DBool, DBlob, DDate, DMap, DOther, DAny, DNumeric]
+        .map(e => `export type ${e.able} = ${e.inferredTo || e.rawType} | ${e.field} | _${e.field};`)
+        .sort()
+        .concat('export type RegExpable = RegExp | string;')
+        .join('\n');
+    header += `import {${Object.keys(aliases).sort().join(',')}} from '../src/readers';\n`
+    header += acsheaders;
+    header += `export type DSomeField = ${xkeys.map(e => TypeProps[e].field).filter(Boolean).join(' | ')}`;
+    const symbols = ['sId', 'sComptype', 'sAnti', 'sInferred'];
+    output.push(header);
+    output.push(...symbols.map(e => `export declare const ${e}: unique symbol;`));
+
+    // 9. Generate interfaces for each main type
+    for (const maintype of new Set(xkeys)) {
+        const { man, ...f } = TypeProps[maintype];
+        const d = (grouped[maintype] || []).filter(e => !PatternMatchers[e.function_name]);
+        let s = genInterface(d, f, 1, true);
+        if (maintype === 'DAny') {
+            s = s.replace('{', '{\n' + funcas);
         }
-        results = mergeFuncNames()
-
-        let resp = groupBy(results, e => e.function_type as 'scalar' | 'table' | 'aggregate' | 'window' | 'udf')
-
-
-
-        const grouped = Object.groupBy(resp.scalar.filter(e => !e.function_name.startsWith('h3')), e => mapTypes(e.parameter_types[0]))
-        const xkeys = ['DVarchar', 'DNumeric', 'DDate', ...Object.keys(grouped)]
-        let header = [
-            `export type ${DVarchar.able} = ${DVarchar.inferredTo || DVarchar.rawType} | ${DVarchar.field} | _${DVarchar.field};`,
-            `export type ${DArray.able} = ${DArray.inferredTo || DArray.rawType} | ${DArray.field} | _${DArray.field};`,
-            `export type ${DStruct.able} = ${DStruct.inferredTo || DStruct.rawType} | ${DStruct.field} | _${DStruct.field};`,
-            `export type ${DJson.able} = ${DJson.inferredTo || DJson.rawType} | ${DJson.field} | _${DJson.field};`,
-            `export type ${DBool.able} = ${DBool.inferredTo || DBool.rawType} | ${DBool.field} | _${DBool.field};`,
-            `export type ${DBlob.able} = ${DBlob.inferredTo || DBlob.rawType} | ${DBlob.field} | _${DBlob.field};`,
-            `export type ${DDate.able} = ${DDate.inferredTo || DDate.rawType} | ${DDate.field} | _${DDate.field};`,
-            `export type ${DMap.able} = ${DMap.inferredTo || DMap.rawType} | ${DMap.field} | _${DMap.field};`,
-            `export type ${DOther.able} = ${DOther.inferredTo || DOther.rawType} | ${DOther.field} | _${DOther.field};`,
-            `export type ${DAny.able} = ${DAny.inferredTo || DAny.rawType} | ${DAny.field} | _${DAny.field};`,
-            `export type ${DNumeric.able} = ${DNumeric.inferredTo || DNumeric.rawType} | ${DNumeric.field} | _${DNumeric.field};`,
-        ].sort()
-            .concat('export type RegExpable = RegExp | string;')
-            .join('\n')
-        header += acsheaders;
-        header += `export type DSomeField = ${xkeys.map(e => TypeProps[e].field).filter(Boolean).join(' | ')}`
-        const symbols = ['sId', 'sComptype', 'sAnti', 'sInferred']
-        output.push(header)
-        output.push(...symbols.map(e => `export declare const ${e}: unique symbol;`))
-        for (const maintype of new Set(xkeys)) {
-            const { man, ...f } = TypeProps[maintype]
-            const d = (grouped[maintype] || []).filter(e => !PatternMatchers[e.function_name])
-            let s = genInterface(d, f, 1, true)
-            if (maintype === 'DAny') {
-                s = s.replace('{', '{\n' + funcas)
-            }
-            output.push(s)
-        }
-        const globalInter = genInterface(resp.scalar, { id: 'global' }, 0)
-            .replace('{', '{\n' + globas)
-        const scal = globalInter.matchAll(/\n\s*\w+?\([^\;]+/g).toArray().map((e) => e[0].replace('\n', 'export declare function ')).join('\n')
-
-        output.push(globalInter)
-        output.push(genInterface(resp.aggregate, { id: 'aggregate' }, 0))
-        output.push(genInterface(resp.table, { id: 'table' }, 0))
-
-        const dany = genInterface(grouped.DAny, TypeProps.DAny, 1, false)
-        output.push(dany.replace('{', '{\n' + funcomp))
-        output.push(genInterface(grouped.DVarchar, TypeProps.DVarchar, 1, true))
-        output.push(genInterface(grouped.DNumeric, TypeProps.DNumeric, 1, true))
-
-        const globalInterComp = genInterface(resp.scalar, { id: 'global', man: 'CGlobal' }, 0)
-            .replace('{', '{\n' + globcomp)
-        output.push(globalInterComp)
-
-        const aff = genInterface(resp.aggregate, { id: 'aggregate', man: 'CAggregate' }, 0)
-        output.push(aff)
-        output.push(await generateSettings())
-        writefile('types', output.join('\n'))
-        await Bun.$`dprint fmt .buck/types.ts`
+        output.push(s);
     }
-    main()
+
+    // 10. Generate global and aggregate interfaces
+
+
+    const globalInter = genInterface(resp.scalar, { id: 'global' }, 0)
+        .replace('{', '{\n' + globas);
+    output.push(globalInter);
+    output.push(genInterface(resp.aggregate, { id: 'aggregate' }, 0));
+    output.push(genInterface(resp.table, { id: 'table' }, 0));
+
+    // 11. Generate additional interfaces
+    const dany = genInterface(grouped.DAny, TypeProps.DAny, 1, false);
+    output.push(dany.replace('{', '{\n' + funcomp));
+    output.push(genInterface(grouped.DVarchar, TypeProps.DVarchar, 1, true));
+    output.push(genInterface(grouped.DNumeric, TypeProps.DNumeric, 1, true));
+
+    // 12. Generate global component interfaces
+    const globalInterComp = genInterface(resp.scalar, { id: 'global', man: 'CGlobal' }, 0)
+        .replace('{', '{\n' + globcomp);
+    output.push(globalInterComp);
+
+    // 13. Generate aggregate component interfaces
+    const aff = genInterface(resp.aggregate, { id: 'aggregate', man: 'CAggregate' }, 0);
+    output.push(aff);
+
+    // 14. Generate settings and append
+    output.push(await generateSettings());
+
+    // 15. Write to .buck/types.ts
+    await writefile('types', output.join('\n'));
+
+    // 16. Format the generated file
+    await Bun.$`dprint fmt .buck/types.ts`;
+}
+
+if (import.meta.main) {
+    await main()
 }

@@ -1012,7 +1012,7 @@ interface _DArrayField<T = any> {
   /**@description Repeats the string count number of times	@example repeat('A', 5)*/
   repeat(count: DNumericable): DArrayField;
 }
-export type DArrayField<T = any> = _DArrayField<T> & T[];
+export type DArrayField<T = DVarcharField> = _DArrayField<T> & T[];
 interface _DStructField<T = {}> {
   [sInferred]: T;
   [sComptype]: Record<string, any>;

@@ -64,7 +64,7 @@ function parseColumnsRaw(columnsString: string): Record<string, string> {
             else { console.warn(`Malformed quoted name: "${segment}"`); name = segment; type = 'UNKNOWN'; columns[name] = type; continue; }
         } else {
             let firstSpaceIndex = -1;
-            for(let j=0; j<segment.length; j++) {
+            for (let j = 0; j < segment.length; j++) {
                 if (segment[j] === ' ' || segment[j] === '\t') {
                     const potentialType = segment.substring(j + 1).trim();
                     if (potentialType.match(/^([A-Z_]+(\(.*\)|\[\])?|STRUCT\(|JSON|LIST\()/i) || potentialType.endsWith('[]')) { firstSpaceIndex = j; break; }
@@ -184,8 +184,8 @@ export function serializeSchema(createStatement: string): IntermediateTableSchem
     if (columnsString.trim()) {
         const rawColumns = parseColumnsRaw(columnsString);
         for (const [name, type] of Object.entries(rawColumns)) {
-             const cleanName = name.replace(/^"(.*)"$/, '$1'); // Use cleaned name for key
-             schema[cleanName] = parseTypeToIntermediateValue(type);
+            const cleanName = name.replace(/^"(.*)"$/, '$1'); // Use cleaned name for key
+            schema[cleanName] = parseTypeToIntermediateValue(type);
         }
     }
     return schema;
@@ -252,16 +252,16 @@ function createTypeNodeFromIntermediate(value: IntermediateColumnValue, key?: st
                     [typeLiteral]
                 );
             } else {
-                 // Only JSON can have no fields defined (standard JSON type)
-                 if (value.__type === 'json') {
-                     return ts.factory.createTypeReferenceNode(
-                         ts.factory.createQualifiedName(ts.factory.createIdentifier("t"), ts.factory.createIdentifier(fieldTypeName))
-                     );
-                 } else {
-                     // Empty struct? Should not happen.
-                     console.warn(`Encountered struct-like object with no fields for key: ${key ?? 'unknown'}`);
-                     return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
-                 }
+                // Only JSON can have no fields defined (standard JSON type)
+                if (value.__type === 'json') {
+                    return ts.factory.createTypeReferenceNode(
+                        ts.factory.createQualifiedName(ts.factory.createIdentifier("t"), ts.factory.createIdentifier(fieldTypeName))
+                    );
+                } else {
+                    // Empty struct? Should not happen.
+                    console.warn(`Encountered struct-like object with no fields for key: ${key ?? 'unknown'}`);
+                    return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+                }
             }
         } else if (value.__type === 'array') {
             // Generate t.DArrayField<ElementType> by recursively calling this function for the element type
@@ -271,15 +271,15 @@ function createTypeNodeFromIntermediate(value: IntermediateColumnValue, key?: st
                 [elementTypeNode]
             );
         } else {
-             // It's a table or resource level object (shouldn't happen here, handled by caller)
-             // Or an intermediate object missing a __type marker
-             console.warn(`Unexpected object without __type marker or unknown __type at type generation level for key: ${key ?? 'unknown'}`, value);
-             return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+            // It's a table or resource level object (shouldn't happen here, handled by caller)
+            // Or an intermediate object missing a __type marker
+            console.warn(`Unexpected object without __type marker or unknown __type at type generation level for key: ${key ?? 'unknown'}`, value);
+            return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
         }
     } else {
-      // Fallback for null/undefined/etc.
-      console.warn(`Unexpected value type at type generation level for key: ${key ?? 'unknown'}`, value);
-      return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        // Fallback for null/undefined/etc.
+        console.warn(`Unexpected value type at type generation level for key: ${key ?? 'unknown'}`, value);
+        return ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
     }
 }
 
@@ -289,57 +289,58 @@ function createTypeNodeFromIntermediate(value: IntermediateColumnValue, key?: st
  * Handles resource keys, table names, and column definitions.
  */
 function createPropertySignaturesRecursive(obj: Record<string, any>): ts.PropertySignature[] {
-  return Object.entries(obj).map(([key, value]) => {
-    let typeNode: ts.TypeNode;
+    return Object.entries(obj).map(([key, value]) => {
+        let typeNode: ts.TypeNode;
 
-    // Determine if 'value' represents a column type or a nested structure (table/resource)
-    if (typeof value === 'string' || (typeof value === 'object' && value !== null && value.__type)) {
-        // It's an IntermediateColumnValue (string or object with __type marker)
-        // Generate the specific field type node using the helper
-        typeNode = createTypeNodeFromIntermediate(value as IntermediateColumnValue, key);
-    } else if (typeof value === 'object' && value !== null) {
-        // It's a nested object (likely a table or resource level)
-        // Create a TypeLiteral by recursively calling this function
-        typeNode = ts.factory.createTypeLiteralNode(createPropertySignaturesRecursive(value));
-    } else {
-        // Fallback for unexpected types (null, undefined, etc.)
-        console.warn(`Unexpected value type in recursive generation for key: ${key}`, value);
-        typeNode = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
-    }
+        // Determine if 'value' represents a column type or a nested structure (table/resource)
+        if (typeof value === 'string' || (typeof value === 'object' && value !== null && value.__type)) {
+            // It's an IntermediateColumnValue (string or object with __type marker)
+            // Generate the specific field type node using the helper
+            typeNode = createTypeNodeFromIntermediate(value as IntermediateColumnValue, key);
+        } else if (typeof value === 'object' && value !== null) {
+            // It's a nested object (likely a table or resource level)
+            // Create a TypeLiteral by recursively calling this function
+            typeNode = ts.factory.createTypeLiteralNode(createPropertySignaturesRecursive(value));
+        } else {
+            // Fallback for unexpected types (null, undefined, etc.)
+            console.warn(`Unexpected value type in recursive generation for key: ${key}`, value);
+            typeNode = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+        }
 
-    // Use computed property name for all keys to match the target format .buck/table3.ts
-    const propertyName: ts.PropertyName = ts.factory.createComputedPropertyName(ts.factory.createStringLiteral(key));
+        // Use computed property name for all keys to match the target format .buck/table3.ts
+        const propertyName: ts.PropertyName = ts.factory.createComputedPropertyName(ts.factory.createStringLiteral(key));
 
-    return ts.factory.createPropertySignature(undefined, propertyName, undefined, typeNode);
-  });
+        return ts.factory.createPropertySignature(undefined, propertyName, undefined, typeNode);
+    });
 }
 
 /**
  * Creates the 'import * as t from "./types";' statement.
  */
 function createImportStatement(moduleName: string): ts.ImportDeclaration {
-  return ts.factory.createImportDeclaration(undefined, ts.factory.createImportClause(false, undefined, ts.factory.createNamespaceImport(ts.factory.createIdentifier('t'))), ts.factory.createStringLiteral(moduleName), undefined);
+    return ts.factory.createImportDeclaration(undefined, ts.factory.createImportClause(false, undefined, ts.factory.createNamespaceImport(ts.factory.createIdentifier('t'))), ts.factory.createStringLiteral(moduleName), undefined);
 }
 
 /**
  * STEP 2: Generates the Models interface string from a structure like .buck/table.json.
  */
 export const generateInterface = (inputData: Record<string, Record<string, any>>) => {
-  const importDeclaration = createImportStatement("./types"); // Adjusted path
+    console.log('generateInterfacegenerateInterfacegenerateInterfacegenerateInterface', { inputData })
+    const importDeclaration = createImportStatement("./types"); // Adjusted path
 
-  // createPropertySignaturesRecursive now handles all levels correctly
-  const modelProperties = createPropertySignaturesRecursive(inputData);
+    // createPropertySignaturesRecursive now handles all levels correctly
+    const modelProperties = createPropertySignaturesRecursive(inputData);
 
-  const interfaceDeclaration = ts.factory.createInterfaceDeclaration(
-    [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
-    ts.factory.createIdentifier("Models"),
-    undefined, undefined,
-    modelProperties // Use properties generated by the recursive function
-  );
+    const interfaceDeclaration = ts.factory.createInterfaceDeclaration(
+        [ts.factory.createModifier(ts.SyntaxKind.ExportKeyword)],
+        ts.factory.createIdentifier("Models"),
+        undefined, undefined,
+        modelProperties // Use properties generated by the recursive function
+    );
 
-  const sourceFile = ts.factory.createSourceFile([importDeclaration, interfaceDeclaration], ts.factory.createToken(ts.SyntaxKind.EndOfFileToken), ts.NodeFlags.None);
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-  return printer.printNode(ts.EmitHint.Unspecified, sourceFile, sourceFile);
+    const sourceFile = ts.factory.createSourceFile([importDeclaration, interfaceDeclaration], ts.factory.createToken(ts.SyntaxKind.EndOfFileToken), ts.NodeFlags.None);
+    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+    return printer.printNode(ts.EmitHint.Unspecified, sourceFile, sourceFile);
 }
 
 // --- Optional Main Execution Block ---

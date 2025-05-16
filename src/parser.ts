@@ -1,6 +1,8 @@
 import jsep, { ArrowFunctionExpression, Expression, Property } from './jsep';
 import { wrap, Ω } from './utils'
 import { LitteralTypesMap, PatternMatchers } from './typedef'
+import { DGlobalField } from '../.buck/types';
+import { omit } from 'es-toolkit';
 
 const RegexpFuncsWthOptions = new Map([
   ['regexp_extract', 3],
@@ -34,7 +36,7 @@ function mapUnaryOperator(jsOperator) {
 }
 
 // Map JavaScript operators to DuckDB operators
-function mapOperator(jsOperator) {
+function mapOperator(jsOperator: any) {
   const operatorMap = {
     '===': '=',    // Strict equality in JS becomes equality in DuckDB
     '!==': '!=',   // Strict inequality
@@ -56,36 +58,11 @@ function mapOperator(jsOperator) {
   return operatorMap[jsOperator];
 }
 
-function findUndefinedVariables(ast: Expression, context: Record<string, any>): string[] {
-  const undefinedVars: Set<string> = new Set();
-  const contextKeys = new Set(Object.keys(context));
 
-  function walk(node: any) {
-    if (!node || typeof node !== 'object') return;
-
-    if (node.type === 'MemberExpression' && node.object.type === 'Identifier') {
-      if (!contextKeys.has(node.object.name)) {
-        undefinedVars.add(node.object.name);
-      }
-    }
-    // Check for Identifier nodes not in context
-    if (node.type === 'Identifier' && !contextKeys.has(node.name)) {
-      undefinedVars.add(node.name);
-    }
-
-    // Recursively walk through all object properties
-    for (const key in node) {
-      if (key !== 'type' && typeof node[key] === 'object') {
-        walk(node[key]);
-      }
-    }
-  }
-
-  walk(ast);
-  return Array.from(undefinedVars);
-}
 const joinMembers = (members: any[]) => {
+  // return members.join('.')
   return members.reduce((acc, member) => {
+    // console.log('MEMVER', Array.isArray(member),  member)
     if (!acc) {
       return member
     }
@@ -121,7 +98,7 @@ function hasStringLiteral(node) {
 }
 
 // Helper function to recursively transform string concatenation
-function transformStringConcat(node, transformer) {
+function transformStringConcat(node: any, transformer: any): any {
   // If not a binary expression or not addition, process normally
   if (node.type !== 'BinaryExpression' || node.operator !== '+') {
     return transformer(node);
@@ -175,9 +152,9 @@ type Topts = {
   closureVars?: string[]
 }
 export function transformDuckdb(node, params = new Map<string, { depth: number, position: number }>(), context: Record<string, any> = {}) {
-  // Main transformer function
-  // console.log(node)
   function transformTree(node, opts: Topts = { isFuncArg: false }) {
+
+
     const transformNode = (n, o = {}) => transformTree(n, Object.assign(opts, o))
     switch (node.type) {
       case 'ObjectExpression':
@@ -187,7 +164,6 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
       case 'SequenceExpression':
         return node.expressions.map(transformNode).join(', ');
       case 'Identifier':
-        // console.log('IDENTIFIER', node)
         if (!node.isProperty) {
           if (params.has(node.name)) {
             if (params.get(node.name)?.depth === 0)
@@ -216,7 +192,7 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           node.object.subMemberExpression = true
         }
         node.property.isProperty = true
-        const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean)
+        const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean).flatMap(x => x)
         return opts.isFuncArg ? rtn : joinMembers(rtn);
       case 'Literal':
         if (node.value instanceof RegExp) {
@@ -236,8 +212,8 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         }
         return node.raw;
       case 'CallExpression':
-        const callee = transformNode(node.callee, { isFuncArg: true })
-        const lastCallee = callee[callee.length - 1]
+        const calleeArr = transformNode(node.callee, { isFuncArg: true })
+        const lastCallee = calleeArr[calleeArr.length - 1]
         let args = node.arguments.map(e => transformNode(e, { isFuncArg: true }))
         if (RegexpFuncsWthOptions.has(lastCallee)) {
           const offset = RegexpFuncsWthOptions.get(lastCallee) as number;
@@ -259,17 +235,17 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
             return `${args[0]} ${keyword} ${args.slice(1).join(joinWith)}`
           }
           if (lastCallee in Ω('SimilarTo', 'regexp_matches') && node.arguments?.[0]?.value?.flags) {
-            return `regexp_matches(${callee.slice(0, -1)}, ${args[0]}, '${node.arguments?.[0]?.value?.flags}')`
+            return `regexp_matches(${calleeArr.slice(0, -1)}, ${args[0]}, '${node.arguments?.[0]?.value?.flags}')`
           }
-          return `${callee.slice(0, -1)} ${keyword} ${args.join(joinWith)}`
+          return `${calleeArr.slice(0, -1)} ${keyword} ${args.join(joinWith)}`
         }
         if (lastCallee === 'as') {
           const gargs = node.arguments.slice(1).map(transformNode)
-          return `${callee.slice(0, -1)}::${node.arguments[0].value}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
+          return `${calleeArr.slice(0, -1)}::${node.arguments[0].value}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
         }
 
-        if (typeof callee[0] === 'string' && callee[0].toLowerCase() === 'cast' && node.arguments.length === 2) {
-          const supp = typeof args[2] !== 'undefined' ? `(${args.slice(2).join(', ')})` : ''
+        if (typeof calleeArr[0] === 'string' && calleeArr[0].toLowerCase() === 'cast' && node.arguments.length >= 2) {
+          const supp = args.length > 2 ? `(${node.arguments.map((e: any) => e.value).slice(2).join(', ')})` : ''
           return `CAST(${args[0]} AS ${node.arguments[1].value}${supp})`
         }
         if (LitteralTypesMap.has(lastCallee) && params.get(node.callee.object.name)?.position === 1) {
@@ -279,8 +255,7 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           }
           return `CAST(${args[0]} AS ${toType})`
         }
-
-        return `${callee.join('.')}(${args.join(', ')})`;
+        return `${calleeArr.join('.')}(${args.join(', ')})`;
       case 'UnaryExpression':
         // fn.toString() transform true and false to !1 and !0
         if (node.operator === '!' && node.argument.type === 'Literal' && typeof node.argument.value === 'number') {
@@ -289,7 +264,6 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         if (node.operator === '!' && node.argument?.callee?.property?.name === 'IsNull') {
           return transformNode(node.argument).replace('IS NULL ', 'IS NOT NULL')
         }
-        // console.log(node.argument?.callee?.property)
         return `${mapUnaryOperator(node.operator)} ${transformNode(node.argument)}`;
       case 'BinaryExpression':
         if (node.operator === 'in' && node.right.type === 'ArrayExpression') {
@@ -314,7 +288,6 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
       case 'TemplateElement':
         return `'${node.value.cooked.replaceAll(/'/g, "''")}'`;
       case 'ArrowFunctionExpression':
-        // console.log('ArrowFunctionExpression', node)
         const closureVars = node.params.map(x => x.name)
         return `(${closureVars.join(', ')}) -> ${transformNode(node.body, { ...opts, closureVars })}`;
       default:
@@ -333,7 +306,6 @@ const isWildcardParam = (d: DParam) => {
   return d.depth === 0 && d.position === 0
 }
 const extractParams = (ast: Expression) => {
-  // const params: string[] = [];
   const params = new Map<string, DParam>();
 
   function walk(node: any, depth: number, position: number) {
@@ -376,11 +348,12 @@ export const extractParamsContext = (ast: Expression) => {
   return extractParams(ast.params as unknown as Expression)
 }
 
-export const parse = (expr: Function | string, context = {}) => {
+type Expr<T> = ((d: T, z: DGlobalField) => any)
+
+export function parse<T extends Record<string, any>>(expr: Expr<T> | string, context = {}) {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()
   const ast = jsep(fnstr) as ArrowFunctionExpression
   const params = extractParamsContext(ast)
-  // const context = findUndefinedVariables(ast, {})
   const duckdbExpr = transformDuckdb(ast.body, params, context)
   return duckdbExpr
 }
@@ -389,16 +362,12 @@ const extractSpreadedParams = (ast: Expression) => {
   const excluded = ast.params[0].properties.filter((e) => e.type === 'Property').map(e => e.key.name)
   const spreadId = ast.params[0]?.properties.find((e) => e.type === 'SpreadElement')?.argument?.name
   return { excluded, spreadId }
-  // console.log('tttttttttttttttt', { excluded, spreadId })
 }
 
-export const parseObject = (expr: Function | string, context = {}) => {
+export function parseObject<T extends Record<string, any>>(expr: Expr<T> | string, context = {}) {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()
   const ast = jsep(fnstr) as ArrowFunctionExpression
   const params = extractParamsContext(ast)
-  // console.log('==>', JSON.stringify(ast, null, 2))
-
-  // console.log({ params })
   const node = ast.body
   if (node.type === 'Literal') {
     return [['', '', node.value]]
@@ -411,7 +380,6 @@ export const parseObject = (expr: Function | string, context = {}) => {
     if (p?.depth === 0 && p?.position === 0) {
       return [['', '', '*']]
     }
-    // console.log('IDENTIFIERRR', params.get(node.name))
   }
   if (node.type === 'ObjectExpression') {
     return node.properties.map((prop: any) => {
@@ -437,31 +405,3 @@ export const parseObject = (expr: Function | string, context = {}) => {
     throw new Error('AST is not an ObjectExpression');
   }
 }
-
-
-// // const lol = () => toto === /qds/
-// const str = `Date.now() > 42 && (D.abs(p.age) === p.total && p.hh.regexp_matches(/123/, '')) && D.cos(99) === 12 && D.regexp_matches(p.name, /abel/, '')`
-// const ast = jsep.parse(str)
-// const restr = transformDuckdb(ast, new Map([['p', 1], ['D', 1]]))
-
-// // const ast = jsep(`a + b + (d / c) && (12 === 12 || toto === 12)`)
-// // const fn = ({ xx: { zz } }) => ((12 + zz) / 4 && &&  zz === 'string')
-// // const fn = (p, { Varchar, ...rest }) => p && tata() && rest.xx.Varchar(p.name) === 'lol' && Date.now() > 0 && JSON.stringify(lola) && toto[0].lol.tata
-// const fn = () => Date.now() > 42 && JSON.stringify(lola) === 'toto'
-// if (import.meta.main) {
-
-//   const fn = (e, D) => D.cast(D.lol(e.name.a.haha()).str(), 'VARCHAR') && e.tata.lolo.as('Varchar') && e.name.similarTo(`123`) && e.name.toto.lol.notLike('%toot%')
-
-//   // const fn = (p, D) => ({
-//   //   age: p.age,
-//   // diff: D.levenstein(p.name, 123)
-//   // })
-//   console.log(parse(fn))
-// }
-
-// const ast = jsep(fn.toString())
-// const params = extractParamsContext(ast)
-// // // console.info('>>>', {ast})
-
-// // // const zz = ast ~= 'toto'
-// // // const fn = (v, D) => D.Varchar(v) + 12

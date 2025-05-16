@@ -1,7 +1,7 @@
 import ts from "typescript";
 import * as t from '../.buck/types'; // Import the types namespace for TS API generation target
+import { mapTypes } from "./typedef";
 // import { mapTypes } from "./sync-types";
-const mapTypes = () => 'DVarchar'; // Placeholder for the mapTypes function, replace with actual import if needed
 
 // --- Intermediate Schema Definition (Implicit) ---
 // serializeSchema output: { colName: MappedTypeString | StructObject, ... }
@@ -325,7 +325,6 @@ function createImportStatement(moduleName: string): ts.ImportDeclaration {
  * STEP 2: Generates the Models interface string from a structure like .buck/table.json.
  */
 export const generateInterface = (inputData: Record<string, Record<string, any>>) => {
-    console.log('generateInterfacegenerateInterfacegenerateInterfacegenerateInterface', { inputData })
     const importDeclaration = createImportStatement("./types"); // Adjusted path
 
     // createPropertySignaturesRecursive now handles all levels correctly

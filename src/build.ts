@@ -1,9 +1,8 @@
-import { formatSource, keyBy } from "./utils";
+import { formatSource, keyBy, upperFirst, wrap } from "./utils";
 import * as t from "../.buck/types";
 import { parse, parseObject } from './parser';
 import { DBuilder, deriveName, DExtensionsId } from "./build.types";
 import { serializeSchema } from "./interface-generator";
-import { upperFirst } from "es-toolkit";
 
 
 export type DCondition = { condition: string, operator?: 'OR' | 'AND' }
@@ -26,9 +25,11 @@ export const dstate = {
     offset: null as number | null,
     orderBy: [] as DOrder[],
     keyBy: null as string | null,
+    countBy: null as string | null,
     agg: null as string | null,
+    action: 'select' as 'select' | 'update' | 'upsert' | 'create',
+    updated: [] as DSelectee[],
 }
-
 
 
 export type DuckdbCon = {
@@ -36,7 +37,7 @@ export type DuckdbCon = {
     run: (sql: string) => Promise<any>;
     lazyAttach: (path: string, alias: string) => any;
     ensureSchema: (uri: string) => Promise<any>;
-    describe?: (uri: string) => Promise<Record<string, any>>;
+    describe: (uri: string) => Promise<Record<string, any>>;
     query: (sql: string, opts?: Record<string, any>) => Promise<any[]>;
     lazySettings: (s: Partial<t.DSettings>) => DuckdbCon;
     lazyExtensions: (...extensions: string[]) => DuckdbCon;
@@ -140,7 +141,23 @@ const newLine = (e: string) => {
     }
     return e
 }
+
+const serializeUpdated = (updated: DSelectee[]) => {
+    return updated.map(e => ` ${e.as} = ${e.raw ? wrap(e.raw, "'") : e.field}`).join(', \n ')
+}
 function toSql(state: DState) {
+    if (state.action === 'update') {
+        // return `UPDATE ${state.table} SET ${serializeUpdates(state.updated)} WHERE ${serializeConditions('WHERE')(state.conditions)}`
+        return [
+            'UPDATE',
+            serializeDatasource(state.datasources),
+            'SET',
+            '\n',
+            serializeUpdated(state.updated),
+            '\n',
+            serializeConditions('WHERE')(state.conditions)
+        ].filter(Boolean).join(' ')
+    }
 
     const components = [
         'FROM',
@@ -175,13 +192,17 @@ const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>
             return { ...acc, [key]: values }
         }
         const newVals = values.map(v => formalize(v, s.context)).map(format)
-        return Object.assign(acc, { [key]: (s[key] || []).concat(newVals) })
+        return Object.assign(acc, { [key]: (s[key as keyof DState] as any[] || []).concat(newVals) })
     }, s) as DState
 }
 
 
 
 type DuckdbConConstructor = new (...args: any[]) => DuckdbCon;
+
+const createRes = function (table: string, items: Record<string, any>[]) {
+
+}
 
 export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, b: any) {
     const handle = typeof a === 'string' ? a : ''
@@ -211,6 +232,16 @@ export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, 
             rightJoin: _join('RIGHT JOIN'),
             crossJoin: _join('CROSS JOIN'),
             naturalJoin: _join('NATURAL JOIN'),
+            set: function (...keys: Parseable[]) {
+                const updated = keys.flatMap(k => {
+                    if (typeof k === 'function') {
+                        const parsed = parseObject(k, state.context)
+                        return parsed.map(([value, key, raw]) => ({ field: key, as: value, raw })) as DSelectee[]
+                    }
+                    return { field: k }
+                })
+                return fromRes({ ...state, updated })
+            },
             select: function (...keys: Parseable[]) {
                 const selected = keys.flatMap(k => {
                     if (typeof k === 'function') {
@@ -263,7 +294,7 @@ export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, 
                 if (!state.selected.find(e => e.raw === countBy)) {
                     state.selected.push({ field: 'count()', as: 'c' })
                 }
-                return fromRes(deriveState({ ...state, selected: state.selected, countBy }, { groupBy: [gp], orderBy: [{field: 'c', direction: 'DESC'}]}))
+                return fromRes(deriveState({ ...state, selected: state.selected, countBy }, { groupBy: [gp], orderBy: [{ field: 'c', direction: 'DESC' }] }))
             },
             maxBy: function (...fields: Parseable[]) {
                 // return this.orderBy(fields, 'ASC')
@@ -294,7 +325,7 @@ export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, 
                     this.dump()
                 }
                 if (state.selected.length === 1 && !state.selected[0]?.as && !state.selected[0]?.raw) {
-                    return ddb.query(str, { rows: true, ...props }).then(e => e.map(e => e[0]))
+                    return ddb.query(str, { rows: true, ...props })//.then(e => e.map(e => e[0]))
                 }
                 if (state.selected.length && state.selected.every((e) => typeof e.as === 'number')) {
                     return ddb.query(str, { rows: true, ...props })
@@ -349,12 +380,49 @@ export const builder = (Ddb: DuckdbConConstructor) => function database(a: any, 
         describe: (uri: string) => ddb.describe(uri),
         from: (table: string, alias?: string) => fromRes({
             ...dstate,
+            action: 'select',
             datasources: [{
                 catalog: handle,
                 uri: table,
                 alias: alias,// || deriveName(table),
             }]
-        })
+        }),
+        update: (table: string, alias?: string) => fromRes({
+            ...dstate,
+            action: 'update',
+            datasources: [{
+                catalog: handle,
+                uri: table,
+                alias: alias,// || deriveName(table),
+            }]
+        }),
+        create: (table: string, opts: Partial<{ replace: boolean }> = {}) => {
+            const createSerialize = (ex: string) =>
+                (!table.includes('.') ? `CREATE TABLE ${table} AS ${ex}` : `COPY (${ex}) TO '${table}'`)
+
+            return {
+                toSql: () => table,
+                as: function (...items: any[]) {
+                    const getQuery = () => {
+                        if (items[0]?.toSql) {
+                            return createSerialize(items[0]?.toSql())
+                        }
+                        const tempname = 'tmp_' + Math.random() / 1e-17
+                        return [
+                            `CREATE TEMP TABLE ${tempname} (j JSON)`,
+                            `INSERT INTO ${tempname} VALUES ${items.map(it => `('${JSON.stringify(it)}')`).join(',\n')}`,
+                            "SET variable S = " + wrap(`select json_group_structure(j)::varchar from ${tempname}`, '(', ')'),
+                            createSerialize("SELECT UNNEST(json_transform(j, getvariable('S'))) FROM " + tempname),
+                        ].join(';\n')
+                    }
+                    return {
+                        toSql: () => getQuery(),
+                        execute: () => ddb.run(getQuery()),
+                    }
+                }
+            }
+        }
+
     }
     // } as unknown as typeof DBuilder
     // return fromRes as unknown as typeof DBuilder

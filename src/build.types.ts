@@ -1,4 +1,5 @@
-import { DField, DRawField, DuckDBClient, DuckdbCon, formatSource, keyBy } from "./utils";
+import type { DuckdbCon } from "./build";
+import { DField, DPrimitiveField, DRawField } from "./typedef";
 import { Models } from '../.buck/table3';
 import * as t from "../.buck/types";
 import { DDirection } from "./build";
@@ -107,19 +108,6 @@ export type ToExecutedArray<SelectedRows> = {
     : never
 };
 
-export type ToExecuted<S extends MState> = S['selectedRows'] extends any[] ? ToExecutedArray<S['selectedRows']> : ToExecutedObject<S['selected']>;
-
-// type res = Assert<ExpectEqual<ToExecutedObject<{ xxx: t.DJsonField<{ ["lol"]: t.DVarcharField;["ss"]: t.DStructField<{ nested: t.DBoolField }>;["toto"]: t.DArrayField<t.DNumericField>;["tata"]: t.DArrayField<{ vgvg: t.DVarcharField, ll: t.DStructField<{ nested: t.DBoolField }> }>; }>; }>, { xxx: { lol: string; ss: { nested: boolean; }; toto: number[]; tata: { vgvg: string; ll: { nested: boolean; }; }[]; }; }>>
-
-
-type RemoveSymbolKeys<T> = T extends object
-  ? T extends (...args: any[]) => any
-  ? T
-  : {
-    [K in keyof T as K extends symbol ? never : K]: RemoveSymbolKeys<T[K]>
-  }
-  : T;
-
 export type ToComp<SelectedFields extends SelectModel> = SelectedFields extends GenericRecursive<DField> ? {
     [P in keyof SelectedFields]: SelectedFields[P] extends DField ? (SelectedFields[P] extends { [t.sComptype]: infer V } ? V : never) :
     SelectedFields[P] extends SelectModel ? ToComp<SelectedFields[P]> : never
@@ -127,206 +115,133 @@ export type ToComp<SelectedFields extends SelectModel> = SelectedFields extends 
 
 
 
-export type MState = {
-    available: MetaModel,
-    // selected: SelectModel,
-    selected: Record<string, any>, // Relaxed constraint to allow Pick result
-    // selected: Record<string, DField>,
-    // grouped?: DField | string,
-    condition?: string[],
-    // limit?: number,
-    keyed?: boolean,
-    selectedValue?: DField,
-    // rows?: boolean,
-    // single?: boolean,
-    selectedRows?: any[],
-    // orderBy?: string[],
-}
-type ObjectToTuple<T extends { [K in number]: any }> = [
-    ...{ [K in keyof T]: T[K] } extends infer O
-    ? O[keyof O][]
-    : never
-];
+type VTypes = 'single' | 'records' | 'values' | 'grouped' | 'keyed' | 'row'
 
-export interface MaterializedWhereResult<S extends MState, C extends StrictCollection[]> extends MaterializedResult<S, C> {
-    or: this['where']
-    and: this['where']
-}
-export interface MaterializedGroupByResult<S extends MState, C extends StrictCollection[]> extends MaterializedResult<S, C> {
-    having: this['where']
-}
 
-export interface MSR<S extends MState, C extends StrictCollection[]> extends MaterializedResult<S, C> {
-    distinctOn: this['groupBy'],
-}
+type PArray<X> = Promise<Array<X>>
+type PRecord<X> = Promise<Record<string, X>>
 
-export interface MaterializedResult<S extends MState, C extends StrictCollection[], Ky extends 'single' | 'map' | 'array' = 'array'> {
-    // execute(): Promise<MapInferredType<ModelFromCollectionList<C>>>
-    groupBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedGroupByResult<S & { grouped: Z }, C>
-    groupBy<U extends ('ALL' | NestedKeyOf<S['available'] & S['selected']>)>(...key: U[]): MaterializedGroupByResult<S, C>
+type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends DField = t.DAnyField> = {
+    single: (this: MS<'single', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToExecutedValue<SelectedSingle>>;
+    values: (this: MS<'values', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToExecutedArray<SelectedValues>>;
+    records: (this: MS<'records', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToExecutedObject<Selected>>;
+
+    grouped: (this: MS<'grouped', Available, Selected, SelectedValues, SelectedSingle>) => PRecord<ToExecutedObject<Selected>[]>;
+    keyed: (this: MS<'keyed', Available, Selected, SelectedValues, SelectedSingle>) => PRecord<ToExecutedObject<Selected>>
+    row: (this: MS<'row', Available, Selected, SelectedValues, SelectedSingle>) => Promise<ToExecutedObject<Selected>>;
+};
+
+interface MS<V extends VTypes, Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends DField = t.DAnyField> {
+    execute: FnMap<Available, Selected, SelectedValues, SelectedSingle>[V];
+
+    orderBy<U_ extends ([NestedKeyOf<Available & Selected>, DDirection?][])>(...key: U_): MS<V, Available, Selected, SelectedValues, SelectedSingle>
+    orderBy<U extends ('ALL' | NestedKeyOf<Available & Selected>)>(k: U, d?: DDirection): MS<V, Available, Selected, SelectedValues, SelectedSingle>
+    orderBy<Z>(_callback: (p: Available & Selected, D: DMetaField) => Z, d?: DDirection): MS<V, Available, Selected, SelectedValues, SelectedSingle>
+
+
+    groupBy<U extends ('ALL' | NestedKeyOf<Available & Selected>)>(...keys: U[]): MS<'grouped', Available, Selected, SelectedValues, SelectedSingle>
+    groupBy<U extends DField>(_fn: (p: Available & Selected, D: DMetaComp) => U): MS<'grouped', Available, Selected, SelectedValues, SelectedSingle>
+    groupBy<Z>(f: (p: Available & Selected, D: DMetaField) => Z, d?: DDirection): MS<'grouped', Available, Selected, SelectedValues, SelectedSingle>
+
     countBy: this['groupBy']
-    keyBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedResult<S, C, 'map'>
-    keyBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U): MaterializedResult<S, C, 'map'>
 
-    minBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaComp) => Z): MaterializedResult<S & { single: true }, C>
-    minBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U): MaterializedResult<S & { single: true }, C>
+    keyBy<Z>(__fn: (p: Available & Selected, D: DMetaComp) => Z): MS<'keyed', Available, Selected, SelectedValues, SelectedSingle>
+    keyBy<U extends (NestedKeyOf<Available & Selected>)>(key: U): MS<'keyed', Available, Selected, SelectedValues, SelectedSingle>
+
+    minBy<Z>(__fn: (p: Available & Selected, D: DMetaComp) => Z): MS<'single', Available, Selected, SelectedValues, SelectedSingle>
+    minBy<U extends (NestedKeyOf<Available & Selected>)>(key: U): MS<'single', Available, Selected, SelectedValues, SelectedSingle>
 
     maxBy: this['minBy']
 
-    where<X>(fn: (p: ToComp<S['available'] & S['selected']>, D: DMetaComp) => X): MaterializedWhereResult<S, C>
-    where<X>(...fn: string[]): MaterializedWhereResult<S, C>
-    // execute(this: MaterializedResult<S & { keyed: true }, C>): Promise<Record<string, ToExecuted<S['selected']>>>; // <-- Specify the correct keyed return type here
+    where<X>(fn: (p: ToComp<Available & Selected>, D: DMetaComp) => X): MS<V, Available, Selected, SelectedValues, SelectedSingle>
+    where(...callback: string[]): MS<V, Available, Selected, SelectedValues, SelectedSingle>
 
-    toSql({ pretty }: { pretty?: boolean }): string
-    toSql(): string
-    // orderBy: this['groupBy'],
-    orderBy<U extends ([NestedKeyOf<S['available'] & S['selected']>, DDirection?][])>(...key: U): MaterializedResult<S, C>
-    orderBy<U extends (NestedKeyOf<S['available'] & S['selected']>)>(key: U, d?: DDirection): MaterializedResult<S, C>
-    orderBy<Z>(fn: (p: S['available'] & S['selected'], D: DMetaField) => Z, d?: DDirection): MaterializedResult<S, C>
+    having: this['where']
+    distinctOn: this['groupBy'],
 
-    // orderBy<U extends ([NestedKeyOf<S['available'] & S['selected']> | DDirection])>(...key: [U]): MaterializedResult<S, C>
 
-    // having: this['where'],
     limit: (n: number) => this,
-    context: (n: Record<string, any>) => this,
-    sample: (n: number | `${number}%`) => this,
     offset: (n: number) => this,
-    dump: () => this,
-    show: () => this,
-    execute(this: MaterializedResult<S, C>, opts?: Record<string, any>): Promise<
-        S['selectedValue'] extends DField ?
-        ToExecutedValue<S['selectedValue']> :
-        S['keyed'] extends true ?
-        Record<string, ToExecuted<S>[]> :
-        ToExecuted<S>[]
-    >
-    copyTo: CopyTo<S['available'] & S['selected']>['copyTo'] // Pass available fields to CopyTo
-    // Overload 1: Matches destinations ending in .csv
-    // copyTo:
-    // ... other methods
-    // copyTo: (destination: `${string}.csv`, options?: CopyOptions) => Promise<void>,
-    // copyTo: (destination: Exclude<string, `${string}.csv`>, options?: CopyOptions) => Promise<void>
+    context: (cb: Record<string, any>) => this,
+    sample: (n: number | `${number}%`) => this,
+    toSql(): string
+    copyTo: CopyTo<Available & Selected>['copyTo'] // Pass available fields to CopyTo
 }
-
-
-// DBuilder('').from('data/people.parquet').select(e => ({ toto: e.age.acos() }))
-// .copyTo('s3://dallas/uu.csv', { partition_by: ['toto'],  })
-//     .copyTo('toot.jsonl.gz', {
-//         array: true
-//     }).execute()
-//     .copyTo('toto.parquet', {
-//         rowGroupSize: 1000,
-
-//     })
-//     .copyTo('toto.csv.gz', {
-//         delim: ',',
-
-
-//     })
-//     .copyTo('xxx.json', {
-
-//     })
-
-// .copyTo()
-
-
-export type ToRecord2<T> = T extends readonly any[]
-    ? { [K in keyof T as K extends `${number}` | number ? K : never]: T[K] }
-    : T
-export type ToRecord3<T> = T extends readonly (infer U)[]
-    ? { [K in keyof T as K extends `${number}` | number ? K : never]: T[K] }
-    : T
-export type ToRecord4<T extends any[]> = {
-    [K in keyof T as K extends `${number}` | number ? K : never]: T[K]
-}
-type TupleToRecord<T extends readonly unknown[]> = { [K in keyof T & `${number}`]: T[K] };
-type DFieldTuple = readonly [...DField[]];
-
 
 export interface FromResult<T extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
     join<K extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>, A extends string>(table: K, alias: A, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: T, uri: K, alias: A }>]>>, D: DMetaComp) => any):
         FromResult<T, [...C, DefaultizeCollection<{ catalog: T, uri: K, alias: A }>]>;
-    join<K extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>, Z extends string>(table: K, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: T, uri: K, alias: DeriveName<K> }>]>>, D: DMetaComp) => any):
+    join<K extends Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>(table: K, fn: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: T, uri: K, alias: DeriveName<K> }>]>>, D: DMetaComp) => any):
         FromResult<T, [...C, DefaultizeCollection<{ catalog: T, uri: K, alias: DeriveName<K> }>]>;
     leftJoin: this['join'],
     rightJoin: this['join'],
     crossJoin: this['join'],
     naturalJoin: this['join'],
-    select(): MSR<{ selected: ShallowModelFromCollectionList<C>, available: P }, C>;
-    select<U extends SelectModel>/*   */(fn: (p: P & Record<string, any>, D: DMetaField) => U): MSR<{ selected: U, available: P }, C>;
-    select<U extends (NestedKeyOf<P>)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<{ selected: { [K in U[number] & keyof P]: P[K] }, available: P }, C>
-    select<T1/**//**//**//**/>(fn: (p: P, D: DMetaField) => [T1/**//**//**//**/]): MSR<{ selected: {}, selectedRows: [T1/**//**//**//**/], available: P }, C>;
-    select<T1, T2/**//**//**/>(fn: (p: P, D: DMetaField) => [T1, T2/**//**//**/]): MSR<{ selected: {}, selectedRows: [T1, T2/**//**//**/], available: P }, C>;
-    select<T1, T2, T3/**//**/>(fn: (p: P, D: DMetaField) => [T1, T2, T3/**//**/]): MSR<{ selected: {}, selectedRows: [T1, T2, T3/**//**/], available: P }, C>;
-    select<T1, T2, T3, T4/**/>(fn: (p: P, D: DMetaField) => [T1, T2, T3, T4/**/]): MSR<{ selected: {}, selectedRows: [T1, T2, T3, T4/**/], available: P }, C>;
-    select<T1, T2, T3, T4, T5>(fn: (p: P, D: DMetaField) => [T1, T2, T3, T4, T5]): MSR<{ selected: {}, selectedRows: [T1, T2, T3, T4, T5], available: P }, C>;
+    // A: select()
+    select(): MS<'records', P, ShallowModelFromCollectionList<C>>
+    // B: select('name', 'age')
+    select<U extends (NestedKeyOf<P> & string)[]>(...keys: U & (NestedKeyOf<P>)[]): MS<'records', P, { [K in U[number] & keyof P]: P[K] }>
+    // C select(e => [e.name, e.age])
+    select<T________________________________1>(fn: (p: P, D: DMetaField) => [T________________________________1]): MS<'values', P, {}, [T________________________________1]>
+    select<T______________1, T______________2>(fn: (p: P, D: DMetaField) => [T______________1, T______________2]): MS<'values', P, {}, [T______________1, T______________2]>
+    select<T_________1, T_______2, T________3>(fn: (p: P, D: DMetaField) => [T_________1, T_______2, T________3]): MS<'values', P, {}, [T_________1, T_______2, T________3]>
+    select<T_____1, T_____2, T_____3, T_____4>(fn: (p: P, D: DMetaField) => [T_____1, T_____2, T_____3, T_____4]): MS<'values', P, {}, [T_____1, T_____2, T_____3, T_____4]>
+    select<T___1, T____2, T___3, T___4, T___5>(fn: (p: P, D: DMetaField) => [T___1, T____2, T___3, T___4, T___5]): MS<'values', P, {}, [T___1, T____2, T___3, T___4, T___5]>
+    select<T__1, T__2, T__3, T__4, T__5, T__6>(fn: (p: P, D: DMetaField) => [T__1, T__2, T__3, T__4, T__5, T__6]): MS<'values', P, {}, [T__1, T__2, T__3, T__4, T__5, T__6]>
+    select<T_1, T_2, T_3, T__4, T_5, T_6, T_7>(fn: (p: P, D: DMetaField) => [T_1, T_2, T_3, T__4, T_5, T_6, T_7]): MS<'values', P, {}, [T_1, T_2, T_3, T__4, T_5, T_6, T_7]>
+    select<T_1, T_2, T3, T4, T5, T6, T_7, T_8>(fn: (p: P, D: DMetaField) => [T_1, T_2, T3, T4, T5, T6, T_7, T_8]): MS<'values', P, {}, [T_1, T_2, T3, T4, T5, T6, T_7, T_8]>
+    select<T1, T2, T3, T4, T5, T6, T7, T8, T9>(fn: (p: P, D: DMetaField) => [T1, T2, T3, T4, T5, T6, T7, T8, T9]): MS<'values', P, {}, [T1, T2, T3, T4, T5, T6, T7, T8, T9]>
+    // D: select(e => e.age)
+    select<U extends DPrimitiveField>(fn: (p: P, D: DMetaField) => U): MS<'single', P, {}, [], U>;
+    // E: select(e => ({ name: e.name, age: e.age }))
+    select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: DMetaField) => U): MS<'records', P, U>
 
-    select<U extends string>/*        */(fn: (p: P, D: DMetaField) => U): MaterializedResult<{ selectedValue: t.DAnyField, selected: {}, available: P }, C>;
-    select<U extends DField>/*        */(fn: (p: P, D: DMetaField) => U): MaterializedResult<{ selectedValue: U, selected: {}, available: P }, C>;
-    select<U extends (NestedKeyOf<P>)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<{ selected: { [K in U[number] & keyof P]: P[K] }, available: P, }, C>
+
+
     ensureSchemas(): Promise<void>
 
 }
 
 
-
-async function checkNested(db: FromResult<'', [{ catalog: '', uri: 's3://a1738/testxs2.jsonl', alias: 'tt' }]>) {
-    // const check1 = await db.select(e => e)/************************************/.execute() satisfies string
-    // const check3 = await db.select(e => [e.xxx.toto])/***************&********/.execute() satisfies { lol: t.DVarcharField }
-    // const check45 = await db.select(e => ({ zzz: e.ss }))/***************&********/.execute() satisfies { lol: t.DVarcharField }
-    // // check45[0].xxx.
-
-    // const check2 = await db.select(e => ({ zz: e.name, x: 123 }))/*****************/.execute() satisfies { zz: string, x: number }[]
-    // const check4 = await db.select(e => ({ zz: e.name, x: 'custom query' }))/******/.execute() satisfies { zz: string, x: any }[]
-    // const check5 = await db.select(e => [e.name, 'super longg query'])/************/.execute() satisfies [string, any][]
-    // const check6 = await db.select(e => [e.age, e.people.name, e.total])/**********/.execute() satisfies [number, string, number][]
-    // const check7 = await db.select(e => ({ a: e.age, n: e.name }))/****************/.execute() satisfies { a: number, n: string }[]
-    // const check8 = await db.select(e => ({ a: e.age, n: e.name })).keyBy(e => e.age).execute() satisfies Record<string, { a: number, n: string }[]>
-    // db.select().where(e => e.name).and('name > 12').and('toot')
-}
-async function checkSelect(db: FromResult<'', [{ catalog: '', uri: 'data/people.parquet', alias: 'people' }]>) {
-    const check1 = await db.select(e => e.age)/************************************/.execute() satisfies number
-    const check3 = await db.select(e => 'super logn query')/***********************/.execute() satisfies any
-    const check2 = await db.select(e => ({ zz: e.name, x: 123 }))/*****************/.execute() satisfies { zz: string, x: number }[]
-    const check4 = await db.select(e => ({ zz: e.name, x: 'custom query' }))/******/.execute() satisfies { zz: string, x: any }[]
-    const check5 = await db.select(e => [e.name, 'super longg query'])/************/.execute() satisfies [string, any][]
-    const check6 = await db.select(e => [e.age, e.people.name, e.total])/**********/.execute() satisfies [number, string, number][]
-    const check7 = await db.select(e => ({ a: e.age, n: e.name }))/****************/.execute() satisfies { a: number, n: string }[]
-    const check8 = await db.select(e => ({ a: e.age, n: e.name })).keyBy(e => e.age).execute() satisfies Record<string, { a: number, n: string }[]>
-    db.select().where(e => e.name).and('name > 12').and('toot')
-}
-
-
-// DBuilder('').from('duckdb_functions()')
-//     .select(e => [e.comment, e.database_name, e.description])
-//     // .where(e => e.function_name === 'len')
-//     .copyTo('s3://dallas/uu.csv', {
-
-//     })
-//     .execute()
-
-// DBuilder('').from('data/people.parquet').select(e => ({ toto: e.age.acos() })).groupBy('toto').execute().then(e => e[0].toto))
-
-// Define the type alias before DBuilder
-export type InitialMaterializedResult<C extends StrictCollection[]> = MaterializedResult<{
-    selected: ModelFromCollectionList<C>,
-    available: ModelFromCollectionList<C>,
-}, C>;
+export type InitialMaterializedResult<C extends StrictCollection[]> = MS<'records', ModelFromCollectionList<C>>
 
 export type DExtensionsId = typeof t.DExtensions[number]['extension_name']
+
+export interface UpdateResult<T extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
+    set<U extends SelectModel>(fn: (p: P & Record<string, any>, D: DMetaField) => U): UpdateResult<T, C, P>
+    where<X>(fn: (p: ToComp<P>, D: DMetaComp) => X): UpdateResult<T, C, P>
+    where(...callback: string[]): UpdateResult<T, C, P>
+    execute(): Promise<any>
+    toSql(): string
+}
+
 
 // Define the return type for DBuilder
 type DBuilderResult<T extends keyof Models> = {
     ddb: DuckdbCon,
     settings(s: Partial<t.DSettings>): DBuilderResult<T>,
-    // loadExtension(s: t.DSettings): typeof DBuilder<T>,
-    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>, A extends string>(table: K1, alias: A):
+
+    create(s: string, opts?: Record<'replace', any>): {
+        as<U extends Record<string, any>>(...items: U[]): {
+            execute(): Promise<any>
+            toSql(): string
+        }
+    },
+
+    update<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string> & string>>(table: K1):
+        UpdateResult<T, [DefaultizeCollection<{ catalog: T, uri: K1 }>]>
+
+
+    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>> | (string & {}), A extends string>(table: K1, alias: A):
         FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: A }>]> &
         InitialMaterializedResult<[DefaultizeCollection<{ catalog: T, uri: K1, alias: A }>]>; // Use the alias
 
-    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>> & string>(table: K1):
+    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>> | (string & {})>(table: K1):
         FromResult<T, [DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1> }>]> &
         InitialMaterializedResult<[DefaultizeCollection<{ catalog: T, uri: K1, alias: DeriveName<K1> }>]>; // Use the alias
+
+    from<K extends keyof Models['error']>(x: K): Models['error'][K];
+
     loadExtensions(...ext: DExtensionsId[]): DBuilderResult<T> // Use the defined type here
     fetchSchema(id: string): Promise<Models>
     describe(id: string): Promise<any>
@@ -337,10 +252,5 @@ export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResul
 export declare function DBuilder(): DBuilderResult<''>;
 
 // Updated DBuilder declaration with catalog
-export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<T>;
-// DBuilder('s3://duckdb-blobs/databases/stations.duckdb', {}).from('')
-
-// const xdb = DBuilder('data/ex.duckdb').load('autocomplete', 'arrow')
-// xdb.from('')
-// 
+export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<T extends keyof Models ? T : ''>;
 // DBuilder()('s')

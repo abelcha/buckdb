@@ -70,17 +70,18 @@ class BuckDBNode implements DuckdbCon {
         return this;
     }
     async describe(uri: string) {
-        if ((uri.includes('://') || uri.match(/\.\w{2,20}$/))) {
+        if (!uri.trim().endsWith(')')) {
             uri = `'${uri}'`
         }
         return this.query(`DESCRIBE FROM ${uri};`)
     }
 
+
     async ensureSchema(uri: string) {
         // return
         const h = this.handle || '';
         // await this._initDB();
-        if (Ressources[this.handle || ''][uri]) {
+        if ((Ressources as Record<string, any>)[h][uri]) {
             return
         }
 

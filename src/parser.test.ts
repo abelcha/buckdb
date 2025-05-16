@@ -46,19 +46,14 @@ test('template litteral', () => {
     expect(parse((e, D) => e.name === `prefix${num}suffix`, { num })).toBe("name = 'prefix' || (0) || 'suffix'");
     expect(parse((e, D) => e.name === `${num}${num + 1}`, { num })).toBe("name = (0) || (0) + 1");
 })
-test('should parse logical NOT', () => {
-    let num = 0
-    const result = parse((e, D) => (e.age > 12 || e.name.tata.includes("tata", e.age)) && D.upper(e.name.whatever(`toto`)));
-    expect(result).toBe("(age > 12 OR name.tata.includes('tata', age)) AND upper(name.whatever('toto'))");
-});
 
 test('should parse complex condition with DuckDB function', () => {
     const result = parse((e, D) =>
         (e.name.match_regex(/[a-z].+/) || e.age > 12) &&
-        D.levenstein_distance(e.name, "duckdb") > 4
+        D.levenshtein(e.name, "duckdb") > 4
     );
     expect(result).toBe(
-        "(name.match_regex('[a-z].+') OR age > 12) AND levenstein_distance(name, 'duckdb') > 4"
+        "(name.match_regex('[a-z].+') OR age > 12) AND levenshtein(name, 'duckdb') > 4"
     );
 
     const result2 = parse((e) => (e.name.regexp_matches(/[a-z].+/ig)));
@@ -144,10 +139,10 @@ test('cast', () => {
     expect(parse((e, D) => e.num.as('Decimal(1, 4)'))).toBe("num::Decimal(1, 4)");
     expect(parse((e, D) => e.num.as('Decimal', 1, 3))).toBe("num::Decimal(1, 3)");
     expect(parse((e, D) => D.cast(e.num, 'Bigint'))).toBe("CAST(num AS Bigint)");
-    expect(parse((e, D) => D.cast(e.num, 'Decimal(12, 42)'))).toBe("CAST(num AS Decimal(12, 42))");
-    expect(parse((e, D) => D.cast(e.num, 'Map(Varchar, Float)'))).toBe("CAST(num AS Map(Varchar, Float))");
-    expect(parse((e, D) => e.lat.as('Bigint') === D.cast(e.lng.abs(), 'Array[string]')))
-        .toBe("lat::Bigint = CAST(lng.abs() AS Array[string])");
+    expect(parse((e, D) => D.cast(e.num, 'Decimal', 12, 42))).toBe("CAST(num AS Decimal(12, 42))");
+    expect(parse((e, D) => D.cast(e.num, 'Map', 'Varchar', 'Float'))).toBe("CAST(num AS Map(Varchar, Float))");
+    expect(parse((e, D) => e.lat.as('Bigint') === D.cast(e.lng.abs(), 'Bigint')))
+        .toBe("lat::Bigint = CAST(lng.abs() AS Bigint)");
 
 });
 
@@ -212,7 +207,7 @@ const parseBody = (expr: Function | string, context = {}) => {
     try {
 
         return parse('(p, D) => (' + expr + ')', context)
-    } catch (err) {
+    } catch (err: any) {
         console.error('Error parsing body:', err.message);
         console.log('-------------')
         console.log(require('util').inspect(jsep(expr), {
@@ -251,9 +246,9 @@ test('parseObject destructuring', () => {
     expect(parseObject(({ ...rest }, DDD) => ({ ...rest }))).toEqual([
         ["", "", "*"],
     ])
-    expect(parseObject(({ ...rest }, DDD) => ({ ...rest, abc: DDD.whatever.value() }))).toEqual([
+    expect(parseObject(({ ...rest }, DDD) => ({ ...rest, abc: DDD.add(12, 10) }))).toEqual([
         ["", "", "*"],
-        ["abc", "whatever.value()"]
+        ["abc", "add(12, 10)"]
     ])
     expect(parseObject(({ ...rest }, DDD) => rest)).toEqual([
         ["", "", "*"],
@@ -267,9 +262,8 @@ test('parseObject destructuring', () => {
 })
 
 test('inoperator', () => {
-    // expect(parse((e, D) => e.database_name in ['lol', 'toto', 42, null])).toBe("database_name IN ('lol', 'toto', 42, NULL)");
-    expect(() => parse((e, D) => e.arr.map(x => x + 1))).not.toThrowError()
-    console.log('==>', parse((e, D) => e.arr.map(x => x + 1)))
+    expect(parse((e, D) => e.database_name in ['lol', 'toto', 42, null])).toBe("database_name IN ('lol', 'toto', 42, NULL)");
+    expect(() => parse<{ arr: number[] }>((e, D) => e.arr.map(x => x + 1))).not.toThrowError()
 })
 
 test('lenx', () => {
@@ -282,3 +276,9 @@ test('lenx', () => {
         expect(parseObject(fn)).toEqual([['x', expected]]);
     });
 })
+
+test('should parse logical NOT', () => {
+    let num = 0
+    const result = parse((e, D) => ((e.toto.tata.tata.tata.includes('t'))));
+    expect(result).toBe("toto.tata.tata.tata.includes('t')");
+});

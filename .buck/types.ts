@@ -10,6 +10,7 @@ export type DOtherable = any | DOtherField | _DOtherField;
 export type DStructable = Record<string, any> | DStructField | _DStructField;
 export type DVarcharable = string | DVarcharField | _DVarcharField;
 export type RegExpable = RegExp | string;
+import { parquet_scan, read_csv, read_json, read_json_objects, read_text, read_xlsx } from "../src/readers";
 export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
 export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
 export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
@@ -864,13 +865,13 @@ interface _DArrayField<T = any> {
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   aggregate(name: DVarcharable, ...args: DAnyable[]): DAnyField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  apply(lambda: DOtherable): DArrayField;
+  apply<U>(lambda: (x: T) => U): DArrayField<U>;
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   array_aggr(name: DVarcharable, ...args: DAnyable[]): DAnyField;
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   array_aggregate(name: DVarcharable, ...args: DAnyable[]): DAnyField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  array_apply(lambda: DOtherable): DArrayField;
+  array_apply<U>(lambda: (x: T) => U): DArrayField<U>;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
   array_cat(list2: DArrayable): DArrayField;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
@@ -892,7 +893,7 @@ interface _DArrayField<T = any> {
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
   array_extract(index: DNumericable): DAnyField;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  array_filter(lambda: DOtherable): DArrayField;
+  array_filter(lambda: (x: T) => any): DArrayField<T>;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
   array_grade_up(col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns true if the list contains the element.	@example list_contains([1, 2, NULL], 1)*/
@@ -914,7 +915,7 @@ interface _DArrayField<T = any> {
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
   array_position(element: DAnyable): DNumericField;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  array_reduce(lambda: DOtherable): DAnyField;
+  array_reduce<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): U;
   /**@description Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example list_resize([1, 2, 3], 5, 0)*/
   array_resize(size: DAnyable, value?: DAnyable | DOtherable): DArrayField;
   /**@description Sorts the elements of the list in reverse order	@example list_reverse_sort([3, 6, 1, 2])*/
@@ -924,7 +925,7 @@ interface _DArrayField<T = any> {
   /**@description Sorts the elements of the list	@example list_sort([3, 6, 1, 2])*/
   array_sort(col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  array_transform(lambda: DOtherable): DArrayField;
+  array_transform<U>(lambda: (x: T) => U): DArrayField<U>;
   /**@description Counts the unique elements of a list	@example list_unique([1, 1, NULL, -3, 1, 5])*/
   array_unique(): DNumericField;
   /**@description Returns a list with the BOOLEANs in mask_list applied as a mask to the value_list.	@example list_where([10, 20, 30, 40], [true, false, false, true])*/
@@ -936,7 +937,7 @@ interface _DArrayField<T = any> {
   /**@description Get subfield (equivalent to extract)	@example date_part('minute', TIMESTAMP '1992-09-20 20:38:40')*/
   datepart(col1: DDateable | DOtherable): DStructField;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  filter(lambda: DOtherable): DArrayField;
+  filter(lambda: (x: T) => any): DArrayField<T>;
   /**@description Flatten a nested list by one level	@example flatten([[1, 2, 3], [4, 5]])*/
   flatten(): DArrayField;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
@@ -950,7 +951,7 @@ interface _DArrayField<T = any> {
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   list_aggregate(name: DVarcharable, ...args: DAnyable[]): DAnyField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  list_apply(lambda: DOtherable): DArrayField;
+  list_apply<U>(lambda: (x: T) => U): DArrayField<U>;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
   list_cat(list2: DArrayable): DArrayField;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
@@ -972,7 +973,7 @@ interface _DArrayField<T = any> {
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
   list_extract(index: DNumericable): DAnyField;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  list_filter(lambda: DOtherable): DArrayField;
+  list_filter(lambda: (x: T) => any): DArrayField<T>;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
   list_grade_up(col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns true if the list contains the element.	@example list_contains([1, 2, NULL], 1)*/
@@ -992,7 +993,7 @@ interface _DArrayField<T = any> {
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
   list_position(element: DAnyable): DNumericField;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  list_reduce(lambda: DOtherable): DAnyField;
+  list_reduce<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): U;
   /**@description Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example list_resize([1, 2, 3], 5, 0)*/
   list_resize(size: DAnyable, value?: DAnyable | DOtherable): DArrayField;
   /**@description Sorts the elements of the list in reverse order	@example list_reverse_sort([3, 6, 1, 2])*/
@@ -1002,17 +1003,17 @@ interface _DArrayField<T = any> {
   /**@description Sorts the elements of the list	@example list_sort([3, 6, 1, 2])*/
   list_sort(col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  list_transform(lambda: DOtherable): DArrayField;
+  list_transform<U>(lambda: (x: T) => U): DArrayField<U>;
   /**@description Counts the unique elements of a list	@example list_unique([1, 1, NULL, -3, 1, 5])*/
   list_unique(): DNumericField;
   /**@description Returns a list with the BOOLEANs in mask_list applied as a mask to the value_list.	@example list_where([10, 20, 30, 40], [true, false, false, true])*/
   list_where(maskList: DArrayable): DArrayField;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  reduce(lambda: DOtherable): DAnyField;
+  reduce<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): U;
   /**@description Repeats the string count number of times	@example repeat('A', 5)*/
   repeat(count: DNumericable): DArrayField;
 }
-export type DArrayField<T = DVarcharField> = _DArrayField<T> & T[];
+export type DArrayField<T = any> = _DArrayField<T> & T[];
 interface _DStructField<T = {}> {
   [sInferred]: T;
   [sComptype]: Record<string, any>;
@@ -1211,13 +1212,13 @@ interface _DGlobalField {
   /**@description Returns the name of a given expression	@example alias(42 + 1)*/
   alias(expr: DAnyable): DVarcharField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  apply(list: DArrayable, lambda: DOtherable): DArrayField;
+  apply<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   array_aggr(list: DArrayable, name: DVarcharable, ...args: DAnyable[]): DAnyField;
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   array_aggregate(list: DArrayable, name: DVarcharable, ...args: DAnyable[]): DAnyField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  array_apply(list: DArrayable, lambda: DOtherable): DArrayField;
+  array_apply<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
   array_cat(list1: DArrayable, list2: DArrayable): DArrayField;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
@@ -1243,7 +1244,7 @@ interface _DGlobalField {
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
   array_extract(list: DVarcharable, index: DNumericable): DVarcharField;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  array_filter(list: DArrayable, lambda: DOtherable): DArrayField;
+  array_filter<T>(list: T[], lambda: (x: T) => any): DArrayField<T>;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
   array_grade_up(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns true if the list contains the element.	@example list_contains([1, 2, NULL], 1)*/
@@ -1265,7 +1266,7 @@ interface _DGlobalField {
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
   array_position(list: DArrayable, element: DAnyable): DNumericField;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  array_reduce(list: DArrayable, lambda: DOtherable): DAnyField;
+  array_reduce<T, U>(list: T[], lambda: (accumulator: U, currentValue: T) => U, initialValue: U): DArrayField<T>;
   /**@description Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example list_resize([1, 2, 3], 5, 0)*/
   array_resize(list: DArrayable, size: DAnyable, value?: DAnyable | DOtherable): DArrayField;
   /**@description Sorts the elements of the list in reverse order	@example list_reverse_sort([3, 6, 1, 2])*/
@@ -1278,7 +1279,7 @@ interface _DGlobalField {
   array_sort(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   array_to_json(...args: DAnyable[]): DJsonField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  array_transform(list: DArrayable, lambda: DOtherable): DArrayField;
+  array_transform<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Counts the unique elements of a list	@example list_unique([1, 1, NULL, -3, 1, 5])*/
   array_unique(list: DArrayable): DNumericField;
   /**@description Create an ARRAY containing the argument values.	@example array_value(4, 5, 6)*/
@@ -1485,7 +1486,7 @@ interface _DGlobalField {
   factorial(x: DNumericable): DNumericField;
   family(col0: DOtherable): DNumericField;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  filter(list: DArrayable, lambda: DOtherable): DArrayField;
+  filter<T>(list: T[], lambda: (x: T) => any): DArrayField<T>;
   finalize(col0: DOtherable): DOtherField;
   /**@description Flatten a nested list by one level	@example flatten([[1, 2, 3], [4, 5]])*/
   flatten(nestedList: DArrayable): DArrayField;
@@ -1776,7 +1777,7 @@ interface _DGlobalField {
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   list_aggregate(list: DArrayable, name: DVarcharable, ...args: DAnyable[]): DAnyField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  list_apply(list: DArrayable, lambda: DOtherable): DArrayField;
+  list_apply<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
   list_cat(list1: DArrayable, list2: DArrayable): DArrayField;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
@@ -1802,7 +1803,7 @@ interface _DGlobalField {
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
   list_extract(list: DVarcharable, index: DNumericable): DVarcharField;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  list_filter(list: DArrayable, lambda: DOtherable): DArrayField;
+  list_filter<T>(list: T[], lambda: (x: T) => any): DArrayField<T>;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
   list_grade_up(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns true if the list contains the element.	@example list_contains([1, 2, NULL], 1)*/
@@ -1824,7 +1825,7 @@ interface _DGlobalField {
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
   list_position(list: DArrayable, element: DAnyable): DNumericField;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  list_reduce(list: DArrayable, lambda: DOtherable): DAnyField;
+  list_reduce<T, U>(list: T[], lambda: (accumulator: U, currentValue: T) => U, initialValue: U): DArrayField<T>;
   /**@description Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example list_resize([1, 2, 3], 5, 0)*/
   list_resize(list: DArrayable, size: DAnyable, value?: DAnyable | DOtherable): DArrayField;
   /**@description Sorts the elements of the list in reverse order	@example list_reverse_sort([3, 6, 1, 2])*/
@@ -1836,7 +1837,7 @@ interface _DGlobalField {
   /**@description Sorts the elements of the list	@example list_sort([3, 6, 1, 2])*/
   list_sort(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  list_transform(list: DArrayable, lambda: DOtherable): DArrayField;
+  list_transform<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Counts the unique elements of a list	@example list_unique([1, 1, NULL, -3, 1, 5])*/
   list_unique(list: DArrayable): DNumericField;
   /**@description Create a LIST containing the argument values	@example list_value(4, 5, 6)*/
@@ -1983,7 +1984,7 @@ interface _DGlobalField {
   /**@description Create a list of values between start and stop - the stop parameter is exclusive	@example range(2, 5, 3)*/
   range(start: DDateable, stop: DDateable, step: DOtherable): DArrayField;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  reduce(list: DArrayable, lambda: DOtherable): DAnyField;
+  reduce<T, U>(list: T[], lambda: (accumulator: U, currentValue: T) => U, initialValue: U): DArrayField<T>;
   /**@description Escapes all potentially meaningful regexp characters in the input string	@example regexp_escape('https://duckdb.org')*/
   regexp_escape(string: DVarcharable): DVarcharField;
   /**@description If string contains the regexp pattern, returns the capturing group specified by optional parameter group. The group must be a constant value. If no group is given, it defaults to 0. A set of optional options can be set.	@example regexp_extract('abc', '([a-z])(b)', 1)*/
@@ -2481,7 +2482,26 @@ interface _DTableField {
   arrow_scan_dumb(col0: DOtherable, col1: DOtherable, col2: DOtherable): void;
   check_peg_parser(col0: DVarcharable): void;
   checkpoint(col0?: DOtherable | DVarcharable): void;
-  delta_scan(col0: DArrayable | DVarcharable, opts?: Partial<{ binaryAsString: DBoolable; compression: DAnyable | DVarcharable; debugUseOpenssl: DAnyable | DBoolable; deltaFileNumber: DBoolable; encryptionConfig: DAnyable; explicitCardinality: DBoolable | DNumericable; fileRowNumber: DBoolable; filename: DAnyable | DBoolable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DVarcharable; hiveTypesAutocast: DBoolable; parquetVersion: DNumericable | DVarcharable; pushdownFilters: DVarcharable; pushdownPartitionInfo: DBoolable; unionByName: DBoolable }>): void;
+  delta_scan(
+    col0: DArrayable | DVarcharable,
+    opts?: Partial<{
+      binaryAsString: DBoolable; // BOOLEAN
+      compression: DAnyable | DVarcharable; // VARCHAR | ANY
+      debugUseOpenssl: DAnyable | DBoolable; // BOOLEAN | ANY
+      deltaFileNumber: DBoolable; // BOOLEAN
+      encryptionConfig: DAnyable; // ANY
+      explicitCardinality: DBoolable | DNumericable; // UBIGINT | BOOLEAN
+      fileRowNumber: DBoolable; // BOOLEAN
+      filename: DAnyable | DBoolable; // ANY | BOOLEAN
+      hivePartitioning: DBoolable | DVarcharable; // BOOLEAN | VARCHAR
+      hiveTypes: DAnyable | DVarcharable; // ANY | VARCHAR
+      hiveTypesAutocast: DBoolable; // BOOLEAN
+      parquetVersion: DNumericable | DVarcharable; // VARCHAR | UBIGINT
+      pushdownFilters: DVarcharable; // VARCHAR
+      pushdownPartitionInfo: DBoolable; // BOOLEAN
+      unionByName: DBoolable; // BOOLEAN
+    }>,
+  ): void;
   duckdb_columns(): void;
   duckdb_constraints(): void;
   duckdb_databases(): void;
@@ -2510,15 +2530,29 @@ interface _DTableField {
   glob(col0: DArrayable | DVarcharable): void;
   iceberg_metadata(col0: DVarcharable, col1: DDateable | DNumericable | DVarcharable, version: DBoolable | DVarcharable, versionNameFormat: DBoolable | DVarcharable, skipSchemaInference: DBoolable | DVarcharable, metadataCompressionCodec: DBoolable | DVarcharable, allowMovedPaths?: DBoolable | DOtherable | DVarcharable): void;
   iceberg_scan(col0: DVarcharable, col1: DDateable | DNumericable | DVarcharable, versionNameFormat: DBoolable | DVarcharable, version: DBoolable | DVarcharable, metadataCompressionCodec: DVarcharable, mode: DBoolable | DVarcharable, allowMovedPaths: DBoolable | DVarcharable, skipSchemaInference?: DBoolable | DOtherable | DVarcharable): void;
-  iceberg_snapshots(col0: DVarcharable, opts?: Partial<{ metadataCompressionCodec: DVarcharable; skipSchemaInference: DBoolable; version: DVarcharable; versionNameFormat: DVarcharable }>): void;
+  iceberg_snapshots(
+    col0: DVarcharable,
+    opts?: Partial<{
+      metadataCompressionCodec: DVarcharable; // VARCHAR
+      skipSchemaInference: DBoolable; // BOOLEAN
+      version: DVarcharable; // VARCHAR
+      versionNameFormat: DVarcharable; // VARCHAR
+    }>,
+  ): void;
   icu_calendar_names(): void;
   json_execute_serialized_sql(col0: DVarcharable): void;
-  load_aws_credentials(col0: DBoolable | DVarcharable, opts?: Partial<{ redactSecret: DBoolable; setRegion?: DBoolable | DOtherable }>): void;
+  load_aws_credentials(
+    col0: DBoolable | DVarcharable,
+    opts?: Partial<{
+      redactSecret: DBoolable; // BOOLEAN
+      setRegion?: DBoolable | DOtherable; //  | BOOLEAN
+    }>,
+  ): void;
   parquet_bloom_probe(col0: DArrayable | DVarcharable, col1: DVarcharable, col2: DAnyable): void;
   parquet_file_metadata(col0: DArrayable | DVarcharable): void;
   parquet_kv_metadata(col0: DArrayable | DVarcharable): void;
   parquet_metadata(col0: DArrayable | DVarcharable): void;
-  parquet_scan(col0: DArrayable | DVarcharable, opts?: Partial<{ binaryAsString: DBoolable; compression: DBoolable | DVarcharable; debugUseOpenssl: DBoolable; encryptionConfig: DAnyable; explicitCardinality: DAnyable | DNumericable; fileRowNumber: DAnyable | DBoolable; filename: DAnyable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DAnyable | DBoolable; parquetVersion: DBoolable | DVarcharable; schema: DAnyable | DBoolable; unionByName: DBoolable | DVarcharable }>): void;
+  parquet_scan: typeof parquet_scan;
   parquet_schema(col0: DArrayable | DVarcharable): void;
   pg_timezone_names(): void;
   pragma_collations(): void;
@@ -2535,116 +2569,18 @@ interface _DTableField {
   query_table(col0: DArrayable | DVarcharable, col1?: DBoolable | DOtherable): void;
   range(col0: DDateable | DNumericable, col1?: DDateable | DNumericable | DOtherable, col2?: DNumericable | DOtherable): void;
   read_blob(col0: DArrayable | DVarcharable): void;
-  read_csv(
-    col0: DArrayable | DVarcharable,
-    opts?: Partial<
-      {
-        allVarchar: DBoolable | DVarcharable;
-        allowQuotedNulls: DBoolable;
-        autoDetect: DBoolable | DVarcharable;
-        autoTypeCandidates: DAnyable | DVarcharable;
-        bufferSize: DNumericable | DVarcharable;
-        columnNames: DArrayable | DBoolable;
-        columnTypes: DAnyable | DBoolable;
-        columns: DAnyable | DBoolable;
-        comment: DVarcharable;
-        compression: DArrayable | DVarcharable;
-        dateformat: DAnyable | DVarcharable;
-        decimalSeparator: DVarcharable;
-        delim: DBoolable | DVarcharable;
-        dtypes: DAnyable | DBoolable;
-        encoding: DNumericable | DVarcharable;
-        escape: DBoolable | DVarcharable;
-        filename: DAnyable | DVarcharable;
-        forceNotNull: DArrayable | DVarcharable;
-        header: DAnyable | DBoolable;
-        hivePartitioning: DBoolable;
-        hiveTypes: DAnyable | DVarcharable;
-        hiveTypesAutocast: DBoolable | DVarcharable;
-        ignoreErrors: DBoolable | DVarcharable;
-        maxLineSize: DAnyable | DVarcharable;
-        maximumLineSize: DNumericable | DVarcharable;
-        names: DArrayable | DNumericable;
-        newLine: DBoolable | DVarcharable;
-        normalizeNames: DAnyable | DBoolable;
-        nullPadding: DBoolable | DVarcharable;
-        nullstr: DAnyable;
-        parallel: DBoolable;
-        quote: DNumericable | DVarcharable;
-        rejectsLimit: DArrayable | DNumericable;
-        rejectsScan: DBoolable | DVarcharable;
-        rejectsTable: DVarcharable;
-        sampleSize: DNumericable | DVarcharable;
-        sep: DAnyable | DVarcharable;
-        skip: DNumericable | DVarcharable;
-        storeRejects: DAnyable | DBoolable;
-        strictMode: DBoolable;
-        timestampformat: DBoolable | DVarcharable;
-        types: DAnyable;
-        unionByName: DArrayable | DBoolable;
-      }
-    >,
-  ): void;
-  read_csv_auto(
-    col0: DArrayable | DVarcharable,
-    opts?: Partial<
-      {
-        allVarchar: DBoolable | DVarcharable;
-        allowQuotedNulls: DBoolable;
-        autoDetect: DBoolable | DVarcharable;
-        autoTypeCandidates: DAnyable | DVarcharable;
-        bufferSize: DNumericable | DVarcharable;
-        columnNames: DArrayable | DBoolable;
-        columnTypes: DAnyable | DBoolable;
-        columns: DAnyable | DBoolable;
-        comment: DVarcharable;
-        compression: DArrayable | DVarcharable;
-        dateformat: DAnyable | DVarcharable;
-        decimalSeparator: DVarcharable;
-        delim: DBoolable | DVarcharable;
-        dtypes: DAnyable | DBoolable;
-        encoding: DNumericable | DVarcharable;
-        escape: DBoolable | DVarcharable;
-        filename: DAnyable | DVarcharable;
-        forceNotNull: DArrayable | DVarcharable;
-        header: DAnyable | DBoolable;
-        hivePartitioning: DBoolable;
-        hiveTypes: DAnyable | DVarcharable;
-        hiveTypesAutocast: DBoolable | DVarcharable;
-        ignoreErrors: DBoolable | DVarcharable;
-        maxLineSize: DAnyable | DVarcharable;
-        maximumLineSize: DNumericable | DVarcharable;
-        names: DArrayable | DNumericable;
-        newLine: DBoolable | DVarcharable;
-        normalizeNames: DAnyable | DBoolable;
-        nullPadding: DBoolable | DVarcharable;
-        nullstr: DAnyable;
-        parallel: DBoolable;
-        quote: DNumericable | DVarcharable;
-        rejectsLimit: DArrayable | DNumericable;
-        rejectsScan: DBoolable | DVarcharable;
-        rejectsTable: DVarcharable;
-        sampleSize: DNumericable | DVarcharable;
-        sep: DAnyable | DVarcharable;
-        skip: DNumericable | DVarcharable;
-        storeRejects: DAnyable | DBoolable;
-        strictMode: DBoolable;
-        timestampformat: DBoolable | DVarcharable;
-        types: DAnyable;
-        unionByName: DArrayable | DBoolable;
-      }
-    >,
-  ): void;
-  read_json(col0: DArrayable | DVarcharable, opts?: Partial<{ autoDetect: DBoolable; columns: DAnyable | DBoolable; compression: DVarcharable; convertStringsToIntegers: DBoolable; dateFormat: DVarcharable; dateformat: DVarcharable; fieldAppearanceThreshold: DAnyable | DNumericable; filename: DAnyable | DNumericable; format: DNumericable | DVarcharable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DNumericable; hiveTypesAutocast: DBoolable | DVarcharable; ignoreErrors: DBoolable | DNumericable; mapInferenceThreshold: DAnyable | DNumericable; maximumDepth: DNumericable | DVarcharable; maximumObjectSize: DBoolable | DNumericable; maximumSampleFiles: DNumericable; records: DBoolable | DVarcharable; sampleSize: DNumericable; timestampFormat: DVarcharable; timestampformat: DBoolable | DVarcharable; unionByName: DAnyable | DBoolable }>): void;
-  read_json_auto(col0: DArrayable | DVarcharable, opts?: Partial<{ autoDetect: DBoolable; columns: DAnyable | DBoolable; compression: DVarcharable; convertStringsToIntegers: DBoolable; dateFormat: DVarcharable; dateformat: DVarcharable; fieldAppearanceThreshold: DAnyable | DNumericable; filename: DAnyable | DNumericable; format: DNumericable | DVarcharable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DNumericable; hiveTypesAutocast: DBoolable | DVarcharable; ignoreErrors: DBoolable | DNumericable; mapInferenceThreshold: DAnyable | DNumericable; maximumDepth: DNumericable | DVarcharable; maximumObjectSize: DBoolable | DNumericable; maximumSampleFiles: DNumericable; records: DBoolable | DVarcharable; sampleSize: DNumericable; timestampFormat: DVarcharable; timestampformat: DBoolable | DVarcharable; unionByName: DAnyable | DBoolable }>): void;
-  read_json_objects(col0: DArrayable | DVarcharable, opts?: Partial<{ compression: DVarcharable; filename: DAnyable | DVarcharable; format: DAnyable | DVarcharable; hivePartitioning: DBoolable | DNumericable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maximumObjectSize: DBoolable | DNumericable; unionByName: DAnyable | DBoolable }>): void;
-  read_json_objects_auto(col0: DArrayable | DVarcharable, opts?: Partial<{ compression: DVarcharable; filename: DAnyable | DVarcharable; format: DAnyable | DVarcharable; hivePartitioning: DBoolable | DNumericable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maximumObjectSize: DBoolable | DNumericable; unionByName: DAnyable | DBoolable }>): void;
-  read_ndjson(col0: DArrayable | DVarcharable, opts?: Partial<{ autoDetect: DBoolable; columns: DAnyable | DBoolable; compression: DVarcharable; convertStringsToIntegers: DBoolable; dateFormat: DVarcharable; dateformat: DVarcharable; fieldAppearanceThreshold: DAnyable | DNumericable; filename: DAnyable | DNumericable; format: DNumericable | DVarcharable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DNumericable; hiveTypesAutocast: DBoolable | DVarcharable; ignoreErrors: DBoolable | DNumericable; mapInferenceThreshold: DAnyable | DNumericable; maximumDepth: DNumericable | DVarcharable; maximumObjectSize: DBoolable | DNumericable; maximumSampleFiles: DNumericable; records: DBoolable | DVarcharable; sampleSize: DNumericable; timestampFormat: DVarcharable; timestampformat: DBoolable | DVarcharable; unionByName: DAnyable | DBoolable }>): void;
-  read_ndjson_auto(col0: DArrayable | DVarcharable, opts?: Partial<{ autoDetect: DBoolable; columns: DAnyable | DBoolable; compression: DVarcharable; convertStringsToIntegers: DBoolable; dateFormat: DVarcharable; dateformat: DVarcharable; fieldAppearanceThreshold: DAnyable | DNumericable; filename: DAnyable | DNumericable; format: DNumericable | DVarcharable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DNumericable; hiveTypesAutocast: DBoolable | DVarcharable; ignoreErrors: DBoolable | DNumericable; mapInferenceThreshold: DAnyable | DNumericable; maximumDepth: DNumericable | DVarcharable; maximumObjectSize: DBoolable | DNumericable; maximumSampleFiles: DNumericable; records: DBoolable | DVarcharable; sampleSize: DNumericable; timestampFormat: DVarcharable; timestampformat: DBoolable | DVarcharable; unionByName: DAnyable | DBoolable }>): void;
-  read_ndjson_objects(col0: DArrayable | DVarcharable, opts?: Partial<{ compression: DVarcharable; filename: DAnyable | DVarcharable; format: DAnyable | DVarcharable; hivePartitioning: DBoolable | DNumericable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maximumObjectSize: DBoolable | DNumericable; unionByName: DAnyable | DBoolable }>): void;
-  read_parquet(col0: DArrayable | DVarcharable, opts?: Partial<{ binaryAsString: DBoolable; compression: DBoolable | DVarcharable; debugUseOpenssl: DBoolable; encryptionConfig: DAnyable; explicitCardinality: DAnyable | DNumericable; fileRowNumber: DAnyable | DBoolable; filename: DAnyable | DNumericable; hivePartitioning: DBoolable | DVarcharable; hiveTypes: DAnyable | DBoolable; hiveTypesAutocast: DAnyable | DBoolable; parquetVersion: DBoolable | DVarcharable; schema: DAnyable | DBoolable; unionByName: DBoolable | DVarcharable }>): void;
-  read_text(col0: DArrayable | DVarcharable): void;
-  read_xlsx(col0: DVarcharable, opts?: Partial<{ allVarchar: DBoolable; emptyAsVarchar: DBoolable; header: DBoolable; ignoreErrors: DBoolable; normalizeNames: DBoolable; range: DVarcharable; sheet: DVarcharable; stopAtEmpty: DBoolable }>): void;
+  read_csv: typeof read_csv;
+  read_csv_auto: typeof read_csv;
+  read_json: typeof read_json;
+  read_json_auto: typeof read_json;
+  read_json_objects: typeof read_json_objects;
+  read_json_objects_auto: typeof read_json_objects;
+  read_ndjson: typeof read_json;
+  read_ndjson_auto: typeof read_json;
+  read_ndjson_objects: typeof read_json_objects;
+  read_parquet: typeof parquet_scan;
+  read_text: typeof read_text;
+  read_xlsx: typeof read_xlsx;
   register_geoarrow_extensions(): void;
   repeat(col0: DAnyable, col1: DNumericable): void;
   repeat_row(numRows: DNumericable, ...args: DAnyable[]): void;
@@ -2653,7 +2589,7 @@ interface _DTableField {
   scan_arrow_ipc(col0: DArrayable): void;
   seq_scan(): void;
   shapefile_meta(col0: DArrayable | DVarcharable): void;
-  sniff_csv(col0: DVarcharable, opts?: Partial<{ allVarchar: DBoolable; allowQuotedNulls: DBoolable; autoDetect: DBoolable; autoTypeCandidates: DAnyable; bufferSize: DNumericable; columnNames: DArrayable; columnTypes: DAnyable; columns: DAnyable; comment: DVarcharable; compression: DVarcharable; dateformat: DVarcharable; decimalSeparator: DVarcharable; delim: DVarcharable; dtypes: DAnyable; encoding: DVarcharable; escape: DVarcharable; filename: DAnyable; forceMatch: DBoolable; forceNotNull: DArrayable; header: DBoolable; hivePartitioning: DBoolable; hiveTypes: DAnyable; hiveTypesAutocast: DBoolable; ignoreErrors: DBoolable; maxLineSize: DVarcharable; maximumLineSize: DVarcharable; names: DArrayable; newLine: DVarcharable; normalizeNames: DBoolable; nullPadding: DBoolable; nullstr: DAnyable; parallel: DBoolable; quote: DVarcharable; rejectsLimit: DNumericable; rejectsScan: DVarcharable; rejectsTable: DVarcharable; sampleSize: DNumericable; sep: DVarcharable; skip: DNumericable; storeRejects: DBoolable; strictMode: DBoolable; timestampformat: DVarcharable; types: DAnyable; unionByName: DBoolable }>): void;
+  sniff_csv: typeof read_csv;
   sql_auto_complete(col0: DVarcharable): void;
   sqlite_attach(col0: DVarcharable, overwrite: DBoolable): void;
   sqlite_query(col0: DVarcharable, col1: DVarcharable): void;
@@ -3288,13 +3224,13 @@ interface CGlobal {
   /**@description Returns the name of a given expression	@example alias(42 + 1)*/
   alias(expr: DAnyable): string & CVarchar;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  apply(list: DArrayable, lambda: DOtherable): DArrayField;
+  apply<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   array_aggr(list: DArrayable, name: DVarcharable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   array_aggregate(list: DArrayable, name: DVarcharable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  array_apply(list: DArrayable, lambda: DOtherable): DArrayField;
+  array_apply<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
   array_cat(list1: DArrayable, list2: DArrayable): DArrayField;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
@@ -3320,7 +3256,7 @@ interface CGlobal {
   /**@description Extract the indexth (1-based) value from the array.	@example array_extract('DuckDB', 2)*/
   array_extract(list: DVarcharable, index: DNumericable): string & CVarchar;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  array_filter(list: DArrayable, lambda: DOtherable): DArrayField;
+  array_filter<T>(list: T[], lambda: (x: T) => any): DArrayField<T>;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
   array_grade_up(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns true if the list contains the element.	@example list_contains([1, 2, NULL], 1)*/
@@ -3342,7 +3278,7 @@ interface CGlobal {
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
   array_position(list: DArrayable, element: DAnyable): number & CNumeric;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  array_reduce(list: DArrayable, lambda: DOtherable): Partial<CAny>;
+  array_reduce<T, U>(list: T[], lambda: (accumulator: U, currentValue: T) => U, initialValue: U): DArrayField<T>;
   /**@description Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example list_resize([1, 2, 3], 5, 0)*/
   array_resize(list: DArrayable, size: DAnyable, value?: DAnyable | DOtherable): DArrayField;
   /**@description Sorts the elements of the list in reverse order	@example list_reverse_sort([3, 6, 1, 2])*/
@@ -3355,7 +3291,7 @@ interface CGlobal {
   array_sort(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   array_to_json(...args: DAnyable[]): DJsonField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  array_transform(list: DArrayable, lambda: DOtherable): DArrayField;
+  array_transform<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Counts the unique elements of a list	@example list_unique([1, 1, NULL, -3, 1, 5])*/
   array_unique(list: DArrayable): number & CNumeric;
   /**@description Create an ARRAY containing the argument values.	@example array_value(4, 5, 6)*/
@@ -3562,7 +3498,7 @@ interface CGlobal {
   factorial(x: DNumericable): number & CNumeric;
   family(col0: DOtherable): number & CNumeric;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  filter(list: DArrayable, lambda: DOtherable): DArrayField;
+  filter<T>(list: T[], lambda: (x: T) => any): DArrayField<T>;
   finalize(col0: DOtherable): DOtherField;
   /**@description Flatten a nested list by one level	@example flatten([[1, 2, 3], [4, 5]])*/
   flatten(nestedList: DArrayable): DArrayField;
@@ -3853,7 +3789,7 @@ interface CGlobal {
   /**@description Executes the aggregate function name on the elements of list	@example list_aggregate([1, 2, NULL], 'min')*/
   list_aggregate(list: DArrayable, name: DVarcharable, ...args: DAnyable[]): Partial<CAny>;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  list_apply(list: DArrayable, lambda: DOtherable): DArrayField;
+  list_apply<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
   list_cat(list1: DArrayable, list2: DArrayable): DArrayField;
   /**@description Concatenates two lists.	@example list_concat([2, 3], [4, 5, 6])*/
@@ -3879,7 +3815,7 @@ interface CGlobal {
   /**@description Extract the indexth (1-based) value from the list.	@example list_extract([4, 5, 6], 3)*/
   list_extract(list: DVarcharable, index: DNumericable): string & CVarchar;
   /**@description Constructs a list from those elements of the input list for which the lambda function returns true	@example list_filter([3, 4, 5], x -> x > 4)*/
-  list_filter(list: DArrayable, lambda: DOtherable): DArrayField;
+  list_filter<T>(list: T[], lambda: (x: T) => any): DArrayField<T>;
   /**@description Returns the index of their sorted position.	@example list_grade_up([3, 6, 1, 2])*/
   list_grade_up(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns true if the list contains the element.	@example list_contains([1, 2, NULL], 1)*/
@@ -3901,7 +3837,7 @@ interface CGlobal {
   /**@description Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example list_position([1, 2, NULL], 2)*/
   list_position(list: DArrayable, element: DAnyable): number & CNumeric;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  list_reduce(list: DArrayable, lambda: DOtherable): Partial<CAny>;
+  list_reduce<T, U>(list: T[], lambda: (accumulator: U, currentValue: T) => U, initialValue: U): DArrayField<T>;
   /**@description Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example list_resize([1, 2, 3], 5, 0)*/
   list_resize(list: DArrayable, size: DAnyable, value?: DAnyable | DOtherable): DArrayField;
   /**@description Sorts the elements of the list in reverse order	@example list_reverse_sort([3, 6, 1, 2])*/
@@ -3913,7 +3849,7 @@ interface CGlobal {
   /**@description Sorts the elements of the list	@example list_sort([3, 6, 1, 2])*/
   list_sort(list: DArrayable, col1?: DOtherable | DVarcharable, col2?: DOtherable | DVarcharable): DArrayField;
   /**@description Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example list_transform([1, 2, 3], x -> x + 1)*/
-  list_transform(list: DArrayable, lambda: DOtherable): DArrayField;
+  list_transform<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U>;
   /**@description Counts the unique elements of a list	@example list_unique([1, 1, NULL, -3, 1, 5])*/
   list_unique(list: DArrayable): number & CNumeric;
   /**@description Create a LIST containing the argument values	@example list_value(4, 5, 6)*/
@@ -4060,7 +3996,7 @@ interface CGlobal {
   /**@description Create a list of values between start and stop - the stop parameter is exclusive	@example range(2, 5, 3)*/
   range(start: DDateable, stop: DDateable, step: DOtherable): DArrayField;
   /**@description Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example list_reduce([1, 2, 3], (x, y) -> x + y)*/
-  reduce(list: DArrayable, lambda: DOtherable): Partial<CAny>;
+  reduce<T, U>(list: T[], lambda: (accumulator: U, currentValue: T) => U, initialValue: U): DArrayField<T>;
   /**@description Escapes all potentially meaningful regexp characters in the input string	@example regexp_escape('https://duckdb.org')*/
   regexp_escape(string: DVarcharable): string & CVarchar;
   /**@description If string contains the regexp pattern, returns the capturing group specified by optional parameter group. The group must be a constant value. If no group is given, it defaults to 0. A set of optional options can be set.	@example regexp_extract('abc', '([a-z])(b)', 1)*/
@@ -4782,18 +4718,100 @@ export interface DSettings {
   user: string;
   /**@description The (average) length at which to enable ZSTD compression, defaults to 4096*/
   zstd_min_string_length: number;
-  /**@description The current time zone*/
-  TimeZone: string;
-  /**@description Attempt to decode/encode geometry data in/as GeoParquet files if the spatial extension is present.*/
-  enable_geoparquet_conversion: boolean;
-  /**@description The current calendar*/
-  Calendar: string;
+  /**@description Period of time between UI polling requests (in ms)*/
+  ui_polling_interval: number;
+  /**@description Remote URL to which the UI server forwards GET requests*/
+  ui_remote_url: string;
+  /**@description S3 Access Key ID*/
+  s3_access_key_id: string;
+  /**@description Enable globbing the filesystem (if possible) to find the latest version metadata. This could result in reading an uncommitted version.*/
+  unsafe_enable_version_guessing: boolean;
+  /**@description Override the azure endpoint for when the Azure credential providers are used.*/
+  azure_endpoint: string;
+  /**@description Proxy to use when login & performing request to azure. By default it will use the HTTP_PROXY environment variable if set.*/
+  azure_http_proxy: string;
+  /**@description Disable Globs and Query Parameters on S3 URLs*/
+  s3_url_compatibility_mode: boolean;
+  /**@description Forces upfront download of file*/
+  force_download: boolean;
+  /**@description S3 use SSL*/
+  s3_use_ssl: boolean;
+  /**@description S3 Access Key*/
+  s3_secret_access_key: string;
+  /**@description Local port on which the UI server listens*/
+  ui_local_port: number;
+  /**@description Path to a custom certificate file for self-signed certificates.*/
+  ca_cert_file: string;
+  /**@description Enable server side certificate verification.*/
+  enable_server_cert_verification: boolean;
   /**@description Cache Parquet metadata - useful when reading the same files multiple times*/
   parquet_metadata_cache: boolean;
+  /**@description Time between retries*/
+  http_retry_wait_ms: number;
+  /**@description S3 Uploader max parts per file (between 1 and 10000)*/
+  s3_uploader_max_parts_per_file: number;
+  /**@description Load all SQLite columns as VARCHAR columns*/
+  sqlite_all_varchar: boolean;
+  /**@description Keep alive connections. Setting this to false can help when running into connection failures*/
+  http_keep_alive: boolean;
+  /**@description Backoff factor for exponentially increasing retry wait time*/
+  http_retry_backoff: number;
+  /**@description Http proxy password if needed.*/
+  azure_proxy_password: string;
+  /**@description HTTP retries on I/O error*/
+  http_retries: number;
+  /**@description HTTP timeout read/write/connection/retry (in seconds)*/
+  http_timeout: number;
+  /**@description DEBUG SETTING: print all queries sent to SQLite to stdout*/
+  sqlite_debug_show_queries: boolean;
+  /**@description S3 Endpoint*/
+  s3_endpoint: string;
+  /**@description Azure connection string, used for authenticating and configuring azure requests*/
+  azure_storage_connection_string: string;
+  /**@description Forwards the internal logging of the Delta Kernel to the duckdb logger. Warning: this may impact performance even with DuckDB logging disabled.*/
+  delta_kernel_logging: boolean;
+  /**@description S3 URL style*/
+  s3_url_style: string;
+  /**@description The current time zone*/
+  TimeZone: string;
   /**@description Use the prefetching mechanism for all types of parquet files*/
   prefetch_all_parquet_files: boolean;
+  /**@description Include http info from the Azure Storage in the explain analyze statement.*/
+  azure_http_stats: boolean;
+  /**@description S3 Region*/
+  s3_region: string;
+  /**@description Http proxy user name if needed.*/
+  azure_proxy_user_name: string;
+  /**@description Size of the read buffer.  It is recommended that this is evenly divisible by azure_read_transfer_chunk_size.*/
+  azure_read_buffer_size: number;
+  /**@description Maximum size in bytes that the Azure client will read in a single request. It is recommended that this is a factor of azure_read_buffer_size.*/
+  azure_read_transfer_chunk_size: number;
+  /**@description Debug option to limit number of items returned in list requests*/
+  hf_max_per_page: number;
+  /**@description Maximum number of threads the Azure client can use for a single parallel read. If azure_read_transfer_chunk_size is less than azure_read_buffer_size then setting this > 1 will allow the Azure client to do concurrent requests to fill the buffer.*/
+  azure_read_transfer_concurrency: number;
+  /**@description S3 Uploader global thread limit*/
+  s3_uploader_thread_limit: number;
+  /**@description S3 Uploader max filesize (between 50GB and 5TB)*/
+  s3_uploader_max_filesize: string;
+  /**@description Ordered list of Azure credential providers, in string format separated by ';'. E.g. 'cli;workload_identity;managed_identity;env'*/
+  azure_credential_chain: string;
+  /**@description Enable/disable the caching of some context when performing queries. This cache is by default enable, and will for a given connection keep a local context when performing a query. If you suspect that the caching is causing some side effect you can try to disable it by setting this option to false.*/
+  azure_context_caching: boolean;
   /**@description Disable the prefetching mechanism in Parquet*/
   disable_parquet_prefetching: boolean;
+  /**@description S3 Session Token*/
+  s3_session_token: string;
+  /**@description Attempt to decode/encode geometry data in/as GeoParquet files if the spatial extension is present.*/
+  enable_geoparquet_conversion: boolean;
+  /**@description Azure account name, when set, the extension will attempt to automatically detect credentials*/
+  azure_account_name: string;
+  /**@description Adds the filtered files to the explain output. Warning: this may impact performance of delta scan during explain analyze queries.*/
+  delta_scan_explain_files_filtered: boolean;
+  /**@description The current calendar*/
+  Calendar: string;
+  /**@description Underlying adapter to use with the Azure SDK. Read more about the adapter at https://github.com/Azure/azure-sdk-for-cpp/blob/main/doc/HttpTransportAdapter.md. Valid values are: default, curl*/
+  azure_transport_option_type: string;
   /**@description In Parquet files, interpret binary data as a string.*/
   binary_as_string: boolean;
 }
@@ -4840,7 +4858,7 @@ export const DExtensions = [
   },
   {
     "extension_name": "h3",
-    "description": "",
+    "description": "H3 hierarchical hexagonal indexing system for geospatial data, v4.2.1",
     "installed_from": "community",
   },
   {

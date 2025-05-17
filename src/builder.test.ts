@@ -25,6 +25,6 @@ test('order', () => {
 
     cexpect(
         xx.select(({ comment, description, ...rest }) => rest)
-        , 'SELECT *'
+        , 'SELECT * EXCLUDE(comment, description)'
     )
 });

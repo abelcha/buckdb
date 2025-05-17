@@ -1,12 +1,11 @@
 import { test, expect, mock } from 'bun:test';
 // Import from the correct location
-import { MemoryDB, from } from '../buckdb'; // Corrected import path
 import { copy } from './copy';
-import type { MaterializedResult } from './build.types';
+import type { MS } from './build.types'
 
 // Helper function to create a mock MaterializedResult and return the mock function
 // Use 'any' for the mock function type as Bun's specific mock type isn't readily available/needed here
-const createMockResult = (sourceSql: string, expectedCopySql: string): [MaterializedResult<any, any>, any] => {
+const createMockResult = (sourceSql: string, expectedCopySql: string): [MS<any, any>, any] => {
     const mockExecute = mock((sql: string) => {
         // Normalize whitespace for comparison
         const normalize = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -25,7 +24,7 @@ const createMockResult = (sourceSql: string, expectedCopySql: string): [Material
         }),
         // Mock other methods if they were needed by the copy function itself
         execute: () => Promise.resolve([]), // Example: Mock execute returning empty result array
-    } as unknown as MaterializedResult<any, any>;
+    } as unknown as MS<any, any>; // Cast to MS type
 
     return [mockResult, mockExecute]; // Return both the mock result and the mock function
 };
@@ -67,7 +66,7 @@ test('copy to S3', async () => {
 
 test('copy with different format (JSON)', async () => {
     const sourceSql = 'SELECT event_data FROM events';
-     // Updated expected SQL: FORMAT JSON (uppercase, no quotes)
+    // Updated expected SQL: FORMAT JSON (uppercase, no quotes)
     const expectedCopySql = `COPY (${sourceSql}) TO 'events.json' (FORMAT JSON)`;
     const [mockResult, mockExecuteFn] = createMockResult(sourceSql, expectedCopySql);
 

@@ -1,4 +1,4 @@
-import { from, Buck, read_json, read_csv } from './buckdb.ts'
+import { from, Buck, read_json, read_csv, MemoryDB } from './buckdb.ts'
 
 
 
@@ -6,6 +6,14 @@ import { from, Buck, read_json, read_csv } from './buckdb.ts'
 
 from('s3://a1738/files/macif.parquet')
 
+
+
+
+await MemoryDB.from('duckdb_functions()')
+    .select(({ description, examples, ...rest }) => ({
+        ...rest,
+        description: 'toto'
+    })).execute(); // Exclude a field
 
 
 
@@ -42,8 +50,8 @@ await from('duckdb_settings()', 's')
 // .execute()
 
 const resp5 = await Buck('').from('s3://a1738/jj.jsonl')
-.select(e => [e.cc, e.codeApe])
-.execute()
+    .select(e => [e.cc, e.codeApe])
+    .execute()
 
 
 // const resp3 = await from(read_csv('s3://a1738/files/zipcodes.fr.csv', {
@@ -61,7 +69,7 @@ const xxxzx = await from('s3://a1738/testxs2.jsonl')
 const oiiz = await from('s3://a1738/files/macif.parquet')
     .select(e => ({ xx: e.benefits, zz: e.demo, ff: e.created }))
     .execute()
-    
+
 const xxxz = await from('s3://a1738/files/macif.parquet')
     .select(e => ({ xx: e.benefits }))
     .keyBy(e => e.city)
@@ -69,8 +77,8 @@ const xxxz = await from('s3://a1738/files/macif.parquet')
 
 const xxxdz = await from('s3://a1738/files/macif.parquet')
     .select(e => e.id)
-    .execute()    
-    // .then(x => x[0])
+    .execute()
+// .then(x => x[0])
 // .then(e => e[0].
 
 
@@ -108,7 +116,7 @@ const xxxdz = await from('s3://a1738/files/macif.parquet')
 //     .where(e => e.function_name in ['read_json', 'read_json_auto'])
 
 
-    
+
 // from(`s3://a1738/testxs2.jsonl`)
 //     .select()
 //     .groupBy('ALL')
@@ -139,10 +147,10 @@ const con2 = Buck({
 // // from('')
 
 const resp = await con2.from('Stations', 'ST').select(p => ({ pp p.code, xx: p.id, gg: p.geo_lat }))
-.execute()
+    .execute()
 
 await buckCon.from('duckdb_functions()')
-    .select(({database_name, datab, ...fns}) => ({ ...fns, schema_name: 'xxxxxx'  }))
+    .select(({ database_name, datab, ...fns }) => ({ ...fns, schema_name: 'xxxxxx' }))
     // .where(e => e.function_name === 'len')
     // .copyTo('s3://dallas/uu.csv', {
     //     delim: '\\t',
@@ -152,7 +160,7 @@ await buckCon.from('duckdb_functions()')
 
 
 
-    await buckCon.from('duckdb_functions()', 'ddf')
+await buckCon.from('duckdb_functions()', 'ddf')
     // .join('data/final.csv', e => e.final.pid === e.ddf.database_oid)
     .select((e, D) => ({
         xxzz: e.ddf.database_oid.ascii() + 'lol',

@@ -1,8 +1,23 @@
-import jsep, { ArrowFunctionExpression, Expression, Property } from './jsep';
+import jsep, {
+  ArrayExpression,
+  ArrowFunctionExpression,
+  BinaryExpression,
+  CallExpression,
+  ConditionalExpression,
+  Expression,
+  Identifier,
+  Literal,
+  MemberExpression,
+  ObjectExpression,
+  Property, SequenceExpression,
+  SpreadElement,
+  TemplateElement,
+  TemplateLiteral,
+  UnaryExpression
+} from './jsep';
 import { wrap, Ω } from './utils'
 import { LitteralTypesMap, PatternMatchers } from './typedef'
 import { DGlobalField } from '../.buck/types';
-import { omit } from 'es-toolkit';
 
 const RegexpFuncsWthOptions = new Map([
   ['regexp_extract', 3],
@@ -12,65 +27,51 @@ const RegexpFuncsWthOptions = new Map([
   ['regexp_full_matches', 2],
 ])
 
-function mapUnaryOperator(jsOperator) {
-  const unaryOperatorMap = {
-    '!': 'NOT',    // Logical negation
-    '-': '-',      // Numeric negation
-    '+': '+',      // Unary plus (no change needed)
-    '~': '~',      // Bitwise NOT (DuckDB supports this)
-    'typeof': 'TYPEOF', // Hypothetical; DuckDB doesn’t have a direct equivalent
-    'void': null,  // No direct DuckDB equivalent; could throw an error
-    'delete': null // No direct DuckDB equivalent; typically for objects in JS
-  };
+const UnaryOperatorMap = new Map([
+  ['!', 'NOT'],    // Logical negation
+  ['-', '-'],      // Numeric negation
+  ['+', '+'],      // Unary plus (no change needed)
+  ['~', '~'],      // Bitwise NOT (DuckDB supports this)
+])
 
-  if (!(jsOperator in unaryOperatorMap)) {
+function mapUnaryOperator(jsOperator: any) {
+  if (!UnaryOperatorMap.has(jsOperator)) {
     throw new Error(`Unsupported unary operator: ${jsOperator}`);
   }
-
-  const mappedOperator = unaryOperatorMap[jsOperator];
-  if (mappedOperator === null) {
-    throw new Error(`Unary operator "${jsOperator}" is not supported in DuckDB`);
-  }
-
-  return mappedOperator;
+  return UnaryOperatorMap.get(jsOperator)
 }
 
-// Map JavaScript operators to DuckDB operators
+const OperatorMap = new Map([
+  ['==', '='],
+  ['!=', '!='],
+  ['===', '='],
+  ['!==', '!='],
+  ['+', '+'],
+  ['-', '-'],
+  ['*', '*'],
+  ['/', '/'],
+  ['&&', 'AND'],
+  ['||', 'OR'],
+  ['>', '>'],
+  ['<', '<'],
+  ['>=', '>='],
+  ['<=', '<='],
+  ['in', 'IN']
+])
 function mapOperator(jsOperator: any) {
-  const operatorMap = {
-    '===': '=',    // Strict equality in JS becomes equality in DuckDB
-    '!==': '!=',   // Strict inequality
-    '+': '+',      // Arithmetic operators remain the same
-    '-': '-',
-    '*': '*',
-    '/': '/',
-    '&&': 'AND',   // Logical AND
-    '||': 'OR',    // Logical OR
-    '>': '>',
-    '<': '<',
-    '>=': '>=',
-    '<=': '<=',
-    'in': 'IN'
-  };
-  if (!operatorMap[jsOperator]) {
+  if (!OperatorMap.has(jsOperator)) {
     throw new Error(`Unsupported operator: ${jsOperator}`);
   }
-  return operatorMap[jsOperator];
+  return OperatorMap.get(jsOperator)
 }
 
 
 const joinMembers = (members: any[]) => {
-  // return members.join('.')
   return members.reduce((acc, member) => {
-    // console.log('MEMVER', Array.isArray(member),  member)
-    if (!acc) {
-      return member
-    }
-
+    if (!acc) return member
     if (typeof member === 'number') {
       return acc + '[' + member.toString().replace('.', ':') + ']'
     }
-    // Handle Number objects with a raw property
     if (member instanceof Number && 'raw' in member) {
       return acc + '[' + (member as any).raw.replace('.', ':') + ']'
     }
@@ -81,20 +82,14 @@ const joinMembers = (members: any[]) => {
 const SLASH = String.fromCharCode(47)
 const BACKSLASH = String.fromCharCode(92)
 // Helper function to check if a node is or contains a string literal
-function hasStringLiteral(node) {
+function hasStringLiteral(node: BinaryExpression | Expression): boolean {
   if (!node) return false;
-
-  // Direct string literal
-  if (node.type === 'Literal' && typeof node.value === 'string') {
-    return true;
-  }
-
   // Check for nested string literals in binary expressions
   if (node.type === 'BinaryExpression') {
     return hasStringLiteral(node.left) || hasStringLiteral(node.right);
   }
-
-  return false;
+  // Direct string literal
+  return node.type === 'Literal' && typeof node.value === 'string';
 }
 
 // Helper function to recursively transform string concatenation
@@ -111,31 +106,40 @@ function transformStringConcat(node: any, transformer: any): any {
   // Always use || for concatenation in binary expressions that contain strings
   return `${left} || ${right}`;
 }
-
 // Process template literal parts into SQL concatenation
-function processTemplateLiteral(node, transformer) {
+function processTemplateLiteral(
+  node: TemplateLiteral,
+  transformer: (node: Expression) => string
+): string {
   if (node.expressions.length === 0) {
     // Simple template literal without expressions
-    return `'${node.quasis[0].value.cooked.replaceAll(/'/g, "''")}'`;
+    const cooked = node.quasis[0]?.value?.cooked ?? node.quasis[0]?.value?.raw;
+    if (cooked === undefined) {
+      throw new Error("TemplateLiteral quasis[0].value.cooked is undefined.");
+    }
+    return `'${cooked.replaceAll(/'/g, "''")}'`;
   }
 
   // Template literal with expressions - use SQL string concatenation with ||
-  const parts = [];
+  const parts: string[] = [];
 
   // Process each part of the template literal
   for (let i = 0; i < node.quasis.length; i++) {
     const quasi = node.quasis[i];
+    if (!quasi) {
+      throw new Error(`Template literal has undefined quasi at index ${i}`);
+    }
     // Only add non-empty string parts
-    if (quasi.value.cooked !== '') {
-      parts.push(`'${quasi.value.cooked.replaceAll(/'/g, "''")}'`);
+    if ((quasi.value.cooked ?? quasi.value.raw) !== '') {
+      parts.push(`'${(quasi.value.cooked ?? quasi.value.raw).replaceAll(/'/g, "''")}'`);
     }
 
     // Add expression if not at the end
     if (!quasi.tail) {
-      const expr = transformer(node.expressions[i]);
+      const expr = transformer(node.expressions[i] as Expression);
 
       // If the expression contains binary operators, ensure it's properly parenthesized
-      if (node.expressions[i].type === 'BinaryExpression' && !expr.startsWith('(')) {
+      if (node.expressions[i]?.type === 'BinaryExpression' && !expr.startsWith('(')) {
         parts.push('(' + expr + ')');
       } else {
         parts.push(expr);
@@ -151,19 +155,22 @@ type Topts = {
   isFuncArg?: boolean
   closureVars?: string[]
 }
-export function transformDuckdb(node, params = new Map<string, { depth: number, position: number }>(), context: Record<string, any> = {}) {
-  function transformTree(node, opts: Topts = { isFuncArg: false }) {
-
-
-    const transformNode = (n, o = {}) => transformTree(n, Object.assign(opts, o))
-    switch (node.type) {
-      case 'ObjectExpression':
+// type oProps = { subMemberExpression?: boolean, isProperty?: boolean }
+export function transformDuckdb(node: Expression, params = new Map<string, { depth: number, position: number }>(), context: Record<string, any> = {}) {
+  function transformTree(node: Expression, opts: Topts = { isFuncArg: false }): any {
+    const transformNode = (n: any, o = {}) => transformTree(n, Object.assign(opts, o))
+    // const transform = (node: any, ..._: any[]) => transformNode(node)
+    const MapFunc = {
+      ObjectExpression(node: ObjectExpression) {
         return `{${node.properties.map(transformNode).join(', ')}}`;
-      case 'Property':
+      },
+      Property(node: Property) {
         return `${transformNode({ ...node.key, isProperty: true })}: ${transformNode(node.value)}`;
-      case 'SequenceExpression':
+      },
+      SequenceExpression(node: SequenceExpression) {
         return node.expressions.map(transformNode).join(', ');
-      case 'Identifier':
+      },
+      Identifier(node: Identifier) {
         if (!node.isProperty) {
           if (params.has(node.name)) {
             if (params.get(node.name)?.depth === 0)
@@ -183,7 +190,9 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           }
         }
         return node.name;
-      case 'MemberExpression':
+      },
+      MemberExpression(node: MemberExpression) {
+        node as MemberExpression
         const hasSubMember = node.object?.type === 'MemberExpression'
         if (hasSubMember && !node.subMemberExpression && node.property.name === 'length') {
           node.property.name = 'len()' // tmp
@@ -192,12 +201,16 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           node.object.subMemberExpression = true
         }
         node.property.isProperty = true
-        const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean).flatMap(x => x)
+        const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean).flatMap(x => x) as string[]
+        // @ts-ignore
         return opts.isFuncArg ? rtn : joinMembers(rtn);
-      case 'Literal':
+      },
+      Literal(node: Literal) {
+        node = node as Literal
         if (node.value instanceof RegExp) {
+          const value = node.value as RegExp
           const rgx = node.value.toString().split(SLASH).slice(1, -1).join(SLASH)
-          const flags = false && opts.isFuncArg && node.value.flags ? `, '${node.value.flags}'` : ''
+          const flags = false && opts.isFuncArg && value.flags ? `, '${value.flags}'` : ''
           return `'${rgx}'` + flags
         }
         if (node.value === null) {
@@ -211,44 +224,49 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           return Object.assign(rtn, { raw: node.raw })
         }
         return node.raw;
-      case 'CallExpression':
+      },
+      CallExpression(node: CallExpression) {
         const calleeArr = transformNode(node.callee, { isFuncArg: true })
         const lastCallee = calleeArr[calleeArr.length - 1]
         let args = node.arguments.map(e => transformNode(e, { isFuncArg: true }))
         if (RegexpFuncsWthOptions.has(lastCallee)) {
           const offset = RegexpFuncsWthOptions.get(lastCallee) as number;
-          const index = node.arguments.findIndex(e => e.type === 'Literal' && e.value instanceof RegExp)
-          if (index === -1) {
-            break
-          }
-          const pargs = node.arguments.slice(index)
-          if (offset === 3 && pargs.length === 1) {
-            args.push('0')
-          }
-          if (pargs.length < offset) {
-            args.push(wrap(pargs[0].value.flags, "'"))
+          const index = node.arguments.findIndex((e) => e?.type === 'Literal' && e.value instanceof RegExp)
+          if (index >= 0) {
+            // const pargs = node.arguments.slice(index)
+            if (offset === 3 && node.arguments.length === index + 1) {
+              args.push('0')
+            }
+            if (node.arguments.length - offset < index) {
+              let value = (node.arguments[index] as Literal)?.value
+              if (value instanceof RegExp && value.flags) {
+                args.push(wrap(value.flags, "'"))
+              }
+            }
           }
         }
+        const firstValue = (node.arguments[0] as Literal)?.value
+        const secValue = (node.arguments[1] as Literal)?.value
         if (PatternMatchers[lastCallee]) {
           const { keyword, joinWith } = PatternMatchers[lastCallee]
-          if (node.callee.object.type === 'Identifier' && params.has(node.callee.object.name)) {
+          if (node.callee.type === 'MemberExpression' && node.callee.object?.type === 'Identifier' && params.has(node.callee.object.name)) {
             return `${args[0]} ${keyword} ${args.slice(1).join(joinWith)}`
           }
-          if (lastCallee in Ω('SimilarTo', 'regexp_matches') && node.arguments?.[0]?.value?.flags) {
-            return `regexp_matches(${calleeArr.slice(0, -1)}, ${args[0]}, '${node.arguments?.[0]?.value?.flags}')`
+          if (lastCallee in Ω('SimilarTo', 'regexp_matches') && firstValue instanceof RegExp && firstValue.flags) {
+            return `regexp_matches(${calleeArr.slice(0, -1)}, ${args[0]}, '${firstValue?.flags}')`
           }
           return `${calleeArr.slice(0, -1)} ${keyword} ${args.join(joinWith)}`
         }
         if (lastCallee === 'as') {
           const gargs = node.arguments.slice(1).map(transformNode)
-          return `${calleeArr.slice(0, -1)}::${node.arguments[0].value}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
+          return `${calleeArr.slice(0, -1)}::${firstValue}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
         }
 
         if (typeof calleeArr[0] === 'string' && calleeArr[0].toLowerCase() === 'cast' && node.arguments.length >= 2) {
           const supp = args.length > 2 ? `(${node.arguments.map((e: any) => e.value).slice(2).join(', ')})` : ''
-          return `CAST(${args[0]} AS ${node.arguments[1].value}${supp})`
+          return `CAST(${args[0]} AS ${secValue}${supp})`
         }
-        if (LitteralTypesMap.has(lastCallee) && params.get(node.callee.object.name)?.position === 1) {
+        if (LitteralTypesMap.has(lastCallee) && node.callee.type === 'MemberExpression' && node.callee.object.type === 'Identifier' && params.get(node.callee.object.name)?.position === 1) {
           const toType = LitteralTypesMap.get(lastCallee)
           if (toType === '') {
             return `(${args[0]})`
@@ -256,16 +274,18 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
           return `CAST(${args[0]} AS ${toType})`
         }
         return `${calleeArr.join('.')}(${args.join(', ')})`;
-      case 'UnaryExpression':
+      },
+      UnaryExpression(node: UnaryExpression) {
         // fn.toString() transform true and false to !1 and !0
         if (node.operator === '!' && node.argument.type === 'Literal' && typeof node.argument.value === 'number') {
           return !node.argument.value
         }
-        if (node.operator === '!' && node.argument?.callee?.property?.name === 'IsNull') {
+        if (node.operator === '!' && node.argument.type === 'CallExpression' && node.argument.callee.type === 'MemberExpression' && node.argument.callee.property.name === 'IsNull') {
           return transformNode(node.argument).replace('IS NULL ', 'IS NOT NULL')
         }
         return `${mapUnaryOperator(node.operator)} ${transformNode(node.argument)}`;
-      case 'BinaryExpression':
+      },
+      BinaryExpression(node: BinaryExpression) {
         if (node.operator === 'in' && node.right.type === 'ArrayExpression') {
           return `${transformNode(node.left)} IN (${node.right.elements.map(transformNode).join(', ')})`;
         }
@@ -277,27 +297,40 @@ export function transformDuckdb(node, params = new Map<string, { depth: number, 
         // Regular binary operation
         const b = `${transformNode(node.left)} ${mapOperator(node.operator)} ${transformNode(node.right)}`;
         return node.parenthesis ? `(${b})` : b;
-      case 'ArrayExpression':
+      },
+      ArrayExpression(node: ArrayExpression) {
         return `[${node.elements.map(transformNode).join(', ')}]`;
-      case 'SpreadElement':
+      },
+      SpreadElement(node: SpreadElement) {
         return `...${transformNode(node.argument)}`;
-      case 'ConditionalExpression':
+      },
+      ConditionalExpression(node: ConditionalExpression) {
+        node = node as ConditionalExpression
         return `(CASE WHEN (${transformNode(node.test)}) THEN ${transformNode(node.consequent)} ELSE ${transformNode(node.alternate)} END)`;
-      case 'TemplateLiteral':
+      },
+      TemplateLiteral(node: TemplateLiteral) {
         return processTemplateLiteral(node, transformNode);
-      case 'TemplateElement':
-        return `'${node.value.cooked.replaceAll(/'/g, "''")}'`;
-      case 'ArrowFunctionExpression':
-        const closureVars = node.params.map(x => x.name)
+      },
+      TemplateElement(node: TemplateElement) {
+        return `'${(node as TemplateElement).value.cooked?.replaceAll(/'/g, "''")}'`;
+      },
+      ArrowFunctionExpression(node: ArrowFunctionExpression) {
+        const closureVars = (node.params || []).map(x => (x as Identifier).name)
         return `(${closureVars.join(', ')}) -> ${transformNode(node.body, { ...opts, closureVars })}`;
-      default:
-        if (context?.log !== false) {
-          console.log(JSON.stringify(node, null, 2))
-        }
-        throw new Error(`Unsupported node type: ${node.type}`);
-    }
-  }
+        // default:
 
+      }
+    }
+
+    if (!(node.type in MapFunc)) {
+      if (context?.log !== false) {
+        console.log(JSON.stringify(node, null, 2))
+      }
+      throw new Error(`Unsupported node type: ${node.type}`);
+    }
+    // @ts-ignore
+    return MapFunc[node.type](node);
+  }
   return transformTree(node);
 }
 
@@ -308,12 +341,13 @@ const isWildcardParam = (d: DParam) => {
 const extractParams = (ast: Expression) => {
   const params = new Map<string, DParam>();
 
-  function walk(node: any, depth: number, position: number) {
+  function walk(node: Expression, depth: number, position: number) {
     if (!node || typeof node !== 'object') return;
 
     if (node.type === 'ObjectExpression') {
-      const excluded = node.properties.filter((e) => e.type === 'Property').map(e => e.key.name)
-      const spreadId = node.properties.find((e) => e.type === 'SpreadElement')?.argument?.name
+      node = node as ObjectExpression
+      const excluded = node.properties.filter((e) => e.type === 'Property').map((e: Property) => e.key.name)
+      const spreadId = (node.properties.find((e) => e.type === 'SpreadElement') as SpreadElement)?.argument?.name
       params.set(spreadId, { depth, position, destuctured: true, excluded });
       excluded.forEach(e => params.set(e, { depth: depth + 1, position }))
       return
@@ -329,8 +363,11 @@ const extractParams = (ast: Expression) => {
     }
 
     for (const key in node) {
+      function zzz(xx = {}) {
+        return xx['toto'] === 42
+      }
       if (key !== 'type' && typeof node[key] === 'object' && key !== 'key') {
-        walk(node[key], depth + 1, position);
+        walk(node[key] as unknown as Expression, depth + 1, position);
       }
     }
   }
@@ -350,7 +387,7 @@ export const extractParamsContext = (ast: Expression) => {
 
 type Expr<T> = ((d: T, z: DGlobalField) => any)
 
-export function parse<T extends Record<string, any>>(expr: Expr<T> | string, context = {}) {
+export function parse<T extends Record<string, any>>(expr: Expr<T> | string | Function, context = {}) {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()
   const ast = jsep(fnstr) as ArrowFunctionExpression
   const params = extractParamsContext(ast)
@@ -358,17 +395,30 @@ export function parse<T extends Record<string, any>>(expr: Expr<T> | string, con
   return duckdbExpr
 }
 
-const extractSpreadedParams = (ast: Expression) => {
+const extractSpreadedParams = (ast: ArrowFunctionExpression) => {
+  if (ast.params === null) {
+    return { excluded: [], spreadId: undefined }
+  }
+  if (ast.params[0]?.type !== 'ObjectExpression') {
+    throw new Error('AST param is not an ObjectExpression (?)');
+  }
   const excluded = ast.params[0].properties.filter((e) => e.type === 'Property').map(e => e.key.name)
   const spreadId = ast.params[0]?.properties.find((e) => e.type === 'SpreadElement')?.argument?.name
   return { excluded, spreadId }
 }
 
-export function parseObject<T extends Record<string, any>>(expr: Expr<T> | string, context = {}) {
+const handleExcluded = ({ excluded }: { excluded: string[] } & any) => {
+  return ['', '', '*' + (excluded?.length ? ` EXCLUDE(${excluded.join(', ')})` : '')]
+}
+
+export function parseObject<T extends Record<string, any>>(expr: Expr<T> | string | Function, context = {}) {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()
   const ast = jsep(fnstr) as ArrowFunctionExpression
   const params = extractParamsContext(ast)
   const node = ast.body
+  // console.log(node)
+  // console.log('params', params)
+  // console.log({ ast })
   if (node.type === 'Literal') {
     return [['', '', node.value]]
   }
@@ -377,16 +427,30 @@ export function parseObject<T extends Record<string, any>>(expr: Expr<T> | strin
   }
   if (node.type === 'Identifier' && params.has(node.name)) {
     const p = params.get(node.name)
+    console.log(p)
+    if (p?.destuctured && p?.excluded?.length) {
+      return [handleExcluded(p)]
+
+    }
     if (p?.depth === 0 && p?.position === 0) {
       return [['', '', '*']]
     }
   }
+  // console.log('xxxnode')
+
+  // console.log({ node })
+  // if (node.type === 'MemberExpression') {
+  //   console.log('==============')
+  //   console.log(node)
+  //   console.log('==============')
+  // } else 
   if (node.type === 'ObjectExpression') {
     return node.properties.map((prop: any) => {
+      // console.log('prop', prop)
       if (prop.type === 'SpreadElement') {
         const { excluded, spreadId } = extractSpreadedParams(ast)
         if (prop.argument.name === spreadId) {
-          return ['', '', '*' + (excluded?.length ? ` EXCLUDE(${excluded.join(', ')})` : '')]
+          return handleExcluded({ excluded })
         }
       }
       return [prop.key?.name, transformDuckdb(prop.value, params, context)]

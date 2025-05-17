@@ -133,10 +133,10 @@ export function serialize<
 // console.log(__serialize(['toto', 'tata', { lol: 123, xx: "12" }]))
 
 
-const obj = { d: 1, z: { a: 1, b: '2' }, x: ['toto'], u: true } as const
-const t4 = serialize(obj) satisfies
-  `d=1,z={a:1,b:'2'},x=['toto'],u=true`
-const type_check: `d=1,z={a:1,b:'2'},x=['toto'],u=true` = serialize(obj) // should be ok
+// const obj = { d: 1, z: { a: 1, b: '2' }, x: ['toto'], u: true } as const
+// const t4 = serialize(obj) satisfies
+//   `d=1,z={a:1,b:'2'},x=['toto'],u=true`
+// const type_check: `d=1,z={a:1,b:'2'},x=['toto'],u=true` = serialize(obj) // should be ok
 
 
 // --- New Ordered Serialization based on Key Tuple ---

@@ -362,9 +362,9 @@ test('kitchen_sink', async () => {
 test('numeric operations type checking', async () => {
   await MemoryDB.from('duckdb_functions()')
     .select(e => ({
-      // name_length: e.function_name.len(),
+      name_length: e.function_name.len(),
       length_squared: e.function_name.len().pow(2),
-      // length_sqrt: e.function_name.len().sqrt()
+      length_sqrt: e.function_name.len().sqrt()
     }))
     .execute() satisfies E<{
       name_length: number;

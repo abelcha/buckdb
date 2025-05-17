@@ -118,7 +118,7 @@ export type ToComp<SelectedFields extends SelectModel> = SelectedFields extends 
 type VTypes = 'single' | 'records' | 'values' | 'grouped' | 'keyed' | 'row'
 
 
-type PArray<X> = Promise<Array<X>>
+type PArray<X> = Promise<X[]>
 type PRecord<X> = Promise<Record<string, X>>
 
 type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends DField = t.DAnyField> = {
@@ -131,7 +131,7 @@ type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, Selec
     row: (this: MS<'row', Available, Selected, SelectedValues, SelectedSingle>) => Promise<ToExecutedObject<Selected>>;
 };
 
-interface MS<V extends VTypes, Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends DField = t.DAnyField> {
+export interface MS<V extends VTypes, Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends DField = t.DAnyField> {
     execute: FnMap<Available, Selected, SelectedValues, SelectedSingle>[V];
 
     orderBy<U_ extends ([NestedKeyOf<Available & Selected>, DDirection?][])>(...key: U_): MS<V, Available, Selected, SelectedValues, SelectedSingle>
@@ -157,7 +157,9 @@ interface MS<V extends VTypes, Available extends MetaModel, Selected extends Sel
     where(...callback: string[]): MS<V, Available, Selected, SelectedValues, SelectedSingle>
 
     having: this['where']
-    distinctOn: this['groupBy'],
+    distinctOn<Z>(__fn: (p: Available & Selected, D: DMetaComp) => Z): MS<V, Available, Selected, SelectedValues, SelectedSingle>
+    distinctOn<U extends (NestedKeyOf<Available & Selected>)>(key: U): MS<V, Available, Selected, SelectedValues, SelectedSingle>
+
 
 
     limit: (n: number) => this,
@@ -177,6 +179,7 @@ export interface FromResult<T extends keyof Models, C extends StrictCollection[]
     rightJoin: this['join'],
     crossJoin: this['join'],
     naturalJoin: this['join'],
+
     // A: select()
     select(): MS<'records', P, ShallowModelFromCollectionList<C>>
     // B: select('name', 'age')
@@ -190,13 +193,17 @@ export interface FromResult<T extends keyof Models, C extends StrictCollection[]
     select<T__1, T__2, T__3, T__4, T__5, T__6>(fn: (p: P, D: DMetaField) => [T__1, T__2, T__3, T__4, T__5, T__6]): MS<'values', P, {}, [T__1, T__2, T__3, T__4, T__5, T__6]>
     select<T_1, T_2, T_3, T__4, T_5, T_6, T_7>(fn: (p: P, D: DMetaField) => [T_1, T_2, T_3, T__4, T_5, T_6, T_7]): MS<'values', P, {}, [T_1, T_2, T_3, T__4, T_5, T_6, T_7]>
     select<T_1, T_2, T3, T4, T5, T6, T_7, T_8>(fn: (p: P, D: DMetaField) => [T_1, T_2, T3, T4, T5, T6, T_7, T_8]): MS<'values', P, {}, [T_1, T_2, T3, T4, T5, T6, T_7, T_8]>
-    select<T1, T2, T3, T4, T5, T6, T7, T8, T9>(fn: (p: P, D: DMetaField) => [T1, T2, T3, T4, T5, T6, T7, T8, T9]): MS<'values', P, {}, [T1, T2, T3, T4, T5, T6, T7, T8, T9]>
+    select<A____, D, E, F, G, H, I, J, _____L>(fn: (p: P, D: DMetaField) => [A____, D, E, F, G, H, I, J, _____L]): MS<'values', P, {}, [A____, D, E, F, G, H, I, J, _____L]>
+    select<A___, C, D, E, F, G, H, I, J, ___L>(fn: (p: P, D: DMetaField) => [A___, C, D, E, F, G, H, I, J, ___L]): MS<'values', P, {}, [A___, C, D, E, F, G, H, I, J, ___L]>
+    select<A__, C, D, E, F, G, H, I, J, K, _L>(fn: (p: P, D: DMetaField) => [A__, C, D, E, F, G, H, I, J, K, _L]): MS<'values', P, {}, [A__, C, D, E, F, G, H, I, J, K, _L]>
+    select<A, B, C, D, E, F, G, H, I, J, K, L>(fn: (p: P, D: DMetaField) => [A, B, C, D, E, F, G, H, I, J, K, L]): MS<'values', P, {}, [A, B, C, D, E, F, G, H, I, J, K, L]>
     // D: select(e => e.age)
     select<U extends DPrimitiveField>(fn: (p: P, D: DMetaField) => U): MS<'single', P, {}, [], U>;
     // E: select(e => ({ name: e.name, age: e.age }))
     select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: DMetaField) => U): MS<'records', P, U>
-
-
+    
+    // X: from('xxx').execute() === from('xxx').select().execute()
+    execute(): ReturnType<Simplify<MS<'records', P, ShallowModelFromCollectionList<C>>>['execute']>
 
     ensureSchemas(): Promise<void>
 

@@ -31,12 +31,13 @@ const instance = Buck('')
 
 
 
-const resp = await instance.from('duckdb_types()')
+const resp = (await instance.from('duckdb_types()')
     .select((e) => ({ logical_type: e.logical_type.left(1).concat(e.logical_type.right(-1).lower()) }))
     .distinctOn('logical_type')
     .where(e => e.logical_type.SimilarTo(/\w+/))
     .orderBy('logical_type')
-    .execute()
+    .execute())
+
 resp.push({ logical_type: 'Array' })
 resp.push({ logical_type: 'Json' })
 const DuckFunction = (function_name: string, params: Record<string, string>, return_type = 'ANY', opts: Record<string, string> = {}) => {
@@ -92,7 +93,7 @@ for (let i in resp3) {
 }
 
 type ftype = Merge<typeof TypeProps['DNumeric'], typeof TypeProps['DArray']>
-const fkey = key => camelCase(key).match(/\w+/)[0].replace('array', 'arr').replace('enum', 'enm')
+const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm')
 const getFuncHeader = (row: any, ot: ftype) => {
     // console.log({  })
     const tt = TypeProps[mapTypes(row.return_type)] as ftype
@@ -115,7 +116,7 @@ const getImprint = (row, t) => {
 
 
 const buildJSDoc = (row: any) => {
-    const items = []
+    const items: string[] = []
     if (row.description)
         items.push('@description ' + row.description)
     if (row.examples?.length)
@@ -154,7 +155,7 @@ const getLambdaRow = (row: any, x: any) => {
 }
 
 const genRowFunction = (row: any, f: Partial<ftype>, slice = 0) => {
-    let { args, output, pargs } = getFuncHeader(row, f)
+    let { args, output, pargs } = getFuncHeader(row, f as any)
     if (row.varargs) {
         args.push(`...args: ${mapTypes(row.varargs)}able[]`)
     }
@@ -177,7 +178,7 @@ const genRowFunction = (row: any, f: Partial<ftype>, slice = 0) => {
     return `${buildJSDoc(row)}  ${row.function_name}(${fargs}): ${output} ;\n`
 }
 
-const genInterface = (rows = [], f: ftype | { id: string } & Record<string, any>, slice = 0, mergeAny = false) => {
+const genInterface = (rows: any[] = [], f: ftype | { id: string } & Record<string, any>, slice = 0, mergeAny = false) => {
     const field = `D${upperFirst(f.id)}Field`
     const comp = `D${upperFirst(f.id)}Comp`
     const ccomp = `C${upperFirst(f.id)}`
@@ -189,7 +190,7 @@ const genInterface = (rows = [], f: ftype | { id: string } & Record<string, any>
         str += `  [sComptype]: ${f.id === 'varchar' || f.id === 'numeric' ? comp : f.rawType}\n`
 
     for (const row of uniqBy(rows, e => getImprint(e, f)) as any[]) {
-        str += genRowFunction(row, f, slice)
+        str += genRowFunction(row, f as any, slice)
     }
     str += '}\n'
     if (f.generic?.main)
@@ -219,7 +220,16 @@ const generateSettings = async () => {
     out += `export const DExtensions = ` + JSON.stringify(exts, null, 2) + ' as const' + '\n'
     return out;
 }
-
+type ISet = {
+    description: string;
+    function_name: string;
+    function_type: string;
+    return_type: string;
+    parameters: string[];
+    parameter_types: string[];
+    varargs: string;
+    examples: string[];
+}
 
 const aliases = {
     'read_json': ['read_json', 'read_json', 'read_json_auto', 'read_ndjson', 'read_ndjson_auto'],
@@ -239,7 +249,7 @@ const main = async () => {
     // Sequential, template-like main process for type sync
 
     // 1. Prepare output array
-    let output = [];
+    let output: string[] = [];
 
     // 2. Connect to database and load extensions
 
@@ -259,13 +269,20 @@ const main = async () => {
     let mergedResults = entriesSorted(groups)
         .filter(([key, values]) => !OmittedFuncs.includes(key))
         .flatMap(([key, values]) => {
-            let maxParams = maxBy(values, e => e.parameter_types.length as number);
+            if (!values) {
+                throw new Error('No values found for key: ' + key);
+            }
+            let maxParams = maxBy(values, e => e.parameter_types.length as number)
+            if (!maxParams) {
+                throw new Error('No maxParams found for key: ' + key);
+            }
             const args = range(maxParams.parameters.length).map((type, i) => {
-                let pname = fkey(maxParams.parameters[i]);
+                let pname = fkey(maxParams.parameters[i]) as string;
                 if (i && fkey(maxParams.parameters[i]) == fkey(maxParams.parameters[i - 1])) {
                     pname += `__0${i}`;
                 }
                 const ptypes = uniq(values.map(e => e.parameter_types[i]));
+                // @ts-ignore
                 const required = !ptypes.includes(undefined);
                 let dtypes = uniq(ptypes.map(e => mapTypes(e)) || []);
                 if (maxParams.function_name.includes('regexp')) {
@@ -290,7 +307,7 @@ const main = async () => {
     // 8. Generate type headers
 
     let header = [DVarchar, DArray, DStruct, DJson, DBool, DBlob, DDate, DMap, DOther, DAny, DNumeric]
-        .map(e => `export type ${e.able} = ${e.inferredTo || e.rawType} | ${e.field} | _${e.field};`)
+        .map((e: any) => `export type ${e.able} = ${e.inferredTo || e.rawType} | ${e.field} | _${e.field};`)
         .sort()
         .concat('export type RegExpable = RegExp | string;')
         .join('\n');

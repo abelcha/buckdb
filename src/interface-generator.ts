@@ -234,6 +234,7 @@ function createTypeNodeFromIntermediate(value: IntermediateColumnValue, key?: st
         if (value.__type === 'struct' || value.__type === 'json') {
             const fieldTypeName = value.__type === 'struct' ? 'DStructField' : 'DJsonField';
             const fields = { ...value };
+            // @ts-ignore
             delete fields.__type; // Remove marker
 
             // Check if 'elementType' exists - it shouldn't for struct/json, indicates potential issue

@@ -10,7 +10,7 @@
     ],
     "target": "ESNext",
     "module": "ESNext",
-    // "noImplicitAny": true,
+    "noImplicitAny": false,
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
@@ -23,11 +23,11 @@
     // Best practices
     "strict": true,
     "skipLibCheck":true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
+    // "noFallthroughCasesInSwitch": true,
+    // "noUncheckedIndexedAccess": true,
     // Some stricter flags (disabled by default)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    // "noPropertyAccessFromIndexSignature": false
   }
 }

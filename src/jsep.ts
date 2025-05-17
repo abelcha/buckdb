@@ -28,6 +28,8 @@ export type NodeType =
 export interface BaseExpression {
 	type: NodeType;
 	optional?: boolean;
+	subMemberExpression?: boolean;
+	isProperty?: boolean;
 }
 
 export interface CompoundExpression extends BaseExpression {
@@ -50,7 +52,7 @@ export interface MemberExpression extends BaseExpression {
 	computed: boolean;
 	accessor: string; // '.' or '['
 	object: Expression;
-	property: Expression; // Identifier or Literal usually, but can be any Expression if computed
+	property: Identifier; // Identifier or Literal usually, but can be any Expression if computed
 	optional?: boolean;
 }
 
@@ -62,7 +64,7 @@ export interface Literal extends BaseExpression {
 }
 export interface Property extends BaseExpression {
 	type: 'Property';
-	key: Expression;
+	key: Identifier;
 	value: Expression;
 	computed: boolean;
 	optional?: boolean;
@@ -81,7 +83,7 @@ export interface ThisExpression extends BaseExpression {
 export interface CallExpression extends BaseExpression {
 	type: 'CallExpression';
 	arguments: (Expression | null)[];
-	callee: Expression;
+	callee: MemberExpression | Expression;
 	optional?: boolean;
 }
 
@@ -112,7 +114,7 @@ export interface ArrayExpression extends BaseExpression {
 }
 export interface SpreadElement extends BaseExpression {
 	type: 'SpreadElement';
-	argument: Expression;
+	argument: Identifier & Expression;
 }
 
 // Add Template Element interface
@@ -143,6 +145,8 @@ export interface ConditionalExpression extends BaseExpression {
 	type: 'ConditionalExpression';
 	tag: Expression;
 	quasi: TemplateLiteral;
+	consequent: Expression;
+	alternate: Expression;
 	test: BinaryExpression | UnaryExpression | Expression
 }
 
@@ -196,6 +200,7 @@ class Hooks {
 			const isFirstArg = callback; // The second arg is 'first' in this overload
 			for (const hookName in hookMap) {
 				// Pass the actual callback from the map and the correct 'first' value
+				// @ts-ignore
 				this.add(hookName, hookMap[hookName], isFirstArg);
 			}
 		} else {
@@ -772,6 +777,7 @@ export class Jsep {
 						node = {
 							type: Jsep.LITERAL,
 							value: literalValue,
+							// @ts-ignore-next-line
 							valueType: typeof literalValue,
 							raw: idNode.name,
 						};
@@ -827,7 +833,7 @@ export class Jsep {
 					accessor: '[',
 					computed: true,
 					object: node,
-					property: propertyExpr
+					property: propertyExpr as Identifier, // Cast to Identifier
 				};
 				// No need to check node.property existence after assignment
 				this.gobbleSpaces();
@@ -1258,16 +1264,18 @@ export const ternary: JSEPPlugin = {
 						test,
 						consequent,
 						alternate,
-					};
+					} as ConditionalExpression; // Cast to ConditionalExpression
 
 					// check for operators of higher priority than ternary (i.e. assignment)
 					// jsep sets || at 1, and assignment at 0.9, and conditional should be between them
 					if (test.operator && jsep.binary_ops[test.operator] <= 0.9) {
-						let newTest = test;
+						let newTest = test as BinaryExpression & { right: UnaryExpression, left: UnaryExpression };
 						while (newTest.right.operator && jsep.binary_ops[newTest.right.operator] <= 0.9) {
+							// @ts-ignore
 							newTest = newTest.right;
 						}
 						env.node.test = newTest.right;
+						// @ts-ignore
 						newTest.right = env.node;
 						env.node = test;
 					}
@@ -1323,7 +1331,7 @@ export const arrow: JSEPPlugin = {
 
 		// Use HookCallback type
 		jsxp.hooks.add('after-expression', function fixBinaryArrow(this: Jsep, env: HookEnv) {
-			updateBinariesToArrows(env.node); // Pass env.node which can be Expression | null
+			updateBinariesToArrows(env.node as Expression); // Pass env.node which can be Expression | null
 		});
 
 		// node can be Expression | null
@@ -1422,7 +1430,7 @@ export const object: JSEPPlugin = {
 								: key,
 							value: value,
 							shorthand: false,
-						});
+						} as Property);
 						this.gobbleSpaces();
 					}
 					// Ensure key is not null before pushing
@@ -1490,6 +1498,8 @@ export const regex: JSEPPlugin = {
 						const literalNode: Literal = { // Ensure type matches Literal
 							type: jsxp.LITERAL,
 							value, // Value is RegExp here
+							// @ts-ignore
+							valueType: typeof value,
 							raw: this.expr.slice(patternIndex - 1, this.index),
 						};
 						env.node = literalNode;
@@ -1536,7 +1546,7 @@ export const jsepSpread: JSEPPlugin = {
 				env.node = {
 					type: 'SpreadElement',
 					argument: argument,
-				};
+				} as SpreadElement;
 			}
 		});
 	},

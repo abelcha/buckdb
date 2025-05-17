@@ -259,6 +259,9 @@ test('parseObject destructuring', () => {
     expect(parseObject((rest, DDD) => rest.toto)).toEqual([
         ["", "toto"],
     ])
+    expect(parseObject(({ elem, xxx, toto, ...rest }) => rest)).toEqual([
+        ["", "", "* EXCLUDE(elem, xxx, toto)"],
+    ])
 })
 
 test('inoperator', () => {

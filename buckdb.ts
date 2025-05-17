@@ -5,6 +5,7 @@ import { generateInterface, serializeDescribe, serializeSchema } from './src/int
 import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
 export * as readers from './src/readers';
 import Ressources from './.buck/table.json';
+import { deriveName } from './src/build.types';
 
 const tempJsonFix = e => JSON.parse(JSON.stringify(e, (key, value) => {
     switch (value?.constructor?.name) {
@@ -24,15 +25,17 @@ const tempJsonFix = e => JSON.parse(JSON.stringify(e, (key, value) => {
 
 class BuckDBNode implements DuckdbCon {
     ensureType = false;
-    private _instance: DuckDBInstance | null = null;
-    private _connection: DuckDBConnection | null = null;
+    private _instance: DuckDBInstance;
+    private _connection: DuckDBConnection;
     private _initPromise: Promise<void> | null = null;
     readonly cmdQueue = new CommandQueue();
 
     constructor(private handle?: string, settings?: Partial<DSettings>) {
         if (settings) {
             this.cmdQueue.pushSettings(settings);
-        }
+        };
+        this._instance = null as unknown as DuckDBInstance;
+        this._connection = null as unknown as DuckDBConnection;
     }
 
     private _initDB(): Promise<void> {
@@ -103,7 +106,7 @@ class BuckDBNode implements DuckdbCon {
         return this;
     }
     lazyAttach(uri: string, alias?: string) {
-        this.cmdQueue.pushAttach(uri, alias);
+        this.cmdQueue.pushAttach(uri, alias || deriveName(uri));
         return this;
     }
 

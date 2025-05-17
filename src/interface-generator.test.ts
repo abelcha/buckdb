@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'bun:test';
 import { serializeSchema, generateInterface } from './interface-generator';
-import * as t from '../.buck/types'; // For type checking if needed
 
 // Helper to compare TS output strings, ignoring whitespace and semicolons, and comments
 const compareTsOutput = (str1: string, str2: string): boolean => {

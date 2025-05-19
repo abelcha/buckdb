@@ -16,6 +16,7 @@ import {
     TypeProps,
     mapTypesProps,
     PatternMatchers,
+    MappedMethods,
 } from './typedef'
 import { camelCase, groupBy, maxBy, range, uniq, uniqBy, upperFirst, zipObject } from 'es-toolkit';
 import { Buck, from } from '../buckdb';
@@ -93,10 +94,10 @@ for (let i in resp3) {
 }
 
 type ftype = Merge<typeof TypeProps['DNumeric'], typeof TypeProps['DArray']>
-const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm')
+const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')
 const getFuncHeader = (row: any, ot: ftype) => {
     // console.log({  })
-    const tt = TypeProps[mapTypes(row.return_type)] as ftype
+    const tt = mapTypesProps(row.return_type, true)
     // console.log(row.args);
     // if (row.args)
     // process.exit()
@@ -106,7 +107,7 @@ const getFuncHeader = (row: any, ot: ftype) => {
             arg.pname,
             arg.dtypes.sort().map(e => e + 'able').join(' | ')
         ].join(arg.required ? ': ' : '?: ')),
-        output: ot?.man && tt.man || (!row.return_type ? 'void' : tt?.field)
+        output: ot?.man && tt.man || (!tt?.field ? 'void' : tt?.field)
     }
 }
 const getImprint = (row, t) => {
@@ -136,15 +137,15 @@ const buildJSDoc = (row: any) => {
 const getLambdaRow = (row: any, x: any) => {
     if (row.function_name.match(/(list_|array_|)(apply|transform)$/)) {
         if (x === 'array') {
-            return `${row.function_name}<U>(lambda: (x: T) => U): DArrayField<U>;\n`
+            return `${row.function_name}<U>(lambda: (x: T) => U): DArrayField<FromPrimitive<U>>;\n`
         }
-        return `${row.function_name}<T, U>(list: T[], lambda: (x: T) => U): DArrayField<U> ;\n`
+        return `${row.function_name}<T, U>(list: T[], lambda: (x: T) => U): DArrayField<FromPrimitive<U>> ;\n`
     }
     if (row.function_name.match(/(list_|array_|)(filter)$/)) {
         if (x === 'array') {
-            return `${row.function_name}(lambda: (x: T) => any): DArrayField<T>;\n`
+            return `${row.function_name}(lambda: (x: T extends { [sComptype]: infer V } ? V : T) => any): DArrayField<T>;\n`
         }
-        return `${row.function_name}<T>(list: T[], lambda: (x: T) => any): DArrayField<T> ;\n`
+        return `${row.function_name}<T>(list: T[], lambda: (x: T extends { [sComptype]: infer V } ? V : T) => any): DArrayField<T> ;\n`
     }
     if (row.function_name.match(/(list_|array_|)(reduce)$/)) {
         if (x === 'array') {
@@ -177,13 +178,23 @@ const genRowFunction = (row: any, f: Partial<ftype>, slice = 0) => {
     const fargs = args.slice(slice).join(', ')
     return `${buildJSDoc(row)}  ${row.function_name}(${fargs}): ${output} ;\n`
 }
+/*{
+const lol =123;
+}*/
 
+/*{
+console.log(lol)
+
+}*/
 const genInterface = (rows: any[] = [], f: ftype | { id: string } & Record<string, any>, slice = 0, mergeAny = false) => {
     const field = `D${upperFirst(f.id)}Field`
     const comp = `D${upperFirst(f.id)}Comp`
     const ccomp = `C${upperFirst(f.id)}`
 
     let str = `interface ${f.man ? ccomp : ('_' + field)} ${f.generic?.main || ''} ${mergeAny && f.id !== 'any' && !f.generic ? `extends ${f.man ? 'CAny' : 'DAnyField'}` : ''} {\n`
+    if (f.id === 'array') {
+        str = `export interface DArrayField<T = DAnyField> extends Omit<Array<T>, 'length' | 'map' | 'filter' | 'reduce'> {\n`
+    }
     if (f.inferredTo)
         str += `  [sInferred]: ${f.generic?.inferred || f.inferredTo}\n`
     if (!f.man && f.rawType)
@@ -193,8 +204,12 @@ const genInterface = (rows: any[] = [], f: ftype | { id: string } & Record<strin
         str += genRowFunction(row, f as any, slice)
     }
     str += '}\n'
+    if (f.id === 'array') {
+        str += '\n type _DArrayField = DArrayField\n'
+        return str
+    }
     if (f.generic?.main)
-        str += `export type ${field}${f.generic.main} = _${field}<T> & ${f.generic.inferred};`
+        str += `export type ${field}${f.generic.main} = _${field}<T> ${f.generic.inferred ? '& ' + f.generic.inferred : ''};`
     else if (f.man)
         str += `\nexport type ${comp} = ${f.man} \n`
     else
@@ -244,29 +259,32 @@ const reverseAliases = Object.fromEntries(Object.entries(aliases).flatMap(([k, v
     return values.map(x => [x, k])
 }))
 
-const main = async () => {
+const DTypes = [
+    "DVarchar", "DNumeric", "DDate", "DOther", "DNumeric", "DVarchar", "DAny", "DArray", "DDate", "DStruct", "DBlob", "DMap", "DBool", "DJson"
+]
 
-    // Sequential, template-like main process for type sync
-
-    // 1. Prepare output array
+const getHeaders = () => {
     let output: string[] = [];
 
-    // 2. Connect to database and load extensions
+    let header = [DVarchar, DArray, DStruct, DJson, DBool, DBlob, DDate, DMap, DOther, DAny, DNumeric]
+        .map((e: any) => `export type ${e.able} = ${e.inferredTo || e.rawType} | ${e.field} | _${e.field};`)
+        .sort()
+        .concat('export type RegExpable = RegExp | string;')
+        .join('\n');
+    header += `type FromPrimitive<T> = T extends string ? DVarcharField : T extends number ? DNumericField :
+  T extends boolean ? DBoolField : T extends Date ? DDateField : T
+`
+    header += `import {${Object.keys(aliases).sort().join(',')}} from '../src/readers';\n`
+    header += acsheaders;
+    header += `export type DSomeField = ${DTypes.map(e => TypeProps[e].field).filter(Boolean).join(' | ')}`;
+    const symbols = ['sId', 'sComptype', 'sAnti', 'sInferred'];
+    output.push(header);
+    output.push(...symbols.map(e => `export declare const ${e}: unique symbol;`));
+    return output
+}
 
-    // 3. Query for function metadata
-    const query = instance.from('duckdb_functions()')
-        .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters')
-        .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
-        .orderBy('function_name');
-
-    // 4. Execute query and merge with additional functions
-    let results = (await query.execute()).concat(anyFuncs).concat(addFuncs as any);
-
-    // 5. Merge function names and parameter types
-    const groups = Object.groupBy(results, e =>
-        [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-')
-    );
-    let mergedResults = entriesSorted(groups)
+function getMergedResults<T extends Record<string, ISet[]>>(groups: T) {
+    return entriesSorted(groups)
         .filter(([key, values]) => !OmittedFuncs.includes(key))
         .flatMap(([key, values]) => {
             if (!values) {
@@ -293,38 +311,57 @@ const main = async () => {
                 return { pname, ptypes, dtypes, required };
             });
             const return_type = maxParams.function_name === 'concat' ? 'VARCHAR' : maxParams.return_type;
-            const output = !return_type ? 'void' : `${mapTypes(return_type)}Field`;
+            // console.log(maxParams.function_name, '========<,', mapTypesProps(return_type, true))
+            const output = !return_type ? 'void' : mapTypesProps(return_type, true).field;
             return { ...maxParams, return_type, args, output };
         });
 
+}
+
+const main = async () => {
+
+    // Sequential, template-like main process for type sync
+
+    // 1. Prepare output array
+
+    // 2. Connect to database and load extensions
+
+    // 3. Query for function metadata
+    const query = instance.from('duckdb_functions()')
+        .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters')
+        .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
+        .orderBy('function_name');
+
+    // 4. Execute query and merge with additional functions
+    let results = (await query.execute()).concat(anyFuncs).concat(addFuncs as any);
+
+    // 5. Merge function names and parameter types
+    const groups = groupBy(results, e =>
+        [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], TypeProps[mapTypes(e.return_type)].inferredTo].join('-')
+    )
+    let mergedResults = getMergedResults(groups)
+    // console.log({  })
+    await Bun.write('.buck/duckdb_functions.json', JSON.stringify(mergedResults, null, 2))
     // 6. Group results by function type
     let resp = groupBy(mergedResults, e => e.function_type as 'scalar' | 'table' | 'aggregate' | 'window' | 'udf');
 
     // 7. Group scalar functions by parameter type
     const grouped = Object.groupBy(resp.scalar.filter(e => !e.function_name.startsWith('h3')), e => mapTypes(e.parameter_types[0]));
-    const xkeys = ['DVarchar', 'DNumeric', 'DDate', ...Object.keys(grouped)];
-
+    // const xkeys = ['DVarchar', 'DNumeric', 'DDate', ...Object.keys(grouped)];
     // 8. Generate type headers
 
-    let header = [DVarchar, DArray, DStruct, DJson, DBool, DBlob, DDate, DMap, DOther, DAny, DNumeric]
-        .map((e: any) => `export type ${e.able} = ${e.inferredTo || e.rawType} | ${e.field} | _${e.field};`)
-        .sort()
-        .concat('export type RegExpable = RegExp | string;')
-        .join('\n');
-    header += `import {${Object.keys(aliases).sort().join(',')}} from '../src/readers';\n`
-    header += acsheaders;
-    header += `export type DSomeField = ${xkeys.map(e => TypeProps[e].field).filter(Boolean).join(' | ')}`;
-    const symbols = ['sId', 'sComptype', 'sAnti', 'sInferred'];
-    output.push(header);
-    output.push(...symbols.map(e => `export declare const ${e}: unique symbol;`));
+    const output = getHeaders()
 
     // 9. Generate interfaces for each main type
-    for (const maintype of new Set(xkeys)) {
+    for (const maintype of new Set(DTypes)) {
         const { man, ...f } = TypeProps[maintype];
         const d = (grouped[maintype] || []).filter(e => !PatternMatchers[e.function_name]);
         let s = genInterface(d, f, 1, true);
         if (maintype === 'DAny') {
             s = s.replace('{', '{\n' + funcas);
+        }
+        if (maintype === 'DArray') {
+            s = s.replace('{', `{\n ` + Object.entries(MappedMethods).filter(([k]) => k === 'map').map(([k, v]) => `${k}: this['${v}'];`).join('\n'));
         }
         output.push(s);
     }
@@ -333,7 +370,8 @@ const main = async () => {
 
 
     const globalInter = genInterface(resp.scalar, { id: 'global' }, 0)
-        .replace('{', '{\n' + globas);
+        .replace('{', '{\n' + globas)
+        .replace('Array(val: DOtherable): void ;', `Array<U>(val: U[]): DArrayField<FromPrimitive<U>>;`)
     output.push(globalInter);
     output.push(genInterface(resp.aggregate, { id: 'aggregate' }, 0));
     output.push(genInterface(resp.table, { id: 'table' }, 0));

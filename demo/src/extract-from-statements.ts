@@ -8,15 +8,13 @@ export function findVariableInitializerText(
 ): string | null {
     const identifierName = identifier.text;
 
-    // Prevent infinite loops for cyclic assignments (e.g., let a=b; let b=a;)
     if (visitedIdentifiers.has(identifierName)) {
         return null;
     }
-    visitedIdentifiers.add(identifierName); // Mark current identifier as visited for this lookup path
+    visitedIdentifiers.add(identifierName);
 
     let scope: ts.Node | undefined = identifier;
     while (scope) {
-        // Check if the scope node is one that can contain statements
         if (ts.isBlock(scope) || ts.isSourceFile(scope) || ts.isModuleBlock(scope)) {
             const statements = scope.statements;
             const declarations = statements?.filter(ts.isVariableStatement)
@@ -27,468 +25,447 @@ export function findVariableInitializerText(
                     const initializer = declaration.initializer;
                     const initializerText = initializer.getText(sourceFile);
 
-                    // Check if the initializer is the target 'Buck(...)' call
                     if (ts.isCallExpression(initializer) && ts.isIdentifier(initializer.expression) && initializer.expression.text === 'Buck') {
-                        return initializerText; // Found the Buck call directly
+                        return initializerText;
                     }
-                    // Check if the initializer is another identifier (assignment)
                     else if (ts.isIdentifier(initializer)) {
-                        // Recursively search for the initializer of the assigned variable
-                        // Pass a *copy* of the visited set for the new recursive path
                         const recursiveResult = findVariableInitializerText(initializer, sourceFile, new Set(visitedIdentifiers));
                         if (recursiveResult) {
-                            return recursiveResult; // Found Buck() through recursion
+                            return recursiveResult;
                         }
                     }
-                    // If initializer is neither Buck() nor an identifier, stop searching this path
                     return null;
                 }
             }
         }
-        // Move up to the parent scope
         scope = scope.parent;
-        if (!scope) break; // Reached top level
+        if (!scope) break;
     }
-
-    return null; // Declaration not found or relevant initializer not found
+    return null;
 }
 
-
-// Define the structure for the output
 export interface FromStatementParts {
-    chain: string | null;     // The part before .from() (potentially inlined), null if direct from()
-    param: string;            // The raw text of the first argument to from() (unquoted)
-    resource: string | null;  // The first argument of Buck() if chain involves Buck(), null otherwise (unquoted)
-    fromChain: string;        // The full chain starting from from(), without inlining
-    cleanFromChain: string;   // fromChain with trailing execute/show/toSql removed
-    lineStart: number;        // 1-based start line number of the fromChain
-    lineEnd: number;          // 1-based end line number of the fromChain
+    chain: string | null;
+    param: string;
+    resource: string | null;
+    fromChain: string;
+    cleanFromChain: string;
+    lineStart: number;
+    lineEnd: number;
 }
 
-// Define the structure for Buck() statement output
 export interface BuckStatementParts {
-    resource: string | null;  // The first argument (unquoted string)
-    options: Record<string, any> | null; // Parsed options object
-    fullCall: string;         // The full text of the Buck(...) call
-    lineStart: number;        // 1-based start line number
-    lineEnd: number;          // 1-based end line number
+    resource: string | null;
+    options: Record<string, any> | null;
+    fullCall: string;
+    lineStart: number;
+    lineEnd: number;
 }
 
-
-// Helper function to get unquoted text from a string literal or template literal node
 function getUnquotedText(node: ts.Node, sourceFile: ts.SourceFile): string {
     if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-        // The 'text' property already holds the unquoted value for these node types
         return node.text;
     }
-    // Fallback for other node types (though typically we expect string/template literals here)
-    return node.getText(sourceFile).trim(); // Fallback should ideally not be hit for options
+    return node.getText(sourceFile).trim();
 }
 
-// Helper function to evaluate simple literal AST nodes to JS values
 function evaluateLiteralNode(node: ts.Expression, sourceFile: ts.SourceFile): any {
-    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
-        return node.text;
-    } else if (ts.isNumericLiteral(node)) {
-        return parseFloat(node.text);
-    } else if (node.kind === ts.SyntaxKind.TrueKeyword) {
-        return true;
-    } else if (node.kind === ts.SyntaxKind.FalseKeyword) {
-        return false;
-    } else if (node.kind === ts.SyntaxKind.NullKeyword) {
-        return null;
-    } else if (ts.isObjectLiteralExpression(node)) {
-        // Recursively evaluate object literals
-        return evaluateObjectLiteral(node, sourceFile);
-    } else if (ts.isArrayLiteralExpression(node)) {
-        // Recursively evaluate array literals
-        return node.elements.map(element => evaluateLiteralNode(element, sourceFile));
-    }
-    // Return undefined or throw error for unsupported types (like identifiers, calls)
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+    if (ts.isNumericLiteral(node)) return parseFloat(node.text);
+    if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+    if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+    if (node.kind === ts.SyntaxKind.NullKeyword) return null;
+    if (ts.isObjectLiteralExpression(node)) return evaluateObjectLiteral(node, sourceFile);
+    if (ts.isArrayLiteralExpression(node)) return node.elements.map(element => evaluateLiteralNode(element, sourceFile));
     console.warn(`Unsupported node type in literal evaluation: ${ts.SyntaxKind[node.kind]}`);
     return undefined;
 }
 
-// Helper function to evaluate an ObjectLiteralExpression AST node into a JS object
 function evaluateObjectLiteral(node: ts.ObjectLiteralExpression, sourceFile: ts.SourceFile): Record<string, any> | null {
     const obj: Record<string, any> = {};
     let success = true;
-
     node.properties.forEach(prop => {
         if (ts.isPropertyAssignment(prop)) {
-            let propName: string | null = null;
-            if (ts.isIdentifier(prop.name)) {
-                propName = prop.name.text;
-            } else if (ts.isStringLiteral(prop.name)) {
-                propName = prop.name.text; // Already unquoted
-            }
-
+            let propName: string | null = ts.isIdentifier(prop.name) ? prop.name.text : (ts.isStringLiteral(prop.name) ? prop.name.text : null);
             if (propName) {
                 const value = evaluateLiteralNode(prop.initializer, sourceFile);
-                if (value !== undefined) { // Only add if evaluation succeeded
-                    obj[propName] = value;
-                } else {
-                    success = false; // Mark failure if any property fails
-                }
-            } else {
-                 console.warn(`Unsupported property name type: ${ts.SyntaxKind[prop.name.kind]}`);
-                 success = false;
-            }
+                if (value !== undefined) obj[propName] = value; else success = false;
+            } else { console.warn(`Unsupported property name type: ${ts.SyntaxKind[prop.name.kind]}`); success = false; }
         } else if (ts.isShorthandPropertyAssignment(prop)) {
-             // Shorthand properties ({ myVar }) reference variables, harder to evaluate statically.
-             // For simplicity, we'll skip them or assign undefined.
-             console.warn(`Shorthand property assignment '${prop.name.text}' is not supported for static evaluation.`);
-             // obj[prop.name.text] = undefined; // Or skip entirely
-             success = false;
-        } else {
-            // Spread assignments, MethodDeclarations etc. are not supported
-            console.warn(`Unsupported property type in object literal evaluation: ${ts.SyntaxKind[prop.kind]}`);
-            success = false;
-        }
+            console.warn(`Shorthand property assignment '${prop.name.text}' is not supported for static evaluation.`); success = false;
+        } else { console.warn(`Unsupported property type: ${ts.SyntaxKind[prop.kind]}`); success = false; }
     });
+    return success ? obj : null;
+}
 
-    return success ? obj : null; // Return null if any part failed evaluation
+interface BuckFromDefinition {
+    identifierName: string;
+    buckInitializerText: string | null; // Text like "Buck(':memory:')" or "someOtherBuckVar.settings(...)"
+    fromParameterText: string;          // Text like "'duckdb_functions()'" (raw, quoted)
+    fromParameterUnquoted: string;      // Text like "duckdb_functions()" (unquoted)
+    buckResource: string | null;        // Text like ":memory:" (unquoted)
+    originalFromCallSiteNode: ts.CallExpression; // The .from() call node in the definition
+    isUsedInExecutableChain: boolean; // Flag to track if this definition was used
 }
 
 
-// Function to extract 'from' statements using TypeScript AST, with inlining
 export function extractFromStatementsAST(text: string): FromStatementParts[] {
-    const sourceFile = ts.createSourceFile(
-        'tempFile.ts', // Temporary file name, doesn't need to exist
-        text,
-        ts.ScriptTarget.Latest, // Use the latest script target
-        true // Set parent pointers
-    );
+    const sourceFile = ts.createSourceFile('tempFile.ts', text, ts.ScriptTarget.Latest, true);
+    const fromStatements: FromStatementParts[] = [];
+    const buckFromDefinitions = new Map<string, BuckFromDefinition>();
 
-    const fromStatements: FromStatementParts[] = []; // Update return type
-    const addedStatements = new Set<string>(); // Still use containing statement text to track processed statements
+    // --- Pass 1: Collect Buck(...).from(...) definitions ---
+    function collectDefinitions(node: ts.Node) {
+        if (ts.isVariableDeclaration(node) && node.initializer) {
+            let currentInitializer = node.initializer;
+            if (ts.isCallExpression(currentInitializer) &&
+                ts.isPropertyAccessExpression(currentInitializer.expression) &&
+                (currentInitializer.expression as ts.PropertyAccessExpression).name.text === 'from' &&
+                currentInitializer.arguments.length > 0) {
 
-    function visit(node: ts.Node) {
-        // --- Start: Skip Check Logic ---
-        // Check if the *containing statement* of this node has already been processed.
-        let stmtNodeForSkipCheck: ts.Node | null = node;
-        let isTopLevelStatement = false;
-        while(stmtNodeForSkipCheck && stmtNodeForSkipCheck.parent) {
-            const parent = stmtNodeForSkipCheck.parent;
-             if (ts.isExpressionStatement(parent) || ts.isVariableStatement(parent) || ts.isReturnStatement(parent) || ts.isIfStatement(parent) || ts.isForStatement(parent) || ts.isWhileStatement(parent)) {
-                 stmtNodeForSkipCheck = parent; // Found statement parent
-                 break;
-             }
-             if (ts.isBlock(parent) || ts.isSourceFile(parent) || ts.isModuleBlock(parent)) {
-                 // Node itself might be the statement if parent is block/source
-                 if (!ts.isExpressionStatement(stmtNodeForSkipCheck) && !ts.isVariableStatement(stmtNodeForSkipCheck)) {
-                    stmtNodeForSkipCheck = null; // Not a statement node directly under block
-                 } else {
-                     isTopLevelStatement = true; // It's a statement directly under a block/source
-                 }
-                 break;
-             }
-             stmtNodeForSkipCheck = parent; // Keep going up
-        }
-        // Handle case where node itself is the top-level statement (missed by loop)
-        if (!isTopLevelStatement && !stmtNodeForSkipCheck?.parent) {
-             if (ts.isExpressionStatement(node) || ts.isVariableStatement(node)) {
-                 stmtNodeForSkipCheck = node;
-             } else {
-                 stmtNodeForSkipCheck = null; // Not a statement we track
-             }
-        }
+                const fromCallNode = currentInitializer; // This is the .from(...) CallExpression
+                const expressionBeforeFrom = (fromCallNode.expression as ts.PropertyAccessExpression).expression; // The part before .from, e.g., Buck('') or someVar
+                const fromParameterNode = fromCallNode.arguments[0];
+                const fromParameterUnquoted = getUnquotedText(fromParameterNode, sourceFile);
+                let buckResource: string | null = null;
+                let buckInitializerText: string | null = expressionBeforeFrom.getText(sourceFile); // Default to its text
 
-        // Perform the skip check using the found statement node's text
-        if (stmtNodeForSkipCheck && addedStatements.has(stmtNodeForSkipCheck.getText(sourceFile).trim())) {
-            return; // Skip this node and its children if its statement was processed
-        }
-        // --- End: Skip Check Logic ---
-
-        if (ts.isCallExpression(node)) {
-            const expression = node.expression;
-            let baseIdentifier: ts.Identifier | null = null;
-            let isDirectFromCall = false;
-            let isPropertyFromCall = false; // Flag for any identifier.from() or chain.from()
-
-            if (ts.isIdentifier(expression) && expression.text === 'from') {
-                // Case: from(...)
-                isDirectFromCall = true;
-            } else if (ts.isPropertyAccessExpression(expression) && expression.name.text === 'from') {
-                // Case: something.from(...)
-                isPropertyFromCall = true;
-                // Now, trace back the 'something' part to find the root identifier if it exists
-                let currentExpr: ts.Expression = expression.expression;
-                while (ts.isPropertyAccessExpression(currentExpr) || ts.isCallExpression(currentExpr)) {
-                    // If it's a call like .settings(), get the expression before it
-                    if (ts.isCallExpression(currentExpr)) {
-                        // Ensure it's not the 'from' call itself we are unwrapping
-                        if (currentExpr === node) break;
-                        currentExpr = currentExpr.expression;
-                    }
-                    // If it's a property access like .prop, get the expression before it
-                    else if (ts.isPropertyAccessExpression(currentExpr)) {
-                         // Ensure it's not the 'from' property access itself
-                         if (currentExpr === expression) break;
-                         currentExpr = currentExpr.expression;
-                    } else {
-                        // Should not happen based on loop condition, but break defensively
-                        break;
-                    }
+                let ultimateBuckCallText: string | null = null;
+                if (ts.isCallExpression(expressionBeforeFrom) && ts.isIdentifier(expressionBeforeFrom.expression) && expressionBeforeFrom.expression.text === 'Buck') {
+                    ultimateBuckCallText = expressionBeforeFrom.getText(sourceFile); // It's directly Buck().from()
+                } else if (ts.isIdentifier(expressionBeforeFrom)) { // It's someVar.from(), try to find someVar's Buck() initializer
+                    ultimateBuckCallText = findVariableInitializerText(expressionBeforeFrom, sourceFile);
                 }
-                // After the loop, check if we landed on an identifier
-                if (ts.isIdentifier(currentExpr)) {
-                    baseIdentifier = currentExpr; // Found the root identifier (e.g., 'buckCon')
-                }
-            }
+                // If expressionBeforeFrom is more complex (e.g. anotherVar.settings().from()), ultimateBuckCallText might remain null or be the var
 
-            if (isDirectFromCall || isPropertyFromCall) { // Check if it's any kind of 'from' call
-                // 1. Find the end of the chain starting *from* the 'from' call node (`node`)
-                let endOfChainNode: ts.Node = node; // Start with the 'from' call itself
-                while (endOfChainNode.parent) {
-                    const parent = endOfChainNode.parent;
-                    // Is the parent a PropertyAccess where 'endOfChainNode' is the object being accessed? (e.g., from(...).select)
-                    if (ts.isPropertyAccessExpression(parent) && parent.expression === endOfChainNode) {
-                        // Now check if *that* PropertyAccess is being called (e.g., the .select())
-                        if (parent.parent && ts.isCallExpression(parent.parent) && parent.parent.expression === parent) {
-                            endOfChainNode = parent.parent; // Move up to the CallExpression (e.g., .select(...))
-                        } else {
-                            // It's just a property access, not a call, subsequent chain ends here.
-                            // We don't move up further.
-                             break;
-                        }
-                    }
-                    // Is the parent a CallExpression where 'endOfChainNode' is the function being called?
-                    // This handles cases like `someFunc(from(...))` which shouldn't be part of the fromChain.
-                    // else if (ts.isCallExpression(parent) && parent.expression === endOfChainNode) {
-                    //      endOfChainNode = parent; // This seems wrong for typical method chaining
-                    // }
-                    else {
-                        break; // Parent is not part of a subsequent chain
-                    }
-                }
-                 // Now 'endOfChainNode' should be the highest node in the chain starting from 'from'
+                if (ultimateBuckCallText && ultimateBuckCallText.startsWith('Buck(')) {
+                    const tempSource = ts.createSourceFile("tempBuck.ts", ultimateBuckCallText, ts.ScriptTarget.Latest, true);
+                    ts.forEachChild(tempSource, n => {
+                        let buckNodeToParse: ts.CallExpression | null = null;
+                        if (ts.isExpressionStatement(n) && ts.isCallExpression(n.expression)) buckNodeToParse = n.expression;
+                        else if (ts.isCallExpression(n)) buckNodeToParse = n;
 
-                // 2. Find the statement containing this endOfChainNode
-                let containingStatementNode: ts.Node = endOfChainNode; // Start search from the end of the 'from' chain
-                while (containingStatementNode.parent && !ts.isBlock(containingStatementNode.parent) && !ts.isSourceFile(containingStatementNode.parent) && !ts.isModuleBlock(containingStatementNode.parent)) {
-                    // Check if the parent is a statement type itself
-                    if (ts.isExpressionStatement(containingStatementNode.parent) ||
-                        ts.isVariableStatement(containingStatementNode.parent) ||
-                        ts.isReturnStatement(containingStatementNode.parent) ||
-                        ts.isIfStatement(containingStatementNode.parent) ||
-                        ts.isForStatement(containingStatementNode.parent) ||
-                        ts.isWhileStatement(containingStatementNode.parent) ||
-                        ts.isVariableDeclaration(containingStatementNode.parent) // Include VariableDeclaration
-                    ) {
-                        containingStatementNode = containingStatementNode.parent;
-                        break; // Found the statement
-                    }
-                    containingStatementNode = containingStatementNode.parent;
-                }
-                // If the loop ended at the top level, the highestChainNode might be the statement itself (e.g. simple expression)
-                if (!ts.isExpressionStatement(containingStatementNode) &&
-                    !ts.isVariableStatement(containingStatementNode) &&
-                    !ts.isReturnStatement(containingStatementNode) &&
-                    !ts.isVariableDeclaration(containingStatementNode)) // Check VariableDeclaration too
-                {
-                    // It's possible the endOfChainNode itself is the expression in an ExpressionStatement
-                    if (containingStatementNode.parent && ts.isExpressionStatement(containingStatementNode.parent) && containingStatementNode.parent.expression === containingStatementNode) {
-                        containingStatementNode = containingStatementNode.parent;
-                    } else {
-                        // Fallback: use the end node of the detected chain if no statement found
-                        containingStatementNode = endOfChainNode;
-                    }
-                }
-
-                // --- Extract Parts ---
-                let chainPart: string | null = null;
-                let paramPart: string | null = null;
-                let resourcePart: string | null = null; // Added
-                let fromChainPart: string | null = null;
-                let cleanFromChainPart: string | null = null;
-                let lineStart: number | null = null;
-                let lineEnd: number | null = null;
-                let shouldAdd = false;
-
-                // 1. Get paramPart (unquoted)
-                if (node.arguments.length > 0) {
-                    let rawParamText = node.arguments[0].getText(sourceFile).trim();
-                    paramPart = getUnquotedText(node.arguments[0], sourceFile);
-                } else {
-                    return; // Skip if from() has no arguments
-                }
-
-                // 2. Calculate raw fromChainPart and its line numbers
-                let fromChainStartPos: number;
-                if (isDirectFromCall && ts.isIdentifier(expression)) {
-                    fromChainStartPos = expression.getStart(sourceFile);
-                } else if (isPropertyFromCall && ts.isPropertyAccessExpression(expression)) {
-                    fromChainStartPos = expression.name.getStart(sourceFile);
-                } else {
-                     console.error("Unexpected node structure for from call:", node);
-                     return;
-                }
-                const fromChainEndPos = endOfChainNode.getEnd();
-                fromChainPart = sourceFile.text.substring(fromChainStartPos, fromChainEndPos).trim();
-                lineStart = sourceFile.getLineAndCharacterOfPosition(fromChainStartPos).line + 1; // Line where 'from' keyword starts
-                lineEnd = sourceFile.getLineAndCharacterOfPosition(fromChainEndPos).line + 1;     // Line of the chain end
-
-                // 3. Calculate cleanFromChainPart by removing trailing methods and comments from fromChainPart
-                cleanFromChainPart = fromChainPart; // Start with the raw chain
-                const trailingMethodsToRemove = ['.execute()', '.show()', '.toSql()'];
-
-                // First, remove trailing methods
-                for (const method of trailingMethodsToRemove) {
-                    while (cleanFromChainPart && cleanFromChainPart.endsWith(method)) {
-                         cleanFromChainPart = cleanFromChainPart.substring(0, cleanFromChainPart.length - method.length).trim();
-                    }
-                }
-
-                // Then, attempt to remove comments and clean whitespace
-                if (cleanFromChainPart) {
-                    // Try removing comments more carefully (match start of line or whitespace before //)
-                    cleanFromChainPart = cleanFromChainPart.replace(/(?:^|\s+)\/\/.*$/gm, '').trim();
-                    // Collapse space around dots
-                    cleanFromChainPart = cleanFromChainPart.replace(/\s*\.\s*/g, '.');
-                    // Replace remaining newlines with spaces and collapse multiple spaces
-                    cleanFromChainPart = cleanFromChainPart.replace(/\s*\n\s*/g, ' ').replace(/\s+/g, ' ').trim();
-                }
-
-
-                // 4. Calculate chainPart (preceding chain, potentially inlined) and resourcePart
-                if (isDirectFromCall) {
-                    // Case: Direct from(...) call
-                    chainPart = null;
-                    resourcePart = null; // No Buck() call involved
-                    shouldAdd = true;
-                } else if (isPropertyFromCall) {
-                    // Case: something.from(...)
-                    const somethingExpression = (node.expression as ts.PropertyAccessExpression).expression;
-                    chainPart = somethingExpression.getText(sourceFile).trim(); // Initial preceding chain text
-
-                    if (baseIdentifier) { // We found a root identifier for 'something'
-                        const initializerNodeText = findVariableInitializerText(baseIdentifier, sourceFile); // This returns the Buck('...') text
-                        if (initializerNodeText && initializerNodeText.trim().startsWith('Buck(')) {
-                             // Attempt to parse the initializer text to get the Buck call node
-                             const initSourceFile = ts.createSourceFile("tempInit.ts", initializerNodeText, ts.ScriptTarget.Latest, true);
-                             let buckCallNode: ts.CallExpression | null = null;
-                             ts.forEachChild(initSourceFile, (initNode) => {
-                                 if (ts.isExpressionStatement(initNode) && ts.isCallExpression(initNode.expression) && ts.isIdentifier(initNode.expression.expression) && initNode.expression.expression.text === 'Buck') {
-                                     buckCallNode = initNode.expression;
-                                 } else if (ts.isCallExpression(initNode) && ts.isIdentifier(initNode.expression) && initNode.expression.text === 'Buck') {
-                                     // Handle case where initializerText is just the call itself
-                                     buckCallNode = initNode;
-                                 }
-                             });
-
-                             if (buckCallNode && buckCallNode.arguments.length > 0) {
-                                 resourcePart = getUnquotedText(buckCallNode.arguments[0], initSourceFile);
-                             }
-
-                            // Inline Buck() initializer into the chain part
-                            const identifierText = baseIdentifier.getText(sourceFile);
-                            const escapedIdentifier = identifierText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                            const regex = new RegExp(`^\\s*${escapedIdentifier}`); // Match base identifier at start
-                            if (regex.test(chainPart)) {
-                                chainPart = chainPart.replace(regex, initializerNodeText); // Use the full initializer text for chain
+                        if (buckNodeToParse && ts.isIdentifier(buckNodeToParse.expression) && buckNodeToParse.expression.text === 'Buck' && buckNodeToParse.arguments.length > 0) {
+                            if (!ts.isObjectLiteralExpression(buckNodeToParse.arguments[0])) {
+                                buckResource = getUnquotedText(buckNodeToParse.arguments[0], tempSource);
                             }
-                            shouldAdd = true; // Keep because it originated from Buck().from()
-                        } else {
-                             // It's identifier.from() but identifier wasn't Buck() or no initializer
-                             resourcePart = null;
-                             shouldAdd = true; // Keep based on Option B
                         }
-                    } else {
-                         // It was something.from() but 'something' wasn't a simple identifier
-                         resourcePart = null;
-                         shouldAdd = true; // Keep based on Option B
-                    }
+                    });
+                    buckInitializerText = ultimateBuckCallText; // Update initializer to the resolved Buck() call
+                } else if (!ultimateBuckCallText && ts.isIdentifier(expressionBeforeFrom)) {
+                    // It's someVar.from() but someVar is not initialized by Buck()
+                    // buckInitializerText remains someVar.getText()
+                    buckResource = null;
                 }
 
-                // Add the parts if criteria met and statement not processed
-                if (shouldAdd && paramPart !== null && fromChainPart !== null && cleanFromChainPart !== null && lineStart !== null && lineEnd !== null) { // Ensure all parts were extracted
-                    const containingStatementText = containingStatementNode.getText(sourceFile).trim();
-                    if (!addedStatements.has(containingStatementText)) {
-                        // Add the new resourcePart to the pushed object
-                        fromStatements.push({ chain: chainPart, param: paramPart, resource: resourcePart, fromChain: fromChainPart, cleanFromChain: cleanFromChainPart, lineStart, lineEnd });
-                        addedStatements.add(containingStatementText); // Mark statement as added
-                    }
-                    // Stop visiting children of the containing statement node now that we've processed it.
-                    return;
+
+                if (ts.isIdentifier(node.name)) {
+                    buckFromDefinitions.set(node.name.text, {
+                        identifierName: node.name.text,
+                        buckInitializerText,
+                        fromParameterText: fromParameterNode.getText(sourceFile),
+                        fromParameterUnquoted,
+                        buckResource,
+                        originalFromCallSiteNode: fromCallNode,
+                        isUsedInExecutableChain: false
+                    });
                 }
             }
         }
-        // Visit children only if we haven't returned early
-        ts.forEachChild(node, visit);
+        ts.forEachChild(node, collectDefinitions);
     }
+    collectDefinitions(sourceFile);
 
-    visit(sourceFile);
+    const processedStatementNodes = new Set<ts.Node>(); // Tracks statement nodes (e.g. ExpressionStatement)
+
+    // --- Pass 2: Extract executable chains ---
+    function visitExecutableChains(node: ts.Node) {
+        if (processedStatementNodes.has(node)) return;
+
+        let executableChainNode: ts.CallExpression | null = null;
+        let currentStatementNode: ts.Node = node; // The node that will be marked as processed
+
+        // We are interested in top-level expression statements that are call expressions
+        if (ts.isExpressionStatement(node) && ts.isCallExpression(node.expression)) {
+            executableChainNode = node.expression;
+            // currentStatementNode is already 'node' (the ExpressionStatement)
+        } else if (ts.isCallExpression(node)) { // If node itself is a CallExpression
+            // This handles cases like `return from().select()` or `const x = from().select()`
+            // We need to ensure this 'node' is the outermost call in its statement.
+            let parent = node.parent;
+            let isOutermost = true;
+            while(parent && !ts.isBlock(parent) && !ts.isSourceFile(parent)) {
+                if (ts.isCallExpression(parent) && parent.expression !== node && parent.arguments.includes(node as ts.Expression)) { isOutermost = false; break;}
+                if (ts.isPropertyAccessExpression(parent) && parent.expression === node) {isOutermost = false; break;}
+                if (ts.isExpressionStatement(parent) || ts.isVariableDeclaration(parent) || ts.isReturnStatement(parent)) break;
+                parent = parent.parent;
+            }
+            if (isOutermost && ts.isCallExpression(node)) { // Re-check ts.isCallExpression here for the compiler
+                executableChainNode = node; 
+            }
+            // currentStatementNode is 'node' (the CallExpression) by default.
+            // The following loop will try to find a more encompassing statement.
+            let stmtParentSearch: ts.Node | undefined = node.parent; // Start search from parent
+            while(stmtParentSearch && !ts.isBlock(stmtParentSearch) && !ts.isSourceFile(stmtParentSearch)) {
+                if (ts.isExpressionStatement(stmtParentSearch) || ts.isVariableStatement(stmtParentSearch) || ts.isReturnStatement(stmtParentSearch)) {
+                    currentStatementNode = stmtParentSearch; // Found a larger statement
+                    break;
+                }
+                stmtParentSearch = stmtParentSearch.parent;
+            }
+            // If no larger statement was found, currentStatementNode remains 'node' (the CallExpression itself)
+        }
+        // After this, currentStatementNode is set. Check if it was processed.
+        // Note: if node was not an ExpressionStatement or a CallExpression, executableChainNode is null.
+        if (processedStatementNodes.has(currentStatementNode)) return;
+
+
+        if (executableChainNode) {
+            let baseIdentifierOfChain: ts.Identifier | null = null;
+            let currentExprForTrace: ts.Expression = executableChainNode.expression;
+            while (true) {
+                if (ts.isCallExpression(currentExprForTrace)) {
+                    currentExprForTrace = currentExprForTrace.expression;
+                } else if (ts.isPropertyAccessExpression(currentExprForTrace)) {
+                    currentExprForTrace = currentExprForTrace.expression;
+                } else {
+                    break; // No longer a Call or PAE, so we stop.
+                }
+            }
+            // After the loop, currentExprForTrace is the base of the chain.
+            if (ts.isIdentifier(currentExprForTrace)) {
+                baseIdentifierOfChain = currentExprForTrace;
+            }
+
+            // Case 1: Chain is based on a collected definition (e.g., g.select().execute())
+            if (baseIdentifierOfChain && buckFromDefinitions.has(baseIdentifierOfChain.text)) {
+                const definition = buckFromDefinitions.get(baseIdentifierOfChain.text)!;
+                definition.isUsedInExecutableChain = true; // Mark definition as used
+
+                const chainPart = definition.buckInitializerText;
+                const paramPart = definition.fromParameterUnquoted;
+                const resourcePart = definition.buckResource;
+
+                const fullChainText = executableChainNode.getText(sourceFile);
+                const identifierEndPosInChain = baseIdentifierOfChain.getEnd() - executableChainNode.getStart(sourceFile);
+                const actualChainSuffix = fullChainText.substring(identifierEndPosInChain).trim(); // e.g. ".select().execute()"
+
+                const fromChainPart = `from(${definition.fromParameterText})${actualChainSuffix.startsWith('.') ? '' : '.'}${actualChainSuffix}`;
+
+                let cleanFromChainPart = fromChainPart;
+                const trailingMethodsToRemove = ['.execute()', '.show()', '.toSql()'];
+                for (const method of trailingMethodsToRemove) {
+                    while (cleanFromChainPart.endsWith(method)) cleanFromChainPart = cleanFromChainPart.substring(0, cleanFromChainPart.length - method.length).trim();
+                }
+                cleanFromChainPart = cleanFromChainPart.replace(/(?:^|\s+)\/\/.*$/gm, '').trim().replace(/\s*\.\s*/g, '.').replace(/\s*\n\s*/g, ' ').replace(/\s+/g, ' ').trim();
+
+                const lineStart = sourceFile.getLineAndCharacterOfPosition(executableChainNode.getStart(sourceFile)).line + 1;
+                const lineEnd = sourceFile.getLineAndCharacterOfPosition(executableChainNode.getEnd()).line + 1;
+
+                fromStatements.push({ chain: chainPart, param: paramPart, resource: resourcePart, fromChain: fromChainPart, cleanFromChain: cleanFromChainPart, lineStart, lineEnd });
+                processedStatementNodes.add(currentStatementNode);
+                return; // Processed this chain
+            }
+            // Case 2: Direct from() or someOtherVar.from() that is an executable statement itself
+            // This case handles chains not starting with a variable found in buckFromDefinitions.
+            else { // Not based on a known definition, or baseIdentifierOfChain is null
+                let fromCallTargetNode: ts.CallExpression | null = null;
+                let expressionLeadingToFrom: ts.Expression | null = null;
+
+                // Trace down executableChainNode to find the core 'from' call
+                let tracer: ts.Expression = executableChainNode;
+                while(true) {
+                    if (ts.isCallExpression(tracer)) {
+                        if (ts.isIdentifier(tracer.expression) && tracer.expression.text === 'from') {
+                            fromCallTargetNode = tracer;
+                            expressionLeadingToFrom = null;
+                            break;
+                        }
+                        if (ts.isPropertyAccessExpression(tracer.expression) && tracer.expression.name.text === 'from') {
+                            fromCallTargetNode = tracer;
+                            expressionLeadingToFrom = tracer.expression.expression;
+                            break;
+                        }
+                        // If it's a call but not 'from', continue with its expression part
+                        if (ts.isCallExpression(tracer.expression) || ts.isPropertyAccessExpression(tracer.expression)) {
+                            tracer = tracer.expression;
+                            continue;
+                        }
+                    } else if (ts.isPropertyAccessExpression(tracer)) {
+                         // If we have a PAE, its expression might be a call or another PAE
+                        if (ts.isCallExpression(tracer.expression) || ts.isPropertyAccessExpression(tracer.expression)) {
+                            tracer = tracer.expression;
+                            continue;
+                        }
+                    }
+                    break; // Cannot trace further or not a structure we are looking for
+                }
+
+                if (fromCallTargetNode && fromCallTargetNode.arguments.length > 0) {
+                    const paramPart = getUnquotedText(fromCallTargetNode.arguments[0], sourceFile);
+                    let chainPart: string | null = null;
+                    let resourcePart: string | null = null;
+
+                    if (expressionLeadingToFrom) { // e.g., buckCon.settings({ endpoint: 'xxx' })
+                        const originalLeadingText = expressionLeadingToFrom.getText(sourceFile);
+                        chainPart = originalLeadingText; // Default
+
+                        // Trace to the base identifier of expressionLeadingToFrom
+                        let baseOfLeadingExpr: ts.Expression = expressionLeadingToFrom;
+                        while(ts.isPropertyAccessExpression(baseOfLeadingExpr) || ts.isCallExpression(baseOfLeadingExpr)) {
+                            baseOfLeadingExpr = ts.isCallExpression(baseOfLeadingExpr) ? baseOfLeadingExpr.expression : baseOfLeadingExpr.expression;
+                        }
+
+                        if (ts.isIdentifier(baseOfLeadingExpr)) { // e.g., baseOfLeadingExpr is 'buckCon'
+                            const buckInitializer = findVariableInitializerText(baseOfLeadingExpr, sourceFile); // e.g., "Buck(':memory:')"
+                            if (buckInitializer && buckInitializer.startsWith('Buck(')) {
+                                // Replace the base identifier part of originalLeadingText with buckInitializer
+                                chainPart = originalLeadingText.replace(baseOfLeadingExpr.getText(sourceFile), buckInitializer);
+                                
+                                const tempSourceBuck = ts.createSourceFile("tempBuck.ts", buckInitializer, ts.ScriptTarget.Latest, true);
+                                ts.forEachChild(tempSourceBuck, n => {
+                                    let bn: ts.CallExpression | null = null;
+                                    if(ts.isExpressionStatement(n) && ts.isCallExpression(n.expression)) bn = n.expression; else if(ts.isCallExpression(n)) bn = n;
+                                    if (bn && ts.isIdentifier(bn.expression) && bn.expression.text === 'Buck' && bn.arguments.length > 0 && !ts.isObjectLiteralExpression(bn.arguments[0])) {
+                                        resourcePart = getUnquotedText(bn.arguments[0], tempSourceBuck);
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    // Construct fromChainPart starting from the 'from' keyword
+                    let actualFromChainText: string;
+                    if (ts.isPropertyAccessExpression(fromCallTargetNode.expression)) { // something.from()
+                        const fromKeywordNode = fromCallTargetNode.expression.name; // This is the 'from' identifier in '.from'
+                        actualFromChainText = sourceFile.text.substring(fromKeywordNode.getStart(sourceFile), executableChainNode.getEnd());
+                    } else { // direct from()
+                        actualFromChainText = executableChainNode.getText(sourceFile);
+                    }
+                    
+                    let cleanFromChainPart = actualFromChainText;
+                    const trailingMethodsToRemove = ['.execute()', '.show()', '.toSql()'];
+                    for (const method of trailingMethodsToRemove) {
+                        while (cleanFromChainPart.endsWith(method)) cleanFromChainPart = cleanFromChainPart.substring(0, cleanFromChainPart.length - method.length).trim();
+                    }
+                    cleanFromChainPart = cleanFromChainPart.replace(/(?:^|\s+)\/\/.*$/gm, '').trim().replace(/\s*\.\s*/g, '.').replace(/\s*\n\s*/g, ' ').replace(/\s+/g, ' ').trim();
+
+                    const lineStart = sourceFile.getLineAndCharacterOfPosition(executableChainNode.getStart(sourceFile)).line + 1;
+                    const lineEnd = sourceFile.getLineAndCharacterOfPosition(executableChainNode.getEnd()).line + 1;
+
+                    fromStatements.push({ chain: chainPart, param: paramPart, resource: resourcePart, fromChain: actualFromChainText, cleanFromChain: cleanFromChainPart, lineStart, lineEnd });
+                    processedStatementNodes.add(currentStatementNode);
+                    return; // Processed
+                }
+            }
+        }
+        ts.forEachChild(node, visitExecutableChains);
+    }
+    visitExecutableChains(sourceFile);
+
+    // Pass 3: Add definitions that were not used in any executable chain
+    // These are like `const x = Buck().from('file');` where x is never used.
+    buckFromDefinitions.forEach(def => {
+        if (!def.isUsedInExecutableChain) {
+            const fromCallNode = def.originalFromCallSiteNode; // The .from() call in the definition
+            // Find the full statement for this definition
+            let stmtNode: ts.Node = fromCallNode;
+            while(stmtNode.parent && !ts.isBlock(stmtNode.parent) && !ts.isSourceFile(stmtNode.parent)){
+                if(ts.isVariableStatement(stmtNode.parent) || ts.isExpressionStatement(stmtNode.parent)){
+                    stmtNode = stmtNode.parent; // stmtNode is now the VariableStatement or ExpressionStatement
+                    break;
+                }
+                stmtNode = stmtNode.parent;
+            }
+            // Only add if this definition was NOT used to form an executable chain.
+            // The processedStatementNodes.has(stmtNode) check was removed as it's not the primary gate.
+            // The primary gate is def.isUsedInExecutableChain.
+
+            const chainPart = def.buckInitializerText;
+            const paramPart = def.fromParameterUnquoted;
+            const resourcePart = def.buckResource;
+            // fromChain is just the .from(...) part of the definition
+            const fromChainPart = fromCallNode.getText(sourceFile);
+
+
+            let cleanFromChainPart = fromChainPart;
+            // If fromChainPart is just "from('param')", clean version is the same.
+            // If it's "Buck().from('param').select()", then clean it.
+            // The originalFromCallSiteNode is the .from() call. If it's part of a longer chain in the definition itself,
+            // we need to get the text of that longer chain.
+            // For `const g = Buck().from().select()`, originalFromCallSiteNode is `.from()`.
+            // We need the full `Buck().from().select()` for fromChainPart.
+            // The `fromCallNode.getText()` might be too short if the definition itself is chained.
+            // Let's assume `def.originalFromCallSiteNode` is the outermost call in the initializer if chained.
+            // This needs to be ensured by `collectDefinitions`.
+            // Revisit: `currentInitializer` in `collectDefinitions` is the full initializer.
+            // If `currentInitializer` is `Buck().from().select()`, then `fromCallNode` is `.from()`.
+            // This means `fromChainPart` for unused defs needs to be the full initializer text if it's a from chain.
+
+            // Let's assume the `fromCallNode` is the specific `.from()` call.
+            // The `fromChain` for an unused definition should be the chain starting from `from`.
+            // If `const g = Buck().settings().from('file')`, then `fromChain` is `from('file')`.
+            // `chain` is `Buck().settings()`.
+            // This seems correct with current def.
+
+            const fromChainTextForUnusedDef = `from(${def.fromParameterText})`; // Simplest form
+            cleanFromChainPart = fromChainTextForUnusedDef; // No .execute() etc. on simple def
+
+            const lineStart = sourceFile.getLineAndCharacterOfPosition((fromCallNode.expression as ts.PropertyAccessExpression).name.getStart(sourceFile)).line + 1; // Start of 'from'
+            const lineEnd = sourceFile.getLineAndCharacterOfPosition(fromCallNode.getEnd()).line + 1; // End of from(...) call
+
+            fromStatements.push({ chain: chainPart, param: paramPart, resource: resourcePart, fromChain: fromChainTextForUnusedDef, cleanFromChain: cleanFromChainPart, lineStart, lineEnd });
+            processedStatementNodes.add(stmtNode);
+        }
+    });
+
+
+    // Sort by lineStart for consistent output, important for tests
+    fromStatements.sort((a, b) => a.lineStart - b.lineStart || a.fromChain.localeCompare(b.fromChain));
+
     return fromStatements;
 }
 
 
 // Function to extract 'Buck' statements using TypeScript AST
 export function extractBuckStatement(text: string): BuckStatementParts[] {
-    const sourceFile = ts.createSourceFile(
-        'tempFile.ts',
-        text,
-        ts.ScriptTarget.Latest,
-        true
-    );
-
+    const sourceFile = ts.createSourceFile('tempFile.ts', text, ts.ScriptTarget.Latest, true);
     const buckStatements: BuckStatementParts[] = [];
-    const processedCalls = new Set<number>(); // Store start position of processed calls
+    const processedCalls = new Set<number>();
 
     function visit(node: ts.Node) {
         if (ts.isCallExpression(node)) {
             const expression = node.expression;
-            // Check if it's a direct call to an identifier named 'Buck'
             if (ts.isIdentifier(expression) && expression.text === 'Buck') {
                 const callStartPos = node.getStart(sourceFile);
-
-                // Avoid processing the same call multiple times if nested visits occur
-                if (processedCalls.has(callStartPos)) {
-                    return;
-                }
+                if (processedCalls.has(callStartPos)) return;
 
                 let resource: string | null = null;
-                let options: Record<string, any> | null = null; // Correct type declaration
+                let options: Record<string, any> | null = null;
 
-                // Determine resource and options based on argument types and positions
                 if (node.arguments.length > 0) {
                     const arg0 = node.arguments[0];
                     if (ts.isObjectLiteralExpression(arg0)) {
-                        // Case: Buck({ ... })
                         options = evaluateObjectLiteral(arg0, sourceFile);
                     } else if (ts.isStringLiteral(arg0) || ts.isNoSubstitutionTemplateLiteral(arg0)) {
-                        // Case: Buck('resource', ...) or Buck('resource')
                         resource = getUnquotedText(arg0, sourceFile);
-                        // Check second argument for options
                         if (node.arguments.length > 1) {
                             const arg1 = node.arguments[1];
                             if (ts.isObjectLiteralExpression(arg1)) {
-                                // Case: Buck('resource', { ... })
                                 options = evaluateObjectLiteral(arg1, sourceFile);
                             }
                         }
                     }
-                    // Other cases (e.g., Buck(variable)) are ignored for resource/options extraction
                 }
-                // Case: Buck() handled by null defaults
-
                 const fullCall = node.getText(sourceFile);
                 const lineStart = sourceFile.getLineAndCharacterOfPosition(callStartPos).line + 1;
                 const lineEnd = sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1;
-
-                buckStatements.push({
-                    resource,
-                    options,
-                    fullCall,
-                    lineStart,
-                    lineEnd,
-                });
-                processedCalls.add(callStartPos); // Mark as processed
+                buckStatements.push({ resource, options, fullCall, lineStart, lineEnd });
+                processedCalls.add(callStartPos);
             }
         }
         ts.forEachChild(node, visit);
     }
-
     visit(sourceFile);
     return buckStatements;
 }

@@ -17,7 +17,7 @@ describe('extractFromStatementsAST', () => {
             lineEnd: 3
         }];
         expect(extractFromStatementsAST(testCode)).toEqual(expected);
-    });
+    })
 
     test('should handle preceding chained calls before .from()', () => {
         const testCode = `
@@ -36,7 +36,7 @@ describe('extractFromStatementsAST', () => {
         expect(extractFromStatementsAST(testCode)).toEqual(expected);
     });
 
-     test('should handle direct from() call with subsequent chain and remove .execute()', () => {
+    test('should handle direct from() call with subsequent chain and remove .execute()', () => {
         const testCode = `
             await from('http://example.com/test.csv')
                 // test comment"
@@ -62,7 +62,7 @@ describe('extractFromStatementsAST', () => {
             let anotherVar = buckCon;
             anotherVar.from('data/another.csv');
         `;
-         const expected = [{
+        const expected = [{
             chain: "Buck(':memory:')", // Inlined
             param: "data/another.csv",
             fromChain: "from('data/another.csv')",
@@ -74,12 +74,12 @@ describe('extractFromStatementsAST', () => {
         expect(extractFromStatementsAST(testCode)).toEqual(expected);
     });
 
-     test('should handle variable assignment without Buck() initializer', () => {
+    test('should handle variable assignment without Buck() initializer', () => {
         const testCode = `
             const someOtherVar = getDb();
             someOtherVar.from('other_data.csv');
         `;
-         const expected = [{
+        const expected = [{
             chain: "someOtherVar", // Not inlined
             param: "other_data.csv",
             fromChain: "from('other_data.csv')",
@@ -102,27 +102,27 @@ describe('extractFromStatementsAST', () => {
         const expected = [
             {
                 chain: "Buck('local')",
-            param: "local_data",
-            fromChain: "from('local_data')",
-            cleanFromChain: "from('local_data')",
-            resource: "local", // Added expected resource
-            lineStart: 4,
-            lineEnd: 4
-        },
-        {
-            chain: null,
-            param: "global_func",
-            fromChain: "from('global_func').filter(x)",
-            cleanFromChain: "from('global_func').filter(x)",
-            resource: null, // No Buck() call involved
-            lineStart: 5,
-            lineEnd: 5
-        }
-    ];
-    expect(extractFromStatementsAST(testCode)).toEqual(expected);
-});
+                param: "local_data",
+                fromChain: "from('local_data')",
+                cleanFromChain: "from('local_data')",
+                resource: "local", // Added expected resource
+                lineStart: 4,
+                lineEnd: 4
+            },
+            {
+                chain: null,
+                param: "global_func",
+                fromChain: "from('global_func').filter(x)",
+                cleanFromChain: "from('global_func').filter(x)",
+                resource: null, // No Buck() call involved
+                lineStart: 5,
+                lineEnd: 5
+            }
+        ];
+        expect(extractFromStatementsAST(testCode)).toEqual(expected);
+    });
 
-     test('should handle assignment with from() call', () => {
+    test('should handle assignment with from() call', () => {
         const testCode = `
             const assignedResult = from('source').select('id');
         `;
@@ -154,22 +154,22 @@ describe('extractFromStatementsAST', () => {
         expect(extractFromStatementsAST(testCode)).toEqual(expected);
     });
 
-     test('should handle trailing .show() and .toSql()', () => {
+    test('should handle trailing .show() and .toSql()', () => {
         const testCode = `
             from('table1').show();
             from('table2').toSql();
         `;
         const expected = [
-             {
+            {
                 chain: null,
-            param: "table1",
-            fromChain: "from('table1').show()",
-            cleanFromChain: "from('table1')",
-            resource: null, // No Buck() call involved
-            lineStart: 2,
-            lineEnd: 2
-        },
-             {
+                param: "table1",
+                fromChain: "from('table1').show()",
+                cleanFromChain: "from('table1')",
+                resource: null, // No Buck() call involved
+                lineStart: 2,
+                lineEnd: 2
+            },
+            {
                 chain: null,
                 param: "table2",
                 fromChain: "from('table2').toSql()",
@@ -182,6 +182,17 @@ describe('extractFromStatementsAST', () => {
         expect(extractFromStatementsAST(testCode)).toEqual(expected);
     });
 
+    test('should handle multiple statements with f', () => {
+        const testCode = `
+            const g = Buck('').from('duckdb_functions()')
+            // test comment
+            g.select().execute()
+
+            g.select('description', 'comment').execute()
+        `;
+        expect(extractFromStatementsAST(testCode)).toHaveLength(2)
+        // expect(extractFromStatementsAST(testCode)).toEqual([]);
+    });
 });
 
 describe('extractBuckStatement', () => {
@@ -214,7 +225,7 @@ describe('extractBuckStatement', () => {
         expect(extractBuckStatement(testCode)).toEqual(expected);
     });
 
-     test('should extract Buck() with template literal argument', () => {
+    test('should extract Buck() with template literal argument', () => {
         const testCode = "const db = Buck(`template_resource`);"; // Use template literal
         const expected = [{
             resource: "template_resource",
@@ -275,21 +286,21 @@ describe('extractBuckStatement', () => {
                 lineStart: 6,
                 lineEnd: 6
             },
-             { // Buck('unsupported', myVar) - options should be null as myVar is not an object literal
+            { // Buck('unsupported', myVar) - options should be null as myVar is not an object literal
                 resource: "unsupported",
                 options: null,
                 fullCall: "Buck('unsupported', myVar)",
                 lineStart: 7,
                 lineEnd: 7
             },
-             { // Buck('shorthand', { shorthand }) - options should be null as shorthand is not supported
+            { // Buck('shorthand', { shorthand }) - options should be null as shorthand is not supported
                 resource: "shorthand",
                 options: null, // Evaluation fails due to shorthand
                 fullCall: "Buck('shorthand', { shorthand })",
                 lineStart: 8,
                 lineEnd: 8
             }
-       ];
+        ];
         // Sort results by lineStart for consistent comparison
         const actual = extractBuckStatement(testCode).sort((a, b) => a.lineStart - b.lineStart);
         expect(actual).toEqual(expected);

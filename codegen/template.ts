@@ -1,0 +1,264 @@
+export const version = "V2"
+export type DBOOLEAN_NATIVE = "Bool" | "Boolean" | "Logical";
+export type DCOMPOSITE_NATIVE = "List" | "Map" | "Row" | "Struct" | "Union";
+export type DDATETIME_NATIVE = "Date" | "Datetime" | "Interval" | "Time" | "Timestamp" | "Timestamptz" | "Timestamp_ms" | "Timestamp_ns" | "Timestamp_s" | "Timestamp_us" | "Timetz";
+export type DNUMERIC_NATIVE = "Bigint" | "Dec" | "Decimal" | "Double" | "Float" | "Float4" | "Float8" | "Hugeint" | "Int" | "Int1" | "Int128" | "Int16" | "Int2" | "Int32" | "Int4" | "Int64" | "Int8" | "Integer" | "Integral" | "Long" | "Numeric" | "Oid" | "Real" | "Short" | "Signed" | "Smallint" | "Tinyint" | "Ubigint" | "Uhugeint" | "Uint128" | "Uint16" | "Uint32" | "Uint64" | "Uint8" | "Uinteger" | "Usmallint" | "Utinyint";
+export type DSTRING_NATIVE = "Bpchar" | "Char" | "Nvarchar" | "String" | "Text" | "Varchar" | "JSON";
+export type DANY_NATIVE = "Binary" | "Bit" | "Bitstring" | "Blob" | "Bytea" | "Enum" | "Guid" | "Null" | "Uuid" | "Varbinary" | "Varint";
+export type DAnyable = any | DAnyField
+export type DVarcharable = string | DVarcharField
+export type RegExpable = RegExp | string;
+export type DBoolable = boolean | DBoolField
+export type DDateable = Date | DDateField
+export type DArrayable = any[] | DArrayField
+export type DStructable = Record<string, any> | DStructField
+export type DNumericable = number | DNumericField
+export type DJsonable = Record<string, any> | DJsonField
+export type DField = DVarcharField | DNumericField | DDateField | DNumericField | DVarcharField | DAnyField | DArrayField | DDateField | DStructField | DBoolField | DJsonField;
+export declare const sId: unique symbol;
+export declare const sComptype: unique symbol;
+export declare const sAnti: unique symbol;
+export declare const sInferred: unique symbol;
+export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
+export type FromPrimitive<T> = T extends string ? DVarcharField : T extends number ? DNumericField
+    : T extends boolean ? DBoolField
+    : T extends Date ? DDateField
+    : T;
+export type FromPrimitiveDeep<T> =
+    T extends DField ? T :
+    T extends readonly any[] ? { [I in keyof T]: FromPrimitiveDeep<T[I]> } :
+    T extends object
+    ? { [K in keyof T as K extends string | number ? K : never]:
+        T[K] extends Array<infer U>
+        ? DArrayField<U extends object ? FromPrimitiveDeep<U> : FromPrimitive<U>>
+        : T[K] extends object
+        ? FromPrimitiveDeep<T[K]>
+        : FromPrimitive<T[K]>
+    }
+    : FromPrimitive<T>;
+
+export type NestedFromPrimitive<T> = Simplify<FromPrimitiveDeep<T>>;
+
+export interface DDateField extends DAnyField {
+    [sInferred]: Date;
+    [sComptype]: Date;
+    /*{renderMethods({type:'DDate'})}*/
+}
+export interface DCastors<DNum, DStr> {
+    cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+    cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyComp;
+    cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
+    cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNum;
+    cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DStr;
+    cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyComp;
+}
+
+export interface Astor<DNum, DStr> extends DCastors<DNum, DStr> {
+    as(destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField;
+    as(destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): this;
+    as(destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField;
+    as(destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNum;
+    as(destype: DSTRING_NATIVE, ...args: DAnyable[]): DStr;
+    as(destype: DANY_NATIVE, ...args: DAnyable[]): this;
+}
+
+
+export interface DAny<DNum, DStr> extends Astor<DNum, DStr> {
+    /*{renderMethods({type: 'DAny', typeMap: {...gentypes, any: 'this'}})}*/
+}
+
+export interface DAnyComp extends DAny<DNumericComp, DVarcharComp> {
+    /**@example: Ilike(val, matcher)     @external: Ilike(val:VARCHAR, matcher:ANY) -> BOOLEAN*/
+    Ilike(matcher: DAnyable): DBoolField;
+    /**@example: In(val, matcher)        @external: In(val:VARCHAR, matcher:ANY) -> BOOLEAN*/
+    In(matcher: DAnyable): DBoolField;
+    /**@example: Like(val, matcher)      @external: Like(val:VARCHAR, matcher:ANY) -> BOOLEAN*/
+    Like(matcher: DAnyable): DBoolField;
+    /**@example: IsNull(val)     @external: IsNull(val:ANY) -> BOOLEAN*/
+    IsNull(val: DAnyable): DBoolField;
+    /**@example: Between(val, col1, col2)        @external: Between(val:INT, col1:INT, col2:INT) -> BOOLEAN*/
+    Between(col1: DNumericable, col2: DNumericable): DBoolField;
+    /**@example: NotBetween(val, col1, col2)     @external: NotBetween(val:INT, col1:INT, col2:INT) -> BOOLEAN*/
+    NotBetween(col1: DNumericable, col2: DNumericable): DBoolField;
+    /**@example: SimilarTo(val, matcher) @external: SimilarTo(val:VARCHAR, matcher:ANY) -> BOOLEAN*/
+    SimilarTo(matcher: DAnyable): DBoolField;
+    /**@example: Glob(val, matcher)      @external: Glob(val:VARCHAR, matcher:ANY) -> BOOLEAN*/
+    Glob(matcher: DAnyable): DBoolField;
+}
+
+export interface DAnyField extends DAny<DNumericField, DVarcharField> {
+    [sInferred]: any;
+    [sComptype]: any;
+}
+
+
+type ToComp<T> = T extends { [sComptype]: infer V } ? V : T
+
+
+export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filter" | "reduce"> {
+    [sInferred]: T[];
+    [sComptype]: any[];
+    /*{renderMethods({
+        type:'DArray', 
+        typeMap: { 'array': 'DArrayField<T>' },
+        override: ['array_transform', 'array_filter', 'array_reduce']
+    })}*/
+    array_reduce<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): U;
+    array_transform<U>(lambda: (x: ToComp<T>) => U): DArrayField<FromPrimitive<U>>
+    array_filter(lambda: (x: ToComp<T>) => any): DArrayField<T>
+    map: this['array_transform']
+}
+
+export interface DBoolField extends DAnyField {
+    [sInferred]: boolean;
+    [sComptype]: boolean;
+    /*{renderMethods({type:'DBool'})}*/
+}
+export interface _DStructField<T = {}> {
+    [sInferred]: T;
+    [sComptype]: T;
+    /*{renderMethods({type:'DStruct'})}*/
+}
+export type DStructField<T = {}> = T & _DStructField<T>
+
+export interface _DJsonField<T = {}> {
+    [sInferred]: T;
+    [sComptype]: T;
+    /*{renderMethods({type:'DJson'})}*/
+}
+export type DJsonField<T = {}> = T & _DJsonField<T>
+
+export interface DVarcharField extends DAnyField {
+    [sInferred]: string;
+    [sComptype]: DVarcharComp;
+    /*{renderMethods({type:'DVarchar'})}*/
+}
+export interface DNumericField extends DAnyField {
+    [sInferred]: number;
+    [sComptype]: DNumericComp;
+    /*{renderMethods({type:'DNumeric'})}*/
+}
+
+
+export interface _DVarcharComp extends DAnyComp {
+    /*{renderMethods({type:'DVarchar', typeMap: comptypes})}*/
+
+}
+export type DVarcharComp = _DVarcharComp & string
+
+
+export interface _DNumericComp extends DAnyComp {
+    /*{renderMethods({type:'DNumeric',  typeMap: comptypes})}*/
+}
+export type DNumericComp = number & _DNumericComp
+
+export interface DAggregate<DNum, DStr> {
+    /*{renderMethods({
+        match: (e) => e.function_type === 'aggregate',
+        typeMap: { numeric: 'DNum', varchar: 'DStr' }, 
+        slice: 0,
+    })}*/
+}
+
+export interface DGlobal<DNum, DStr> {
+    /*{renderMethods({
+        match: (e) => e.function_type === 'scalar',
+        typeMap: { numeric: 'DNum', varchar: 'DStr' }, 
+        slice: 0,
+        override: ['array_transform']//, 'array_filter', 'array_reduce']
+    })}*/
+    // array_transform<T, U>(list: T[], lambda: (x: T) => U): DArrayField<FromPrimitive<U>>
+    array_transform<T, U>(list: DArrayField<T> | T[], lambda: (x: FromPrimitive<T>) => U): DArrayField<FromPrimitive<U>>
+    // array_reduce<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): U;
+    // array_filter(lambda: (x: ToComp<T>) => any): DArrayField<T>
+}
+
+export type DGlobalField = DGlobal<DNumericField, DVarcharField>
+export type DGlobalComp = DGlobal<DNumericComp, DVarcharComp>
+
+export type DAggregateField = DAggregate<DNumericField, DVarcharField>
+export type DAggregateComp = DAggregate<DNumericComp, DVarcharComp>
+
+export type DConstructorsField = DConstructors<DNumericField, DVarcharField>
+export type DConstructorsComp = DConstructors<DNumericComp, DVarcharComp>
+
+export type DMetaField = DGlobalField & DAggregateField & DConstructorsField
+export type DMetaComp = DGlobalComp & DAggregateComp & DConstructorsComp
+
+
+export interface DConstructors<DNum, DStr> {
+    /**@example: Array(val)      @external: Array(val:OTHER) -> ARRAY*/
+    Array<T = DAnyable>(val: T[]): DArrayField<FromPrimitive<T>>;
+    /**@example: Json(val)       @external: Json(val:OTHER) -> JSON*/
+    Json<T = {}>(val: T): DJsonField<NestedFromPrimitive<T>>;
+    /**@example: List(val)       @external: List(val:OTHER) -> LIST*/
+    Struct<T = {}>(val: T): DStructField<NestedFromPrimitive<T>>;
+    /**@example: Time(val)       @external: Time(val:OTHER) -> TIME*/
+    List: this['Array']
+    /**@example: Map(val)        @external: Map(val:OTHER) -> MAP*/
+    Map(val: DAnyable): DAnyComp;
+    /**@example: Bigint(val)     @external: Bigint(val:OTHER) -> BIGINT*/
+    Bigint(val: DAnyable): DNum;
+    /**@example: Bit(val)        @external: Bit(val:OTHER) -> BIT*/
+    Bit(val: DAnyable): DAnyComp;
+    /**@example: Blob(val)       @external: Blob(val:OTHER) -> BLOB*/
+    Blob(val: DAnyable): DAnyComp;
+    /**@example: Boolean(val)    @external: Boolean(val:OTHER) -> BOOLEAN*/
+    Boolean(val: DAnyable): DBoolField;
+    /**@example: Date(val)       @external: Date(val:OTHER) -> DATE*/
+    Date(val: DAnyable): DDateField;
+    /**@example: Decimal(val)    @external: Decimal(val:OTHER) -> DECIMAL*/
+    Decimal(val: DAnyable): DNum;
+    /**@example: Double(val)     @external: Double(val:OTHER) -> DOUBLE*/
+    Double(val: DAnyable): DNum;
+    /**@example: Enum(val)       @external: Enum(val:OTHER) -> ENUM*/
+    Enum(val: DAnyable): DAnyComp;
+    /**@example: Float(val)      @external: Float(val:OTHER) -> FLOAT*/
+    Float(val: DAnyable): DNum;
+    /**@example: Hugeint(val)    @external: Hugeint(val:OTHER) -> HUGEINT*/
+    Hugeint(val: DAnyable): DNum;
+    /**@example: Integer(val)    @external: Integer(val:OTHER) -> INTEGER*/
+    Integer(val: DAnyable): DNum;
+    /**@example: Interval(val)   @external: Interval(val:OTHER) -> INTERVAL*/
+    Interval(val: DAnyable): DAnyComp;
+    /**@example: Null(val)       @external: Null(val:OTHER) -> NULL*/
+    Null(val: DAnyable): DAnyComp;
+    /**@example: Smallint(val)   @external: Smallint(val:OTHER) -> SMALLINT*/
+    Smallint(val: DAnyable): DNum;
+    /**@example: Struct(val)     @external: Struct(val:OTHER) -> STRUCT*/
+    Time(val: DAnyable): DDateField;
+    /**@example: Timestamp(val)  @external: Timestamp(val:OTHER) -> TIMESTAMP*/
+    Timestamp(val: DAnyable): DDateField;
+    /**@example: Timestamp_ms(val)       @external: Timestamp_ms(val:OTHER) -> TIMESTAMP_MS*/
+    Timestamp_ms(val: DAnyable): DDateField;
+    /**@example: Timestamp_ns(val)       @external: Timestamp_ns(val:OTHER) -> TIMESTAMP_NS*/
+    Timestamp_ns(val: DAnyable): DDateField;
+    /**@example: Timestamp_s(val)        @external: Timestamp_s(val:OTHER) -> TIMESTAMP_S*/
+    Timestamp_s(val: DAnyable): DDateField;
+    /**@example: Tinyint(val)    @external: Tinyint(val:OTHER) -> TINYINT*/
+    Tinyint(val: DAnyable): DNum;
+    /**@example: Ubigint(val)    @external: Ubigint(val:OTHER) -> UBIGINT*/
+    Ubigint(val: DAnyable): DNum;
+    /**@example: Uhugeint(val)   @external: Uhugeint(val:OTHER) -> UHUGEINT*/
+    Uhugeint(val: DAnyable): DNum;
+    /**@example: Uinteger(val)   @external: Uinteger(val:OTHER) -> UINTEGER*/
+    Uinteger(val: DAnyable): DNum;
+    /**@example: Union(val)      @external: Union(val:OTHER) -> UNION*/
+    Union(val: DAnyable): DAnyComp;
+    /**@example: Usmallint(val)  @external: Usmallint(val:OTHER) -> USMALLINT*/
+    Usmallint(val: DAnyable): DNum;
+    /**@example: Utinyint(val)   @external: Utinyint(val:OTHER) -> UTINYINT*/
+    Utinyint(val: DAnyable): DNum;
+    /**@example: Uuid(val)       @external: Uuid(val:OTHER) -> UUID*/
+    Uuid(val: DAnyable): DAnyComp;
+    /**@example: Varchar(val)    @external: Varchar(val:OTHER) -> VARCHAR*/
+    Varchar(val: DAnyable): DStr;
+    /**@example: Varint(val)     @external: Varint(val:OTHER) -> VARINT*/
+    Varint(val: DAnyable): DNum;
+}
+
+export interface DSettings {
+    /*{
+    generateSettings()
+    }*/
+}

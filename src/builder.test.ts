@@ -1,30 +1,39 @@
-import { test, expect } from 'bun:test';
-import { from} from '../buckdb';
+import { expect, test } from 'bun:test'
+import { from } from '../buckdb'
 const xx = from('duckdb_functions()')
+const xz = from('duckdb_types()')
 const clean = (a: string) => a.replaceAll(/\n/g, '').replaceAll(/\s+/g, ' ')
 const cexpect = (a: any, b: any) => expect(clean(a.toSql())).toEqual(clean('FROM duckdb_functions() ' + b))
 test('order', () => {
-
+    // console.log('==>', xx.select(({ comment, description, database_oid, ...rest }) => rest).toSql())
+    // return
     cexpect(
         xx.select(`database_name`)
             .orderBy('description')
-            .limit(10)
-        ,
-        'SELECT database_name ORDER BY description LIMIT 10'
+            .limit(10),
+        'SELECT database_name ORDER BY description LIMIT 10',
     )
     cexpect(
-        xx.select().orderBy(['database_name'], ['description', 'ASC NULLS LAST'])
-        , 'SELECT * ORDER BY database_name, description ASC NULLS LAST'
+        xx.select().orderBy(['database_name'], ['description', 'ASC NULLS LAST']),
+        'SELECT * ORDER BY database_name, description ASC NULLS LAST',
     )
 
     cexpect(
-        xx.select(({ comment, description, ...rest }) => ({ lol: 13, ...rest, description: 'xxx' }))
-        , `SELECT 13 AS lol, * EXCLUDE(comment, description), 'xxx' AS description`
+        xx.select(({ comment, description, ...rest }) => ({ lol: 13, ...rest, description: 'xxx' })),
+        `SELECT 13 AS lol, * EXCLUDE(comment, description), 'xxx' AS description`,
     )
-    // // cexpect(                                         SELECT  * EXCLUDE(comment, description) 
+    // // cexpect(                                         SELECT  * EXCLUDE(comment, description)
 
     cexpect(
-        xx.select(({ comment, description, ...rest }) => rest)
-        , 'SELECT * EXCLUDE(comment, description)'
+        xx.select(({ comment, description, ...rest }) => rest),
+        'SELECT * EXCLUDE(comment, description)',
     )
-});
+})
+test.only('setop', () => {
+    expect(
+        xz.select('type_name')
+            .unionAll(
+                xx.select(`database_name`),
+            ).toSql(),
+    ).toEqual(`FROM duckdb_types() \n SELECT type_name \n \n \nUNION ALL\nFROM duckdb_functions() \n SELECT database_name`)
+})

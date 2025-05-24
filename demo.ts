@@ -1,192 +1,20 @@
-import { Buck, from, MemoryDB } from "./buckdb"
+import { Buck, from, MemoryDB } from './buckdb'
 
-// does this handle case like:
-const poi = Buck()
-    .loadExtensions("spatial")
-    .from('s3://a1738/geo.parquet');
-// # Select
-// ### unique
-poi.select(p => p.city)
-
-// ### array
-poi.select(geo => [geo.city, geo.citycode])
-
-// ### props
-poi.select('context', 'lat', 'lon')
-
-// ### obj
-poi.select(geo => ({
-    city: geo.city,
-    x: geo.lat,
-    y: geo.lon
-}))
-
-// # Expression
-
-
-// ### template string
-poi.select(geo => [`${geo.name} - ${geo.city}`])
-
-
-
-// ### operation
-poi.select((geo, D) => geo.lat - geo.lon)
-
-
-// ### concatenations
-poi.select(geo => geo.lon + ', ' + geo.lat)
-
-
-
-// ### ternaries
-poi.select(geo => geo.lon ? geo.lon.round(2) : 0)
-
-
-// ### Coalesce operator
-poi.select(geo => geo.lon ?? 42)
-
-// from('duckdb_functions()')
-// .where(e => e.parameters[-1] === 'lambda')
-
-// # Lambda
-// - .map/.filter/...
-// import { DGlobalField } from './.buck/types';
-
-
-// function __(D: DGlobalField) {
-//     const rrrr = D.Array([1, 42, 124, 412]).list_filter(x => x > 50)
-//         .list_transform(x => x + '__').map(z => z + 'xxx')
-// }
-
-const resp = await poi.select((geo, D) => ({
-    // xmap: geo.name.map(x => x.upper()),
-    // xxmap: geo.name.filter(x => x !== 'lol'),
-    zz: D.Array([1, 41, 2, 41]).map(x => x + 12),
-    uuu: D.Array([geo.city, geo.id, 'lol'])
-    
-    //.map(x => x + 1) //.list_filter(x => x === 1),//.reduce((a, b) => a + b) //.reduce((x, y) => x + y) //.map(x => D.Integer(x).add(1))
-    // xtrans: geo.name.reduce((a, b) => D.Varchar(`${a}_-_${b}`)),
+await from('duckdb_functions()').select((e, D) => ({
+    function_name: e.function_name,
+    at: e.function_name.array_extract(0),
 })).execute()
-// - array_transform
 
-
-// # Exclude/Replace
-// - Omit Pattern
-poi.select(({ city, context, citycode, ...geo }) => geo)
-
-
-poi.select((geo) => ({ ...geo, city: 'Paris' }))
-// - Replace pattern
-
-
-// # Closures
-// - context
-// - statements
-
-// # distinctOn
-// - basic cae 
-
-// # SetOperations
-// - union
-// - except
-// - intersect
-
-
-// # CopyTo
-// - bucket ex
-// - options
-
-// # Update
-
-// # Arrays
-// - elements[1.]
-// - elements[0.5]
-// - (TODO) // - map/filter
-
-// # Records/Struct/Json 
-// - access nested props
-// -  D.Json({ field: e.function_name }).json_extract('$.field')
-
-// # Functions
-// - methods type
-// - scalar functions (D)
-
-// # Joins
-// - ON as a callback
-// - default alias & named alias
-// - named join
-// - INNER/LEFT/RIGHT ETC
-
-// # WHERE 
-// - || && clause
-// - type comparaison
-// - ternaries
-// - orWhere
-// - chaining where
-// - Between
-// - Negation
-
-// # Pattern Matching
-// - Native Regexp
-// - Regexp Flag
-// - Similar to
-// - Like
-// - IsNull / === null
-
-// # OrderBY
-// - fn
-// - str
-// - ASC/DESC
-
-// # GroupBy
-// - Basic Case
-// - Having
-// - (TODO) rollup/CUBE whatever
-// - (TODO) count(filter)
-
-// # CASTING
-// - D.Varchar(12)
-// - .as('Decimal(1, 4)')
-// - .as('Varchar')
-// - D.Cast()
-
-
-// # SHORTCUTS
-// - maxBy
-// - minBy
-// - countBy
-// - keyBy
-
-
-// # Cli Usage
-// - Buck() constructor
-// - extensions
-// - settings
-// - attach
-
-// # execute
-// - stream
-// - native
-
-
-// # JS Languagetic
-// - (TODO) .length
-
-
-
-// # Table Functions
-// - read_csv/read_json ...
-
-
-
-
-
-
-// import { from, Buck, read_json, read_csv, MemoryDB } from './buckdb.ts'
-
+await from('duckdb_functions()').select((e, D) => ({
+    function_name: e.function_oid,
+    xx: e.function_oid + 12,
+}))
+    // .keyBy(e => e.database_name)
+    .groupBy('function_name')
+    .groupBy(e => e.has_side_effects.Ilike('%whatever%'))
+    .execute()
 
 // //### 123 test abel
-
 
 // // from('s3://a1738/files/macif.parquet')
 // //     .select(e => ({ com: e.titleComiteo ?? e.city ?? '123' }))
@@ -208,7 +36,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 //     }))
 //     // .where(z => z.comment.Ilike('%qd'))
 
-
 // MemoryDB.from('duckdb_functions()')
 //     .select((geo, D) => D.Varchar(geo.function_name + ' ' + 'dqs'))
 
@@ -216,20 +43,11 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 // // .select((e, D) => [e.function_oid.round(2), !!e.description && !!e.comment ? e.description + ' ' + e.comment : D.Varchar('NOPZ')])
 // // .execute()
 
-
-
-
 // await MemoryDB.from('duckdb_functions()')
 //     .select(({ description, examples, ...rest }) => ({
 //         ...rest,
 //         description: description ? description : 'xxx',
 //     })).execute(); // Exclude a field
-
-
-
-
-
-
 
 // await from('duckdb_settings()', 's')
 //     .select((s, D) => ({
@@ -251,10 +69,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 //     .where(s => s.input_type.Like('%INTEGER%') || s.input_type.Like('%FLOAT%'))
 //     .execute()
 
-
-
-
-
 // // const resp = await from(read_json('s3://a1738/jj.jsonl', {auto_detect: true}))
 // // .select(e =>  [e.cc])
 // // .execute()
@@ -262,7 +76,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 // const resp5 = await Buck('').from('s3://a1738/jj.jsonl')
 //     .select(e => [e.cc, e.codeApe])
 //     .execute()
-
 
 // // const resp3 = await from(read_csv('s3://a1738/files/zipcodes.fr.csv', {
 // //     auto_detect: true
@@ -274,7 +87,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 // const xxxzx = await from('s3://a1738/testxs2.jsonl')
 //     .select(e => e)
 //     .execute()
-
 
 // const oiiz = await from('s3://a1738/files/macif.parquet')
 //     .select(e => ({ xx: e.benefits, zz: e.demo, ff: e.created }))
@@ -291,12 +103,9 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 // // .then(x => x[0])
 // // .then(e => e[0].
 
-
 // // from('duckdb_functions()')
 // // .select('function_name')
 // // .groupBy('function_name')
-
-
 
 // // from('duckdb_functions()')
 // //     .select((e, D) => ({
@@ -315,7 +124,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 // //     .from('duckdb_functions()')
 // //     .select((e, D) => ({
 
-
 // //         // trtr: e.
 // //         id: e.function_name,
 // //         xxx: D.Json({ lol: 'str', toto: [1, 2, 3] }),
@@ -324,8 +132,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 // //         })
 // //     }))
 // //     .where(e => e.function_name in ['read_json', 'read_json_auto'])
-
-
 
 // // from(`s3://a1738/testxs2.jsonl`)
 // //     .select()
@@ -352,8 +158,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 //     s3_endpoint: 's3.eu-west-2.wasabisys.com'
 // })
 
-
-
 // // // from('')
 
 // const resp = await con2.from('Stations', 'ST').select(p => ({ pp p.code, xx: p.id, gg: p.geo_lat }))
@@ -366,9 +170,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 //     //     delim: '\\t',
 //     // })
 //     .execute()
-
-
-
 
 // await buckCon.from('duckdb_functions()', 'ddf')
 //     // .join('data/final.csv', e => e.final.pid === e.ddf.database_oid)
@@ -390,11 +191,7 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 
 // // qsdqsdqsdqsdqsdqsdqsdqsdqsdqsdqsdq
 
-
-
-
 // await from('duckdb_settings()').select((p, D) => [p.name, p.description, D.SimilarTo(p.name, /.+ll.+/g) ? 'en' : 'ko'])
-
 
 // await from('duckdb_functions()')
 //     .select(e => ({
@@ -411,8 +208,6 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 
 // from('s3://dallas/zzz.parquet')
 
-
-
 // await from<any>('https://m.abe.lc/public/opendata/geopop.csv', 'leo')
 //     .select((p, D) => ({
 //         l: D.SimilarTo(p.name, /12\d+/) ? p.lat.acosh() : D.Bigint(42),
@@ -426,17 +221,10 @@ poi.select((geo) => ({ ...geo, city: 'Paris' }))
 //     // .where(e => !e.leo.pop.isfinite())
 //     .execute()
 
-
-
-
-
-
-// const thresholdOid = 16000; // Example context variable 
-// const excludePattern = '%internal%'; // Example context variable 
-// const allowedSchemas = ['main', 'pg_catalog', 'information_schema']; // Example context variable 
+// const thresholdOid = 16000; // Example context variable
+// const excludePattern = '%internal%'; // Example context variable
+// const allowedSchemas = ['main', 'pg_catalog', 'information_schema']; // Example context variable
 // const minParams = 1;
-
-
 
 // await from('duckdb_functions()', 'f')
 //     .context({ thresholdOid: 16000, excludePattern: '%intern%', allowedSchemas: ['main', 'pg_catalog', 'information_schema'], minParams: 1, }) // Pass external variables

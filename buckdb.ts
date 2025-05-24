@@ -1,77 +1,118 @@
-
-import { DSettings } from './.buck/types';
-import { builder, CommandQueue, DuckdbCon } from './src/build'
+import { DuckDBDecimalValue, DuckDBListValue, DuckDBMapValue, DuckDBStructValue, DuckDBValue, type DuckDBConnection, type DuckDBInstance } from '@duckdb/node-api'
+import { DSettings } from './.buck/types'
+import { builder } from './src/build'
 import { generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
-import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api';
-export * as readers from './src/readers';
-import Ressources from './.buck/table.json';
-import { deriveName } from './src/build.types';
+export * as readers from './src/readers'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { CommandQueue, DuckdbCon } from './src/bindings'
+import { deriveName } from './src/build.types'
+import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
 
-const tempJsonFix = e => JSON.parse(JSON.stringify(e, (key, value) => {
-    switch (value?.constructor?.name) {
 
-        case 'DuckDBListValue':
-            return value.items
-        case 'DuckDBDecimalValue':
-            return value.toDouble()
+class JsonModelTable {
+    private jsonContent: Record<string, any> = null
+    constructor() {
+        this.jsonContent = JSON.parse(readFileSync('./.buck/table.json', 'utf-8'))
     }
-
-    if (typeof value === 'bigint') {
-        return Number(value);
+    hasSchema(ressource: string, uri: string) {
+        return this.jsonContent[ressource]?.[uri] ? true : false
     }
-    return value
+    writeDescribedSchema(ressource: string, uri: string, described: Record<string, any>) {
+        if (!this.jsonContent[ressource]) {
+            this.jsonContent[ressource] = {}
+        }
+        this.jsonContent[ressource][uri] = serializeDescribe(described as any)
+        const tsfile = generateInterface(this.jsonContent)
+        writeFileSync('./.buck/table.json', JSON.stringify(this.jsonContent, null, 2))
+        writeFileSync('./.buck/table3.ts', tsfile)
+    }
 }
-))
+
+const jsonModelTable = new JsonModelTable()
+
+const mapValueRec = (value: DuckDBValue) => {
+    if (value instanceof DuckDBListValue) {
+        return value.items.map(mapValueRec)
+    } else if (value instanceof DuckDBDecimalValue) {
+        return value.toDouble()
+    } else if (value instanceof DuckDBMapValue) {
+        return new Map(value.entries.map(x => [x.key, x.value]))
+    } else if (value instanceof DuckDBStructValue) {
+        const rtn = {}
+        for (const [key, val] of Object.entries(value.entries)) {
+            rtn[key] = mapValueRec(val)
+        }
+        return rtn
+    } else if (typeof value === 'bigint') {
+        return Number(value)
+    } else {
+        // console.log('ellllse', value?.constructor)
+        return value
+    }
+}
+
+
+function buildResult(reader: DuckDBResultReader) {
+    const rows = reader.getRows()
+    const columnNames = reader.result.columnNames()
+    const rtn = []
+    for (let item of rows) {
+        const row = {}
+        for (const [i, name] of columnNames.entries()) {
+            const value = item[i]
+            row[name] = mapValueRec(value)
+        }
+        rtn.push(row)
+    }
+    return rtn
+}
+
 
 class BuckDBNode implements DuckdbCon {
-    ensureType = false;
-    private _instance: DuckDBInstance;
-    private _connection: DuckDBConnection;
-    private _initPromise: Promise<void> | null = null;
-    readonly cmdQueue = new CommandQueue();
+    readonly type = 'node'
+    private _instance: DuckDBInstance
+    private _connection: DuckDBConnection
+    private _initPromise: Promise<void> | null = null
+    readonly cmdQueue = new CommandQueue()
 
-    constructor(private handle?: string, settings?: Partial<DSettings>) {
-        if (settings) {
-            this.cmdQueue.pushSettings(settings);
-        };
-        this._instance = null as unknown as DuckDBInstance;
-        this._connection = null as unknown as DuckDBConnection;
+    constructor(
+        public handle?: string,
+        public settings?: Partial<DSettings>,
+    ) {
+        this._instance = null as unknown as DuckDBInstance
+        this._connection = null as unknown as DuckDBConnection
     }
 
     private _initDB(): Promise<void> {
         if (this._initPromise) {
-            return this._initPromise;
+            return this._initPromise
         }
         if (this._instance && this._connection) {
-            return Promise.resolve();
+            return Promise.resolve()
         }
 
         this._initPromise = (async () => {
-            this._instance = await DuckDBInstance.create(this.handle);
-            this._connection = await this._instance.connect();
-        })();
+            const { DuckDBInstance } = await import('@duckdb/node-api')
+            this._instance = await DuckDBInstance.create(this.handle || ':memory:', (this.settings || {}) as any)
+            this._connection = await this._instance.connect()
+        })()
 
-        return this._initPromise;
+        return this._initPromise
     }
 
     async upsertSchema(model: string, schema: Record<string, string>) {
-        await this._initDB();
-        const tableFile = Bun.file(`./.buck/table.json`);
-        const tableContent = await tableFile.json();
-        if (!tableContent[this.handle || '']) {
-            tableContent[this.handle || ''] = {};
-        }
-        tableContent[this.handle || ''][model] = schema;
-        await tableFile.write(JSON.stringify(tableContent, null, 2));
-        const tsfile = generateInterface(tableContent);
-        await Bun.file('./.buck/table3.ts').write(tsfile);
+        // await this._initDB();
+        // const tableFile = Bun.file(`./.buck/table.json`);
+        // const tableContent = await tableFile.json();
+        // if (!tableContent[this.handle || '']) {
+        //     tableContent[this.handle || ''] = {};
+        // }
+        // tableContent[this.handle || ''][model] = schema;
+        // await tableFile.write(JSON.stringify(tableContent, null, 2));
+        // const tsfile = generateInterface(tableContent);
+        // await Bun.file('./.buck/table3.ts').write(tsfile);
     }
 
-    loadExtensions(...extensions: string[]) {
-        console.log('loading extensions...', extensions);
-        this.cmdQueue.pushExtensions(...extensions);
-        return this;
-    }
     async describe(uri: string) {
         if (!uri.trim().endsWith(')')) {
             uri = `'${uri}'`
@@ -79,65 +120,49 @@ class BuckDBNode implements DuckdbCon {
         return this.query(`DESCRIBE FROM ${uri};`)
     }
 
-
     async ensureSchema(uri: string) {
-        // return
-        const h = this.handle || '';
-        // await this._initDB();
-        if ((Ressources as Record<string, any>)[h][uri]) {
+        const h = this.handle || ''
+        if (jsonModelTable.hasSchema(h, uri)) {
             return
         }
-
-        const describeResp = await this.describe(uri);
-        const tableFile = Bun.file(`./.buck/table.json`);
-        const tableContent = await tableFile.json();
-        if (!tableContent[h]) {
-            tableContent[h] = {};
-        }
-        if (!tableContent[h][uri]) {
-            tableContent[h][uri] = serializeDescribe(describeResp);
-            await tableFile.write(JSON.stringify(tableContent, null, 2));
-            const tsfile = generateInterface(tableContent);
-            await Bun.file('./.buck/table3.ts').write(tsfile);
-        }
+        const describeResp = await this.describe(uri)
+        jsonModelTable.writeDescribedSchema(h, uri, describeResp)
     }
     lazySettings(s: Partial<DSettings>) {
-        this.cmdQueue.pushSettings(s);
-        return this;
+        this.cmdQueue.pushSettings(s)
+        return this
     }
-    lazyAttach(uri: string, alias?: string) {
-        this.cmdQueue.pushAttach(uri, alias || deriveName(uri));
-        return this;
+    lazyAttach(uri: string, alias?: string, options?: { readonly: boolean }) {
+        this.cmdQueue.pushAttach(uri, alias || deriveName(uri), options)
+        return this
     }
 
     lazyExtensions(...extensions: string[]) {
-        this.cmdQueue.pushExtensions(...extensions);
-        return this;
+        this.cmdQueue.pushExtensions(...extensions)
+        return this
     }
     async query(sql: string, opts: Record<string, any> = {}) {
-        await this._initDB();
-        const cmds = this.cmdQueue.flush();
+        await this._initDB()
+        const cmds = this.cmdQueue.flush()
         for (const cmd of cmds) {
-            await this._connection.run(cmd);
+            await this._connection.run(cmd)
         }
-        const reader = await this._connection.runAndReadAll(sql);
+        const run = await this._connection.run(sql)
+        const reader = new DuckDBResultReader(run);
+        await reader.readAll()
         if (opts?.rows) {
-            return reader.getRowsJson();
+            return reader.getRowsJson()
         }
-        return tempJsonFix(reader.getRowObjects());
+        return buildResult(reader)
     }
 
     async run(sql: string) {
-        await this._initDB();
-        return this._connection.run(sql);
+        await this._initDB()
+        return this._connection.run(sql)
     }
 }
 
-// // Create the adapter function
-// const duckDBNodeAdapter = (handle?: string, settings?: Partial<DSettings>): DuckdbCon => {
-//     return new BuckDBNode(handle, settings);
-// };
 
-export const Buck = builder(BuckDBNode);
-export const MemoryDB = Buck('');
-export const from = MemoryDB.from;
+export const Buck = builder(BuckDBNode)
+export const MemoryDB = Buck('')
+export const from = MemoryDB.from

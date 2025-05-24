@@ -1,4 +1,4 @@
-import './features/intellisense';
+import './features/intellisense'
 // import './features/ai';
 import '@codingame/monaco-vscode-configuration-editing-default-extension'
 import '@codingame/monaco-vscode-css-default-extension'

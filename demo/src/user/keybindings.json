@@ -64,7 +64,7 @@
   },
   {
     "key": "cmd+shift+t",
-    "command": "workbench.action.togglePanel",
+    "command": "workbench.action.togglePanel"
     // "when": "terminal.active"
   },
   // {
@@ -347,7 +347,7 @@
     "command": "-github.copilot.generate",
     "when": "editorTextFocus && github.copilot.activated && !commentEditorFocused && !inInteractiveInput && !interactiveEditorFocused"
   },
-   {
+  {
     "key": "ctrl+enter",
     "command": "run.activeCell",
     "when": "editorTextFocus"
@@ -394,9 +394,9 @@
     "args": {
       "commands": [
         "toggleFindCaseSensitive",
-        "actions.find",
+        "actions.find"
       ]
-    },
+    }
   },
   {
     "key": "alt+shift+f",
@@ -404,9 +404,9 @@
     "args": {
       "commands": [
         "toggleFindWholeWord",
-        "actions.find",
+        "actions.find"
       ]
-    },
+    }
   },
   {
     "key": "ctrl+f",
@@ -414,9 +414,9 @@
     "args": {
       "commands": [
         "toggleFindRegex",
-        "actions.find",
+        "actions.find"
       ]
-    },
+    }
   },
   {
     "key": "alt+cmd+c",

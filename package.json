@@ -14,11 +14,13 @@
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.1-dev132.0",
+    // "@duckdb/node-api": "file:../duckdb-node-neo/api",
     "@duckdb/node-api": "^1.2.1-alpha.16",
     "@fmt/sql-fmt": "npm:@jsr/fmt__sql-fmt",
     "apache-arrow": "^19.0.1",
     "emphasize": "^7.0.0",
     "es-toolkit": "^1.33.0",
+    "match-iz": "^5.0.1",
     "type-fest": "^4.38.0",
     "type-plus": "^7.6.2",
     "web-worker": "^1.5.0"

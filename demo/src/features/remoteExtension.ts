@@ -1,11 +1,11 @@
 import { registerRemoteExtension } from '@codingame/monaco-vscode-api/extensions'
 
 declare global {
-  interface Window {
-    rootDirectory?: string
-  }
+    interface Window {
+        rootDirectory?: string
+    }
 }
 
 if (window.rootDirectory != null) {
-  void registerRemoteExtension(`${window.rootDirectory}/src/features/remoteExtensionExample/`)
+    void registerRemoteExtension(`${window.rootDirectory}/src/features/remoteExtensionExample/`)
 }

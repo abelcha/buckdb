@@ -54,7 +54,7 @@
 //   try {
 //     // Get all editor instances
 //     const editors = monaco.editor.getEditors();
-    
+
 //     // Apply our custom options to each editor
 //     for (const editor of editors) {
 //       editor.updateOptions({
@@ -69,7 +69,7 @@
 //         wordWrap: customEditorOptions.wordWrap
 //       });
 //     }
-    
+
 //     console.log('DuckDB theme applied to editors');
 //   } catch (error) {
 //     console.error('Error applying DuckDB theme:', error);

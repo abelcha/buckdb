@@ -1,25 +1,25 @@
 declare module '*?url' {
-  const url: string
-  export default url
+    const url: string
+    export default url
 }
 
 declare module '*?worker' {
-  interface WorkerConstructor {
-    new (): Worker
-  }
+    interface WorkerConstructor {
+        new(): Worker
+    }
 
-  const Worker: WorkerConstructor
-  export default Worker
+    const Worker: WorkerConstructor
+    export default Worker
 }
 
 declare module '*?raw' {
-  const content: string
-  export default content
+    const content: string
+    export default content
 }
 
 declare global {
-  import type { AsyncDuckDB } from '@duckdb/duckdb-wasm';
-  interface Window {
-    duckdb?: AsyncDuckDB;
-  }
+    import type { AsyncDuckDB } from '@duckdb/duckdb-wasm'
+    interface Window {
+        duckdb?: AsyncDuckDB
+    }
 }

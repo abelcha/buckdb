@@ -1,311 +1,116 @@
+import * as t from '../.buck/types'
+import { from } from '../buckdb'
 import { DuckdbCon } from './bindings'
-import { MetaModel, NestedKeyOf } from './build.types'
+import { GField, KeyPicker, MetaModel, MS, NestedKeyOf, SelectModel, VTypes } from './build.types'
 
-export interface CopyOptions {
-    compression?: 'zstd' | 'gzip' | 'snappy' | 'none'
-    format?: 'parquet' | 'csv' | 'json'
-    [key: string]: any
-}
+type FileFormats = 'parquet' | 'csv' | 'json' | 'arrow' | 'jsonl'
+type CompressionType = 'auto' | 'none' | 'gzip' | 'zstd' | 'snappy' | 'brotli' | 'lz4'
+type compressExtension = '.gz' | '.zst' | '.brotli' | '.lz4' | ''
+type csvFilename = `${string}.csv${compressExtension}`
+type parquetFilename = `${string}.parquet`
+type jsonFilename = `${string}${'.json' | '.jsonl' | '.ndjson'}${compressExtension}`
 
 export interface CsvCopyOptions {
-    /**
-     * The compression type for the file. By default this will be detected automatically from the file extension
-     * (e.g., `file.csv.gz` will use `gzip`, `file.csv.zst` will use `zstd`, and `file.csv` will use `none`).
-     * Options are `none`, `gzip`, `zstd`.
-     * @default 'auto'
-     */
-    compression?: 'auto' | 'none' | 'gzip' | 'zstd'
-
-    /**
-     * Specifies the date format to use when writing dates.
-     * @see https://duckdb.org/docs/sql/functions/dateformat
-     */
+    /** The compression type for the file. By default this will be detected automatically from the file extension (e.g., `file.csv.gz` will use `gzip`, `file.csv.zst` will use `zstd`, and `file.csv` will use `none`). Options are `none`, `gzip`, `zstd`. @default 'auto' */
+    compression?: CompressionType
+    /** Specifies the date format to use when writing dates. @see https://duckdb.org/docs/sql/functions/dateformat */
     dateformat?: string
-
-    /**
-     * The character that is written to separate columns within each row.
-     * @default ','
-     */
+    /** The character that is written to separate columns within each row. @default ',' */
     delim?: string
-    /**
-     * Alias for DELIM. The character that is written to separate columns within each row.
-     * @default ','
-     */
+    /** Alias for DELIM. The character that is written to separate columns within each row. @default ',' */
     sep?: string
-
-    /**
-     * The character that should appear before a character that matches the `quote` value.
-     * @default '"'
-     */
+    /** The character that should appear before a character that matches the `quote` value. @default '"' */
     escape?: string
-
-    /**
-     * The list of columns to always add quotes to, even if not required.
-     * @default []
-     */
+    /** The list of columns to always add quotes to, even if not required. @default [] */
     force_quote?: string[]
-
-    /**
-     * Whether or not to write a header for the CSV file.
-     * @default true
-     */
+    /** Whether or not to write a header for the CSV file. @default true */
     header?: boolean
-
-    /**
-     * The string that is written to represent a `NULL` value.
-     * @default '' (empty string)
-     */
+    /** The string that is written to represent a `NULL` value. @default '' (empty string) */
     nullstr?: string
-
-    /**
-     * Prefixes the CSV file with a specified string. This option must be used in conjunction with `SUFFIX`
-     * and requires `HEADER` to be set to `false`.
-     * @default '' (empty string)
-     */
+    /** Prefixes the CSV file with a specified string. This option must be used in conjunction with `SUFFIX` and requires `HEADER` to be set to `false`. @default '' (empty string) */
     prefix?: string
-
-    /**
-     * Appends a specified string as a suffix to the CSV file. This option must be used in conjunction with `PREFIX`
-     * and requires `HEADER` to be set to `false`.
-     * @default '' (empty string)
-     */
+    /** Appends a specified string as a suffix to the CSV file. This option must be used in conjunction with `PREFIX` and requires `HEADER` to be set to `false`. @default '' (empty string) */
     suffix?: string
-
-    /**
-     * The quoting character to be used when a data value is quoted.
-     * @default '"'
-     */
+    /** The quoting character to be used when a data value is quoted. @default '"' */
     quote?: string
-
-    /**
-     * Specifies the date format to use when writing timestamps.
-     * @see https://duckdb.org/docs/sql/functions/dateformat
-     */
+    /** Specifies the date format to use when writing timestamps. @see https://duckdb.org/docs/sql/functions/dateformat */
     timestampformat?: string
-
-    /** Allow any other string keys for potential future/custom options */
-    [key: string]: any
 }
-
-/**
- * Options for writing Parquet files using the COPY statement.
- * @see https://duckdb.org/docs/sql/statements/copy#parquet-options
- */
+/** Options for writing Parquet files using the COPY statement. @see https://duckdb.org/docs/sql/statements/copy#parquet-options */
 export interface ParquetCopyOptions {
-    /**
-     * The compression format to use.
-     * @default 'snappy'
-     */
-    compression?: 'uncompressed' | 'snappy' | 'gzip' | 'zstd' | 'brotli' | 'lz4' | 'lz4_raw'
-
-    /**
-     * Compression level, set between 1 (lowest compression, fastest) and 22 (highest compression, slowest).
-     * Only supported for zstd compression.
-     * @default 3
-     */
+    /** The compression format to use. @default 'snappy' */
+    compression?: CompressionType
+    /** Compression level, set between 1 (lowest compression, fastest) and 22 (highest compression, slowest). Only supported for zstd compression. @default 3 */
     compression_level?: number
-
-    /**
-     * The `field_id` for each column. Pass `auto` to attempt to infer automatically.
-     */
+    /** The `field_id` for each column. Pass `auto` to attempt to infer automatically. */
     field_ids?: 'auto' | Record<string, any> // Type might need refinement based on actual usage
-
-    /**
-     * The target size of each row group in bytes. You can pass either a human-readable string, e.g., `2MB`,
-     * or an integer, i.e., the number of bytes. This option is only used when you have issued
-     * `SET preserve_insertion_order = false;`, otherwise, it is ignored.
-     * @default row_group_size * 1024
-     */
+    /** The target size of each row group in bytes. You can pass either a human-readable string, e.g., `2MB`, or an integer, i.e., the number of bytes. This option is only used when you have issued `SET preserve_insertion_order = false;`, otherwise, it is ignored. @default row_group_size * 1024 */
     row_group_size_bytes?: number | string
-
-    /**
-     * The target size, i.e., number of rows, of each row group.
-     * @default 122880
-     */
+    /** The target size, i.e., number of rows, of each row group. @default 122880 */
     row_group_size?: number
-
-    /**
-     * Create a new Parquet file if the current one has a specified number of row groups.
-     * If multiple threads are active, the number of row groups in a file may slightly exceed the specified number
-     * of row groups to limit the amount of locking – similarly to the behaviour of `FILE_SIZE_BYTES`.
-     * However, if `per_thread_output` is set, only one thread writes to each file, and it becomes accurate again.
-     */
+    /** Create a new Parquet file if the current one has a specified number of row groups. If multiple threads are active, the number of row groups in a file may slightly exceed the specified number of row groups to limit the amount of locking – similarly to the behaviour of `FILE_SIZE_BYTES`. However, if `per_thread_output` is set, only one thread writes to each file, and it becomes accurate again. */
     row_groups_per_file?: number
-
-    /** Allow any other string keys for potential future/custom options */
-    [key: string]: any
 }
-
-/**
- * Options for writing JSON files using the COPY statement.
- * @see https://duckdb.org/docs/sql/statements/copy#json-options
- */
+/** Options for writing JSON files using the COPY statement. @see https://duckdb.org/docs/sql/statements/copy#json-options */
 export interface JsonCopyOptions {
-    /**
-     * Whether to write a JSON array. If `true`, a JSON array of records is written,
-     * if `false`, newline-delimited JSON is written.
-     * @default false
-     */
+    /** Whether to write a JSON array. If `true`, a JSON array of records is written, if `false`, newline-delimited JSON is written. @default false */
     array?: boolean
-
-    /**
-     * The compression type for the file. By default this will be detected automatically from the file extension
-     * (e.g., `file.json.gz` will use `gzip`, `file.json.zst` will use `zstd`, and `file.json` will use `none`).
-     * Options are `none`, `gzip`, `zstd`.
-     * @default 'auto'
-     */
-    compression?: 'auto' | 'none' | 'gzip' | 'zstd'
-
-    /**
-     * Specifies the date format to use when writing dates.
-     * @see https://duckdb.org/docs/sql/functions/dateformat
-     */
+    /** The compression type for the file. By default this will be detected automatically from the file extension (e.g., `file.json.gz` will use `gzip`, `file.json.zst` will use `zstd`, and `file.json` will use `none`). Options are `none`, `gzip`, `zstd`. @default 'auto' */
+    compression?: CompressionType
+    /** Specifies the date format to use when writing dates. @see https://duckdb.org/docs/sql/functions/dateformat */
     dateformat?: string
-
-    /**
-     * Specifies the date format to use when writing timestamps.
-     * @see https://duckdb.org/docs/sql/functions/dateformat
-     */
+    /** Specifies the date format to use when writing timestamps. @see https://duckdb.org/docs/sql/functions/dateformat */
     timestampformat?: string
-
-    /** Allow any other string keys for potential future/custom options */
-    [key: string]: any
 }
-
-/**
- * Generic options that might apply to multiple file formats or serve as a base.
- */
-export interface GenericCopyOptions<AvailableFields extends MetaModel = MetaModel> {
-    /**
-     * Explicit format specification, useful if filename doesn't have standard extension.
-     */
-    format?: 'parquet' | 'csv' | 'json' | 'arrow' | 'jsonl' | 'jsonl.gz' // Add other formats as needed
-
-    /**
-     * Compression setting, potentially overriding format-specific defaults or auto-detection.
-     */
-    compression?: 'auto' | 'none' | 'gzip' | 'zstd' | 'snappy' | 'brotli' | 'lz4' | 'lz4_raw' // Combine possibilities
-
-    /**
-     * Whether or not to write to a temporary file first if the original file exists (target.csv.tmp).
-     * This prevents overwriting an existing file with a broken file in case the writing is cancelled.
-     * @default 'auto'
-     */
+/** Generic options that might apply to multiple file formats or serve as a base. */
+export interface GenericCopyOptions<A extends MetaModel = MetaModel, S extends SelectModel = {}, G = KeyPicker<A, S>> {
+    /** Explicit format specification, useful if filename doesn't have standard extension. */
+    format?: FileFormats  // Add other formats as needed
+    /** Compression setting, potentially overriding format-specific defaults or auto-detection. */
+    compression?: CompressionType
+    /** Whether or not to write to a temporary file first if the original file exists (target.csv.tmp). This prevents overwriting an existing file with a broken file in case the writing is cancelled. @default 'auto' */
     use_tmp_file?: boolean | 'auto'
-
-    /**
-     * Whether or not to allow overwriting files if they already exist. Only has an effect when used with partition_by.
-     * @default false
-     */
+    /** Whether or not to allow overwriting files if they already exist. Only has an effect when used with partition_by. @default false */
     overwrite_or_ignore?: boolean
-
-    /**
-     * When set, all existing files inside targeted directories will be removed (not supported on remote filesystems).
-     * Only has an effect when used with partition_by.
-     * @default false
-     */
+    /** When set, all existing files inside targeted directories will be removed (not supported on remote filesystems). Only has an effect when used with partition_by. @default false */
     overwrite?: boolean
-
-    /**
-     * When set, in the event a filename pattern is generated that already exists, the path will be regenerated to ensure no existing files are overwritten.
-     * Only has an effect when used with partition_by.
-     * @default false
-     */
+    /** When set, in the event a filename pattern is generated that already exists, the path will be regenerated to ensure no existing files are overwritten. Only has an effect when used with partition_by. @default false */
     append?: boolean
-
-    /**
-     * Set a pattern to use for the filename, can optionally contain {uuid} to be filled in with a generated UUID or {id} which is replaced by an incrementing index.
-     * Only has an effect when used with partition_by.
-     * @default 'auto'
-     */
+    /** Set a pattern to use for the filename, can optionally contain {uuid} to be filled in with a generated UUID or {id} which is replaced by an incrementing index. Only has an effect when used with partition_by. @default 'auto' */
     filename_pattern?: string
-
-    /**
-     * Set the file extension that should be assigned to the generated file(s).
-     * @default 'auto'
-     */
-    file_extension?: string
-
-    /**
-     * Generate one file per thread, rather than one file in total. This allows for faster parallel writing.
-     * @default false
-     */
+    /** Set the file extension that should be assigned to the generated file(s). @default 'auto' */
+    file_extension?: 'auto' | csvFilename | parquetFilename | jsonFilename
+    /** Generate one file per thread, rather than one file in total. This allows for faster parallel writing. @default false */
     per_thread_output?: boolean
-
-    /**
-     * If this parameter is set, the COPY process creates a directory which will contain the exported files.
-     * If a file exceeds the set limit (specified as bytes such as 1000 or in human-readable format such as 1k), the process creates a new file in the directory.
-     * This parameter works in combination with PER_THREAD_OUTPUT. Note that the size is used as an approximation, and files can be occasionally slightly over the limit.
-     * @default '' (empty string)
-     */
+    /** If this parameter is set, the COPY process creates a directory which will contain the exported files. If a file exceeds the set limit (specified as bytes such as 1000 or in human-readable format such as 1k), the process creates a new file in the directory. This parameter works in combination with PER_THREAD_OUTPUT. Note that the size is used as an approximation, and files can be occasionally slightly over the limit. @default '' (empty string) */
     file_size_bytes?: string | number
-
-    /**
-     * The columns to partition by using a Hive partitioning scheme, see the partitioned writes section.
-     * @default [] (empty array)
-     */
-    partition_by?: (NestedKeyOf<AvailableFields>)[]
-
-    /**
-     * Whether or not to include the created filepath(s) (as a Files VARCHAR[] column) in the query result.
-     * @default false
-     */
+    /** The columns to partition by using a Hive partitioning scheme, see the partitioned writes section. @default [] (empty array) */
+    partition_by?: G | G[]
+    /** Whether or not to include the created filepath(s) (as a Files VARCHAR[] column) in the query result. @default false */
     return_files?: boolean
-
-    /**
-     * Whether or not to write partition columns into files. Only has an effect when used with partition_by.
-     * @default false
-     */
+    /** Whether or not to write partition columns into files. Only has an effect when used with partition_by. @default false */
     write_partition_columns?: boolean
-
-    /** Allow any other string keys */
-    [key: string]: any
 }
 type ReturnValue = { execute: () => Promise<any>; show: () => any; dump: () => any; toSql: () => string }
-type compressExtension = '.gz' | '.zst' | '.brotli' | '.lz4' | ''
-type csvFile = `${string}.csv${compressExtension}`
-type parquetFile = `${string}.parquet`
-type jsonFile = `${string}${'.json' | '.jsonl' | '.ndjson'}${compressExtension}`
-
-export interface CopyTo<AvailableFields extends MetaModel = MetaModel, Options extends GenericCopyOptions<AvailableFields> = GenericCopyOptions<AvailableFields>> {
-    copyTo:
-        & ((destination: csvFile, options?: CsvCopyOptions & Options) => ReturnValue)
-        & ((destination: parquetFile, options?: ParquetCopyOptions & Options) => ReturnValue)
-        & ((destination: jsonFile, options?: JsonCopyOptions & Options) => ReturnValue)
-        & ((destination: Exclude<string, `${string}.json` | `${string}.csv` | `${string}.parquet`>, options?: Options) => ReturnValue)
+// Renamed interface to avoid naming conflict with method
+export interface CopyToInterface<A extends MetaModel, S extends SelectModel = {}, Options extends GenericCopyOptions<A, S> = GenericCopyOptions<A, S>> {
+    to:
+    & ((destination: csvFilename, options?: CsvCopyOptions & Options) => ReturnValue)
+    & ((destination: parquetFilename, options?: ParquetCopyOptions & Options) => ReturnValue)
+    & ((destination: jsonFilename, options?: JsonCopyOptions & Options) => ReturnValue)
+    & ((destination: Exclude<string, csvFilename | parquetFilename | jsonFilename>, options?: Options) => ReturnValue);
 }
-// copyTo:
-//   & ((destination: `${string}.csv${'.gz' | '.zst' | ''}`, options?: CsvCopyOptions & GenericCopyOptions) => Pick<MaterializedResult<S, C>, 'execute'>)
-// & ((destination: `${string}.parquet`, options?: ParquetCopyOptions & GenericCopyOptions) => Pick<MaterializedResult<S, C>, 'execute'>)
-// & ((destination: `${string}.json`, options?: JsonCopyOptions & GenericCopyOptions) => Pick<MaterializedResult<S, C>, 'execute'>)
-// // Optional: Add a fallback for other string types or specific formats like JSON
-// & ((destination: Exclude<string, `${string}.json` | `${string}.csv` | `${string}.parquet`>, options?: GenericCopyOptions) => Pick<MaterializedResult<S, C>, 'execute'>);
 
-// export interface CopyResult<T extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
 
-//   // export interface CopyResult<S extends MState, C extends StrictCollection[]> {
-//   to(destination: string, options?: CopyOptions): Promise<void>;
-// }
+declare function _copy<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField>(
+    source: MS<V, A, S, SV, SS>
+): CopyToInterface<A, S>; // Changed to use the renamed interface
 
-/**
- * Creates a COPY operation from a MaterializedResult
- *
- * @param source The MaterializedResult to copy from
- * @returns A CopyResult with a to() method for specifying the destination
- *
- * @example
- * ```typescript
- * // Copy query results to a parquet file with zstd compression
- * await copy(
- *   from('file.csv').select()
- * ).to('s3://filedest/des.parquet', { compression: 'zstd' })
- * ```
- */
-export function copy(
+function xcopy(
     source: { toSql: () => string },
 ) {
     return {
-        to: async (destination: string, options: CopyOptions = {}) => {
+        to: async (destination: string, options: Record<string, any>) => {
             // Get the SQL from the source
             const sourceSql = source.toSql()
 
@@ -360,7 +165,8 @@ export function copy(
         },
     }
 }
+export const copy = xcopy as unknown as typeof _copy
 
-// await copy(
-//   from('s3://a1738/files/macif.parquet').select()
-// ).to('toto.csv', {  })
+await copy(
+    from('s3://a1738/files/macif.parquet').select()
+).to('totoqd.csv', { partition_by: 'address', format: 'arrow' })

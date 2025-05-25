@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { DMetaComp } from '../.buck/types'
-import jsep from './jsep'
-import { parse, parseObject } from './parser'
+import jsep, { CallExpression } from './jsep'
+import { handleCallExpression, parse, parseObject, transformDuckdb } from './parser'
 
 test('should parse basic condition', () => {
   const result = parse((e, D) => e.age > 12)
@@ -337,3 +337,9 @@ test('should parse logical NOT', () => {
   const result = parse((e, D) => (e.toto.tata.tata.tata.contain('t')))
   expect(result).toBe("toto.tata.tata.tata.contain('t')")
 })
+
+// test('handleCallExpression', () => {
+//   const result = jsep(`e.contain('t')`) as CallExpression
+//   const res2 = handleCallExpression(result, (n) => transformDuckdb(n), new Map([['e', {}], ['D', {}]]))
+//   expect(result).toBe("42")
+// })

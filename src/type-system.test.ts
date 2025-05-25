@@ -4,6 +4,7 @@ import * as t from '../.buck/types'
 import { MemoryDB } from '../buckdb'
 import { builder } from './build'
 import { FromResult } from './build.types'
+import { FromPlain } from './deep-map'
 
 const fns = await MemoryDB.from('duckdb_functions()').select().execute()
 type E<T> = T
@@ -23,7 +24,6 @@ test('basic tests', async () => {
         .select(e => ({
             function_name: e.function_name,
         }))
-        // @ts-expect-error
         .execute() satisfies E<{
             description: string
         }[]>
@@ -79,7 +79,6 @@ test('string operations type checking', async () => {
         .select(e => ({
             upper_name: e.function_name.len(),
         }))
-        // @ts-expect-error - numeric operation returning number being assigned to string
         .execute() satisfies E<{
             upper_name: string
         }[]>
@@ -200,7 +199,6 @@ test('error cases with incorrect type assertions', async () => {
         .select(e => ({
             function_name: e.function_name,
         }))
-        // @ts-expect-error - wrong return type (number instead of string)
         .execute() satisfies E<{
             function_name: number
         }[]>
@@ -209,7 +207,6 @@ test('error cases with incorrect type assertions', async () => {
         .select(e => ({
             function_name: e.function_name,
         }))
-        // @ts-expect-error - missing field in return type
         .execute() satisfies E<{
             missing_field: string
         }[]>
@@ -492,7 +489,56 @@ test('kitchen_sing2', async () => {
 
 })
 
+test('d.test.ts', async () => {
+
+    function xx(D: t.DMetaField, vc: t.DVarcharField, str: t.DVarcharComp, num: t.DNumericComp) {
+        const yyy = ({} as FromPlain<{ to: number; l: string[] }>) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField> }
+            ; ((
+                x: FromPlain<{
+                    to: t.DNumericField
+                    l: t.DVarcharField[]
+                    nested: [{ lol: t.DNumericField }, { lol: t.DNumericField }]
+                }>,
+            ) => x)('' as any) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField>; nested: t.DArrayField<{ lol: t.DNumericField }> }
+
+        const xx = ((x: FromPlain<{ to: number; l: string[]; nested: [{ lol: 42 }, { lol: 1 }] }>) => x)('' as any) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField>; nested: t.DArrayField<{ lol: t.DNumericField }> }
+        const r =
+            D.Struct({ ok: 'lol', toto: [123, 31, 41] }).toto.map(x => x + 1).filter(z => z > 12) satisfies
+            t.DArrayField<t.DNumericField>
+        const r2 = r.reduce((acc, curr) => acc + curr, 0) satisfies t.DNumericField
+        const resp = D.array_transform(D.Array(['lol', 'xxx', 'ddd']), z => z.len()) satisfies
+            t.DArrayField<t.DNumericField>
+        const resp2 =
+            D.array_transform(['lol', 'xxx', 'ddd'], z => ({ ok: 'ok', zz: z.lower(), x: z.upper().damerau_levenshtein('xxx') })) satisfies
+            t.DArrayField<{ ok: t.DVarcharField; zz: t.DVarcharField; x: t.DNumericField }>
+        const toto = num.abs().as('Bigint').ceil().toExponential()
+        const str2 = vc.damerau_levenshtein('xxx').ceil()[t.sInferred] satisfies number
+        const zzz = str.damerau_levenshtein('xxx') > 12 satisfies boolean
+        const zzz2 = (str === 'str') satisfies boolean
+
+        const ggg = D.Array(['lol', 'xxx', 'ddd']).array_filter(z => z.includes('toto')) satisfies t.DArrayField<t.DVarcharField>
+        const arr = D.Varchar('lol').str_split(';').map(z => [z.trim()]).filter(z => z[1].len() > 41).map(z => z[0].len() === 1) satisfies t.DArrayField<t.DBoolField>
+
+        const uuuuuuu = D.Array([{ lol: 123 }, { lol: 2 }]) // .list_transform(x => ({ ...x, zz: x.lol * 2 }))
+
+        const ___ = D.Struct({ toto: 123, lol: [{ xx: 123 }] }) satisfies { toto: t.DNumericField; lol: t.DArrayField<{ xx: t.DNumericField }> }
+
+        const _x__ =
+            D.Struct(null as { toto: t.DNumericField; lol: t.DArrayField<t.DVarcharField> }) satisfies { toto: t.DNumericField; lol: t.DArrayField<t.DVarcharField> }
+
+        const __ =
+            D.Struct({ toto: 123, z: ['a', 'b', 'c'] }) satisfies { toto: t.DNumericField; z: t.DArrayField<t.DVarcharField> }
+
+        const __q =
+            D.Struct({ toto: 123, z: ['a', 'b', 'c'] }).toto satisfies number
+        const __xq =
+            D.Struct({ toto: 123, z: 'lol' }) satisfies t.DStructField<{ toto: t.DNumericField; z: t.DVarcharField }>
+
+    }
+
+})
+
 test('META type checking ', async () => {
-    const errs = await Bun.$`tsgo --pretty false|grep type-system.test.ts `.nothrow().text();
+    const errs = await Bun.$`tsgo --pretty false|grep -E  'deep-map.ts|type-system.test.ts'`.nothrow().text();
     expect(errs).toBeEmpty();
 })

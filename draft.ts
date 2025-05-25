@@ -1,13 +1,15 @@
 import { Buck, from, MemoryDB } from './buckdb'
 
-await from('duckdb_functions()').select((e, D) => ({
-    function_name: e.function_oid,
-    xx: e.function_oid + 12,
-}))
-    // .keyBy(e => e.database_name)
-    .groupBy('function_name')
-    .groupBy(e => e.has_side_effects.Ilike('%whatever%'))
-    .execute()
+const q =
+    from('duckdb_functions()').select((e, D) => ({
+        function_name: e.function_oid,
+        xx: e.function_oid + 12,
+    }))
+        // .keyBy(e => e.database_name)
+        // .groupBy('function_name')
+        // .groupBy(e => e.has_side_effects.Ilike('%whatever%'))
+       
+const resp = await q.execute()
 
 // //### 123 test abel
 

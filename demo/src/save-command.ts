@@ -5,11 +5,15 @@ export default (vscode: typeof import('vscode'), getIsDiskSaveEnabled: IsDiskSav
     vscode.workspace.onDidSaveTextDocument(async (document) => {
         // Only save actual files back to the filesystem AND check if disk saving is enabled
         if (document.uri.scheme === 'file' && getIsDiskSaveEnabled()) {
-            const filePath = document.uri.fsPath // Use fsPath for the actual system path
+            console.log(`[SaveListener] Document saved: ${document.uri.fsPath}`) // Optional log
+            
+            let filePath = document.uri.fsPath // Use fsPath for the actual system path
             const content = document.getText()
             // console.log({ filePath }) // Removed log
             // console.log(`[SaveListener] Document saved, attempting to save to filesystem: ${filePath}`); // Removed log
-
+            if (window.location.search.includes('tutorial')) {
+             filePath = filePath.replace('/demo.ts', '/api-tutorial.ts')   
+            }
             try {
                 const response = await fetch('/save-file', {
                     method: 'POST',
@@ -34,6 +38,7 @@ export default (vscode: typeof import('vscode'), getIsDiskSaveEnabled: IsDiskSav
                 vscode.window.showErrorMessage(`Error saving ${filePath}: ${error.message || 'Network error'}`)
             }
         } else if (document.uri.scheme === 'file' && !getIsDiskSaveEnabled() && document.uri.fsPath.endsWith('/demo.ts')) {
+            console.log(`[SaveListener] Disk save is disabled, saving ${document.uri.fsPath} to localStorage instead.`) // Optional log
             // Disk save is disabled AND it's demo.ts, save to localStorage instead
             const filePath = document.uri.fsPath
             const content = document.getText()

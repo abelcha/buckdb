@@ -57,6 +57,7 @@ const types = (await import('@external/.buck/types.ts?raw')).default
 const utils = (await import('@external/src/utils.ts?raw')).default
 const bindings = (await import('@external/src/bindings.ts?raw')).default
 const copy = (await import('@external/src/copy.ts?raw')).default
+const formalise = (await import('@external/src/formalise.ts?raw')).default
 const table3 = (await import('@external/.buck/table3.ts?raw')).default
 const tablejson = (await import('@external/.buck/table.json?raw')).default
 const buildTypes = (await import('@external/src/build.types.ts?raw')).default
@@ -81,6 +82,7 @@ loadFile(tsconf, 'tsconfig.json')
 loadFile(parser, 'src/parser.ts')
 loadFile(jsep, 'src/jsep.ts')
 loadFile(copy, 'src/copy.ts')
+loadFile(formalise, 'src/formalise.ts')
 loadFile(types, '.buck/types.ts')
 loadFile(tablejson, '.buck/table.json')
 loadFile(utils, 'src/utils.ts')

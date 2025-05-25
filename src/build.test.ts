@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { formatOptions } from './formarlizer'
+import { formatOptions } from './formalise'
 
 describe('formatOptions', () => {
     it('should handle auto field_ids', () => {

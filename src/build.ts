@@ -1,7 +1,7 @@
 import * as t from '../.buck/types'
 import { DuckdbCon } from './bindings'
 import { DBuilder, deriveName } from './build.types'
-import { formalize, toSql } from './formarlizer'
+import { formalize, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
 import { formatSource, keyBy, upperFirst, wrap } from './utils'

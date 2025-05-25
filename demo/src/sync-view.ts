@@ -54,7 +54,7 @@ class TransformedSqlCodeLensProvider implements vsCodeApi.CodeLensProvider {
 
                 const command: vsCodeApi.Command = {
                     tooltip: 'xxxx', // Matching SqlCodeLensProvider
-                    title: '🦅 Run Query',
+                    title: '⌘ ↩︎ [Run Query]',
                     command: 'buckdb.runQueryFromLine',
                     arguments: [lineIndex + 1], // Matching SqlCodeLensProvider (0-based line index of original TS)
                 }
@@ -160,7 +160,6 @@ export async function openTransformedViewAndSync(
                     new TransformedSqlCodeLensProvider(vscodeApi),
                 )
                 transformedCodeLensProviderRegistered = true
-                console.log('TransformedSqlCodeLensProvider registered for scheme:', transformedScheme)
             } catch (registrationError) {
                 console.error('Failed to register TransformedSqlCodeLensProvider:', registrationError)
             }

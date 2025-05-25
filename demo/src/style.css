@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'Comic Mono';
+  src: url('https://dtinth.github.io/comic-mono-font/ComicMono.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 #workbench.parts.banner {
   display: none;
 }
@@ -36,11 +42,134 @@ body {
   z-index:99;
 }
 
-.standalone-editor {
-  width: 100%;
-  height: 100vh;
+.highlight .c, .highlight .ch, .highlight .cm, .highlight .cp, .highlight .cpf, .highlight .cs, .highlight .c1 {
+	color: #636d83;
+	font-family: monospace;
+	font-style: italic;
 }
 
+.highlight .k, .highlight .kc, .highlight .kd, .highlight .kn, .highlight .kr, .highlight .kt, .highlight .kv {
+	color: #10b1fe;
+	font-weight: bold;
+	font-family: monospace;
+}
+
+.highlight .py {
+	color: #BA9678;
+}
+
+.highlight .m, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .mo, .highlight .il {
+	color: #ff78f8;
+}
+
+.highlight .g, .highlight .l, .highlight .no, .highlight .nd, .highlight .nx, .highlight .w, .highlight .nn, .highlight .n, .highlight .vg {
+	color: #000000cc;
+}
+
+.highlight .nb, .highlight .bp, .highlight .vcb {
+	color: #10b1fe;
+	font-weight: bold;
+	font-family: monospace;
+}
+
+.highlight .nf, .highlight .nt, .highlight .na {
+	color: #3fc56b;
+	font-weight: bold;
+	font-family: monospace;
+}
+
+.highlight .ge {
+	color: #ff6480;
+	font-weight: bold;
+	font-style: italic;
+	font-family: monospace;
+}
+
+.highlight .nc, .highlight .nv {
+	color: #ff6480;
+}
+
+.highlight .p, .highlight .x {
+	color: #7a82da;
+}
+
+.highlight .o, .highlight .ow {
+	color: #7a82da;
+}
+
+.highlight .ld, .highlight .s, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .s2, .highlight .se, .highlight .sh, .highlight .si, .highlight .sx, .highlight .sr, .highlight .s1, .highlight .ss, .highlight .dl, .highlight .nl {
+	color: #f9c859;
+}
+
+th .k {
+	color: #fff;
+	font-weight: bold;
+	font-family: monospace;
+}
+  .highlight .c, .highlight .ch, .highlight .cm, .highlight .cp, .highlight .cpf, .highlight .cs, .highlight .c1 {
+  	color: #636d83;
+  	font-family: monospace;
+  	font-style: italic;
+  }
+  
+  .highlight .k, .highlight .kc, .highlight .kd, .highlight .kn, .highlight .kr, .highlight .kt, .highlight .kv {
+  	color: #10b1fe;
+  	font-weight: bold;
+  	font-family: monospace;
+  }
+  
+  .highlight .py {
+  	color: #BA9678;
+  }
+  
+  .highlight .m, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .mo, .highlight .il {
+  	color: #ff78f8;
+  }
+  
+  .highlight .g, .highlight .l, .highlight .no, .highlight .nd, .highlight .nx, .highlight .w, .highlight .nn, .highlight .n, .highlight .vg {
+  	color: #000000cc;
+  }
+  
+  .highlight .nb, .highlight .bp, .highlight .vcb {
+  	color: #10b1fe;
+  	font-weight: bold;
+  	font-family: monospace;
+  }
+  
+  .highlight .nf, .highlight .nt, .highlight .na {
+  	color: #3fc56b;
+  	font-weight: bold;
+  	font-family: monospace;
+  }
+  
+  .highlight .ge {
+  	color: #ff6480;
+  	font-weight: bold;
+  	font-style: italic;
+  	font-family: monospace;
+  }
+  
+  .highlight .nc, .highlight .nv {
+  	color: #ff6480;
+  }
+  
+  .highlight .p, .highlight .x {
+  	color: #7a82da;
+  }
+  
+  .highlight .o, .highlight .ow {
+  	color: #7a82da;
+  }
+  
+  .highlight .ld, .highlight .s, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .s2, .highlight .se, .highlight .sh, .highlight .si, .highlight .sx, .highlight .sr, .highlight .s1, .highlight .ss, .highlight .dl, .highlight .nl {
+  	color: #f9c859;
+  }
+  
+  th .k {
+  	color: #fff;
+  	font-weight: bold;
+  	font-family: monospace;
+  }
 #titleBar {
   position: relative;
   flex: none;

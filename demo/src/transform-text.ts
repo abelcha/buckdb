@@ -1,8 +1,8 @@
 import { debounce, memoize } from 'es-toolkit'
 import type { IDisposable } from 'monaco-editor'
 import { EventEmitter, TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
-import contentjson from '../../.buck/table.json' // Use relative path
-import { generateInterface, serializeDescribe } from '../../src/interface-generator.ts' // Use relative path
+import contentjson from 'buck/.buck/table.json' // Use relative path
+import { generateInterface, serializeDescribe } from 'buck/src/interface-generator' // Use relative path
 import { BuckStatementParts, extractBuckStatement, extractFromStatementsAST, FromStatementParts } from '../src/extract-from-statements'
 import { writeFile } from './setup.common'
 
@@ -38,16 +38,15 @@ function transformCode(parts: { cleanFromChain: string; lineStart: number }[]): 
 
 const getStatementId = ({ param }) => {
     if (param.match(/^(\w+_)?(read|scan)(_\w+)\(/)) {
-        console.log('getStatement nneeee')
         return (new Function(` return ${param}`))()
     }
-    console.log('getStatementxxxx', param)
     return `${param}`
 }
 
 class Schemes {
-    content = contentjson
+    content = contentjson as Record<string, Record<string, any>>
     writeFile = async (filePath: string, content: string) => {
+        console.log('writefile', filePath, content.length)
         await writeFile(filePath, content)
         await fetch('/save-file', {
             method: 'POST',
@@ -63,7 +62,7 @@ class Schemes {
     upsertBuckStatements = async (statements: BuckStatementParts[]) => {
         let toUpdate = false
         for (const statement of statements) {
-            if (this.content[statement.resource || ''] || !statement.resource.match(/\.\w{2,10}$/)) {
+            if (this.content[statement.resource || ''] || !statement.resource?.match(/\.\w{2,10}$/)) {
                 continue
             }
             try {
@@ -93,57 +92,35 @@ class Schemes {
             }
 
             const stx = getStatementId(statement)
-            console.log('-------------------')
-            console.log({ stx, statement })
-            if (!this.content[resource]?.[stx] && !failedSet.has(statement)) {
+            if (!this.content[resource]?.[stx] && !failedSet.has(stx)) {
                 try {
                     const fnn = `return ${statement.chain || "Buck('')"}.describe("${stx}")`
-                    console.log('fnn', fnn)
                     const fn = new Function(fnn)
                     const schema = await fn()
-                    console.log('schema', schema)
-                    console.log('-------------------')
                     this.content[resource][stx] = serializeDescribe(schema)
                     toUpdate = true
                 } catch (_err) {
                     const err = _err as Error
                     // this.content[resource][statement.param] = {}
                     if ((err as Error)?.stack?.includes('@duckdb/duckdb-wasm')) {
+                        this.content['error'] = this.content['error'] || {}
                         this.content['error'][stx] = {
                             [err.message]: 'DVarchar',
                         }
                         toUpdate = true
                     }
                     console.error(err)
-                    failedSet.add(statement)
+                    failedSet.add(stx)
                 }
             }
         }
         return toUpdate && this.updateContent()
-
-        // await this.writeFile('.buck/table.json', JSON.stringify(this.content, null, 2));
-        // const tsfile = generateInterface(this.content);
-        // await this.writeFile('.buck/table3.ts', tsfile);
     }
-    // upsertDB = async (st: BuckStatementParts) => {
-    //     if (this.content[st.resource || '']) return true;
-
-    //     this.merge(st);
-    //     return false;
-    // }
-    // upsert(statement: FromStatementParts) {
-    //     if (this.content[statement.resource || '']?.[statement.param]) return true;
-    //     this.merge(statement);
-    //     return false;
-    // }
 }
 
 const schemes = new Schemes()
 
-// const cache = new Map()
-
-// const evictCache = debounce(() => cache.clear(), 3000)
-const failedSet = new Set([])
+const failedSet = new Set([]) as Set<string>
 
 const getCode = (uri: Uri): string => {
     const queryParams = new URLSearchParams(uri.query)
@@ -172,7 +149,6 @@ const getCode = (uri: Uri): string => {
 }
 
 // const onTextUpdate = (code: string): string => {
-//     // console.log('provideTextDocumentContent')
 //     // Extract original URI from the query parameter
 
 //     try {
@@ -195,9 +171,7 @@ const getCode = (uri: Uri): string => {
 const refreshTypes = debounce(async (code: string) => {
     const parts = extractFromStatementsAST(code)
     const bsts = extractBuckStatement(code)
-    console.log('refreshtype', { parts, bsts })
 
-    // console.log({ bsts })
     schemes.upsertBuckStatements(bsts)
         .then(() => schemes.upsertFromStatements(parts))
         .catch(err => console.error(err))
@@ -211,7 +185,6 @@ export const transformedProvider = new class implements TextDocumentContentProvi
         refreshTypes(code)
         try {
             const parts = extractFromStatementsAST(code)
-            console.log({ parts })
             return transformCode(parts)
         } catch (error) {
             console.error(error)

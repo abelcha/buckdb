@@ -58,18 +58,20 @@ const utils = (await import('@external/src/utils.ts?raw')).default
 const bindings = (await import('@external/src/bindings.ts?raw')).default
 const copy = (await import('@external/src/copy.ts?raw')).default
 const formalise = (await import('@external/src/formalise.ts?raw')).default
+const deepMap = (await import('@external/src/deep-map.ts?raw')).default
 const table3 = (await import('@external/.buck/table3.ts?raw')).default
 const tablejson = (await import('@external/.buck/table.json?raw')).default
 const buildTypes = (await import('@external/src/build.types.ts?raw')).default
 const build = (await import('@external/src/build.ts?raw')).default
 const buckdb = (await import('@external/buckdb.wasm.ts?raw')).default
-const isDemo = new URLSearchParams(location.search).has('demo')
-const demo = isDemo
+const isTutorial = new URLSearchParams(location.search).has('tutorial')
+const demo = !isTutorial
     ? (await import('@external/demo.ts?raw')).default
-    : (await import('@external/draft.ts?raw')).default
+    : (await import('@external/api-tutorial.ts?raw')).default
 const tsconf = JSON.stringify({
     compilerOptions: {
         strict: true,
+        "noImplicitAny": false,
         'resolveJsonModule': true,
         'allowImportingTsExtensions': true,
         'target': 'ESNext',
@@ -88,6 +90,7 @@ loadFile(tablejson, '.buck/table.json')
 loadFile(utils, 'src/utils.ts')
 loadFile(table3, '.buck/table3.ts')
 loadFile(buildTypes, 'src/build.types.ts')
+loadFile(deepMap, 'src/deep-map.ts')
 loadFile(build, 'src/build.ts')
 loadFile(bindings, 'src/bindings.ts')
 loadFile(buckdb, 'buckdb.ts')
@@ -98,7 +101,7 @@ loadFile(readers, 'src/readers.ts')
 loadFile(interfaceGenerator, 'src/interface-generator.ts')
 
 const removeImports = (str: string) => str.split('\n').filter(e => !(e.match(/^\s*\/\//) || (e.startsWith('import') && e.includes('./')))).join('\n')
-const namespaceify = (name, str: string) => `namespace ${name}  {\n ${str}\n} \n`
+const namespaceify = (name: string, str: string) => `namespace ${name}  {\n ${str}\n} \n`
 export const getFullBundle = () => {
     const content = [jsep, parser, utils, table3, build].map(e => removeImports(e)).join('\n')
         .replaceAll(/export\sdefault/g, '')
@@ -109,7 +112,7 @@ export const getFullBundle = () => {
 // export const bundle = transform(getFullBundle(), { transforms: ["typescript"] })
 // Use a workspace file to be able to add another folder later (for the "Attach filesystem" button)
 fileSystemProvider.registerFile(
-    new RegisteredMemoryFile(workspaceFile, JSON.stringify(<IStoredWorkspace> { folders: [{ path: '/workspace' }] }, null, 2)),
+    new RegisteredMemoryFile(workspaceFile, JSON.stringify(<IStoredWorkspace>{ folders: [{ path: '/workspace' }] }, null, 2)),
 )
 
 fileSystemProvider.registerFile(
@@ -126,7 +129,7 @@ const workerLoaders: Partial<Record<string, WorkerLoader>> = {
     LocalFileSearchWorker: () => new Worker(new URL('@codingame/monaco-vscode-search-service-override/worker', import.meta.url), { type: 'module' }),
 }
 window.MonacoEnvironment = {
-    getWorker: function(moduleId, label) {
+    getWorker: function (moduleId, label) {
         const workerFactory = workerLoaders[label]
         if (workerFactory != null) {
             return workerFactory()

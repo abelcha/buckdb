@@ -54,6 +54,7 @@ export default defineConfig({
                     })
 
                     server.middlewares.use('/save-file', (req, res, next) => {
+                        console.log('Save file request received:', req.method, req.url)
                         if (req.method !== 'POST') {
                             return next() // Only handle POST requests
                         }

@@ -46,3 +46,5 @@ export const keyBy = <T extends object, K extends keyof T>(array: T[], key: K): 
         return acc
     }, {} as Record<string, T>)
 }
+
+export const isBucket = e => e?.match(/^s3\:\/\/[^\/]+\/?$/)

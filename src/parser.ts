@@ -143,6 +143,7 @@ type Topts = {
   isFuncArg?: boolean
   closureVars?: string[]
 }
+
 // type oProps = { subMemberExpression?: boolean, isProperty?: boolean }
 export function transformDuckdb(node: Expression, params = new Map<string, { depth: number; position: number }>(), context: Record<string, any> = {}) {
   // console.log(node)
@@ -284,8 +285,6 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         return `${calleeArr.join('.')}(${args.join(', ')})`
       },
       UnaryExpression(node: UnaryExpression) {
-        // fn.toString() transform true and false to !1 and !0
-        // console.log('========, ', node.operator)
         if (node.operator === '!!') {
           return `${transformNode(node.argument)} IS NOT NULL`
         }
@@ -386,9 +385,6 @@ const extractParams = (ast: Expression) => {
     }
 
     for (const key in node) {
-      function zzz(xx = {}) {
-        return xx['toto'] === 42
-      }
       if (key !== 'type' && typeof node[key] === 'object' && key !== 'key') {
         walk(node[key] as unknown as Expression, depth + 1, position)
       }
@@ -451,10 +447,6 @@ export function parseObject<T extends Record<string, any>>(expr: Expr<T> | strin
   const ast = jsep(fnstr) as ArrowFunctionExpression
   const params = extractParamsContext(ast)
   const node = ast.body
-  // console.log(node)
-  // console.log('params', params)
-  // console.log({ ast })
-  // console.log({ node })
   if (node.type === 'Literal') {
     return [['', '', node.value]]
   }
@@ -471,14 +463,6 @@ export function parseObject<T extends Record<string, any>>(expr: Expr<T> | strin
       return [['', '', '*']]
     }
   }
-  // console.log('xxxnode')
-
-  // console.log({ node })
-  // if (node.type === 'MemberExpression') {
-  //   console.log('==============')
-  //   console.log(node)
-  //   console.log('==============')
-  // } else
   if (node.type === 'ObjectExpression') {
     return node.properties.map((prop: any) => {
       // console.log('prop', prop)
@@ -500,7 +484,5 @@ export function parseObject<T extends Record<string, any>>(expr: Expr<T> | strin
     })
   } else {
     return [['', transformDuckdb(node, params, context)]]
-    // console.log(node)
-    // throw new Error('AST is not an ObjectExpression');
   }
 }

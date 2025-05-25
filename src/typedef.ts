@@ -306,7 +306,7 @@ export const UnmethodMapping = {
   'filter': e => `list_filter(${e})`,
   'charCodeAt': e => `array_extract(${e}).ascii()`,
   'codePointAt': e => `array_extract(${e}).ord()`,
-}
+} as Record<string, (body: any) => string>
 
 
 

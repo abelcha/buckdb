@@ -79,7 +79,6 @@ export type ToPlain<T> =
   : T extends Array<infer U> ? ToPlain<U>[]
   /* 2. structs: rebuild an object, recursing on every member */
   : T extends t.DStructField<infer S> ? { [K in keyof S]: ToPlain<S[K]> }
-  // T extends t.DJsonField<infer S> ? ToPlain<S> : //{ [K in keyof S]: ToPlain<S[K]> } :
   /* 3. primitive wrappers */
   : T extends t.DVarcharField | t.DJsonField | string ? string
   : T extends t.DNumericField | number ? number
@@ -92,13 +91,6 @@ export type ToPlain<T> =
   : never;
 
 export type FromPlain<T> =
-  // T extends null | undefined ? T :
-  // T extends t.DArrayField<infer U> ? FromPlain<U>[] :
-  // T extends Array<infer U> ? FromPlain<U>[] :
-  // T extends t.DStructField<infer S> ? { [K in keyof S]: FromPlain<S[K]> } :
-  // T extends t.DJsonField<infer S> ? { [K in keyof S]: FromPlain<S[K]> } :
-  /* 3. primitive wrappers */
-  // T extends readonly [any, ...any[]] ? { [K in keyof T]: FromPlain<T[K]> } : // tuple handling
   T extends t.DArrayField<infer U> ? t.DArrayField<FromPlain<U>>
   : T extends Array<infer U> ? t.DArrayField<FromPlain<U>>
   : T extends t.DStructField ? { [K in keyof T]: FromPlain<T[K]> }
@@ -109,7 +101,6 @@ export type FromPlain<T> =
   : T extends t.DDateField | Date ? t.DDateField
   : T extends t.DAnyField ? t.DAnyField
   : T extends object ? t.DStructField<{ [K in keyof T]: FromPlain<T[K]> }>
-  /* 4. everything else is a mistake */
   : never;
 type res2 =
   & Assert<ExpectEqual<FromPlain<string>, t.DVarcharField>>
@@ -122,25 +113,9 @@ type res2 =
       FromPlain<{ xx: { zz: 12; xx: "123" }[] }>,
       t.DStructField<{ xx: t.DArrayField<t.DStructField<{ zz: t.DNumericField; xx: t.DVarcharField }>> }>
     >
+  > & Assert<
+    ExpectEqual<
+      ToPlain<t.DArrayField<t.DStructField<{ id: t.DVarcharField; value: t.DNumericField }>>>,
+      { id: string; value: number }[]
+    >
   >;
-
-type res = Assert<
-  ExpectEqual<
-    ToPlain<t.DArrayField<t.DStructField<{ id: t.DVarcharField; value: t.DNumericField }>>>,
-    { id: string; value: number }[]
-  >
->;
-
-function xxx(zz: FromPlain<{ lol: t.DArrayField<t.DVarcharField> }>) {
-  const uuu = zz
-}
-
-
-function xx(id: t.DVarcharField & Partial<string>) {
-  // const zz = id.
-  id.endsWith
-  const uuu = id + "sdq"
-  ""
-  // id.
-  return id === '123'
-}

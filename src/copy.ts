@@ -104,7 +104,7 @@ export interface CopyToInterface<A extends MetaModel, S extends SelectModel = {}
 
 
 declare function _copy<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField>(
-    source: MS<V, A, S, SV, SS>
+    source: MS<V, A, S, SV, SS> | string
 ): CopyToInterface<A, S>; // Changed to use the renamed interface
 
 function xcopy(

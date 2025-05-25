@@ -10,10 +10,10 @@ type DeriveName<Path> = Path extends `${infer _}/${infer Rest}` ? DeriveName<Res
 
 type TRessource = keyof Models | (string & {})
 
-type AlphaNumeric = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_' | '-'
+type AlphaNumeric = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_'
 export const deriveName = <T extends string>(value: T): DeriveName<T> => {
     const result = value.split('/').pop()?.split('.').shift() || value
-    return result.replace(/[^a-zA-Z0-9_\-]/g, '') as DeriveName<T>
+    return result.replace(/[^a-zA-Z0-9_]/g, '') as DeriveName<T>
 }
 
 export type ObjectToValuesTuple<T> = T extends Record<string, any> ? Array<T[keyof T]> : never
@@ -95,6 +95,7 @@ export type KeyPicker<A extends Record<string, any>, S extends Record<string, an
 
 export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> {
     execute: FnMap<A, S, SV, SS>[V]
+    exec: this['execute']
 
     orderBy<U_ extends ([KeyPicker<A, S>, DDirection?][])>(...key: U_): MS<V, A, S, SV, SS>
     orderBy<U extends ('ALL' | KeyPicker<A, S>)>(k: U, d?: DDirection): MS<V, A, S, SV, SS>
@@ -208,11 +209,11 @@ type DBuilderResult<T extends keyof Models> = {
 
     update<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string> & string>>(table: K1): UpdateResult<T, [DefaultizeCollection<{ catalog: T; uri: K1 }>]>
 
-    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>> | (string & {}), A extends string>(table: K1, alias: A):
+    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>, A extends string>(table: K1, alias: A):
         & FromResult<T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>]>
         & InitialMaterializedResult<[DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>]> // Use the alias
 
-    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>> | (string & {})>(table: K1):
+    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>>(table: K1):
         & FromResult<T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }>]>
         & InitialMaterializedResult<[DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }>]> // Use the alias
 
@@ -228,5 +229,5 @@ export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResul
 export declare function DBuilder(): DBuilderResult<''>
 
 // Updated DBuilder declaration with catalog
-export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<T extends keyof Models ? T : ''>
+export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<T>
 // DBuilder()('s')

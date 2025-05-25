@@ -2,6 +2,7 @@ import * as t from '../.buck/types'
 import { from } from '../buckdb'
 import { DuckdbCon } from './bindings'
 import { GField, KeyPicker, MetaModel, MS, NestedKeyOf, SelectModel, VTypes } from './build.types'
+import { formalize } from './formalise'
 
 type FileFormats = 'parquet' | 'csv' | 'json' | 'arrow' | 'jsonl'
 type CompressionType = 'auto' | 'none' | 'gzip' | 'zstd' | 'snappy' | 'brotli' | 'lz4'
@@ -63,7 +64,7 @@ export interface JsonCopyOptions {
     timestampformat?: string
 }
 /** Generic options that might apply to multiple file formats or serve as a base. */
-export interface GenericCopyOptions<A extends MetaModel = MetaModel, S extends SelectModel = {}, G = KeyPicker<A, S>> {
+export interface GenericCopyOptions<A extends MetaModel = MetaModel, S extends SelectModel = {}, G = NestedKeyOf<A> | NestedKeyOf<S>> {
     /** Explicit format specification, useful if filename doesn't have standard extension. */
     format?: FileFormats  // Add other formats as needed
     /** Compression setting, potentially overriding format-specific defaults or auto-detection. */
@@ -131,6 +132,10 @@ function xcopy(
             // Add any other options, handling types correctly
             Object.entries(options).forEach(([key, value]) => {
                 // Skip options already handled
+                if (key === 'partition_by') {
+                    optionsArray.push(`PARTITION_BY ${formalize(value)}`)
+                    return 
+                }
                 if (key === 'format' || key === 'compression') {
                     return
                 }

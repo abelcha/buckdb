@@ -303,10 +303,12 @@ export const PolyfillArrayMapping = {
 export const UnmethodMapping = {
   'map': e => `list_transform(${e})`,
   'reduce': e => `array_reduce(${e})`,
+  'join': e => `array_to_string(${e})`,
   'filter': e => `list_filter(${e})`,
   'charCodeAt': e => `array_extract(${e}).ascii()`,
   'codePointAt': e => `array_extract(${e}).ord()`,
 } as Record<string, (body: any) => string>
+
 
 
 

@@ -20,12 +20,12 @@ test('basic tests', async () => {
             description: string
         }[]>
 
-    await MemoryDB.from('duckdb_functions()')
+    const z = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
         }))
         .execute() satisfies E<{
-            description: string
+            function_name: string
         }[]>
 })
 
@@ -80,7 +80,7 @@ test('string operations type checking', async () => {
             upper_name: e.function_name.len(),
         }))
         .execute() satisfies E<{
-            upper_name: string
+            upper_name: number
         }[]>
 })
 
@@ -199,6 +199,7 @@ test('error cases with incorrect type assertions', async () => {
         .select(e => ({
             function_name: e.function_name,
         }))
+        // @ts-expect-error - incorrect type assertion
         .execute() satisfies E<{
             function_name: number
         }[]>
@@ -207,6 +208,7 @@ test('error cases with incorrect type assertions', async () => {
         .select(e => ({
             function_name: e.function_name,
         }))
+        // @ts-expect-error - incorrect type assertion
         .execute() satisfies E<{
             missing_field: string
         }[]>
@@ -433,8 +435,12 @@ test('ambiguous type inference - type conversions', async () => {
 test('build-tests', () => {
     async function checkSelect(db: FromResult<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>, db2: FromResult<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'duckdb_functions' }]>) {
 
-        const respz = await db.select().execute() satisfies { name: string; age: number; total: number }[]
-        const respu = await db.execute() satisfies { name: string; age: number; total: number }[]
+        const respk = await db.select(e => e).execute() satisfies
+            { name: string; age: number; total: number, people?: never }[]
+
+
+        const respz = await db.select().execute() satisfies { name: string; age: number; total: number, people?: never }[]
+        const respu = await db.execute() satisfies { name: string; age: number; total: number, people?: never }[]
 
         const respx = await db.select(e => e.age === 12 ? 42 : '12').execute() satisfies (number | string)[]
 

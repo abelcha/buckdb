@@ -3,7 +3,15 @@ import { copy } from './copy'
 import { parse } from './parser'
 import { formatSource, wrap } from './utils'
 
-const serializeTuple = (id: string) => (p: string[]) => p.length ? `${id} (${p.join(', ')})` : ''
+const serializeTuple = (id: string) => (p: string[]) => {
+    if (!p.length) {
+        return ''
+    }
+    if (p.length === 1) {
+        return `${id} ${p[0]}`
+    }
+    return `${id} (${p.join(', ')})`
+}
 const serializeValue = (id: string) => (p: any) => p !== null ? `${id} ${p}` : ''
 
 const serializeConditions = (id = 'WHERE') => (conditions: DCondition[]) => {
@@ -23,9 +31,9 @@ const serializeOrder = (id: string) => (orders: DOrder[]) => {
 
 const formatAlias = (source: { alias?: string; uri: string }) => {
     if (source.alias) {
-        return `${formatSource(source.uri)} AS ${source.alias}`
+        return `${formatSource(source)} AS ${source.alias}`
     }
-    return formatSource(source.uri)
+    return formatSource(source)
 }
 const formatAs = (source: { field: string; as?: string }) => {
     if (source.as && typeof source.as === 'string') {
@@ -50,7 +58,10 @@ export const formatOptions = (options?: Record<string, any>): string => {
 }
 export const wrapIfNotEmpty = (value: string) => value ? `(${value})` : ''
 const serializeDatasource = (datasources: DDatasource[]) => {
-    return datasources.map((d) => d.join ? `${d.join} ${formatAlias(d)} ON (${d.joinOn})` : formatAlias(d)).join('\n ')
+    return datasources.map((d) => {
+        const jointure = d.joinOn ? `ON (${d.joinOn})` : d.using ? `USING (${d.using})` : ''
+        return d.join ? `${d.join} ${formatAlias(d)} ${jointure}` : formatAlias(d)
+    }).join('\n ')
 }
 const serializeSelected = (selected: DSelectee[]) => {
     if (!selected.length) {

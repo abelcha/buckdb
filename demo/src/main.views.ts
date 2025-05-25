@@ -9,6 +9,5 @@ document.querySelector('#clearStorage')?.addEventListener('click', async () => {
 })
 
 monaco.editor.onDidCreateModel(() => {
-    console.log('ON CREATE MODEL')
     updateUserKeybindings(defaultKeybindings)
 })

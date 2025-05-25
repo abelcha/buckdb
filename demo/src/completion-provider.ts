@@ -19,7 +19,7 @@ export const s3CompletionProvider: vscode.CompletionItemProvider = {
         const s3Match = linePrefix.match(S3_PREFIX_REGEX)
 
         if (!s3Match) {
-            console.log('s3CompletionProvider: Not an S3 path context.')
+            // console.log('s3CompletionProvider: Not an S3 path context.')
             return undefined
         }
 

@@ -1,5 +1,4 @@
 {
-  "ddworkbench.colorTheme": "Default Dark+",
   "workbench.iconTheme": "vs-seti",
   "editor.autoClosingBrackets": "languageDefined",
   "editor.autoClosingQuotes": "languageDefined",
@@ -82,5 +81,15 @@
     "errorForeground": "#ff0000",
     "focusBorder": "#fff100",
     "progressBar.background": "#fff100"
+  },
+  "typescript.inlayHints.variableTypes.enabled": true,
+  "editor.inlayHints.maximumLength": 50,
+  "editor.inlayHints.enabled": "onUnlessPressed",
+  "workbench.colorTheme": "Default Dark Modern",
+  
+  "editor.quickSuggestions": {
+    "other": false,
+    "comments": false,
+    "strings": false
   }
 }

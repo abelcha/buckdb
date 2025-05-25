@@ -24,7 +24,7 @@ export class SqlCodeLensProvider implements vscode.CodeLensProvider {
 
             for (const part of extractedParts) {
                 // lineStart is 1-based, Range needs 0-based
-                const lineIndex = part.lineStart - 1
+                const lineIndex = part.lineEnd 
                 if (lineIndex < 0 || lineIndex >= document.lineCount) continue // Basic bounds check
 
                 const line = document.lineAt(lineIndex)
@@ -34,9 +34,9 @@ export class SqlCodeLensProvider implements vscode.CodeLensProvider {
 
                 const command: vscode.Command = {
                     tooltip: 'xxxx',
-                    title: '🦅 Run Query',
+                    title: '================== ⌘ ↩︎ [Run Query] ===========',
                     command: 'buckdb.runQueryFromLine', // Command to be registered in main.v2.ts
-                    arguments: [lineIndex], // Pass the 0-based line index
+                    arguments: [lineIndex, 10], // Pass the 0-based line index
                 }
                 codeLenses.push(new vscode.CodeLens(range, command))
             }

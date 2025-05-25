@@ -75,7 +75,6 @@ function serializeSetops(setops: { type: string; value: string }[]) {
     return setops.map(e => `\n${e.type}\n${e.value}`).join('')
 }
 export function toSql(state: DState & { trim?: boolean }) {
-    console.log('======>', state.trim)
     const CR = state.trim ? '' : '\n'
     if (state.action === 'update') {
         // return `UPDATE ${state.table} SET ${serializeUpdates(state.updated)} WHERE ${serializeConditions('WHERE')(state.conditions)}`

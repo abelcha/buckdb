@@ -90,34 +90,6 @@ type MSR<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GF
 type MSV<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'values', A, S, SV, SS>
 type MSS<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'single', A, S, SV, SS>
 
-async function checkSelect3(db: FromResult<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'tt' }]>, D: t.DMetaField) {
-    const rv = await db.select((e, D) => ({
-        // function_name: e.function_oid,
-        function_name: e.function_oid,
-        // xx : e.examples.array_apply(e => e.upper()).array_contains('ok'),
-    }))
-        // .keyBy(e => e.database_name)
-        // .groupBy(e => e.examples[0].upper(), 'database_name', 'sqd', e => e.comment, e => e.comment)
-
-        .groupBy([e => e.database_name, 'database_name', 'comment'])
-        .groupBy(e => e.database_name, 'database_name', 'comment', e => e.internal, e => e.return_type.damerau_levenshtein('str2'))
-        .groupBy(['examples'])
-        .groupBy('GROUPING SETS', [['internal', e => e.function_oid]])
-        .groupBy('CUBE', ['internal', 'description'])
-        .groupBy('ROLLUP', ['internal', 'description'])
-        .having(e => e.database_name.levenshtein('xx').acosh() === 12)
-        .minBy(e => e.comment)
-        .maxBy('comment')
-        .keyBy(e => e.comment)
-        .distinctOn('database_name', e => e.internal)
-        .where(e => e.function_name === 123 && e.examples.array_contains('sqd'))
-        .where('function_name = 123 AND whatever=true')
-        // .groupBy('GROUPING SETS', [[]])
-        // .groupBy('has_side_effects')
-        .execute()
-
-    // const r = await db.select(e => ({ xid: e.xxx.toto.map(x => x) })).execute()
-}
 
 export type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
 
@@ -172,30 +144,7 @@ type PrimitiveField<T> = T extends number ? t.DNumericField
     : t.DAnyField
 
 
-async function checkSelect(db: FromResult<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>, db2: FromResult<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'duckdb_functions' }]>) {
 
-    const respz = await db.select().execute() satisfies { name: string; age: number; total: number }[]
-    const respu = await db.execute() satisfies { name: string; age: number; total: number }[]
-
-    const respx = await db.select(e => e.age === 12 ? 42 : '12').execute() satisfies (number | string)[]
-
-    const resp4 = await db.select((e, D) => ({
-        gg: e.name.str_split('').map((e) => e.upper()),
-    })).execute() satisfies { gg: string[] }[]
-
-    const resp3 = await db.select((e, D) => [e.age.add(12), e.total.to_hex()]).execute() satisfies [number, string][]
-
-    const resp5 = await db.select((e, D) => `${e.name}__${e.total}`).execute() satisfies string[]
-
-    const resp = await db.select('age', 'name')
-        .union(db2.select(e => ({ name: e.function_name, toto: 12 })))
-        .execute() satisfies { age: number; name: string, toto: number }[]
-
-
-    const resp2 = await db.select(e => [e.age, e.name] as const)
-        .except(db2.select(e => ({ name: e.function_name, age: 12 })))
-        .execute()
-}
 export interface FromResult<Ressource extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
     join<K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>, A extends string>(table: K, alias: A, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>>, D: t.DMetaComp) => any): FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
     join<K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>>(table: K, fn: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>>, D: t.DMetaComp) => any): FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>

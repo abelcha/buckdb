@@ -264,7 +264,7 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
                 const fromChainPart = `from(${definition.fromParameterText})${actualChainSuffix.startsWith('.') ? '' : '.'}${actualChainSuffix}`
 
                 let cleanFromChainPart = fromChainPart
-                const trailingMethodsToRemove = ['.execute()', '.show()', '.toSql()']
+                const trailingMethodsToRemove = ['.execute()', '.exec()', '.show()', '.toSql()']
                 for (const method of trailingMethodsToRemove) {
                     while (cleanFromChainPart.endsWith(method)) cleanFromChainPart = cleanFromChainPart.substring(0, cleanFromChainPart.length - method.length).trim()
                 }
@@ -355,7 +355,7 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
                     }
 
                     let cleanFromChainPart = actualFromChainText
-                    const trailingMethodsToRemove = ['.execute()', '.show()', '.toSql()']
+                    const trailingMethodsToRemove = ['.execute()', '.exec()', '.show()', '.toSql()']
                     for (const method of trailingMethodsToRemove) {
                         while (cleanFromChainPart.endsWith(method)) cleanFromChainPart = cleanFromChainPart.substring(0, cleanFromChainPart.length - method.length).trim()
                     }

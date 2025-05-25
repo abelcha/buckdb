@@ -2,6 +2,8 @@ import { DSettings } from '../.buck/types'
 
 export type DuckdbCon = {
     type: 'wasm' | 'node'
+    isBucket?: boolean
+    handle?: string | null
     cmdQueue: CommandQueue
     run: (sql: string) => Promise<any>
     lazyAttach: (path: string, alias: string, options?: { readonly: boolean }) => any

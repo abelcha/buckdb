@@ -4,13 +4,13 @@ import { DBuilder, deriveName } from './build.types'
 import { formalize, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
-import { formatSource, keyBy, upperFirst, wrap } from './utils'
+import { keyBy, upperFirst, wrap } from './utils'
 
 export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
 export type DSelectee = { field: string; as?: string; raw?: string }
 export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST' | 'ASC NULLS LAST' | 'DESC NULLS LAST'
 export type DOrder = { field: string; direction?: DDirection }
-export type DDatasource = { catalog: string; uri: string; alias?: string; joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' }
+export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' }
 export type DCopyTo = { uri: string; options?: Record<string, any> }
 export type Parseable = string | Function
 export const dstate = {
@@ -75,13 +75,38 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                         fn = alias
                         alias = undefined
                     }
-                    const joinOn = typeof fn === 'function' ? parse(fn) : fn
-                    return fromRes(deriveState(state, { datasources: [{ catalog: '', uri: table, alias, join: joinType, joinOn }] }))
+                    const using = typeof fn === 'string' ? fn : undefined
+                    const joinOn = typeof fn === 'function' ? parse(fn) : undefined
+                    return fromRes(deriveState(state, { datasources: [{ catalog: '', uri: table, alias, join: joinType, joinOn, using }] }))
                 }
             const _where = (operator = 'AND') =>
                 function (...conditions: Parseable[]) {
                     return fromRes(deriveState(state, { conditions: conditions.map(v => formalize(v, state.context)) }, condition => ({ condition, operator })))
                 }
+            const execute = async function (props: Record<string, any> = {}) {
+                // console.log(state)
+                const str = toSql(Object.assign(state, props))
+                for await (const dt of state.datasources) {
+                    await ddb.ensureSchema(dt.uri)
+                }
+                const resp = await ddb.query(str, props)
+                if (state.selected.length === 1) {
+                    const [{ as, raw, field }] = state.selected
+                    if (as === null && !raw && field) {
+                        return ddb.query(str, { rows: true, ...props }).then(resp => resp.map(e => e[0]))
+                    }
+                }
+                if (state.selected.length && state.selected.every((e) => typeof e.as === 'number')) {
+                    return ddb.query(str, { rows: true, ...props })
+                }
+                if (state.agg) {
+                    return resp[0]
+                }
+                if (state?.keyBy) {
+                    return keyBy(resp, state.keyBy)
+                }
+                return resp
+            }
             return {
                 ddb,
                 join: _join('JOIN'),
@@ -120,7 +145,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     if (typeof params[0] === 'string') {
                         params = [params]
                     }
-                    const nworder = (params as string[][]).map(([field, direction]) => ({ field, direction }))
+                    const nworder = (params as string[][]).map(([field, direction]) => ({ field: formalize(field) , direction }))
                     return fromRes({ ...state, orderBy: [...(state.orderBy || []), ...nworder] as DOrder[] }) // Use 'direction'
                 },
                 context: function (context: Record<string, any>) {
@@ -181,31 +206,8 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 exceptAll: (q) => fromRes({ ...state, setops: state.setops.concat({ type: 'EXCEPT ALL', value: q.toSql() }) }),
                 intersect: (q) => fromRes({ ...state, setops: state.setops.concat({ type: 'INTERSECT', value: q.toSql() }) }),
                 intersectAll: (q) => fromRes({ ...state, setops: state.setops.concat({ type: 'INTERSECT ALL', value: q.toSql() }) }),
-                execute: async function (props: Record<string, any> = {}) {
-                    const str = toSql(Object.assign(state, props))
-
-                    this.ensureSchemas()
-                    if (props?.dump || props?.pretty) {
-                        this.dump()
-                    }
-                    const resp = await ddb.query(str, props)
-                    if (state.selected.length === 1) {
-                        const [{ as, raw, field }] = state.selected
-                        if (as === null && !raw && field) {
-                            return ddb.query(str, { rows: true, ...props }).then(resp => resp.map(e => e[0]))
-                        }
-                    }
-                    if (state.selected.length && state.selected.every((e) => typeof e.as === 'number')) {
-                        return ddb.query(str, { rows: true, ...props })
-                    }
-                    if (state.agg) {
-                        return resp[0]
-                    }
-                    if (state?.keyBy) {
-                        return keyBy(resp, state.keyBy)
-                    }
-                    return resp
-                },
+                exec: execute,
+                execute,
                 toState: function () {
                     return state
                 },

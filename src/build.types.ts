@@ -15,6 +15,7 @@ export const deriveName = <T extends string>(value: T): DeriveName<T> => {
     const result = value.split('/').pop()?.split('.').shift() || value
     return result.replace(/[^a-zA-Z0-9_]/g, '') as DeriveName<T>
 }
+export type AnyString = (string | {})
 
 export type ObjectToValuesTuple<T> = T extends Record<string, any> ? Array<T[keyof T]> : never
 
@@ -63,7 +64,7 @@ export type DNestedField = t.DArrayField | t.DStructField | t.DJsonField | t.DMa
 export type GField = DPrimitiveField | DNestedField | DRawField | t.DArrayField<DNestedField | DPrimitiveField>
 
 export interface GenericRecursive<T> {
-    [key: string]: T | GenericRecursive<T> | string | number
+    [key: string]: T | GenericRecursive<T> | string | number | boolean
 }
 export type SelectModel = GenericRecursive<GField>
 export type MetaModel = GenericRecursive<GField>
@@ -111,7 +112,7 @@ export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel
 
     maxBy: this['minBy']
 
-    where(fn: (p: ToComp<Merge<A, S>>, D: t.DMetaComp) => any): MS<V, A, S, SV, SS>
+    where(fn: (p: ToComp<Merge<A, S>>, D: t.DMetaField) => any): MS<V, A, S, SV, SS>
     where(rawStr: string): MS<V, A, S, SV, SS>
 
     having: this['where']
@@ -144,11 +145,36 @@ type PrimitiveField<T> = T extends number ? t.DNumericField
     : T extends boolean ? t.DBoolField
     : t.DAnyField
 
+type Last<T extends any[]> = T extends [...infer Rest, infer L] ? L : never
 
+type KeyIntersection<A, B> = {
+    [K in keyof A & keyof B]: K
+}[keyof A & keyof B]
+
+type uuu = KeyIntersection<{ lol: 123, tata: 42 }, { tata: 42, toto: 12, lol: 'x' }>
 
 export interface FromResult<Ressource extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
-    join<K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>, A extends string>(table: K, alias: A, fn?: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>>, D: t.DMetaComp) => any): FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
-    join<K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>>(table: K, fn: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>>, D: t.DMetaComp) => any): FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
+    join
+        <
+            K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>,
+            A extends string
+        >(
+            table: K,
+            alias: A,
+            using: KeyIntersection<P, ModelForCollection<DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>>>
+        )
+        : FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
+    join
+        <
+            K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>
+        >(
+            table: K,
+            using: KeyIntersection<P, ModelForCollection<DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>>>
+        )
+        : FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
+
+    join<K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>, A extends string>(table: K, alias: A, fn: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>>, D: t.DMetaField) => any): FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
+    join<K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>>(table: K, fn: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>>, D: t.DMetaField) => any): FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
     leftJoin: this['join']
     rightJoin: this['join']
     crossJoin: this['join']
@@ -177,7 +203,7 @@ export interface FromResult<Ressource extends keyof Models, C extends StrictColl
     // F: select(e => `${e.name}__${e.total}`)
     select<U extends Primitive>(fn: (p: P, D: t.DMetaField) => U): MSS<P, {}, [], PrimitiveField<U>>
     // E: select(e => ({ name: e.name, age: e.age }))
-    select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): MSR<P, U>
+    select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): MSR<P, U extends P ? ShallowModelFromCollectionList<C> : U>
 
     // X: from('xxx').execute() === from('xxx').select().execute()
     execute(): ReturnType<Simplify<MSR<P, ShallowModelFromCollectionList<C>>>['execute']>
@@ -189,11 +215,25 @@ export type InitialMaterializedResult<C extends StrictCollection[]> = MS<'record
 
 export interface UpdateResult<T extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
     set<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): UpdateResult<T, C, P>
-    where<X>(fn: (p: ToComp<P>, D: t.DMetaComp) => X): UpdateResult<T, C, P>
+    where<X>(fn: (p: ToComp<P>, D: t.DMetaField) => X): UpdateResult<T, C, P>
     where(...callback: string[]): UpdateResult<T, C, P>
     execute(): Promise<any>
     toSql(opts?: any): string
 }
+
+async function __check(db: FromResult<'s3://a1738/akira09.db', [{ catalog: 's3://a1738/akira09.db'; uri: 'Actor'; alias: 'a' }]>) {
+
+
+    const rrr = db.join('Film_actor', 'actor_id')
+        .select('a.first_name', 'film_id')
+    // const r =
+    //     await db.select(({  cities, ...e }) => ({ ...e, continent: e.timezone.string_split('/')[1] }))
+    //         .copyTo('parts', { partition_by: 'continent', format: 'parquet' })
+    //         .execute()
+    // r.cont
+
+}
+
 
 // Define the return type for DBuilder
 type DBuilderResult<T extends keyof Models> = {
@@ -220,7 +260,7 @@ type DBuilderResult<T extends keyof Models> = {
     from<K extends keyof Models['error']>(x: K): Models['error'][K]
 
     loadExtensions(...ext: string[]): DBuilderResult<T> // Use the defined type here
-    fetchSchema(id: string): Promise<Models>
+    // fetchSchema(id: string): Promise<Models>
     describe(id: string): Promise<any>
 }
 

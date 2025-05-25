@@ -105,9 +105,10 @@ class Schemes {
                     console.log('-------------------')
                     this.content[resource][stx] = serializeDescribe(schema)
                     toUpdate = true
-                } catch (err) {
+                } catch (_err) {
+                    const err = _err as Error
                     // this.content[resource][statement.param] = {}
-                    if (err.stack.includes('@duckdb/duckdb-wasm')) {
+                    if ((err as Error)?.stack?.includes('@duckdb/duckdb-wasm')) {
                         this.content['error'][stx] = {
                             [err.message]: 'DVarchar',
                         }

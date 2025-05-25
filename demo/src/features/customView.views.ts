@@ -289,6 +289,7 @@ class CustomEditorInput extends SimpleEditorInput {
     constructor(
         resource: monaco.Uri | undefined,
         // Keep dialog service if needed elsewhere, otherwise it could be removed
+        // @ts-ignore
         @IDialogService private dialogService: IDialogService,
     ) {
         super(resource)

@@ -3,6 +3,7 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "@duckdb/node-api": "file:../duckdb-node-neo/api",
   "devDependencies": {
     "@types/bun": "^1.2.5"
   },
@@ -14,7 +15,6 @@
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.1-dev132.0",
-    // "@duckdb/node-api": "file:../duckdb-node-neo/api",
     "@duckdb/node-api": "^1.2.1-alpha.16",
     "@fmt/sql-fmt": "npm:@jsr/fmt__sql-fmt",
     "apache-arrow": "^19.0.1",

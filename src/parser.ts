@@ -53,8 +53,10 @@ function mapOperator(jsOperator: any) {
 }
 
 const joinMembers = (members: any[]) => {
-  // console.log('joinMembers', members)
-  return members.reduce((acc, member) => {
+  if (!Array.isArray(members)) {
+    return members
+  }
+  return members?.reduce?.((acc, member) => {
     if (!acc) return member
     if (typeof member === 'number') {
       return acc + '[' + member.toString().replace('.', ':') + ']'
@@ -200,7 +202,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         node.property.isProperty = true
         const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean).flatMap(x => x) as string[]
         // @ts-ignore
-        return opts.isFuncArg ? rtn : joinMembers(rtn)
+        return opts.isFuncArg && node.accessor !== '[' ? rtn : joinMembers(rtn)
       },
       Literal(node: Literal) {
         node = node as Literal
@@ -228,7 +230,9 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         }
         const calleeArr = transformNode(node.callee, { isFuncArg: true })
         const lastCallee = calleeArr[calleeArr.length - 1]
-        let args = node.arguments.map(e => transformNode(e, { isFuncArg: true }))
+        // let args = node.arguments.map(e => transformNode(e, { isFuncArg: true }))
+        let args = node.arguments.map(e => joinMembers(transformNode(e, { isFuncArg: true }) || []))
+        // console.log({ argsx })
 
         if (RegexpFuncsWthOptions.has(lastCallee)) {
           const offset = RegexpFuncsWthOptions.get(lastCallee) as number
@@ -282,7 +286,11 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
           }
           return `CAST(${args[0]} AS ${toType})`
         }
-        return `${calleeArr.join('.')}(${args.join(', ')})`
+        if (lastCallee === 'count' && node.arguments.length === 1 && node.arguments[0].type === 'Literal' && node.arguments[0]?.value === '*') {
+          args = ['*']
+        }
+        // console.log({ args })
+        return `${joinMembers(calleeArr)}(${args.join(', ')})`
       },
       UnaryExpression(node: UnaryExpression) {
         if (node.operator === '!!') {

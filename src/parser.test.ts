@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
-import { DMetaComp } from '../.buck/types'
-import jsep, { CallExpression } from './jsep'
-import { handleCallExpression, parse, parseObject, transformDuckdb } from './parser'
+import { DMetaField } from '../.buck/types'
+import jsep from './jsep'
+import { parse, parseObject } from './parser'
 
 test('should parse basic condition', () => {
   const result = parse((e, D) => e.age > 12)
@@ -46,7 +46,7 @@ test('template litteral', () => {
 })
 
 test('should parse complex condition with DuckDB function', () => {
-  const result = parse((e, D: DMetaComp) =>
+  const result = parse((e, D: DMetaField) =>
     (e.name.match_regex(/[a-z].+/) || e.age > 12)
     && D.levenshtein(e.name, 'duckdb') > 4
   )
@@ -336,6 +336,21 @@ test('should parse logical NOT', () => {
   let num = 0
   const result = parse((e, D) => (e.toto.tata.tata.tata.contain('t')))
   expect(result).toBe("toto.tata.tata.tata.contain('t')")
+})
+
+test('decimal separator', () => {
+  let num = 0
+  const result = parse(`c => c.pop> 100_001`)
+  expect(result).toBe("pop > 100001")
+})
+test('count(*)', () => {
+  const result = parse((e, D) => D.count('*'))
+  expect(result).toBe('count(*)')
+})
+test('array slicer', () => {
+  // expect(parse(e => e.arr[.1].upper())).toBe("arr[0:1].upper()")
+  // expect(parse((e, D) => D.upper(e.arr[.1]))).toBe("upper(arr[0:1])")
+  expect(parse(e => e.timezone.string_split('/')[1])).toBe("timezone.string_split('/')[1]")
 })
 
 // test('handleCallExpression', () => {

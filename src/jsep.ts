@@ -308,6 +308,7 @@ export class Jsep {
     static CCURLY_CODE: number // }
     static FSLASH_CODE: number // /
     static BSLASH_CODE: number // \
+    static USCORE_CODE: number // _
 
     static addUnaryOp(op_name: string): typeof Jsep {
         Jsep.max_unop_len = Math.max(op_name.length, Jsep.max_unop_len)
@@ -863,10 +864,15 @@ export class Jsep {
      * keep track of everything in the numeric literal and then calling `parseFloat` on that string
      */
     gobbleNumericLiteral(): Literal {
+        // console.log('gobbleNumericLiteral', this.expr)
         let number = '', ch, chCode
 
-        while (Jsep.isDecimalDigit(this.code)) {
-            number += this.expr.charAt(this.index++)
+        while (Jsep.isDecimalDigit(this.code) || this.code === Jsep.USCORE_CODE) {
+            if (this.code === Jsep.USCORE_CODE) {
+                this.index++
+            } else {
+                number += this.expr.charAt(this.index++)
+            }
         }
 
         if (this.code === Jsep.PERIOD_CODE) { // can start with a decimal marker
@@ -902,7 +908,7 @@ export class Jsep {
         if (Jsep.isIdentifierStart(chCode)) {
             this.throwError(
                 'Variable names cannot start with a number ('
-                    + number + this.char + ')',
+                + number + this.char + ')',
             )
         } else if (chCode === Jsep.PERIOD_CODE || (number.length === 1 && number.charCodeAt(0) === Jsep.PERIOD_CODE)) {
             this.throwError('Unexpected period')
@@ -1162,6 +1168,7 @@ Object.assign(Jsep, {
     CCURLY_CODE: 125, // }
     FSLASH_CODE: 47, // /
     BSLASH_CODE: 92, // \
+    USCORE_CODE: 95, // _
 
     // Operations
     // ----------
@@ -1703,7 +1710,7 @@ export const jsepTemplateLiteral: JSEPPlugin = {
 Jsep.plugins.register(ternary, arrow, object, regex, jsepSpread, jsepTemplateLiteral)
 // Backward Compatibility:
 const jsep = expr => (new Jsep(expr)).parse() as Expression
-const stdClassProps = Object.getOwnPropertyNames(class Test {})
+const stdClassProps = Object.getOwnPropertyNames(class Test { })
 Object.getOwnPropertyNames(Jsep)
     .filter(prop => !stdClassProps.includes(prop) && jsep[prop] === undefined)
     .forEach((m) => {

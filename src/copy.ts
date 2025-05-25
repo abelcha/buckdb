@@ -90,8 +90,9 @@ export interface GenericCopyOptions<A extends MetaModel = MetaModel, S extends S
     return_files?: boolean
     /** Whether or not to write partition columns into files. Only has an effect when used with partition_by. @default false */
     write_partition_columns?: boolean
+    [key: string]: any // Allow additional options for flexibility]
 }
-type ReturnValue = { execute: () => Promise<any>; show: () => any; dump: () => any; toSql: () => string }
+type ReturnValue = { execute: () => Promise<any>; show: () => any; toSql: (opts?: any) => string }
 // Renamed interface to avoid naming conflict with method
 export interface CopyToInterface<A extends MetaModel, S extends SelectModel = {}, Options extends GenericCopyOptions<A, S> = GenericCopyOptions<A, S>> {
     to:
@@ -110,9 +111,9 @@ function xcopy(
     source: { toSql: () => string },
 ) {
     return {
-        to: async (destination: string, options: Record<string, any>) => {
+        to: (destination: string, options: Record<string, any> = {}) => {
             // Get the SQL from the source
-            const sourceSql = source.toSql()
+            const sourceSql = typeof source === 'string' ? source :  source.toSql()
 
             // Build options string
             const optionsArray: string[] = []
@@ -135,7 +136,9 @@ function xcopy(
                 }
 
                 const keyUpper = key.toUpperCase()
-                if (typeof value === 'string') {
+                if (Array.isArray(value)) {
+                    optionsArray.push(`${keyUpper} (${value.map(v => `'${v}'`).join(', ')})`)
+                } else if (typeof value === 'string') {
                     // Quote string values
                     optionsArray.push(`${keyUpper} '${value}'`)
                 } else if (typeof value === 'boolean') {
@@ -151,22 +154,47 @@ function xcopy(
             // Build the COPY statement
             const optionsStr = optionsArray.length > 0 ? `(${optionsArray.join(', ')})` : ''
             const copyStatement = `COPY (${sourceSql}) TO '${destination}' ${optionsStr}`
+            return {
+                toSql: (opts?: Record<string, any>) => opts?.trim ? copyStatement.replaceAll(/(\n|\s)+/g, ' ') : copyStatement,
+                execute: async () => {
+                    console.log('Executing COPY statement:', copyStatement)
+                    // Execute the COPY statement
+                    // Access the DuckDB connection (assuming the structure)
+                    const ddb = (source as any).toState?.().ddb as DuckdbCon
+                        || (source as any).ddb as DuckdbCon // Fallback if toState doesn't exist or doesn't have ddb
 
-            // Execute the COPY statement
-            // Access the DuckDB connection (assuming the structure)
-            const ddb = (source as any).toState?.().ddb as DuckdbCon
-                || (source as any).ddb as DuckdbCon // Fallback if toState doesn't exist or doesn't have ddb
+                    if (!ddb || typeof ddb.query !== 'function') { // Check if ddb and ddb.query are valid
+                        throw new Error('Could not access DuckDB connection or query method from source')
+                    }
 
-            if (!ddb || typeof ddb.query !== 'function') { // Check if ddb and ddb.query are valid
-                throw new Error('Could not access DuckDB connection or query method from source')
+                    return await ddb.query(copyStatement) // Use query method
+                }
             }
+            // // Execute the COPY statement
+            // // Access the DuckDB connection (assuming the structure)
+            // const ddb = (source as any).toState?.().ddb as DuckdbCon
+            //     || (source as any).ddb as DuckdbCon // Fallback if toState doesn't exist or doesn't have ddb
 
-            await ddb.query(copyStatement) // Use query method
+            // if (!ddb || typeof ddb.query !== 'function') { // Check if ddb and ddb.query are valid
+            //     throw new Error('Could not access DuckDB connection or query method from source')
+            // }
+
+            // await ddb.query(copyStatement) // Use query method
         },
     }
 }
 export const copy = xcopy as unknown as typeof _copy
 
-await copy(
-    from('s3://a1738/files/macif.parquet').select()
-).to('totoqd.csv', { partition_by: 'address', format: 'arrow' })
+// await from('duckdb_functions()').select().copyTo('sdq.parquet', {
+//     // compression: 'brotli'
+// }).execute()
+// const resp = await copy(
+//     from('duckdb_functions()').select()
+// ).to('partx', {
+//     partition_by: ['function_type'],
+//     format: 'parquet',
+//     overwrite: true,
+// })
+
+// console.log(resp.toSql())
+// console.log(await resp.execute())

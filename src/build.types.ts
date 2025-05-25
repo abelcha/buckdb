@@ -2,7 +2,7 @@ import { Models } from '../.buck/table3'
 import * as t from '../.buck/types'
 import { DuckdbCon } from './bindings'
 import { DDirection } from './build'
-import { CopyTo } from './copy' // Import the generic CopyTo
+import { CopyToInterface } from './copy' // Import the interface
 import { ToPlain } from './deep-map'
 
 type StripSpecialChars<S> = S extends `${infer First}${infer Rest}` ? First extends AlphaNumeric ? `${First}${StripSpecialChars<Rest>}` : StripSpecialChars<Rest> : ''
@@ -60,13 +60,13 @@ export type DRawField = t.DAnyField
 
 export type DPrimitiveField = t.DVarcharField | t.DNumericField | t.DDateField | t.DBoolField
 export type DNestedField = t.DArrayField | t.DStructField | t.DJsonField | t.DMapField
-export type DField = DPrimitiveField | DNestedField | DRawField | t.DArrayField<DNestedField | DPrimitiveField>
+export type GField = DPrimitiveField | DNestedField | DRawField | t.DArrayField<DNestedField | DPrimitiveField>
 
 export interface GenericRecursive<T> {
     [key: string]: T | GenericRecursive<T> | string | number
 }
-export type SelectModel = GenericRecursive<DField>
-export type MetaModel = GenericRecursive<DField>
+export type SelectModel = GenericRecursive<GField>
+export type MetaModel = GenericRecursive<GField>
 
 
 type ToComp<x> = x
@@ -76,7 +76,7 @@ export type VTypes = 'single' | 'records' | 'values' | 'grouped' | 'keyed' | 'ro
 type PArray<X> = Promise<X[]>
 type PRecord<X> = Promise<Record<string, X>>
 
-type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends DField = t.DAnyField> = {
+type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends GField = t.DAnyField> = {
     single: (this: MS<'single', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToPlain<SelectedSingle>>
     values: (this: MS<'values', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToPlain<SelectedValues>>
     records: (this: MS<'records', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToPlain<Selected>>
@@ -86,9 +86,9 @@ type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, Selec
     row: (this: MS<'row', Available, Selected, SelectedValues, SelectedSingle>) => Promise<ToPlain<Selected>>
 }
 
-type MSR<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends DField = t.DAnyField> = MS<'records', A, S, SV, SS>
-type MSV<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends DField = t.DAnyField> = MS<'values', A, S, SV, SS>
-type MSS<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends DField = t.DAnyField> = MS<'single', A, S, SV, SS>
+type MSR<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'records', A, S, SV, SS>
+type MSV<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'values', A, S, SV, SS>
+type MSS<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'single', A, S, SV, SS>
 
 async function checkSelect3(db: FromResult<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'tt' }]>, D: t.DMetaField) {
     const rv = await db.select((e, D) => ({
@@ -119,9 +119,9 @@ async function checkSelect3(db: FromResult<'', [{ catalog: ''; uri: 'duckdb_func
     // const r = await db.select(e => ({ xid: e.xxx.toto.map(x => x) })).execute()
 }
 
-type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => DField) | Rest
+export type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
 
-export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends DField = t.DAnyField> {
+export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> {
     execute: FnMap<A, S, SV, SS>[V]
 
     orderBy<U_ extends ([KeyPicker<A, S>, DDirection?][])>(...key: U_): MS<V, A, S, SV, SS>
@@ -158,8 +158,8 @@ export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel
     offset: (n: number) => this
     context: (cb: Record<string, any>) => this
     sample: (n: number | `${number}%`) => this
-    toSql(): string
-    copyTo: CopyTo<A & S>['copyTo'] // Pass available fields to CopyTo
+    toSql(opts?: any): string
+    copyTo: CopyToInterface<A, S>['to'] // Pass available fields to CopyToInterface
 }
 
 export type Strish = string | {}
@@ -221,7 +221,7 @@ export interface FromResult<Ressource extends keyof Models, C extends StrictColl
     select<A__, C, D, E, F, G, H, I, J, K, _L>(fn: (p: P, D: t.DMetaField) => [A__, C, D, E, F, G, H, I, J, K, _L]): MSV<P, {}, [A__, C, D, E, F, G, H, I, J, K, _L]>
     select<A, B, C, D, E, F, G, H, I, J, K, L>(fn: (p: P, D: t.DMetaField) => [A, B, C, D, E, F, G, H, I, J, K, L]): MSV<P, {}, [A, B, C, D, E, F, G, H, I, J, K, L]>
     // Cbis: select(e => [e.name, e.age, e.total,... 421 more items])
-    select<T extends readonly DField[]>(fn: (p: P, D: t.DMetaField) => [...T]): MSV<P, {}, T>
+    select<T extends readonly GField[]>(fn: (p: P, D: t.DMetaField) => [...T]): MSV<P, {}, T>
     // D: select(e => e.age)
     select<U extends DPrimitiveField>(fn: (p: P, D: t.DMetaField) => U): MSS<P, {}, [], U>
     // F: select(e => `${e.name}__${e.total}`)
@@ -242,7 +242,7 @@ export interface UpdateResult<T extends keyof Models, C extends StrictCollection
     where<X>(fn: (p: ToComp<P>, D: t.DMetaComp) => X): UpdateResult<T, C, P>
     where(...callback: string[]): UpdateResult<T, C, P>
     execute(): Promise<any>
-    toSql(): string
+    toSql(opts?: any): string
 }
 
 // Define the return type for DBuilder
@@ -253,7 +253,7 @@ type DBuilderResult<T extends keyof Models> = {
     create(s: string, opts?: Partial<{ replace: boolean; ifNotExists: boolean }>): {
         as<U extends Record<string, any>>(...items: U[]): {
             execute(): Promise<any>
-            toSql(): string
+            toSql(opts?: any): string
         }
     }
 

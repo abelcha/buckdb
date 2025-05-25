@@ -1,4 +1,5 @@
 import { DCondition, DDatasource, DOrder, DSelectee, DState } from './build'
+import { copy } from './copy'
 import { parse } from './parser'
 import { formatSource, wrap } from './utils'
 
@@ -73,16 +74,18 @@ const serializeUpdated = (updated: DSelectee[]) => {
 function serializeSetops(setops: { type: string; value: string }[]) {
     return setops.map(e => `\n${e.type}\n${e.value}`).join('')
 }
-export function toSql(state: DState) {
+export function toSql(state: DState & { trim?: boolean }) {
+    console.log('======>', state.trim)
+    const CR = state.trim ? '' : '\n'
     if (state.action === 'update') {
         // return `UPDATE ${state.table} SET ${serializeUpdates(state.updated)} WHERE ${serializeConditions('WHERE')(state.conditions)}`
         return [
             'UPDATE',
             serializeDatasource(state.datasources),
             'SET',
-            '\n',
+            CR,
             serializeUpdated(state.updated),
-            '\n',
+            CR,
             serializeConditions('WHERE')(state.conditions),
         ].filter(Boolean).join(' ')
     }
@@ -90,14 +93,14 @@ export function toSql(state: DState) {
     const components = [
         'FROM',
         serializeDatasource(state.datasources),
-        '\n SELECT',
+        CR + ' SELECT',
         serializeTuple('DISTINCT ON')(state.distinctOn),
         newLine(serializeSelected(state.selected)),
-        '\n',
+        CR,
         serializeConditions('WHERE')(state.conditions),
         serializeTuple(' GROUP BY')(state.groupBy),
         serializeConditions('HAVING')(state.having),
-        '\n',
+        CR,
         serializeValue('USING SAMPLE')(state.sample),
         serializeOrder('ORDER BY')(state.orderBy),
         serializeValue('LIMIT')(state.limit),
@@ -107,7 +110,12 @@ export function toSql(state: DState) {
     // const add = settings ? (settings.join(';') + '\n') : ''
     const comps = components.join(' ').trim()
     if (state.copyTo.length) {
-        return state.copyTo.map(e => `COPY (\n${comps}\n) TO '${e.uri}' ${wrapIfNotEmpty(formatOptions(e.options))}`).join('\n')
+        return copy(comps).to(state.copyTo[0].uri, state.copyTo[0].options).toSql(state)
+        // console.log('copytoooooooooo')
+        return state.copyTo.map(e => `COPY (${CR}${comps}${CR}) TO '${e.uri}' ${wrapIfNotEmpty(formatOptions(e.options))}`).join(CR || ' ')
+    }
+    if (state.trim) {
+        return comps.replace(/(\s|\n)+/g, ' ').trim()
     }
     return comps
     // }

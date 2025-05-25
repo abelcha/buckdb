@@ -1,17 +1,25 @@
-// @ts-nocheck
 import * as t from './.buck/types'
 import { builder } from './src/build'
 import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './src/readers'
 export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx }
-import type { AsyncDuckDB, AsyncDuckDBConnection } from '@duckdb/duckdb-wasm'
-import * as Duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm'
+import type * as DuckdbTyped from '@duckdb/duckdb-wasm/dist/types/src/index'
+// @ts-ignore
+import * as _Duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm'
+const Duckdb = _Duckdb as typeof DuckdbTyped
 import { CommandQueue, DuckdbCon } from './src/bindings'
+import { deriveName } from './src/build.types'
+import { formatSource, isBucket } from './src/utils'
 
 class BuckDBWasm implements DuckdbCon {
     readonly type = 'wasm'
 
-    _db: AsyncDuckDB | null = null
-    _con: AsyncDuckDBConnection | null = null
+    constructor(
+        public handle?: string,
+        public settings?: Record<string, any>,
+    ) {
+    }
+    _db: DuckdbTyped.AsyncDuckDB = null
+    _con: DuckdbTyped.AsyncDuckDBConnection | null = null
     _initPromise: Promise<void> | null = null
     readonly cmdQueue = new CommandQueue()
 
@@ -26,7 +34,6 @@ class BuckDBWasm implements DuckdbCon {
 
         // Start initialization
         this._initPromise = (async () => {
-            console.log('Initializing BuckDB WASM...')
             const JSDELIVR_BUNDLES = Duckdb.getJsDelivrBundles()
             const bundle = await Duckdb.selectBundle(JSDELIVR_BUNDLES)
 
@@ -36,14 +43,15 @@ class BuckDBWasm implements DuckdbCon {
 
             const worker = new Worker(worker_url)
             const logger = new Duckdb.ConsoleLogger()
-            const db: AsyncDuckDB = new Duckdb.AsyncDuckDB(logger, worker)
+            const db = new Duckdb.AsyncDuckDB(logger, worker)
 
             await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
             URL.revokeObjectURL(worker_url)
-
+            const path = isBucket(this.handle) ? ':memory:' : (this.handle || ':memory:')
             await db.open({
-                path: ':memory:',
-                accessMode: Duckdb.DuckDBAccessMode.READONLY,
+                path,
+                useDirectIO: true,
+                // accessMode: Duckdb.DuckDBAccessMode.READ_ONLY,
                 filesystem: {
                     allowFullHTTPReads: true,
                 },
@@ -54,7 +62,6 @@ class BuckDBWasm implements DuckdbCon {
             this._con = await this._db.connect()
             // @ts-ignore
             window.db = this._con
-            console.log('BuckDB WASM Initialized and Connected.')
             // Don't clear the promise here, let it stay resolved
         })()
 
@@ -62,20 +69,17 @@ class BuckDBWasm implements DuckdbCon {
     }
 
     lazySettings(s: Partial<t.DSettings>) {
-        console.log(`Queueing settings ${s}`)
         this.cmdQueue.pushSettings(s)
         return this
     }
 
     // Make attach lazy by queueing it
-    lazyAttach(path: string, alias: string): this {
-        console.log(`Queueing attach ${path} as ${alias}...`)
-        this.cmdQueue.pushAttach(path, alias)
+    lazyAttach(uri: string, alias?: string, options?: { readonly: boolean }) {
+        // this.cmdQueue.pushAttach(uri, alias || deriveName(uri), options)
         return this
     }
 
     lazyExtensions(...extensions: string[]): this {
-        console.log('Queueing extensions to load:', extensions)
         this.cmdQueue.pushExtensions(...extensions)
         return this
     }
@@ -83,19 +87,14 @@ class BuckDBWasm implements DuckdbCon {
         // todo
     }
     async describe(uri: string) {
-        if (!uri.trim().endsWith(')')) {
-            uri = `'${uri}'`
-        }
-        return this.query(`DESCRIBE (FROM ${uri});`)
+        return this.query(`DESCRIBE (FROM ${formatSource({ uri, catalog: this.handle })});`)
     }
 
     private async _executeQueuedCommands(): Promise<void> {
         if (!this._con) throw new Error('Database connection not initialized.')
         const cmds = this.cmdQueue.flush()
         if (cmds.length > 0) {
-            console.log('Executing queued commands:', cmds)
             for await (const cmd of cmds) {
-                console.log('Running command:', cmd)
                 // Use query for setup commands like attach, extensions, settings
                 // send might be slightly more appropriate for non-select, but query works
                 await this._con.query(cmd)
@@ -108,9 +107,7 @@ class BuckDBWasm implements DuckdbCon {
         await this._executeQueuedCommands() // Ensure setup commands run first
         if (!this._con) throw new Error('Database connection not initialized.') // Should be initialized now
 
-        console.log('Executing query:', sql)
         const reader = await this._con.query(sql)
-        console.log({ reader })
         let rtn = reader.toArray().map(e => e.toJSON() as T)
 
         if (opts?.rows) {
@@ -129,7 +126,6 @@ class BuckDBWasm implements DuckdbCon {
         await this._executeQueuedCommands() // Ensure setup commands run first
         if (!this._con) throw new Error('Database connection not initialized.') // Should be initialized now
 
-        console.log('Executing run:', sql)
         await this._con.send(sql)
     }
 
@@ -141,12 +137,10 @@ class BuckDBWasm implements DuckdbCon {
         if (this._con) {
             await this._con.close()
             this._con = null
-            console.log('BuckDB WASM Connection closed.')
         }
         if (this._db) {
             await this._db.terminate()
             this._db = null
-            console.log('BuckDB WASM Terminated.')
         }
         this._initPromise = null // Reset init state
     }

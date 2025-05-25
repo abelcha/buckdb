@@ -5,10 +5,16 @@ export const wrap = (value: string, charA: string, charB = charA): string => {
     return `${charA}${value}${charB}`
 }
 
-export const formatSource = (source: string) => {
-    return source?.match(/\.(parquet|csv|jsonl?|tsv)(\W(gz|zst|xz))?$/)
-        ? wrap(source, "'")
-        : source
+export const formatSource = ({ catalog = '', uri = '' }) => {
+    if (!uri.trim().endsWith(')')) {
+        if (isBucket(catalog) && uri.match(/^\w/) && !uri.includes('://')) {
+            uri = catalog.replace(/\/*$/, '/' + uri)
+        }
+        if (uri.match(/\.\w{2,10}$/)) {
+            uri = `'${uri}'`
+        }
+    }
+    return uri
 }
 
 export const upperFirst = (str: string) => {

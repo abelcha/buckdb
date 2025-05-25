@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { CommandQueue, DuckdbCon } from './src/bindings'
 import { deriveName } from './src/build.types'
 import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
+import { formatSource, isBucket } from './src/utils'
 
 
 class JsonModelTable {
@@ -74,11 +75,12 @@ class BuckDBNode implements DuckdbCon {
     private _connection: DuckDBConnection
     private _initPromise: Promise<void> | null = null
     readonly cmdQueue = new CommandQueue()
-
+    public isBucket: boolean = false
     constructor(
         public handle?: string,
         public settings?: Partial<DSettings>,
     ) {
+        this.isBucket = !!isBucket(handle)
         this._instance = null as unknown as DuckDBInstance
         this._connection = null as unknown as DuckDBConnection
     }
@@ -93,7 +95,8 @@ class BuckDBNode implements DuckdbCon {
 
         this._initPromise = (async () => {
             const { DuckDBInstance } = await import('@duckdb/node-api')
-            this._instance = await DuckDBInstance.create(this.handle || ':memory:', (this.settings || {}) as any)
+            const han = this.isBucket ? ':memory:' : (this.handle || ':memory:')
+            this._instance = await DuckDBInstance.create(han, (this.settings || {}) as any)
             this._connection = await this._instance.connect()
         })()
 
@@ -114,10 +117,7 @@ class BuckDBNode implements DuckdbCon {
     }
 
     async describe(uri: string) {
-        if (!uri.trim().endsWith(')')) {
-            uri = `'${uri}'`
-        }
-        return this.query(`DESCRIBE FROM ${uri};`)
+        return this.query(`DESCRIBE FROM ${formatSource({ catalog: this.handle, uri })};`)
     }
 
     async ensureSchema(uri: string) {

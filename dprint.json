@@ -1,10 +1,11 @@
 {
   "lineWidth": 1248,
   "typescript": {
-    "quoteStyle": "preferSingle",
-    "semiColons": "asi",
-    "useTabs": false,
-    "indentWidth": 4
+    //"quoteStyle": "preferSingle",
+   //remote "semiColons": "asi",
+   // "useTabs": true,
+    
+//    "indentWidth": 2
   },
   "json": {
   },

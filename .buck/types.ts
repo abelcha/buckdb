@@ -1840,6 +1840,225 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
 }
 
+export interface DMacroAG<DNum, DStr> {
+  /**                                                            @example: list_aggr(l, 'approx_count_distinct')	@default: list_approx_count_distinct(l:ANY[]) -> BIGINT*/
+  list_approx_count_distinct(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'mad')	@default: list_mad(l:ANY[]) -> INTERVAL*/
+  list_mad(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'avg')	@default: list_avg(l:ANY[]) -> DOUBLE*/
+  list_avg(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'max')	@default: list_max(l:ANY[]) -> ANY*/
+  list_max(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'min')	@default: list_min(l:ANY[]) -> ANY*/
+  list_min(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'sem')	@default: list_sem(l:ANY[]) -> DOUBLE*/
+  list_sem(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'sum')	@default: list_sum(l:ANY[]) -> DOUBLE*/
+  list_sum(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'last')	@default: list_last(l:ANY[]) -> ANY*/
+  list_last(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'mode')	@default: list_mode(l:ANY[]) -> ANY*/
+  list_mode(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'first')	@default: list_first(l:ANY[]) -> ANY*/
+  list_first(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'count')	@default: list_count(l:ANY[]) -> BIGINT*/
+  list_count(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'median')	@default: list_median(l:ANY[]) -> ANY*/
+  list_median(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'bit_or')	@default: list_bit_or(l:ANY[]) -> BIT*/
+  list_bit_or(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'bit_and')	@default: list_bit_and(l:ANY[]) -> BIT*/
+  list_bit_and(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'bool_or')	@default: list_bool_or(l:ANY[]) -> BOOLEAN*/
+  list_bool_or(l: DArrayable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'bit_xor')	@default: list_bit_xor(l:ANY[]) -> BIT*/
+  list_bit_xor(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'var_pop')	@default: list_var_pop(l:ANY[]) -> DOUBLE*/
+  list_var_pop(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'entropy')	@default: list_entropy(l:ANY[]) -> DOUBLE*/
+  list_entropy(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'product')	@default: list_product(l:ANY[]) -> DOUBLE*/
+  list_product(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'bool_and')	@default: list_bool_and(l:ANY[]) -> BOOLEAN*/
+  list_bool_and(l: DArrayable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'var_samp')	@default: list_var_samp(l:ANY[]) -> DOUBLE*/
+  list_var_samp(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'skewness')	@default: list_skewness(l:ANY[]) -> DOUBLE*/
+  list_skewness(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'kurtosis')	@default: list_kurtosis(l:ANY[]) -> DOUBLE*/
+  list_kurtosis(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(CAST(arr AS VARCHAR[]), 'string_agg', sep)	@default: array_to_string(arr:ANY[], sep:) -> null*/
+  array_to_string(arr: DArrayable, sep: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'any_value')	@default: list_any_value(l:ANY[]) -> ANY*/
+  list_any_value(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'histogram')	@default: list_histogram(l:ANY[]) -> null*/
+  list_histogram(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'stddev_pop')	@default: list_stddev_pop(l:ANY[]) -> DOUBLE*/
+  list_stddev_pop(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'string_agg')	@default: list_string_agg(l:ANY[]) -> VARCHAR*/
+  list_string_agg(l: DArrayable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'stddev_samp')	@default: list_stddev_samp(l:ANY[]) -> DOUBLE*/
+  list_stddev_samp(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(CAST(arr AS VARCHAR[]), 'string_agg', sep)	@default: array_to_string_comma_default(arr:ANY[], sep:) -> null*/
+  array_to_string_comma_default(arr: DArrayable, sep: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_aggr(l, 'kurtosis_pop')	@default: list_kurtosis_pop(l:ANY[]) -> DOUBLE*/
+  list_kurtosis_pop(l: DArrayable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+}
+
+export interface DMacro<DNum, DStr> {
+  /**                                                            @example: round_even(x, n)	@default: roundbankers(x:, n:) -> null*/
+  roundbankers(x: DAnyable, n: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: current_user*/
+  user(): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_concat(l, list_value(e))	@default: list_append(l:ANY[], e:) -> null*/
+  list_append(l: DArrayable, e: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: unnest(string_split_regex("text", pattern))	@default: regexp_split_to_table(text:, pattern:) -> null*/
+  regexp_split_to_table(text: DAnyable, pattern: DAnyable | RegExp): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: weighted_avg("value", weight)	@default: wavg(value:, weight:) -> null*/
+  wavg(value: DAnyable, weight: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_concat(list_value(e), l)	@default: list_prepend(e:, l:ANY[]) -> null*/
+  list_prepend(e: DAnyable, l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: 'duckdb'*/
+  current_role(): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: 'duckdb'*/
+  current_user(): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: 'duckdb'*/
+  session_user(): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: json_extract(x, '$')	@default: json(x:) -> null*/
+  json(x: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: CAST(x AS STRUCT(path VARCHAR, "type" VARCHAR, filters_before VARCHAR[], filters_after VARCHAR[], files_before BIGINT, files_after BIGINT))	@default: parse_delta_filter_logline(x:) -> null*/
+  parse_delta_filter_logline(x: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: main.current_database()*/
+  current_catalog(): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: exp(avg(ln(x)))	@default: geomean(x:) -> null*/
+  geomean(x: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: CAST((('{' || string_agg(((to_json(CAST(n AS VARCHAR)) || ':') || CASE  WHEN ((v IS NULL)) THEN (CAST('null' AS "JSON")) ELSE to_json(v) END), ',')) || '}') AS "JSON")	@default: json_group_object(n:, v:) -> null*/
+  json_group_object(n: DAnyable, v: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_append(arr, el)	@default: array_append(arr:ANY[], el:) -> null*/
+  array_append(arr: DArrayable, el: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_prepend(el, arr)	@default: array_prepend(el:, arr:ANY[]) -> null*/
+  array_prepend(el: DAnyable, arr: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: (date + "interval")	@default: date_add(date:, interval:) -> null*/
+  date_add(date: DAnyable, interval: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_concat(arr, list_value(e))	@default: array_push_back(arr:ANY[], e:) -> null*/
+  array_push_back(arr: DArrayable, e: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_filter(list_distinct(l1), (variable_intersect -> list_contains(l2, variable_intersect)))	@default: list_intersect(l1:ANY[], l2:ANY[]) -> null*/
+  list_intersect(l1: DArrayable, l2: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: CASE  WHEN (((string IS NOT NULL) AND ("delimiter" IS NOT NULL) AND ("position" IS NOT NULL))) THEN (COALESCE(string_split(string, "delimiter")["position"], '')) ELSE NULL END	@default: split_part(string:, delimiter:, position:) -> null*/
+  split_part(string: DAnyable, delimiter: DAnyable, position: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_intersect(l1, l2)	@default: array_intersect(l1:ANY[], l2:ANY[]) -> null*/
+  array_intersect(l1: DArrayable, l2: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_concat(list_value(e), arr)	@default: array_push_front(arr:ANY[], e:) -> null*/
+  array_push_front(arr: DArrayable, e: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: l[:-:-1]	@default: list_reverse(l:ANY[]) -> null*/
+  list_reverse(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: geomean(x)	@default: geometric_mean(x:) -> null*/
+  geometric_mean(x: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: list_reverse(l)	@default: array_reverse(l:ANY[]) -> null*/
+  array_reverse(l: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: floor((x / y))	@default: fdiv(x:, y:) -> null*/
+  fdiv(x: DAnyable, y: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: (x - (y * floor((x / y))))	@default: fmod(x:, y:) -> null*/
+  fmod(x: DAnyable, y: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: (sum(("value" * weight)) / sum(CASE  WHEN (("value" IS NOT NULL)) THEN (weight) ELSE 0 END))	@default: weighted_avg(value:, weight:) -> null*/
+  weighted_avg(value: DAnyable, weight: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: CAST((('[' || string_agg(CASE  WHEN ((x IS NULL)) THEN (CAST('null' AS "JSON")) ELSE to_json(x) END, ',')) || ']') AS "JSON")	@default: json_group_array(x:) -> null*/
+  json_group_array(x: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: CASE  WHEN ((a = b)) THEN (NULL) ELSE a END	@default: nullif(a:, b:) -> null*/
+  nullif(a: DAnyable, b: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: arr[:(len(arr) - 1)]	@default: array_pop_back(arr:ANY[]) -> null*/
+  array_pop_back(arr: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: (SELECT block_size FROM pragma_database_size() WHERE (database_name = db_name))	@default: get_block_size(dbName:) -> null*/
+  get_block_size(dbName: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: arr[2:]	@default: array_pop_front(arr:ANY[]) -> null*/
+  array_pop_front(arr: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: contains(map_values("map"), "value")	@default: map_contains_value(map:, value:) -> null*/
+  map_contains_value(map: DAnyable, value: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: CAST(CAST(CAST(CAST(md5_number(param) AS BIT) AS VARCHAR)[:64] AS BIT) AS UBIGINT)	@default: md5_number_lower(param:) -> null*/
+  md5_number_lower(param: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: CAST(CAST(CAST(CAST(md5_number(param) AS BIT) AS VARCHAR)[65:] AS BIT) AS UBIGINT)	@default: md5_number_upper(param:) -> null*/
+  md5_number_upper(param: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: (json_structure(json_group_array(x)) -> 0)	@default: json_group_structure(x:) -> null*/
+  json_group_structure(x: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: CASE  WHEN ((((abs(x) * power(10, (n + 1))) % 10) = 5)) THEN ((round((x / 2), n) * 2)) ELSE round(x, n) END	@default: round_even(x:, n:) -> null*/
+  round_even(x: DAnyable, n: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: unnest(generate_series(1, array_length(arr, dim)))	@default: generate_subscripts(arr:ANY[], dim:) -> null*/
+  generate_subscripts(arr: DArrayable, dim: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: contains(map_entries("map"), main.struct_pack("key" := "key", "value" := "value"))	@default: map_contains_entry(map:, key:, value:) -> null*/
+  map_contains_entry(map: DAnyable, key: DAnyable, value: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+}
+
 export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Convert string to lower case	@example: lower('Hello')	@default: lcase(string:VARCHAR) -> VARCHAR*/
   lcase(string: DVarcharable): DStr;

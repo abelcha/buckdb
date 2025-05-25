@@ -1,4 +1,4 @@
-import { FromPlain, ToPlain } from '../src/deep-map'
+import { FromPlain } from '../src/deep-map'
 export const version = 'V2'
 export type DBOOLEAN_NATIVE = 'Bool' | 'Boolean' | 'Logical'
 export type DCOMPOSITE_NATIVE = 'List' | 'Map' | 'Row' | 'Struct' | 'Union'
@@ -6,6 +6,7 @@ export type DDATETIME_NATIVE = 'Date' | 'Datetime' | 'Interval' | 'Time' | 'Time
 export type DNUMERIC_NATIVE = 'Bigint' | 'Dec' | 'Decimal' | 'Double' | 'Float' | 'Float4' | 'Float8' | 'Hugeint' | 'Int' | 'Int1' | 'Int128' | 'Int16' | 'Int2' | 'Int32' | 'Int4' | 'Int64' | 'Int8' | 'Integer' | 'Integral' | 'Long' | 'Numeric' | 'Oid' | 'Real' | 'Short' | 'Signed' | 'Smallint' | 'Tinyint' | 'Ubigint' | 'Uhugeint' | 'Uint128' | 'Uint16' | 'Uint32' | 'Uint64' | 'Uint8' | 'Uinteger' | 'Usmallint' | 'Utinyint'
 export type DSTRING_NATIVE = 'Bpchar' | 'Char' | 'Nvarchar' | 'String' | 'Text' | 'Varchar' | 'JSON'
 export type DANY_NATIVE = 'Binary' | 'Bit' | 'Bitstring' | 'Blob' | 'Bytea' | 'Enum' | 'Guid' | 'Null' | 'Uuid' | 'Varbinary' | 'Varint'
+export type DALL_NATIVE = DBOOLEAN_NATIVE | DCOMPOSITE_NATIVE | DDATETIME_NATIVE | DNUMERIC_NATIVE | DSTRING_NATIVE | DANY_NATIVE
 export type DAnyable = any | DAnyField
 export type DVarcharable = string | DVarcharField
 export type RegExpable = RegExp | string
@@ -128,6 +129,22 @@ export interface DAggregate<DNum, DStr> {
     })}*/
 }
 
+export interface DMacroAG<DNum, DStr> {
+    /*{renderMacros({
+        match: (e) => e.macro_definition.startsWith('list_aggr'),
+        typeMap: { numeric: 'DNum', varchar: 'DStr' },
+        slice: 0,
+    })}*/
+}
+
+export interface DMacro<DNum, DStr> {
+    /*{renderMacros({
+        match: (e) =>  !e.macro_definition.startsWith('list_aggr'),
+        typeMap: { numeric: 'DNum', varchar: 'DStr' },
+        slice: 0,
+    })}*/
+}
+
 export interface DGlobal<DNum, DStr> {
     /*{renderMethods({
         match: (e) => e.function_type === 'scalar',
@@ -142,19 +159,22 @@ export interface DGlobal<DNum, DStr> {
 }
 
 export type DGlobalField = DGlobal<DNumericField, DVarcharField>
-export type DGlobalComp = DGlobal<DNumericComp, DVarcharComp>
+// export type DGlobalComp = DGlobal<DNumericComp, DVarcharComp>
 
 export type DAggregateField = DAggregate<DNumericField, DVarcharField>
-export type DAggregateComp = DAggregate<DNumericComp, DVarcharComp>
+// export type DAggregateComp = DAggregate<DNumericComp, DVarcharComp>
 
 export type DCastorsField = DCastors<DNumericField, DVarcharField>
-export type DCastorsComp = DCastors<DNumericComp, DVarcharComp>
+// export type DCastorsComp = DCastors<DNumericComp, DVarcharComp>
 
 export type DConstructorsField = DConstructors<DNumericField, DVarcharField>
-export type DConstructorsComp = DConstructors<DNumericComp, DVarcharComp>
+// export type DConstructorsComp = DConstructors<DNumericComp, DVarcharComp>
 
-export type DMetaField = DGlobalField & DAggregateField & DConstructorsField & DGlobalPatternMatchers & DCastorsField
-export type DMetaComp = DGlobalComp & DAggregateComp & DConstructorsComp & DGlobalPatternMatchers & DCastorsComp
+export type DMacroAGField = DMacroAG<DNumericField, DVarcharField>
+export type DMacroField = DMacro<DNumericField, DVarcharField>
+
+export type DMetaField = DGlobalField & DAggregateField & DConstructorsField & DGlobalPatternMatchers & DCastorsField & DMacroField & DMacroAGField
+// export type DMetaComp = DGlobalComp & DAggregateComp & DConstructorsComp & DGlobalPatternMatchers & DCastorsComp
 
 export interface DConstructors<DNum, DStr> {
     /**@example: Array(val)      @external: Array(val:OTHER) -> ARRAY*/
@@ -162,7 +182,7 @@ export interface DConstructors<DNum, DStr> {
     /**@example: Json(val)       @external: Json(val:OTHER) -> JSON*/
     Json(val: any): DJsonField
     /**@example: List(val)       @external: List(val:OTHER) -> LIST*/
-    Struct<T extends {}>(val: DStructField<T> |  T): DStructField<FromPlain<T>>
+    Struct<T extends {}>(val: DStructField<T> | T): DStructField<FromPlain<T>>
     /**@example: Time(val)       @external: Time(val:OTHER) -> TIME*/
     List: this['Array']
     /**@example: Map(val)        @external: Map(val:OTHER) -> MAP*/
@@ -228,11 +248,11 @@ export interface DConstructors<DNum, DStr> {
 }
 
 export interface DCastors<DNum, DStr> {
-    cast(val: DBoolable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField
+    cast(val: DAnyable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField
     cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField
-    cast(val: DDateable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField
-    cast(val: DNumericable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNum
-    cast(val: DVarcharable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DStr
+    cast(val: DAnyable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField
+    cast(val: DAnyable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNum
+    cast(val: DAnyable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DStr
     cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField
 }
 

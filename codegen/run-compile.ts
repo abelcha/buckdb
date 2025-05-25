@@ -3,7 +3,7 @@ import * as _ from './template.ts'
 import { camelCase, groupBy, maxBy, range, sortBy, uniq, uniqBy } from 'es-toolkit'
 import { Buck } from '../buckdb.ts'
 import { mapTypes, mapTypesProps } from '../src/typedef.ts'
-import { wrap } from '../src/utils.ts'
+import { wrap, Ω } from '../src/utils.ts'
 
 const getCommunityExtensions = () => {
     return fetch('https://api.github.com/repos/duckdb/community-extensions/contents/extensions')
@@ -15,8 +15,7 @@ const community_extensions = [] // await getCommunityExtensions()
 global.duckdb_extensions = await Buck().from('duckdb_extensions()').select(e => e.extension_name).execute()
 const allextensions = ['arrow', 'aws', 'azure', 'delta', 'excel', 'fts', 'h3', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui']
 
-const instance = Buck('')
-    .loadExtensions(...uniq(allextensions))
+const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')
 const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number', 'length-ANY[]-number', 'substr-VARCHAR-string']
 const entriesSorted = <T>(items: Record<string, T>) => {
@@ -24,7 +23,7 @@ const entriesSorted = <T>(items: Record<string, T>) => {
 }
 async function getMergedResults() {
     const query = instance.from('duckdb_functions()')
-        .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters')
+        .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters', 'schema_name', 'macro_definition')
         .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
         .orderBy('function_name')
     let results = await query.execute()
@@ -57,18 +56,17 @@ async function getMergedResults() {
                 return { pname, ptypes, dtypes, required }
             })
             const return_type = maxParams.function_name === 'concat' ? 'VARCHAR' : maxParams.return_type
-            // console.log(maxParams.function_name, '========<,', mapTypesProps(return_type, true))
             const output = !return_type ? 'void' : mapTypesProps(return_type, true).field
             return { ...maxParams, return_type, args, output }
         })
 }
 const _fns = await getMergedResults()
+
 global.fns = _fns
 global.comptypes = { 'numeric': 'number & _DNumericComp', 'varchar': 'string & _DVarcharComp', 'any': 'DAnyComp' }
 global.gentypes = { 'numeric': 'DNum', 'varchar': 'DStr', 'any': 'DAny<DNum,DStr>' }
 type IFns = typeof _fns[number]
-const content = await Bun.file('codegen/template.ts').text()
-const body = content.split('/*{').join('${').split('}*/').join('}').replaceAll(/`/g, '\`')
+
 
 const buildJSDoc = (row: IFns) => {
     const items: string[] = []
@@ -78,17 +76,21 @@ const buildJSDoc = (row: IFns) => {
     if (row.examples?.length) {
         items.push('@example: ' + row.examples)
     }
+    if (row.macro_definition) {
+        items.push('@example: ' + row.macro_definition)
+    }
     if (row.args?.length) {
         items.push('@default: ' + `${row.function_name}(${row.args.map(x => x.pname + ':' + x.ptypes.toSorted().join(' | ')).join(', ')}) -> ${row.return_type}`)
     }
     if (items.length) {
-        return wrap(items.join('\t'), '/**' + ' '.repeat(60), '*/\n')
+        return wrap(items.join('\t'), '  /**' + ' '.repeat(60), '*/\n')
     }
     return ''
 }
 const genArgs = (args: IFns['args'], varargs: string) => {
     return args.map(x => {
         const types = uniq(x.ptypes.map((e) => mapTypesProps(e, true).able))
+        // console.log({ zzz: x, types })
         if (['pattern', 'regex'].includes(x.pname)) {
             types.push('RegExp')
         }
@@ -100,16 +102,15 @@ const genArgs = (args: IFns['args'], varargs: string) => {
 
 global.fns = _fns
 global.renderMethod = (e: IFns, typeMap = {}, slice = 1, hidden = false) => {
-    // console.log(e.return_type, mapTypesProps(e.return_type, true).id)
     const r = mapTypesProps(e.return_type, true)
-    const rtn = `${buildJSDoc(e)} ${hidden ? '//' : ''} ${e.function_name} (${genArgs(e.args.slice(slice), e.varargs)}): ${typeMap[r.id] || r.field}`
+    const rtn = `${buildJSDoc(e)} ${hidden ? '//' : ''} ${e.function_name}(${genArgs(e.args.slice(slice), e.varargs)}): ${typeMap[r.id] || r.field}`
     return rtn
 }
 
 const banMethods = (e: IFns, type: string) => {
     return e.function_name.startsWith('h3')
-        || e.return_type.startsWith('INTERVAL')
-        || (type !== 'DDate' && e.return_type.match(/^(DATE|TIME)/))
+        || e.return_type?.startsWith('INTERVAL')
+        || (type !== 'DDate' && e.return_type?.match(/^(DATE|TIME)/))
         || (type !== 'DJson' && e.function_name.startsWith('json'))
 }
 let total = 0
@@ -122,17 +123,16 @@ const getFuncId = (z: IFns) => {
 global.duckdb_settings = await instance.from('duckdb_settings()').execute()
 
 global.generateSettings = () => {
-    // const exts = await instance.from('duckdb_extensions()').select('extension_name', 'description', 'installed_from').execute()
     return global.duckdb_settings.map(e => buildJSDoc(e) + `  ${e.name}: ${mapTypesProps(e.input_type).rawType},`).join('\n')
 }
 
-global.renderMethods = (opts: { type: string; match: () => boolean; typeMap: Record<string, any>; slice: number; override: string[] }) => {
-    const override = opts.override || []
-    // console.log()
+type Opts = { type: string; match: () => boolean; typeMap: Record<string, any>; slice: number; override: string[] }
+
+const getFunctions = (xfns: IFns[], opts: Opts) => {
     const funcs = uniqBy(
         typeof opts.match === 'function'
-            ? _fns.filter(opts.match)
-            : _fns.filter(e => e.function_type === 'scalar' && e.args[0]?.dtypes.includes(opts.type as any) && !banMethods(e, opts.type)),
+            ? xfns.filter(opts.match)
+            : xfns.filter(e => e.function_type in Ω('scalar', 'macro') && e.args[0]?.dtypes.includes(opts.type as any) && !banMethods(e, opts.type)),
         e => e.function_name + genArgs(e.args, e.varargs),
     )
     // .filter(z => JSON.stringify(z).match(/\b(array|any)\b/img))
@@ -140,8 +140,12 @@ global.renderMethods = (opts: { type: string; match: () => boolean; typeMap: Rec
         const id = values.map(getFuncId).toSorted().join('/')
         return { signatures: values, id }
     })
+    return Object.entries(groupBy(namegp, e => e.id))
+}
 
-    const gpx = Object.entries(groupBy(namegp, e => e.id))
+const formatFunctions = (p: ReturnType<typeof getFunctions>, opts: Opts) => {
+    const override = opts.override || []
+    const gpx = p
         .flatMap(([key, values]) => {
             const [fst, ...rest] = sortBy(values, [e => -e.signatures[0].function_name.length])
             const fsig = fst.signatures[0]
@@ -150,21 +154,60 @@ global.renderMethods = (opts: { type: string; match: () => boolean; typeMap: Rec
                 .concat(
                     rest.map(e => e.signatures[0]).map(e => `${buildJSDoc(e)} ${e.function_name}: this['${fsig.function_name}'];`),
                 )
-                .concat(`/* ${char.repeat(60 / char.length)}[${opts.type || 'Global'}] ${char.repeat(15 / char.length)} */`)
+                .concat(`  /* ${char.repeat(60 / char.length)}[${opts.type || 'Global'}] ${char.repeat(15 / char.length)} */`)
         })
     return gpx.join('\n')
 }
-const nwContent = eval(' `' + body + '`')
 
-const nwContentFmt = await Bun.$`cat < ${new Response(nwContent)} | dprint fmt --stdin types.ts `.text()
+global.renderMethods = (opts: Opts) => {
+    return formatFunctions(getFunctions(_fns.filter(e => e.function_type !== 'macro'), opts), opts)
+}
+
+global.renderMacros = (opts: Opts) => {
+    const macros = _fns.filter(e => e.function_type === 'macro' && e.schema_name === 'main')
+        .map(fn => {
+            // for (const i)
+            for (const i in fn.parameters) {
+                const item = fn.parameters[i]
+                if (item.match(/^(l|l\d|arr)$/)) {
+                    fn.parameter_types[i] = 'ANY[]'
+                    fn.args[i].ptypes = ['ANY[]']
+                    fn.args[i].dtypes = ['DArray']
+                }
+                const im = fn.macro_definition.match(/list_aggr\(\w+, '(\w+)'\)/)?.[1]
+                const rt = im && _fns.find(e => e.function_name === im)?.return_type
+                if (rt) {
+                    fn.return_type = rt
+                    fn.output = mapTypesProps(rt, true).field
+                }
+            }
+            return fn
+        })
+    return formatFunctions(getFunctions(macros, opts), opts)
+}
+
+const rrr = global.renderMacros({ match: e => true })
+// console.log(rrr)
+async function main() {
+    const content = await Bun.file('codegen/template.ts').text()
+    const body = content.split('/*{').join('${').split('}*/').join('}').replaceAll(/`/g, '\`')
+    const nwContent = eval(' `' + body + '`')
+
+    const nwContentFmt = await Bun.$`cat < ${new Response(nwContent)} | dprint fmt --stdin types.ts `.text()
+    const oldContent = await Bun.file('.buck/types.ts').text()
+
+    if (oldContent !== nwContentFmt) {
+        console.log('Generating .buck/types.ts')
+        await Bun.write('.buck/types.ts', nwContentFmt)
+        console.log(_ && new Date().toISOString(), 'Generated .buck/types.ts')
+    } else {
+        console.log(new Date().toISOString(), 'No changes in .buck/types.ts')
+    }
+}
+
+await main()
+
 // console.log({resp})
 
-const oldContent = await Bun.file('.buck/types.ts').text()
-
-if (oldContent !== nwContentFmt) {
-    console.log('Generating .buck/types.ts')
-    await Bun.write('.buck/types.ts', nwContent)
-    console.log(_ && new Date().toISOString(), 'Generated .buck/types.ts')
-} else {
-    console.log(new Date().toISOString(), 'No changes in .buck/types.ts')
-}
+// console.log({ xxx })
+// console.log('--------------')

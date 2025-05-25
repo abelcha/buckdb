@@ -253,7 +253,7 @@ export interface DPatternMatchers {
     /**@example: Like(val, matcher)      @external: Like(val:VARCHAR, matcher:ANY) -> BOOLEAN*/
     Like(matcher: DAnyable): DBoolField
     /**@example: IsNull(val)     @external: IsNull(val:ANY) -> BOOLEAN*/
-    IsNull(val: DAnyable): DBoolField
+    IsNull(): DBoolField
     /**@example: Between(val, col1, col2)        @external: Between(val:INT, col1:INT, col2:INT) -> BOOLEAN*/
     Between(col1: DNumericable, col2: DNumericable): DBoolField
     /**@example: NotBetween(val, col1, col2)     @external: NotBetween(val:INT, col1:INT, col2:INT) -> BOOLEAN*/
@@ -272,7 +272,7 @@ export interface DGlobalPatternMatchers {
     /**@example: Like(val, matcher)      @external: Like(val:VARCHAR, matcher:ANY) -> BOOLEAN*/
     Like(item: DAnyable, matcher: DAnyable): DBoolField
     /**@example: IsNull(val)     @external: IsNull(val:ANY) -> BOOLEAN*/
-    IsNull(item: DAnyable, val: DAnyable): DBoolField
+    IsNull(item: DAnyable): DBoolField
     /**@example: Between(val, col1, col2)        @external: Between(val:INT, col1:INT, col2:INT) -> BOOLEAN*/
     Between(item: DAnyable, col1: DNumericable, col2: DNumericable): DBoolField
     /**@example: NotBetween(val, col1, col2)     @external: NotBetween(val:INT, col1:INT, col2:INT) -> BOOLEAN*/

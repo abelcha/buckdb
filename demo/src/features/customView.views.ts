@@ -5,6 +5,7 @@ import { colorSchemeDark } from 'ag-grid-community'
 import * as monaco from 'monaco-editor'
 const theme = themeBalham.withPart(colorSchemeDark)
 import { ClientSideRowModelModule, ColDef, createGrid, GridOptions, ModuleRegistry, NumberFilterModule, TextFilterModule, TooltipModule, ValidationModule } from 'ag-grid-community'
+import { highlightErrorMessage } from './errorHighlighter'
 // Register required modules
 ModuleRegistry.registerModules([
     ClientSideRowModelModule,
@@ -95,7 +96,10 @@ registerCustomView({
 
         // Function to create and update the grid
         const setupGrid = () => {
-            const globalData = window.globalData ?? [] // Default to empty array if undefined
+            let globalData = window.globalData ?? [] // Default to empty array if undefined
+            if (typeof globalData[0] !== 'object') {
+                globalData = globalData.map((item) => [item])
+            }
             const schema = (globalData as any).schema // Assuming schema is attached to globalData
 
             // Generate column definitions
@@ -149,12 +153,29 @@ registerCustomView({
             // const hr = !globalData?.schema ? [] : [Object.fromEntries(globalData?.schema.map(e => [e.column_name, e.column_type]))]
             // console.log({ hr })
             // Grid options with more explicit configuration
+            // Grid options with more explicit configuration
+
+            // Compute highlighted error HTML for overlay
+            const errorText = window.globalError?.stack || window.globalError?.message || 'No data available'
+            const highlightedErrorHtml = `
+                <div class="highlight" style="
+                    padding: 20px;
+                    color: #888;
+                    font-size: 1.2em;
+                    text-align: left;
+                ">
+                    <div style="
+                        margin: 0;
+                        white-space: pre-wrap;
+                        word-break: break-word;
+                    ">${highlightErrorMessage(errorText)}</div>
+                </div>
+            `
+
             const gridOptions: GridOptions = {
                 theme,
-                columnDefs: columnDefs,
+                columnDefs,
                 rowData: globalData,
-                // pinned 2 first rows:
-
                 defaultColDef: {
                     flex: 1,
                     minWidth: 100,
@@ -163,13 +184,9 @@ registerCustomView({
                 },
                 suppressScrollOnNewData: true,
                 animateRows: true,
-                // rowHeight: 40,
-                headerHeight: 38, // Increased to accommodate the multi-line header
-                overlayNoRowsTemplate: `<div style="padding: 20px; color: #888; font-size: 1.8em; text-align: center;">
-          ${window.globalError || 'No data available'}
-        </div>`,
-            }
-
+                headerHeight: 38, // accommodate multi-line headers
+                overlayNoRowsTemplate: highlightedErrorHtml,
+            };
             // Create new grid or destroy and recreate if it exists
             if (gridApi) {
                 gridApi.destroy()

@@ -131,4 +131,12 @@ export function toSql(state: DState & { trim?: boolean }) {
     // }
 }
 
+export const dump = (state: DState, opts?: { state?: boolean }) => {
+    console.log(toSql(state))
+    if (opts?.state) {
+        console.log(state)
+    }
+    return false
+}
+
 export const formalize = (e: string | Function, context = {}) => typeof e === 'function' ? parse(e, context) : e

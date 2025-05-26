@@ -1,13 +1,13 @@
 import * as t from '../.buck/types'
 import { DuckdbCon } from './bindings'
 import { DBuilder, deriveName } from './build.types'
-import { formalize, toSql } from './formalise'
+import { dump, formalize, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
 import { keyBy, upperFirst, wrap } from './utils'
 
 export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
-export type DSelectee = { field: string; as?: string; raw?: string }
+export type DSelectee = { field: string; as?: string | number; raw?: string }
 export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST' | 'ASC NULLS LAST' | 'DESC NULLS LAST'
 export type DOrder = { field: string; direction?: DDirection }
 export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' | 'INNER JOIN' }
@@ -85,11 +85,11 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 }
             const execute = async function (props: Record<string, any> = {}) {
                 // console.log(state)
+                const formatAGG = (e: Promise<any>) => state.agg ? e.then(resp => resp[0]) : e
                 const str = toSql(Object.assign(state, props))
                 for await (const dt of state.datasources) {
                     await ddb.ensureSchema(dt.uri)
                 }
-                const resp = await ddb.query(str, props)
                 if (state.selected.length === 1) {
                     const [{ as, raw, field }] = state.selected
                     if (as === null && !raw && field) {
@@ -97,15 +97,12 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     }
                 }
                 if (state.selected.length && state.selected.every((e) => typeof e.as === 'number')) {
-                    return ddb.query(str, { rows: true, ...props })
-                }
-                if (state.agg) {
-                    return resp[0]
+                    return formatAGG(ddb.query(str, { rows: true, ...props }))
                 }
                 if (state?.keyBy) {
-                    return keyBy(resp, state.keyBy)
+                    return ddb.query(str, props).then(resp => keyBy(resp, state.keyBy))
                 }
-                return resp
+                return formatAGG(ddb.query(str, props))
             }
             return {
                 ddb,
@@ -120,8 +117,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                         if (typeof k === 'function') {
                             const parsed = parseObject(k, state.context)
                             return parsed.map(([value, key, raw]) => ({ field: key, as: value, raw })) as DSelectee[]
-                        }
-                        return { field: k }
+                        } else return { field: k }
                     })
                     return fromRes({ ...state, updated })
                 },
@@ -143,7 +139,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 and: _where('AND'),
                 // Updated orderBy: Accepts single Parseable field, uses 'direction'
                 orderBy: function (...params: any[]) {
-                    if (typeof params[0] === 'string') {
+                    if (params.length <= 2 && params.every(p => !Array.isArray(p))) {
                         params = [params]
                     }
                     const nworder = (params as string[][]).map(([field, direction]) => ({ field: formalize(field), direction }))
@@ -172,12 +168,12 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 countBy: function (gp: Parseable) {
                     const countBy = formalize(gp, state.context)
                     if (!state.selected.find(e => e.field === countBy)) {
-                        state.selected.push({ field: countBy, as: 'f' })
+                        state.selected.push({ field: countBy, as: 0 })
                     }
                     if (!state.selected.find(e => e.raw === countBy)) {
-                        state.selected.push({ field: 'count()', as: 'c' })
+                        state.selected.push({ field: 'count(*)::int', as: 1 })
                     }
-                    return fromRes(deriveState({ ...state, selected: state.selected, countBy }, { groupBy: [gp], orderBy: [{ field: 'c', direction: 'DESC' }] }))
+                    return fromRes(deriveState({ ...state, selected: state.selected, countBy }, { groupBy: [gp], orderBy: [{ field: 'count(*)', direction: 'DESC' }] }))
                 },
                 maxBy: function (...fields: Parseable[]) {
                     return fromRes(deriveState({ ...state, agg: 'max', limit: 1 }, { orderBy: fields }, field => ({ field, direction: 'DESC' })))
@@ -209,18 +205,11 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 intersectAll: (q) => fromRes({ ...state, setops: state.setops.concat({ type: 'INTERSECT ALL', value: q.toSql() }) }),
                 exec: execute,
                 execute,
-                toState: function () {
-                    return state
-                },
-                dump: () => {
+                toState: () => state,
+                dump: (opts: any) => dump(state, opts) || fromRes(state),
+                show: async function () {
                     console.log(toSql(state))
-                    return fromRes(state)
-                },
-                show: function () {
-                    console.log(toSql(state))
-                    const res = fromRes(state).execute().then(e => console.log(e))
-                    console.log(res)
-                    return fromRes(state)
+                    return fromRes(state).execute().then(e => { console.table(e); return e })
                 },
                 toSql: function (props = { pretty: false }) {
                     return toSql(Object.assign(state, props))
@@ -230,7 +219,6 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 },
             }
         }
-        // return function __DBuilder(catalog = '') {
         return {
             ddb,
             settings: (s: Partial<t.DSettings>) => ddb.lazySettings(s),
@@ -238,10 +226,6 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 const resp = await ddb.query(`SELECT * FROM duckdb_tables()`)
                 return Object.fromEntries(resp.map(e => [upperFirst(e.table_name), serializeSchema(e.sql)]))
             },
-            // fetchSchema: async function (id: string) {
-            //     const resp = await ddb.query(`DESCRIBE '${id}'`)
-            //     return Object.fromEntries(resp.map(e => [e.column_name, mapTypes(e.column_type)]))
-            // },
             loadExtensions: function (...ext: t.DExtensions[]) {
                 ddb.lazyExtensions(...ext as string[])
                 return this
@@ -286,6 +270,9 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 return {
                     toSql: () => table,
                     as: function (...items: any[]) {
+                        if (items.length === 1 && Array.isArray(items[0])) {
+                            items = items[0]
+                        }
                         const getQuery = () => {
                             if (items[0]?.toSql) {
                                 return createSerialize(items[0]?.toSql())

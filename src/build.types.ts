@@ -77,14 +77,16 @@ export type VTypes = 'single' | 'records' | 'values' | 'grouped' | 'keyed' | 'ro
 type PArray<X> = Promise<X[]>
 type PRecord<X> = Promise<Record<string, X>>
 
+type IsArrayEmpty<T extends any[]> = T extends [] ? true : false
+
 type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends GField = t.DAnyField> = {
-    single: (this: MS<'single', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToPlain<SelectedSingle>>
+    row: (this: MS<'row', Available, Selected, SelectedValues, SelectedSingle>) => Promise<SelectedValues extends [] ? ToPlain<Selected> : ToPlain<SelectedValues>>
     values: (this: MS<'values', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToPlain<SelectedValues>>
     records: (this: MS<'records', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToPlain<Selected>>
 
     grouped: (this: MS<'grouped', Available, Selected, SelectedValues, SelectedSingle>) => PRecord<ToPlain<Selected>[]>
     keyed: (this: MS<'keyed', Available, Selected, SelectedValues, SelectedSingle>) => PRecord<ToPlain<Selected>>
-    row: (this: MS<'row', Available, Selected, SelectedValues, SelectedSingle>) => Promise<ToPlain<Selected>>
+    single: (this: MS<'single', Available, Selected, SelectedValues, SelectedSingle>) => Promise<ToPlain<SelectedSingle>>
 }
 
 type MSR<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'records', A, S, SV, SS>
@@ -97,6 +99,8 @@ export type KeyPicker<A extends Record<string, any>, S extends Record<string, an
 export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> {
     execute: FnMap<A, S, SV, SS>[V]
     exec: this['execute']
+    show: this['execute']
+    dump: (opts?: { state?: boolean }) => this
 
     orderBy<U_ extends ([KeyPicker<A, S>, DDirection?][])>(...key: U_): MS<V, A, S, SV, SS>
     orderBy<U extends ('ALL' | KeyPicker<A, S>)>(k: U, d?: DDirection): MS<V, A, S, SV, SS>
@@ -104,7 +108,8 @@ export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel
 
     groupBy<G extends KeyPicker<A, S, 'ALL'>>(...keys: G[] | G[][] | (['GROUPING SETS', G[][]] | ['CUBE' | 'ROLLUP', G[]])): MS<'grouped', A, S, SV, SS>
 
-    countBy: this['groupBy']
+    countBy<G extends (KeyPicker<A, S>)>(key: G): MS<'values', A, S, [string, number], SS>
+
 
     keyBy<G extends (KeyPicker<A, S>)>(key: G): MS<'keyed', A, S, SV, SS>
 
@@ -222,24 +227,12 @@ export interface UpdateResult<T extends keyof Models, C extends StrictCollection
     toSql(opts?: any): string
 }
 
-async function __check(db: FromResult<'s3://a1738/akira09.db', [{ catalog: 's3://a1738/akira09.db'; uri: 'Actor'; alias: 'a' }]>) {
-
-
-    const rrr = db.join('Film_actor', 'actor_id')
-        .select('a.first_name', 'film_id')
-    // const r =
-    //     await db.select(({  cities, ...e }) => ({ ...e, continent: e.timezone.string_split('/')[1] }))
-    //         .copyTo('parts', { partition_by: 'continent', format: 'parquet' })
-    //         .execute()
-    // r.cont
-
-}
-
 
 // Define the return type for DBuilder
 type DBuilderResult<T extends keyof Models> = {
     ddb: DuckdbCon
     settings(s: Partial<t.DSettings>): DBuilderResult<T>
+    fetchTables: () => Promise<[string, any][]>
 
     create(s: string, opts?: Partial<{ replace: boolean; ifNotExists: boolean }>): {
         as<U extends Record<string, any>>(...items: U[]): {

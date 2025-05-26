@@ -179,6 +179,7 @@ export interface FromResult<Ressource extends keyof Models, C extends StrictColl
     rightJoin: this['join']
     crossJoin: this['join']
     naturalJoin: this['join']
+    innerJoin: this['join']
 
     // A: select()
     select(): MSR<P, ShallowModelFromCollectionList<C>>

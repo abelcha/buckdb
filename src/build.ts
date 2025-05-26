@@ -10,7 +10,7 @@ export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
 export type DSelectee = { field: string; as?: string; raw?: string }
 export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST' | 'ASC NULLS LAST' | 'DESC NULLS LAST'
 export type DOrder = { field: string; direction?: DDirection }
-export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' }
+export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' | 'INNER JOIN' }
 export type DCopyTo = { uri: string; options?: Record<string, any> }
 export type Parseable = string | Function
 export const dstate = {
@@ -114,6 +114,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 rightJoin: _join('RIGHT JOIN'),
                 crossJoin: _join('CROSS JOIN'),
                 naturalJoin: _join('NATURAL JOIN'),
+                innerJoin: _join('INNER JOIN'),
                 set: function (...keys: Parseable[]) {
                     const updated = keys.flatMap(k => {
                         if (typeof k === 'function') {
@@ -145,7 +146,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     if (typeof params[0] === 'string') {
                         params = [params]
                     }
-                    const nworder = (params as string[][]).map(([field, direction]) => ({ field: formalize(field) , direction }))
+                    const nworder = (params as string[][]).map(([field, direction]) => ({ field: formalize(field), direction }))
                     return fromRes({ ...state, orderBy: [...(state.orderBy || []), ...nworder] as DOrder[] }) // Use 'direction'
                 },
                 context: function (context: Record<string, any>) {

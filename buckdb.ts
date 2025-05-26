@@ -5,9 +5,8 @@ import { generateInterface, serializeDescribe, serializeSchema } from './src/int
 export * as readers from './src/readers'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { CommandQueue, DuckdbCon } from './src/bindings'
-import { deriveName } from './src/build.types'
 import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
-import { formatSource, isBucket } from './src/utils'
+import { deriveName, formatSource, isBucket } from './src/utils'
 
 
 class JsonModelTable {

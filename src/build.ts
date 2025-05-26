@@ -1,10 +1,10 @@
 import * as t from '../.buck/types'
 import { DuckdbCon } from './bindings'
-import { DBuilder, deriveName } from './build.types'
+import { DBuilder } from './build.types'
 import { dump, formalize, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
-import { keyBy, upperFirst, wrap } from './utils'
+import { deriveName, keyBy, upperFirst, wrap } from './utils'
 
 export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
 export type DSelectee = { field: string; as?: string | number; raw?: string }

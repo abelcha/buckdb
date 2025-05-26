@@ -2,19 +2,11 @@ import { Models } from '../.buck/table3'
 import * as t from '../.buck/types'
 import { DuckdbCon } from './bindings'
 import { DDirection } from './build'
-import { CopyToInterface } from './copy' // Import the interface
+import { CopyToInterface } from './copy'
 import { ToPlain } from './deep-map'
-
-type StripSpecialChars<S> = S extends `${infer First}${infer Rest}` ? First extends AlphaNumeric ? `${First}${StripSpecialChars<Rest>}` : StripSpecialChars<Rest> : ''
-type DeriveName<Path> = Path extends `${infer _}/${infer Rest}` ? DeriveName<Rest> : Path extends `${infer Name}.${string}` ? StripSpecialChars<Name> : StripSpecialChars<Path>
+import type { DeriveName } from './utils'
 
 type TRessource = keyof Models | (string & {})
-
-type AlphaNumeric = 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' | 'k' | 'l' | 'm' | 'n' | 'o' | 'p' | 'q' | 'r' | 's' | 't' | 'u' | 'v' | 'w' | 'x' | 'y' | 'z' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '_'
-export const deriveName = <T extends string>(value: T): DeriveName<T> => {
-    const result = value.split('/').pop()?.split('.').shift() || value
-    return result.replace(/[^a-zA-Z0-9_]/g, '') as DeriveName<T>
-}
 export type AnyString = (string | {})
 
 export type ObjectToValuesTuple<T> = T extends Record<string, any> ? Array<T[keyof T]> : never
@@ -76,8 +68,6 @@ export type VTypes = 'single' | 'records' | 'values' | 'grouped' | 'keyed' | 'ro
 
 type PArray<X> = Promise<X[]>
 type PRecord<X> = Promise<Record<string, X>>
-
-type IsArrayEmpty<T extends any[]> = T extends [] ? true : false
 
 type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends GField = t.DAnyField> = {
     row: (this: MS<'row', Available, Selected, SelectedValues, SelectedSingle>) => Promise<SelectedValues extends [] ? ToPlain<Selected> : ToPlain<SelectedValues>>

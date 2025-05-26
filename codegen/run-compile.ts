@@ -30,7 +30,7 @@ async function getMergedResults() {
     // .concat(anyFuncs).concat(addFuncs as any);
 
     // 5. Merge function names and parameter types
-    const groups = groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], mapTypesProps(e.return_type).inferredTo].join('-'))
+    const groups = groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], mapTypesProps(e.return_type).rawType].join('-'))
 
     return entriesSorted(groups)
         .filter(([key, values]) => !OmittedFuncs.includes(key))
@@ -188,6 +188,7 @@ global.renderMacros = (opts: Opts) => {
 
 const rrr = global.renderMacros({ match: e => true })
 // console.log(rrr)
+let init = false
 async function main() {
     const content = await Bun.file('codegen/template.ts').text()
     const body = content.split('/*{').join('${').split('}*/').join('}').replaceAll(/`/g, '\`')
@@ -196,7 +197,8 @@ async function main() {
     const nwContentFmt = await Bun.$`cat < ${new Response(nwContent)} | dprint fmt --stdin types.ts `.text()
     const oldContent = await Bun.file('.buck/types.ts').text()
 
-    if (oldContent !== nwContentFmt) {
+    if (oldContent !== nwContentFmt || !init) {
+        init = true
         console.log('Generating .buck/types.ts')
         await Bun.write('.buck/types.ts', nwContentFmt)
         console.log(_ && new Date().toISOString(), 'Generated .buck/types.ts')

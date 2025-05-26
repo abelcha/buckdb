@@ -1,140 +1,78 @@
 import * as t from '../.buck/types'
-export interface DNumericType {
-  man: 'number & CNumeric'
-  comptype: 'number'
-  id: 'numeric'
-  able: 'DNumericable'
-  field: 'DNumericField'
-  rawType: 'number'
-  inferredTo: 'number'
-  anti: 'AntiNumber'
-  fieldSuffix: '& number'
-}
 
-export interface DVarcharType {
-  man: 'string & CVarchar'
-  id: 'varchar'
-  able: 'DVarcharable'
-  field: 'DVarcharField'
-  rawType: 'string'
-  inferredTo: 'string'
-  anti: 'AntiString'
-}
-
-export interface DArrayType {
-  id: 'array'
-  able: 'DArrayable'
-  field: 'DArrayField'
-  rawType: 'any[]'
-  inferredTo: 'any[]'
-  anti: 'Array'
-  generic: { main: '<T = any>'; inferred: 'T[]' }
-}
-
-export interface DStructType {
-  id: 'struct'
-  able: 'DStructable'
-  field: 'DStructField'
-  rawType: 'Record<string,any>'
-  inferredTo: 'Record<string,any>'
-  anti: 'AntiObject'
-  generic: { main: '<T = {}>'; inferred: 'T' }
-}
-
-export interface DJsonType {
-  id: 'json'
-  able: 'DJsonable'
-  field: 'DJsonField'
-  rawType: 'Record<string,any>'
-  inferredTo: 'Record<string,any>'
-  anti: 'AntiObject'
-  generic: { main: '<T = {}>'; inferred: 'T' }
-}
-
-export interface DBoolType {
-  id: 'bool'
-  able: 'DBoolable'
-  field: 'DBoolField'
-  rawType: 'boolean'
-  inferredTo: 'boolean'
-  anti: 'AntiBoolean'
-}
-
-export interface DBlobType {
-  id: 'blob'
-  able: 'DBlobable'
-  field: 'DBlobField'
-  rawType: 'Blob'
-  inferredTo: 'string'
-  anti: 'AntiBlob'
-}
-
-export interface DDateType {
-  id: 'date'
-  able: 'DDateable'
-  field: 'DDateField'
-  rawType: 'Date'
-  inferredTo: 'Date'
-  anti: 'AntiDate'
-}
-
-export interface DMapType {
-  id: 'map'
-  able: 'DMapable'
-  field: 'DMapField'
-  rawType: 'Map<string,any>'
-  inferredTo: 'Map<string,any>'
-  anti: 'AntiMap'
-}
-
-export interface DOtherType {
-  id: 'other'
-  able: 'DOtherable'
-  field: 'DOtherField'
-  rawType: 'any'
-  inferredTo: 'any'
-}
-
-export interface DAnyType {
-  man: 'Partial<CAny>'
-  id: 'any'
-  able: 'DAnyable'
-  field: 'DAnyField'
-  rawType: 'any'
-  inferredTo: 'any'
-}
-
-export const DNumeric: DNumericType = {
-  man: 'number & CNumeric',
+export const DNumeric=  {
   comptype: 'number',
   id: 'numeric',
   able: 'DNumericable',
   field: 'DNumericField',
   rawType: 'number',
-  inferredTo: 'number',
-  anti: 'AntiNumber',
-  fieldSuffix: '& number',
 }
 
-export const DVarchar: DVarcharType = {
-  man: 'string & CVarchar',
+export const DVarchar=  {
   id: 'varchar',
   able: 'DVarcharable',
   field: 'DVarcharField',
   rawType: 'string',
-  inferredTo: 'string',
-  anti: 'AntiString',
 }
 
-export const DArray: DArrayType = { id: 'array', able: 'DArrayable', field: 'DArrayField', rawType: 'any[]', inferredTo: 'any[]', anti: 'Array', generic: { main: '<T = any>', inferred: 'T[]' } }
-export const DStruct: DStructType = { id: 'struct', able: 'DStructable', field: 'DStructField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } }
-export const DJson: DJsonType = { id: 'json', able: 'DJsonable', field: 'DJsonField', rawType: 'Record<string,any>', inferredTo: 'Record<string,any>', anti: 'AntiObject', generic: { main: '<T = {}>', inferred: 'T' } }
-export const DBool: DBoolType = { id: 'bool', able: 'DBoolable', field: 'DBoolField', rawType: 'boolean', inferredTo: 'boolean', anti: 'AntiBoolean' }
-export const DBlob: DBlobType = { id: 'blob', able: 'DBlobable', field: 'DBlobField', rawType: 'Blob', inferredTo: 'string', anti: 'AntiBlob' }
-export const DDate: DDateType = { id: 'date', able: 'DDateable', field: 'DDateField', rawType: 'Date', inferredTo: 'Date', anti: 'AntiDate' }
-export const DMap: DMapType = { id: 'map', able: 'DMapable', field: 'DMapField', rawType: 'Map<string,any>', inferredTo: 'Map<string,any>', anti: 'AntiMap' }
-export const DOther: DOtherType = { id: 'other', able: 'DOtherable', field: 'DOtherField', rawType: 'any', inferredTo: 'any' }
-export const DAny: DAnyType = { man: 'Partial<CAny>', id: 'any', able: 'DAnyable', field: 'DAnyField', rawType: 'any', inferredTo: 'any' }
+export const DArray=  {
+  id: 'array',
+  able: 'DArrayable',
+  field: 'DArrayField',
+  rawType: 'any[]',
+}
+export const DStruct=  {
+  id: 'struct',
+  able: 'DStructable',
+  field: 'DStructField',
+  rawType: 'Record<string,any>',
+}
+export const DJson=  {
+  id: 'json',
+  able: 'DJsonable',
+  field: 'DJsonField',
+  rawType: 'Record<string,any>',
+}
+export const DBool=  {
+  id: 'bool',
+  able: 'DBoolable',
+  field: 'DBoolField',
+  rawType: 'boolean',
+
+}
+export const DBlob=  {
+  id: 'blob',
+  able: 'DBlobable',
+  field: 'DBlobField',
+  rawType: 'Blob',
+
+}
+export const DDate=  {
+  id: 'date',
+  able: 'DDateable',
+  field: 'DDateField',
+  rawType: 'Date',
+
+}
+export const DMap=  {
+  id: 'map',
+  able: 'DMapable',
+  field: 'DMapField',
+  rawType: 'Map<string,any>',
+
+}
+export const DOther=  {
+  id: 'other',
+  able: 'DOtherable',
+  field: 'DOtherField',
+  rawType: 'any',
+}
+export const DAny=  {
+  id: 'any',
+  able: 'DAnyable',
+  field: 'DAnyField',
+  rawType: 'any',
+}
 
 export const TypeProps = {
   DNumeric,
@@ -175,7 +113,6 @@ export const mapTypesProps = (type: string, details = false) => {
       const rtn = {
         ...DArray,
         rawType: s.rawType + '[]',
-        inferredTo: !s.inferredTo ? 'any[]' : s.inferredTo + '[]',
         field: `DArrayField<${mapTypes(subtype)}Field>`,
       }
       // console.log({ subtype, rtn })

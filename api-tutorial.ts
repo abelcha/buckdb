@@ -4,12 +4,37 @@ import { copy } from "./src/copy";
 const BS = Buck('s3://a1738')
 
 
-
-
-
 const Akira = Buck('s3://a1738/akira09.db')
 
 Akira.from('Staff').select(e => e.first_name)
+
+
+// SELECT CONCAT(customer.last_name, ', ', customer.first_name) AS customer,
+// address.phone, film.title
+// FROM rental INNER JOIN customer ON rental.customer_id = customer.customer_id
+// INNER JOIN address ON customer.address_id = address.address_id
+// INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+// INNER JOIN film ON inventory.film_id = film.film_id
+// WHERE rental.return_date IS NULL
+// AND rental_date + INTERVAL film.rental_duration DAY < CURRENT_DATE()
+// ORDER BY title
+// LIMIT 5;
+
+Akira.from('Rental')
+    .innerJoin('Customer', 'customer_id')
+    .innerJoin('Address', 'address_id')
+    .innerJoin('Film', e => e.Rental.customer_id === e.Customer.customer_id)
+    .select(e => [`${e.Customer.last_name}, ${e.Customer.first_name}`])
+    .where(e => (
+        // e.Rental.rental_date === null 
+        // && e.rental_date !== e.Film.rental_duration
+    ))
+    .orderBy('title')
+    .limit(5)
+
+
+
+
 // SELECT first_name, last_name, count(*) films
 // FROM actor AS a
 // JOIN film_actor AS fa USING (actor_id)

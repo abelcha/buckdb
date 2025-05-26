@@ -157,28 +157,28 @@ export type ReadJsonOptions = {
 type JsonReadKeys = ['auto_detect', 'columns', 'compression', 'convert_strings_to_integers', 'date_format', 'dateformat', 'field_appearance_threshold', 'filename', 'format', 'hive_partitioning', 'hive_types', 'hive_types_autocast', 'ignore_errors', 'map_inference_threshold', 'maximum_depth', 'maximum_object_size', 'maximum_sample_files', 'records', 'sample_size', 'timestamp_format', 'timestampformat', 'union_by_name']
 /**
  /** Options for the read-json_objects function, maintaining original camelCase naming and order from signature. */
- export type ReadJsonObjectsOptions = {
-     /** The compression type for the file. By default this will be detected automatically from the file extension (e.g., `t.json.gz` will use gzip, `t.json` will use none). Options are `none`, `gzip`, `zstd` and `auto_detect`. @default 'auto_detect' */
-     compression?: CompressionOptions // Corresponds to compression (VARCHAR)
-     /** Whether or not an extra `filename` column should be included in the result. @default false */
-     filename?: boolean // Corresponds to filename (BOOL)
-     /** Can be one of `auto`, `unstructured`, `newline_delimited` and `array`. @default 'array' */
-     format?: 'auto' | 'unstructured' | 'newline_delimited' | 'array' // Corresponds to format (VARCHAR)
-     /** Whether or not to interpret the path as a [Hive partitioned path](https://duckdb.org/docs/stable/data/partitioning/hive_partitioning). @default false */
-     hive_partitioning?: boolean // Corresponds to hive_partitioning (BOOL)
-     /** Hive types. Not in table, using ANY | BOOL from signature -> any. */
-     hive_types?: any // Not in table, using any
-     /** Hive types autocast. Not in table, using BOOL from signature -> boolean. */
-     hive_types_autocast?: boolean // Not in table, using boolean
-     /** Whether to ignore parse errors (only possible when `format` is `newline_delimited`). @default false */
-     ignore_errors?: boolean // Corresponds to ignore_errors (BOOL)
-     /** The maximum size of a JSON object (in bytes). @default 16777216 */
-     maximum_object_size?: number // Corresponds to maximum_object_size (UINTEGER -> number)
-     /** The maximum number of JSON files sampled for auto-detection. Not in signature, using BIGINT from table -> number. @default 32 */
-     maximum_sample_files?: number // Corresponds to maximum_sample_files (BIGINT)
-     /** Union by name. Not in table, using ANY | BOOL from signature -> boolean. */
-     union_by_name?: boolean // Not in table, using boolean
- }
+export type ReadJsonObjectsOptions = {
+    /** The compression type for the file. By default this will be detected automatically from the file extension (e.g., `t.json.gz` will use gzip, `t.json` will use none). Options are `none`, `gzip`, `zstd` and `auto_detect`. @default 'auto_detect' */
+    compression?: CompressionOptions // Corresponds to compression (VARCHAR)
+    /** Whether or not an extra `filename` column should be included in the result. @default false */
+    filename?: boolean // Corresponds to filename (BOOL)
+    /** Can be one of `auto`, `unstructured`, `newline_delimited` and `array`. @default 'array' */
+    format?: 'auto' | 'unstructured' | 'newline_delimited' | 'array' // Corresponds to format (VARCHAR)
+    /** Whether or not to interpret the path as a [Hive partitioned path](https://duckdb.org/docs/stable/data/partitioning/hive_partitioning). @default false */
+    hive_partitioning?: boolean // Corresponds to hive_partitioning (BOOL)
+    /** Hive types. Not in table, using ANY | BOOL from signature -> any. */
+    hive_types?: any // Not in table, using any
+    /** Hive types autocast. Not in table, using BOOL from signature -> boolean. */
+    hive_types_autocast?: boolean // Not in table, using boolean
+    /** Whether to ignore parse errors (only possible when `format` is `newline_delimited`). @default false */
+    ignore_errors?: boolean // Corresponds to ignore_errors (BOOL)
+    /** The maximum size of a JSON object (in bytes). @default 16777216 */
+    maximum_object_size?: number // Corresponds to maximum_object_size (UINTEGER -> number)
+    /** The maximum number of JSON files sampled for auto-detection. Not in signature, using BIGINT from table -> number. @default 32 */
+    maximum_sample_files?: number // Corresponds to maximum_sample_files (BIGINT)
+    /** Union by name. Not in table, using ANY | BOOL from signature -> boolean. */
+    union_by_name?: boolean // Not in table, using boolean
+}
 type JsonReadObjectsKeys = ['compression', 'filename', 'format', 'hive_partitioning', 'hive_types', 'hive_types_autocast', 'ignore_errors', 'maximum_object_size', 'maximum_sample_files', 'union_by_name']
 /** Options for the read-parquet function, maintaining original camelCase naming and order from signature. */
 export type ReadParquetOptions = {
@@ -319,7 +319,6 @@ export const read_text = Fncx.read_text
 // const zz = read_parquet(['lol'], {
 //   // compression: 'gzip'
 // })
-// const zz = read_csv('s3://tddo.csv', {})
 // const zxz = read_csv(['s3://tdddo.csv'])
 // const zxxxz = read_csv(['s3://tdddo.csv'], { compression: 'gzip' })
 // const zxxxsz = read_csv(['s3://tdddo.csv'], {})

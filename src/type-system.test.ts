@@ -293,7 +293,7 @@ test('kitchen_sink', async () => {
     async function checkSelect(db: FromResult<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
         db.select(e => e satisfies RecPeople)
 
-        db.join('duckdb_settings()', 'oo').select(e => e satisfies RecPeople & { oo: Setting })
+        db.join('duckdb_settings()', 'oo', 'name').select(e => e satisfies RecPeople & { oo: Setting })
 
         db.join('duckdb_settings()', (a) => a.people.name === a.duckdb_settings.name)
             .join('duckdb_types()', 'xxx', (p) => p.input_type.Like('%%'))

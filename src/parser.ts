@@ -152,7 +152,6 @@ type Topts = {
 
 // type oProps = { subMemberExpression?: boolean, isProperty?: boolean }
 export function transformDuckdb(node: Expression, params = new Map<string, { depth: number; position: number }>(), context: Record<string, any> = {}) {
-  // console.log(node)
   function transformTree(node: Expression, opts: Topts = { isFuncArg: false }): any {
     const transformNode = (n: any, o = {}) => transformTree(n, Object.assign(opts, o))
     // const transform = (node: any, ..._: any[]) => transformNode(node)

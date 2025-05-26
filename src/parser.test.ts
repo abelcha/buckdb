@@ -263,7 +263,7 @@ const parseBody = (expr: Function | string, context = {}) => {
   }
 }
 test('arrays', () => {
-  expect(parse((e, D) => e.arr['abel'])).toBe('arr.abel')
+  expect(parse(`(e, D) => e.arr['abel']`)).toBe("arr['abel']")
   // expect(parse((e, D) => e.arr[1.])).toBe("arr[1:]");
   // expect(parse((e, D) => e.arr['1'])).toBe("arr.1");
   expect(parse((e, D) => e.arr[1])).toBe('arr[1]')
@@ -348,13 +348,8 @@ test('count(*)', () => {
   expect(result).toBe('count(*)')
 })
 test('array slicer', () => {
-  // expect(parse(e => e.arr[.1].upper())).toBe("arr[0:1].upper()")
-  // expect(parse((e, D) => D.upper(e.arr[.1]))).toBe("upper(arr[0:1])")
   expect(parse(e => e.timezone.string_split('/')[1])).toBe("timezone.string_split('/')[1]")
 })
-
-// test('handleCallExpression', () => {
-//   const result = jsep(`e.contain('t')`) as CallExpression
-//   const res2 = handleCallExpression(result, (n) => transformDuckdb(n), new Map([['e', {}], ['D', {}]]))
-//   expect(result).toBe("42")
-// })
+test('rental_date', () => {
+  expect(parse(e => e.Rental.rental_date === null)).toBe("Rental.rental_date IS NULL")
+})

@@ -58,11 +58,15 @@ const joinMembers = (members: any[]) => {
   }
   return members?.reduce?.((acc, member) => {
     if (!acc) return member
+
     if (typeof member === 'number') {
       return acc + '[' + member.toString().replace('.', ':') + ']'
     }
     if (member instanceof Number && 'raw' in member) {
       return acc + '[' + (member as any).raw.replace('.', ':') + ']'
+    }
+    if (member?.startsWith("'") && member?.endsWith("'")) {
+      return acc + `[${member}]`
     }
     return acc + '.' + member
   }, '')
@@ -314,6 +318,9 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         // Special handling for string concatenation
         if (node.operator === '+' && hasStringLiteral(node)) {
           return transformStringConcat(node, transformNode)
+        }
+        if (node.operator === '==' || node.operator === '===' && node.right.type === 'Literal' && node.right?.raw === 'null') {
+          return `${transformNode(node.left)} IS NULL`
         }
 
         // Regular binary operation

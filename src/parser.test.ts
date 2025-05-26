@@ -338,6 +338,26 @@ test('should parse logical NOT', () => {
   expect(result).toBe("toto.tata.tata.tata.contain('t')")
 })
 
+test('complex member expression with function call', () => {
+  expect(parse((e, D) => e.data.nested.items[0].value.upper())).toBe("data.nested.items[0].value.upper()")
+})
+
+test('function call with multiple argument types', () => {
+  expect(parse((e, D) => D.concat(e.name, 123, 'suffix', e.age))).toBe("concat(name, 123, 'suffix', age)")
+})
+
+test('function call with nested function calls as arguments', () => {
+  expect(parse((e, D) => D.add(e.num.abs(), D.len(e.str)))).toBe("add(num.abs(), len(str))")
+})
+
+test('function call with array literal as argument', () => {
+  expect(parse((e, D) => D.array_agg([e.name, e.age]))).toBe("array_agg([name, age])")
+})
+
+test('function call with object literal as argument', () => {
+  expect(parse((e, D) => D.json_object({ name: e.name, age: e.age }))).toBe("json_object({name: name, age: age})")
+})
+
 test('decimal separator', () => {
   let num = 0
   const result = parse(`c => c.pop> 100_001`)

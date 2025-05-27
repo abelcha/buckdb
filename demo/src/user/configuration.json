@@ -28,17 +28,45 @@
   "editor.experimental.preferTreeSitter": [
     "typescript"
   ],
-  "__workbench.coldorCustomizations": {
-    "editor.background": "#0d0d0d",
+  "editor.tokenColorCustomizations": {
+    "comments": "#636d83",
+    "_keywords": "#10b1fe", 
+    "functions": "#3fc56b",
+    "variables": "#D4D4D4",
+    "numbers": "#ff78f8",
+    "strings": "#f9c859",
+    "types": "#7a82da",
+    "textMateRules": [
+      {
+        "scope": [
+          "keyword"
+        ],
+        "settings": {
+          "foreground": "#10b1fe",
+          "fontStyle": "bold"
+        }
+      },
+      {
+        "scope": [
+          "keyword.operator"
+        ],
+        "settings": {
+          "foreground": "#7a82da"
+        }
+      }
+    ]
+  },
+  "workbench.colorCustomizations": {
+    "editor.background": "#131313",
     "editor.foreground": "#f2f2f2",
-    "sideBar.background": "#0d0d0d",
+    "sideBar.background": "#131313",
     "sideBar.foreground": "#d9d9d9",
     "sideBar.border": "#333333",
-    "activityBar.background": "#0d0d0d",
+    "activityBar.background": "#131313",
     "activityBar.foreground": "#fafafa",
     "activityBar.inactiveForeground": "#999999",
     "activityBar.border": "#333333",
-    "panel.background": "#0d0d0d",
+    "panel.background": "#131313",
     "panel.border": "#333333",
     "panelTitle.activeForeground": "#f2f2f2",
     "panelTitle.inactiveForeground": "#b2b2b2",
@@ -52,7 +80,7 @@
     "titleBar.inactiveBackground": "#1a1a1a",
     "titleBar.inactiveForeground": "#b2b2b2",
     "titleBar.border": "#333333",
-    "tab.activeBackground": "#0d0d0d",
+    "tab.activeBackground": "#131313",
     "tab.inactiveBackground": "#1a1a1a",
     "tab.activeForeground": "#fafafa",
     "tab.inactiveForeground": "#b2b2b2",
@@ -86,7 +114,6 @@
   "editor.inlayHints.maximumLength": 50,
   "editor.inlayHints.enabled": "onUnlessPressed",
   "workbench.colorTheme": "Default Dark Modern",
-  
   "editor.quickSuggestions": {
     "other": false,
     "comments": false,

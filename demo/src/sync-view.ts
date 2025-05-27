@@ -41,7 +41,7 @@ class TransformedSqlCodeLensProvider implements vsCodeApi.CodeLensProvider {
             const extractedParts = extractFromStatementsAST(originalDoc.getText())
 
             for (const part of extractedParts) {
-                const lineIndex = part.lineStart - 1 // 0-based
+                const lineIndex = part.lineEnd  // 0-based
 
                 if (lineIndex < 0 || lineIndex >= document.lineCount) {
                     // console.warn(`TransformedSqlCodeLensProvider: Line index ${lineIndex} out of bounds for transformed doc ${document.uri.toString()}`);

@@ -20,7 +20,7 @@ Akira.from('Staff').select(e => e.first_name)
 // ORDER BY title
 // LIMIT 5;
 
-Akira.from('Rental')
+const r = Akira.from('Rental')
     .innerJoin('Customer', 'customer_id')
     .innerJoin('Address', 'address_id')
     .innerJoin('Film', e => e.Rental.customer_id === e.Customer.customer_id)

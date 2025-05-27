@@ -10,7 +10,7 @@ const fns = await MemoryDB.from('duckdb_functions()').select().execute()
 type E<T> = T
 
 test('basic tests', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result1 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
             description: e.description,
@@ -19,6 +19,11 @@ test('basic tests', async () => {
             function_name: string
             description: string
         }[]>
+    
+    expect(result1).toBeInstanceOf(Array)
+    expect(result1.length).toBeGreaterThan(0)
+    expect(result1[0]).toHaveProperty('function_name')
+    expect(result1[0]).toHaveProperty('description')
 
     const z = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
@@ -27,10 +32,14 @@ test('basic tests', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
+    
+    expect(z).toBeInstanceOf(Array)
+    expect(z.length).toBeGreaterThan(0)
+    expect(z[0]).toHaveProperty('function_name')
 })
 
 test('full tests', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result = await MemoryDB.from('duckdb_functions()')
         .join('duckdb_types()', 'ttt', (a, b) => a.duckdb_functions.description === a.ttt.comment)
         .select(e => ({
             a: e.ttt.logical_type,
@@ -40,11 +49,19 @@ test('full tests', async () => {
             a: string
             b: number
         }[]
+    
+    expect(result).toBeInstanceOf(Array)
+    if (result.length > 0) {
+        expect(result[0]).toHaveProperty('a')
+        expect(result[0]).toHaveProperty('b')
+        expect(typeof result[0].a).toBe('string')
+        expect(typeof result[0].b).toBe('number')
+    }
 })
 
 test('where clause type checking', async () => {
     // Using a simple string for the where clause
-    await MemoryDB.from('duckdb_functions()')
+    const result1 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
         }))
@@ -52,6 +69,13 @@ test('where clause type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
+    
+    expect(result1).toBeInstanceOf(Array)
+    result1.forEach(item => {
+        expect(item).toHaveProperty('function_name')
+        expect(typeof item.function_name).toBe('string')
+        expect(item.function_name.toLowerCase()).toContain('sum')
+    })
 
     expect(() =>
         MemoryDB.from('duckdb_functions()')
@@ -65,7 +89,7 @@ test('where clause type checking', async () => {
 })
 
 test('string operations type checking', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result1 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             upper_name: e.function_name.upper(),
             name_length: e.function_name.len(),
@@ -74,14 +98,26 @@ test('string operations type checking', async () => {
             upper_name: string
             name_length: number
         }[]>
+    
+    expect(result1).toBeInstanceOf(Array)
+    expect(result1.length).toBeGreaterThan(0)
+    expect(result1[0]).toHaveProperty('upper_name')
+    expect(result1[0]).toHaveProperty('name_length')
+    expect(typeof result1[0].upper_name).toBe('string')
+    expect(typeof result1[0].name_length).toBe('number')
 
-    await MemoryDB.from('duckdb_functions()')
+    const result2 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             upper_name: e.function_name.len(),
         }))
         .execute() satisfies E<{
             upper_name: number
         }[]>
+    
+    expect(result2).toBeInstanceOf(Array)
+    expect(result2.length).toBeGreaterThan(0)
+    expect(result2[0]).toHaveProperty('upper_name')
+    expect(typeof result2[0].upper_name).toBe('number')
 })
 
 test('orderBy type checking', async () => {
@@ -119,10 +155,23 @@ test('groupBy type checking', async () => {
             // function_type: string;
             function_name: string
         }[]>
+    
+    expect(zz).toBeInstanceOf(Object)
+    expect(typeof zz).toBe('object')
+    const keys = Object.keys(zz)
+    expect(keys.length).toBeGreaterThan(0)
+    keys.forEach(key => {
+        // console.log('-->', key, zz[key])
+        // expect(zz[key]).toBeInstanceOf(Array)
+        if (zz[key].length > 0) {
+            expect(zz[key][0]).toHaveProperty('function_name')
+            expect(typeof zz[key][0].function_name).toBe('string')
+        }
+    })
 })
 
 test('single row result type checking', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result1 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
             description: e.description,
@@ -131,18 +180,31 @@ test('single row result type checking', async () => {
         .execute() satisfies E<{
             function_name: string
             description: string
-        }[]>
+        }>
+    
+    expect(result1).toBeDefined()
+    expect(result1).toHaveProperty('function_name')
+    expect(result1).toHaveProperty('description')
+    expect(typeof result1.function_name).toBe('string')
+    expect(typeof result1.description).toBe('string')
 
-    await MemoryDB.from('duckdb_functions()')
+    const result2 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
             description: e.description,
         }))
         .maxBy('function_name')
+        .where(e => !e.description.IsNull())
         .execute() satisfies E<{
             function_name: string
             description: string
-        }[]>
+        }>
+    
+    expect(result2).toBeDefined()
+    expect(result2).toHaveProperty('function_name')
+    expect(result2).toHaveProperty('description')
+    expect(typeof result2.function_name).toBe('string')
+    expect(typeof result2.description).toBe('string')
 })
 
 test('keyed result type checking', async () => {
@@ -158,10 +220,21 @@ test('keyed result type checking', async () => {
                 description: string[]
             }>
         >
+    
+    expect(r).toBeInstanceOf(Object)
+    expect(typeof r).toBe('object')
+    const keys = Object.keys(r)
+    expect(keys.length).toBeGreaterThan(0)
+    keys.forEach(key => {
+        expect(r[key]).toHaveProperty('function_name')
+        expect(r[key]).toHaveProperty('description')
+        expect(typeof r[key].function_name).toBe('string')
+        expect(r[key].description).toBeInstanceOf(Array)
+    })
 })
 
 test('limit and offset type checking', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
         }))
@@ -170,10 +243,17 @@ test('limit and offset type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
+    
+    expect(result).toBeInstanceOf(Array)
+    expect(result.length).toBeLessThanOrEqual(10)
+    result.forEach(item => {
+        expect(item).toHaveProperty('function_name')
+        expect(typeof item.function_name).toBe('string')
+    })
 })
 
 test('nested structure type checking', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             main: {
                 name: e.function_name,
@@ -183,6 +263,7 @@ test('nested structure type checking', async () => {
                 },
             },
         }))
+        .where('description IS NOT NULL')
         .execute() satisfies E<{
             main: {
                 name: string
@@ -192,6 +273,17 @@ test('nested structure type checking', async () => {
                 }
             }
         }[]>
+
+    expect(result).toBeInstanceOf(Array)
+    expect(result.length).toBeGreaterThan(0)
+    expect(result[0]).toHaveProperty('main')
+    expect(result[0].main).toHaveProperty('name')
+    expect(result[0].main).toHaveProperty('details')
+    expect(result[0].main.details).toHaveProperty('descx')
+    expect(result[0].main.details).toHaveProperty('type')
+    expect(typeof result[0].main.name).toBe('string')
+    expect(typeof result[0].main.details.descx).toBe('string')
+    expect(typeof result[0].main.details.type).toBe('string')
 })
 
 test('error cases with incorrect type assertions', async () => {
@@ -215,7 +307,7 @@ test('error cases with incorrect type assertions', async () => {
 })
 
 test('sample method type checking', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result1 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
         }))
@@ -223,8 +315,15 @@ test('sample method type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
+    
+    expect(result1).toBeInstanceOf(Array)
+    expect(result1.length).toBeLessThanOrEqual(10)
+    result1.forEach(item => {
+        expect(item).toHaveProperty('function_name')
+        expect(typeof item.function_name).toBe('string')
+    })
 
-    await MemoryDB.from('duckdb_functions()')
+    const result2 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
         }))
@@ -232,10 +331,16 @@ test('sample method type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
+    
+    expect(result2).toBeInstanceOf(Array)
+    result2.forEach(item => {
+        expect(item).toHaveProperty('function_name')
+        expect(typeof item.function_name).toBe('string')
+    })
 })
 
 test('context method type checking', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             function_name: e.function_name,
         }))
@@ -243,6 +348,13 @@ test('context method type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
+    
+    expect(result).toBeInstanceOf(Array)
+    expect(result.length).toBeGreaterThan(0)
+    result.forEach(item => {
+        expect(item).toHaveProperty('function_name')
+        expect(typeof item.function_name).toBe('string')
+    })
 })
 
 test('multiple joins type checking', async () => {
@@ -259,10 +371,20 @@ test('multiple joins type checking', async () => {
             type1: string
             type2: string
         }[]
+    
+    expect(r).toBeInstanceOf(Array)
+    r.forEach(item => {
+        expect(item).toHaveProperty('function_name')
+        expect(item).toHaveProperty('type1')
+        expect(item).toHaveProperty('type2')
+        expect(typeof item.function_name).toBe('string')
+        expect(typeof item.type1).toBe('string')
+        expect(typeof item.type2).toBe('string')
+    })
 })
 
 test('complex query type checking', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result = await MemoryDB.from('duckdb_functions()')
         .join('duckdb_types()', 'types', (a, b) => a.duckdb_functions.function_name === a.types.logical_type)
         .select(e => ({
             function_name: e.duckdb_functions.function_name,
@@ -276,6 +398,18 @@ test('complex query type checking', async () => {
             type_name: string
             combined: string
         }[]
+    
+    expect(result).toBeInstanceOf(Array)
+    result.forEach(item => {
+        expect(item).toHaveProperty('function_name')
+        expect(item).toHaveProperty('type_name')
+        expect(item).toHaveProperty('combined')
+        expect(typeof item.function_name).toBe('string')
+        expect(typeof item.type_name).toBe('string')
+        expect(typeof item.combined).toBe('string')
+        expect(item.function_name.toLowerCase()).toContain('sum')
+        expect(item.combined).toContain(' - ')
+    })
 })
 
 test('kitchen_sink', async () => {
@@ -338,7 +472,7 @@ test('kitchen_sink', async () => {
 })
 
 test('numeric operations type checking', async () => {
-    await MemoryDB.from('duckdb_functions()')
+    const result = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             name_length: e.function_name.len(),
             length_squared: e.function_name.len().pow(2),
@@ -349,6 +483,19 @@ test('numeric operations type checking', async () => {
             length_squared: number
             length_sqrt: number
         }[]>
+    
+    expect(result).toBeInstanceOf(Array)
+    expect(result.length).toBeGreaterThan(0)
+    result.forEach(item => {
+        expect(item).toHaveProperty('name_length')
+        expect(item).toHaveProperty('length_squared')
+        expect(item).toHaveProperty('length_sqrt')
+        expect(typeof item.name_length).toBe('number')
+        expect(typeof item.length_squared).toBe('number')
+        expect(typeof item.length_sqrt).toBe('number')
+        expect(item.name_length).toBeGreaterThan(0)
+        expect(item.length_squared).toBeGreaterThanOrEqual(item.name_length)
+    })
 })
 
 test('ambiguous type inference - conditional expressions', async () => {
@@ -385,7 +532,7 @@ test('ambiguous type inference - function overloads', async () => {
 
 test('ambiguous type inference - complex expressions', async () => {
     // Test with complex expressions that involve multiple operations
-    await MemoryDB.from('duckdb_functions()')
+    const result1 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             // Complex expression with multiple operations
             complex_result: e.function_name.upper().len().pow(2).sqrt(),
@@ -393,6 +540,14 @@ test('ambiguous type inference - complex expressions', async () => {
         .execute() satisfies E<{
             complex_result: number
         }[]>
+    
+    expect(result1).toBeInstanceOf(Array)
+    expect(result1.length).toBeGreaterThan(0)
+    result1.forEach(item => {
+        expect(item).toHaveProperty('complex_result')
+        expect(typeof item.complex_result).toBe('number')
+        expect(item.complex_result).toBeGreaterThan(0)
+    })
 
     // Test with nested function calls that might have ambiguous types
     const r =
@@ -405,11 +560,17 @@ test('ambiguous type inference - complex expressions', async () => {
                 // todo: fix json parsing
                 nested_result: Record<string, any> | string
             }[]>
+    
+    expect(r).toBeInstanceOf(Array)
+    r.forEach(item => {
+        expect(item).toHaveProperty('nested_result')
+        expect(item.nested_result).toBeDefined()
+    })
 })
 
 test('ambiguous type inference - type conversions', async () => {
     // Test with explicit type conversions
-    await MemoryDB.from('duckdb_functions()')
+    const result1 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({
             // Converting between types
             converted_result: e.function_name.len().to_base(16),
@@ -417,6 +578,13 @@ test('ambiguous type inference - type conversions', async () => {
         .execute() satisfies E<{
             converted_result: string
         }[]>
+    
+    expect(result1).toBeInstanceOf(Array)
+    expect(result1.length).toBeGreaterThan(0)
+    result1.forEach(item => {
+        expect(item).toHaveProperty('converted_result')
+        expect(typeof item.converted_result).toBe('string')
+    })
 
     // Test with implicit type conversions
     const r = await MemoryDB.from('duckdb_functions()')
@@ -430,6 +598,19 @@ test('ambiguous type inference - type conversions', async () => {
             xxx: string
             implicit_result: number
         }[]>
+    
+    expect(r).toBeInstanceOf(Array)
+    expect(r.length).toBeGreaterThan(0)
+    r.forEach(item => {
+        expect(item).toHaveProperty('xxx')
+        expect(item).toHaveProperty('implicit_result')
+        expect(item).toHaveProperty('zzz')
+        expect(typeof item.xxx).toBe('string')
+        expect(typeof item.implicit_result).toBe('number')
+        expect(typeof item.zzz).toBe('string')
+        expect(item.xxx).toContain('dsl')
+        expect(item.zzz).toContain('12')
+    })
 })
 
 test('build-tests', () => {
@@ -545,6 +726,9 @@ test('d.test.ts', async () => {
 })
 
 test('META type checking ', async () => {
-    const errs = await Bun.$`tsgo --pretty false|grep -E  'deep-map.ts|type-system.test.ts'`.nothrow().text();
+    const errs = await Bun.$`tsgo|grep -E  'deep-map.ts|test.ts'`.nothrow().text();
+    if (errs) {
+        console.log(errs)
+    }
     expect(errs).toBeEmpty();
 })

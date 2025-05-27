@@ -48,14 +48,6 @@ export const Ω = (...values: any[]) => {
     return rtn
 }
 
-export interface DuckDBClient {
-    query<T = any>(sql: string, params?: Record<string, any>): Promise<T[]>
-    run(sql: string): Promise<any>
-    load(...extensions: string[]): any
-    dump(sql: string): void
-    // close(): Promise<void>;
-}
-
 export const keyBy = <T extends object, K extends keyof T>(array: T[], key: K): Record<string, T> => {
     return array.reduce((acc, obj) => {
         const keyValue = obj[key]

@@ -26,7 +26,7 @@ export type NestedKeyOf<ObjectType extends Record<string, any>> = {
 }[keyof ObjectType & (string | number)]
 
 export type StrictCollection = { catalog: string; uri: string; alias: string }
-// Utility type to merge two types into a single object
+// Utility type to merge two types into a frame object
 export type Merge<T, U> = { [K in keyof T | keyof U]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never }
 export type DefaultizeCollection<C> = // Renamed 'Collection' to 'C' for clarity
     // 1. If all properties (catalog, uri, alias) are present, return as is.
@@ -64,7 +64,7 @@ export type MetaModel = GenericRecursive<GField>
 
 type ToComp<x> = x
 
-export type VTypes = 'single' | 'records' | 'values' | 'grouped' | 'keyed' | 'row'
+export type VTypes = 'frame' | 'records' | 'values' | 'grouped' | 'keyed' | 'row'
 
 type PArray<X> = Promise<X[]>
 type PRecord<X> = Promise<Record<string, X>>
@@ -76,12 +76,12 @@ type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, Selec
 
     grouped: (this: MS<'grouped', Available, Selected, SelectedValues, SelectedSingle>) => PRecord<ToPlain<Selected>[]>
     keyed: (this: MS<'keyed', Available, Selected, SelectedValues, SelectedSingle>) => PRecord<ToPlain<Selected>>
-    single: (this: MS<'single', Available, Selected, SelectedValues, SelectedSingle>) => Promise<ToPlain<SelectedSingle>>
+    frame: (this: MS<'frame', Available, Selected, SelectedValues, SelectedSingle>) => Promise<ToPlain<SelectedSingle>[]>
 }
 
 type MSR<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'records', A, S, SV, SS>
 type MSV<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'values', A, S, SV, SS>
-type MSS<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'single', A, S, SV, SS>
+type MSF<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'frame', A, S, SV, SS>
 
 
 export type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
@@ -103,7 +103,7 @@ export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel
 
     keyBy<G extends (KeyPicker<A, S>)>(key: G): MS<'keyed', A, S, SV, SS>
 
-    minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'single', A, S, SV, SS>
+    minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'row', A, S, SV, SS>
 
     maxBy: this['minBy']
 
@@ -195,9 +195,9 @@ export interface FromResult<Ressource extends keyof Models, C extends StrictColl
     // Cbis: select(e => [e.name, e.age, e.total,... 421 more items])
     select<T extends readonly GField[]>(fn: (p: P, D: t.DMetaField) => [...T]): MSV<P, {}, T>
     // D: select(e => e.age)
-    select<U extends DPrimitiveField>(fn: (p: P, D: t.DMetaField) => U): MSS<P, {}, [], U>
+    select<U extends DPrimitiveField>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [], U>
     // F: select(e => `${e.name}__${e.total}`)
-    select<U extends Primitive>(fn: (p: P, D: t.DMetaField) => U): MSS<P, {}, [], PrimitiveField<U>>
+    select<U extends Primitive>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [], PrimitiveField<U>>
     // E: select(e => ({ name: e.name, age: e.age }))
     select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): MSR<P, U extends P ? ShallowModelFromCollectionList<C> : U>
 

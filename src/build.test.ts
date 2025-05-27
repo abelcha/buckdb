@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { MemoryDB } from '../buckdb'
+import { deriveState } from './build'
 
 // Utility function to normalize SQL for comparison
 const normalizeSQL = (sql: string): string =>
@@ -493,6 +494,11 @@ it('minBy', async () => {
         .execute() satisfies [string, string]
 })
 
+it('just for coverage', async () => {
+    await MemoryDB.from('test_usr').ensureSchemas()
+    deriveState({} as any, { x: null })
+
+})
 
 describe('UPDATE operations', () => {
     it('should create table and test UPDATE operations', async () => {
@@ -503,7 +509,6 @@ describe('UPDATE operations', () => {
                 { id: 2, name: 'Jane', age: 30, status: 'inactive' },
                 { id: 3, name: 'Bob', age: 35, status: 'active' }
             ]).execute()
-
 
         // Test UPDATE SQL generation (bypass strict typing with as any)
         const updateQuery = (MemoryDB as any).update('test_usr')

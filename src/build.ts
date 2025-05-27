@@ -47,7 +47,7 @@ export const dstate = {
 
 export type DState = typeof dstate
 
-const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>, format = (e: any) => e) => {
+export const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>, format = (e: any) => e) => {
     return Object.entries(kmap).reduce((acc, [key, values]) => {
         if (!Array.isArray(values)) {
             return { ...acc, [key]: values }
@@ -56,6 +56,7 @@ const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>
         return Object.assign(acc, { [key]: (s[key as keyof DState] as any[] || []).concat(newVals) })
     }, s) as DState
 }
+
 
 export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
     function database(a: any, b: any) {
@@ -206,10 +207,9 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 exec: execute,
                 execute,
                 toState: () => state,
-                dump: (opts: any) => dump(state, opts) || fromRes(state),
-                show: async function () {
-                    console.log(toSql(state))
-                    return fromRes(state).execute().then(e => { console.table(e); return e })
+                dump: (opts: any) => { dump(state, opts); return fromRes(state) },
+                show: async function (opts: any) {
+                    return this.dump(opts).execute().then(e => { console.table(e); return e })
                 },
                 toSql: function (props = { pretty: false }) {
                     return toSql(Object.assign(state, props))

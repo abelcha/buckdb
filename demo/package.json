@@ -310,7 +310,7 @@
     "es-toolkit": "^1.35.0",
     "esbuild-wasm": "^0.25.2",
     "express": "^5.1.0",
-    "buck": "file:../",
+    "buck": "file:/me/dev/buckdb",
     "monaco-editor": "file:../../monaco-vscode-api/dist/packages/monaco-vscode-editor-api",
     "sucrase": "^3.35.0",
     "vite-plugin-wasm": "^3.4.1",

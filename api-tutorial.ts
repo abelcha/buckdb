@@ -26,7 +26,7 @@ Akira.from('Rental')
     .innerJoin('Film', e => e.Rental.customer_id === e.Customer.customer_id)
     .select(e => [`${e.Customer.last_name}, ${e.Customer.first_name}`])
     .where(e => (
-        // e.Rental.rental_date === null 
+        e.Rental.rental_date === null 
         // && e.rental_date !== e.Film.rental_duration
     ))
     .orderBy('title')

@@ -343,3 +343,42 @@ describe('extractBuckStatement', () => {
         expect(extractBuckStatement(testCode)).toEqual(expected)
     })
 })
+
+describe('Coverage tests', () => {
+    test('should handle circular references', () => {
+        const testCode = `
+            const a = b;
+            const b = a;
+            a.from('test');
+        `
+        const result = extractFromStatementsAST(testCode) as any[]
+        expect(result.length).toBe(1)
+        expect(result).toHaveLength(1)
+        expect(result[0].param).toBe('test')
+    })
+
+    test('should handle Buck with literal types', () => {
+        const testCode = `
+            const db = Buck({
+                str: "string",
+                num: 42,
+                bool: true,
+                nullVal: null
+            });
+        `
+        const result = extractBuckStatement(testCode) as any[]
+        expect(result[0].options?.str).toBe("string")
+        expect(result[0].options?.num).toBe(42)
+        expect(result[0].options?.bool).toBe(true)
+        expect(result[0].options?.nullVal).toBe(null)
+    })
+
+    test('should handle shorthand properties', () => {
+        const testCode = `
+            const value = "test";
+            const db = Buck({ value });
+        `
+        const result = extractBuckStatement(testCode) as any[]
+        expect(result[0].options).toBeNull()
+    })
+})

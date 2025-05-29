@@ -4,15 +4,15 @@ import { builder } from './src/build'
 import { generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
 export * as readers from './src/readers'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { CommandQueue, DuckdbCon } from './src/bindings'
+import { BuckDBBase, CommandQueue, DuckdbCon } from './buckdb.core'
 import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
-import { deriveName, formatSource, isBucket } from './src/utils'
+import { deriveName, formatSource, isBucket, Dict } from './src/utils'
 
 
 class JsonModelTable {
-    private jsonContent: Record<string, any> = null
-    constructor() {
-        this.jsonContent = JSON.parse(readFileSync('./.buck/table.json', 'utf-8'))
+    constructor(
+        private jsonContent: Dict = JSON.parse(readFileSync('./.buck/table.json', 'utf-8'))
+    ) {
     }
     hasSchema(ressource: string, uri: string) {
         return this.jsonContent[ressource]?.[uri] ? true : false
@@ -46,7 +46,6 @@ const mapValueRec = (value: DuckDBValue) => {
     } else if (typeof value === 'bigint') {
         return Number(value)
     } else {
-        // console.log('ellllse', value?.constructor)
         return value
     }
 }
@@ -56,7 +55,7 @@ function buildResult(reader: DuckDBResultReader) {
     const rows = reader.getRows()
     // @ts-ignore
     const columnNames = reader.result.columnNames()
-    const rtn = []
+    const rtn: Dict[] = []
     for (let item of rows) {
         const row = {}
         for (const [i, name] of columnNames.entries()) {
@@ -69,17 +68,18 @@ function buildResult(reader: DuckDBResultReader) {
 }
 
 
-class BuckDBNode implements DuckdbCon {
-    readonly type = 'node'
+class BuckDBNode extends BuckDBBase {
+    readonly type = 'node' as const
     private _instance: DuckDBInstance
     private _connection: DuckDBConnection
     private _initPromise: Promise<void> | null = null
-    readonly cmdQueue = new CommandQueue()
     public isBucket: boolean = false
+    
     constructor(
-        public handle?: string,
-        public settings?: Partial<DSettings>,
+        handle?: string,
+        settings?: Partial<DSettings>,
     ) {
+        super(handle, settings)
         this.isBucket = !!isBucket(handle)
         this._instance = null as unknown as DuckDBInstance
         this._connection = null as unknown as DuckDBConnection
@@ -116,10 +116,6 @@ class BuckDBNode implements DuckdbCon {
         // await Bun.file('./.buck/table3.ts').write(tsfile);
     }
 
-    async describe(uri: string) {
-        return this.query(`DESCRIBE FROM ${formatSource({ catalog: this.handle, uri })};`)
-    }
-
     async ensureSchema(uri: string) {
         const h = this.handle || ''
         if (jsonModelTable.hasSchema(h, uri)) {
@@ -127,19 +123,6 @@ class BuckDBNode implements DuckdbCon {
         }
         const describeResp = await this.describe(uri)
         jsonModelTable.writeDescribedSchema(h, uri, describeResp)
-    }
-    lazySettings(s: Partial<DSettings>) {
-        this.cmdQueue.pushSettings(s)
-        return this
-    }
-    lazyAttach(uri: string, alias?: string, options?: { readonly: boolean }) {
-        this.cmdQueue.pushAttach(uri, alias || deriveName(uri), options)
-        return this
-    }
-
-    lazyExtensions(...extensions: string[]) {
-        this.cmdQueue.pushExtensions(...extensions)
-        return this
     }
     async query(sql: string, opts: Record<string, any> = {}) {
         await this._initDB()

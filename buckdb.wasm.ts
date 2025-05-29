@@ -6,22 +6,14 @@ import type * as DuckdbTyped from '@duckdb/duckdb-wasm/dist/types/src/index'
 // @ts-ignore
 import * as _Duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm'
 const Duckdb = _Duckdb as typeof DuckdbTyped
-import { CommandQueue, DuckdbCon } from './src/bindings'
-import { deriveName } from './src/build.types'
+import { BuckDBBase, CommandQueue, DuckdbCon } from './buckdb.core'
 import { formatSource, isBucket } from './src/utils'
 
-class BuckDBWasm implements DuckdbCon {
-    readonly type = 'wasm'
-
-    constructor(
-        public handle?: string,
-        public settings?: Record<string, any>,
-    ) {
-    }
+class BuckDBWasm extends BuckDBBase {
+    readonly type = 'wasm' as const
     _db: DuckdbTyped.AsyncDuckDB = null
     _con: DuckdbTyped.AsyncDuckDBConnection | null = null
     _initPromise: Promise<void> | null = null
-    readonly cmdQueue = new CommandQueue()
 
     private _initDB(): Promise<void> {
         // If initialization is already in progress or done, return the existing promise/resolved promise
@@ -68,26 +60,8 @@ class BuckDBWasm implements DuckdbCon {
         return this._initPromise
     }
 
-    lazySettings(s: Partial<t.DSettings>) {
-        this.cmdQueue.pushSettings(s)
-        return this
-    }
-
-    // Make attach lazy by queueing it
-    lazyAttach(uri: string, alias?: string, options?: { readonly: boolean }) {
-        // this.cmdQueue.pushAttach(uri, alias || deriveName(uri), options)
-        return this
-    }
-
-    lazyExtensions(...extensions: string[]): this {
-        this.cmdQueue.pushExtensions(...extensions)
-        return this
-    }
     async ensureSchema(uri: string) {
         // todo
-    }
-    async describe(uri: string) {
-        return this.query(`DESCRIBE (FROM ${formatSource({ uri, catalog: this.handle })});`)
     }
 
     private async _executeQueuedCommands(): Promise<void> {

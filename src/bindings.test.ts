@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { CommandQueue } from './bindings'
+import { CommandQueue } from '../buckdb.core'
 
 describe('CommandQueue', () => {
     it('should initialize with empty queue', () => {

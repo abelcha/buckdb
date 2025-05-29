@@ -137,7 +137,7 @@ export default defineConfig({
         port: 5173,
         host: '0.0.0.0',
         fs: {
-            allow: ['../../'], // allow to load codicon.ttf from monaco-editor in the parent folder and monaco-vscode-api package resources
+            allow: ['../../../'], // allow to load codicon.ttf from monaco-editor in the parent folder and monaco-vscode-api package resources
         },
     },
     define: {
@@ -151,4 +151,4 @@ export default defineConfig({
         },
     },
 })
-// console.log('===', path.resolve(__dirname, '../../buckdb'))
+// console.log('===', path.resolve(__dirname, '@external'))

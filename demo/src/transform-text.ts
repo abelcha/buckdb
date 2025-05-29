@@ -1,8 +1,8 @@
 import { debounce, memoize } from 'es-toolkit'
 import type { IDisposable } from 'monaco-editor'
 import { EventEmitter, TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
-import contentjson from 'buck/.buck/table.json' // Use relative path
-import { generateInterface, serializeDescribe } from 'buck/src/interface-generator' // Use relative path
+import contentjson from '@external/.buck/table.json' // Use relative path
+import { generateInterface, serializeDescribe } from '@external/src/interface-generator' // Use relative path
 import { BuckStatementParts, extractBuckStatement, extractFromStatementsAST, FromStatementParts } from '../src/extract-from-statements'
 import { writeFile } from './setup.common'
 

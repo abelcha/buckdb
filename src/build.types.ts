@@ -43,11 +43,23 @@ export type ModelForCollection<C extends StrictCollection> = C extends { catalog
     ? R extends keyof Models ? T extends keyof Models[R] ? Models[R][T] : T extends keyof Models[''] ? Models[''][T] : {} : {}
     : {}
 
-export type ModelFromCollectionList<C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? Simplify<Merge<Merge<{ [K in F['alias']]: ModelForCollection<F> }, ModelForCollection<F>>, ModelFromCollectionList<Rest>>>
+export const v__ = Symbol('alias')
+
+export type ShallowModel<T extends Record<string, any>> = {
+    [K in keyof T as T[K] extends Record<typeof v__, true> ? never : K]: T[K]
+}
+
+type ModelFromCollectionList<C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? Simplify<Merge<Merge<{ [K in F['alias']]: { [v__]: true } & ModelForCollection<F> }, ModelForCollection<F>>, ModelFromCollectionList<Rest>>>
     : {} // Base case should be an empty object for merging
 // Recursive type to merge all models from collections, using alias as key
 export type ShallowModelFromCollectionList<C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? ModelForCollection<F> & ModelFromCollectionList<Rest>
     : {} // Base case should be an empty object for merging
+
+
+type uuuz = ModelFromCollectionList<[{ catalog: '', uri: 'duckdb_functions()', alias: 'ddx' }]>
+
+function __(u: ShallowModel<uuuz>) {
+}
 
 export type DRawField = t.DAnyField
 
@@ -60,6 +72,22 @@ export interface GenericRecursive<T> {
 }
 export type SelectModel = GenericRecursive<GField>
 export type MetaModel = GenericRecursive<GField>
+export type Strish = string | {}
+export type Primitive = null | undefined | string | number | boolean | symbol | bigint
+export type IsPrimitive<T> = [T] extends [Primitive] ? true : false
+
+type PrimitiveField<T> = T extends number ? t.DNumericField
+    : T extends string ? t.DVarcharField
+    : T extends boolean ? t.DBoolField
+    : t.DAnyField
+
+type Last<T extends any[]> = T extends [...infer Rest, infer L] ? L : never
+
+type KeyIntersection<A, B> = {
+    [K in keyof A & keyof B]: K
+}[keyof A & keyof B]
+
+type uuu = KeyIntersection<{ lol: 123, tata: 42 }, { tata: 42, toto: 12, lol: 'x' }>
 
 
 type ToComp<x> = x
@@ -68,6 +96,11 @@ export type VTypes = 'frame' | 'records' | 'values' | 'grouped' | 'keyed' | 'row
 
 type PArray<X> = Promise<X[]>
 type PRecord<X> = Promise<Record<string, X>>
+
+type FirstElement<T> = T extends [infer F, ...any[]] ? F : never
+
+// ====================================================================================================
+// ====================================================================================================
 
 type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = []> = {
     row: (this: MS<'row', Available, Selected, SelectedValues>) => Promise<SelectedValues extends [] ? ToPlain<Selected> : ToPlain<SelectedValues>>
@@ -86,7 +119,7 @@ type MSF<A extends MetaModel, S extends SelectModel = {}, SV = []> = MS<'frame',
 
 export type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
 
-export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = []> {
+export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = []> extends Selectors<S> {
     execute: FnMap<A, S, SV>[V]
     exec: this['execute']
     show: this['execute']
@@ -131,24 +164,42 @@ export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel
     copyTo: CopyToInterface<A, S>['to'] // Pass available fields to CopyToInterface
 }
 
-export type Strish = string | {}
-export type Primitive = null | undefined | string | number | boolean | symbol | bigint
-export type IsPrimitive<T> = [T] extends [Primitive] ? true : false
 
-type PrimitiveField<T> = T extends number ? t.DNumericField
-    : T extends string ? t.DVarcharField
-    : T extends boolean ? t.DBoolField
-    : t.DAnyField
+export interface FrameSelectors<G> {
+    select<U extends DPrimitiveField>(fn: (p: FirstElement<G>, D: t.DMetaField) => U): MS<'frame', {}, {}, [U]>
 
-type Last<T extends any[]> = T extends [...infer Rest, infer L] ? L : never
+}
 
-type KeyIntersection<A, B> = {
-    [K in keyof A & keyof B]: K
-}[keyof A & keyof B]
+export interface Selectors<P extends MetaModel> {
 
-type uuu = KeyIntersection<{ lol: 123, tata: 42 }, { tata: 42, toto: 12, lol: 'x' }>
+    // A: select()
+    select(): MSR<P, ShallowModel<P>>
+    // B: select('name', 'age')
+    select<U extends (NestedKeyOf<P> & string)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<P, { [K in U[number] & keyof P]: P[K] }>
+    // C select(e => [e.name, e.age])
+    select<T______________1, T______________2>(fn: (p: P, D: t.DMetaField) => [T______________1, T______________2]): MSV<P, {}, [T______________1, T______________2]>
+    select<T_________1, T_______2, T________3>(fn: (p: P, D: t.DMetaField) => [T_________1, T_______2, T________3]): MSV<P, {}, [T_________1, T_______2, T________3]>
+    select<T_____1, T_____2, T_____3, T_____4>(fn: (p: P, D: t.DMetaField) => [T_____1, T_____2, T_____3, T_____4]): MSV<P, {}, [T_____1, T_____2, T_____3, T_____4]>
+    select<T___1, T____2, T___3, T___4, T___5>(fn: (p: P, D: t.DMetaField) => [T___1, T____2, T___3, T___4, T___5]): MSV<P, {}, [T___1, T____2, T___3, T___4, T___5]>
+    select<T__1, T__2, T__3, T__4, T__5, T__6>(fn: (p: P, D: t.DMetaField) => [T__1, T__2, T__3, T__4, T__5, T__6]): MSV<P, {}, [T__1, T__2, T__3, T__4, T__5, T__6]>
+    select<T_1, T_2, T_3, T__4, T_5, T_6, T_7>(fn: (p: P, D: t.DMetaField) => [T_1, T_2, T_3, T__4, T_5, T_6, T_7]): MSV<P, {}, [T_1, T_2, T_3, T__4, T_5, T_6, T_7]>
+    select<T_1, T_2, T3, T4, T5, T6, T_7, T_8>(fn: (p: P, D: t.DMetaField) => [T_1, T_2, T3, T4, T5, T6, T_7, T_8]): MSV<P, {}, [T_1, T_2, T3, T4, T5, T6, T_7, T_8]>
+    select<A____, D, E, F, G, H, I, J, _____L>(fn: (p: P, D: t.DMetaField) => [A____, D, E, F, G, H, I, J, _____L]): MSV<P, {}, [A____, D, E, F, G, H, I, J, _____L]>
+    select<A___, C, D, E, F, G, H, I, J, ___L>(fn: (p: P, D: t.DMetaField) => [A___, C, D, E, F, G, H, I, J, ___L]): MSV<P, {}, [A___, C, D, E, F, G, H, I, J, ___L]>
+    select<A__, C, D, E, F, G, H, I, J, K, _L>(fn: (p: P, D: t.DMetaField) => [A__, C, D, E, F, G, H, I, J, K, _L]): MSV<P, {}, [A__, C, D, E, F, G, H, I, J, K, _L]>
+    select<A, B, C, D, E, F, G, H, I, J, K, L>(fn: (p: P, D: t.DMetaField) => [A, B, C, D, E, F, G, H, I, J, K, L]): MSV<P, {}, [A, B, C, D, E, F, G, H, I, J, K, L]>
+    // Cbis: select(e => [e.name, e.age, e.total,... 421 more items])
+    select<T extends readonly GField[]>(fn: (p: P, D: t.DMetaField) => [...T]): MSV<P, {}, T>
+    // D: select(e => e.age)
+    select<U extends DPrimitiveField>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [U]>
+    // F: select(e => `${e.name}__${e.total}`)
+    select<U extends Primitive>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [PrimitiveField<U>]>
+    // E: select(e => ({ name: e.name, age: e.age }))
+    select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): MSR<P, ShallowModel<U>>
 
-export interface FromResult<Ressource extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
+}
+
+export interface FromResult<Ressource extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> extends Selectors<P> {
     join
         <
             K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>,
@@ -175,31 +226,6 @@ export interface FromResult<Ressource extends keyof Models, C extends StrictColl
     crossJoin: this['join']
     naturalJoin: this['join']
     innerJoin: this['join']
-
-    // A: select()
-    select(): MSR<P, ShallowModelFromCollectionList<C>>
-    // B: select('name', 'age')
-    select<U extends (NestedKeyOf<P> & string)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<P, { [K in U[number] & keyof P]: P[K] }>
-    // C select(e => [e.name, e.age])
-    select<T______________1, T______________2>(fn: (p: P, D: t.DMetaField) => [T______________1, T______________2]): MSV<P, {}, [T______________1, T______________2]>
-    select<T_________1, T_______2, T________3>(fn: (p: P, D: t.DMetaField) => [T_________1, T_______2, T________3]): MSV<P, {}, [T_________1, T_______2, T________3]>
-    select<T_____1, T_____2, T_____3, T_____4>(fn: (p: P, D: t.DMetaField) => [T_____1, T_____2, T_____3, T_____4]): MSV<P, {}, [T_____1, T_____2, T_____3, T_____4]>
-    select<T___1, T____2, T___3, T___4, T___5>(fn: (p: P, D: t.DMetaField) => [T___1, T____2, T___3, T___4, T___5]): MSV<P, {}, [T___1, T____2, T___3, T___4, T___5]>
-    select<T__1, T__2, T__3, T__4, T__5, T__6>(fn: (p: P, D: t.DMetaField) => [T__1, T__2, T__3, T__4, T__5, T__6]): MSV<P, {}, [T__1, T__2, T__3, T__4, T__5, T__6]>
-    select<T_1, T_2, T_3, T__4, T_5, T_6, T_7>(fn: (p: P, D: t.DMetaField) => [T_1, T_2, T_3, T__4, T_5, T_6, T_7]): MSV<P, {}, [T_1, T_2, T_3, T__4, T_5, T_6, T_7]>
-    select<T_1, T_2, T3, T4, T5, T6, T_7, T_8>(fn: (p: P, D: t.DMetaField) => [T_1, T_2, T3, T4, T5, T6, T_7, T_8]): MSV<P, {}, [T_1, T_2, T3, T4, T5, T6, T_7, T_8]>
-    select<A____, D, E, F, G, H, I, J, _____L>(fn: (p: P, D: t.DMetaField) => [A____, D, E, F, G, H, I, J, _____L]): MSV<P, {}, [A____, D, E, F, G, H, I, J, _____L]>
-    select<A___, C, D, E, F, G, H, I, J, ___L>(fn: (p: P, D: t.DMetaField) => [A___, C, D, E, F, G, H, I, J, ___L]): MSV<P, {}, [A___, C, D, E, F, G, H, I, J, ___L]>
-    select<A__, C, D, E, F, G, H, I, J, K, _L>(fn: (p: P, D: t.DMetaField) => [A__, C, D, E, F, G, H, I, J, K, _L]): MSV<P, {}, [A__, C, D, E, F, G, H, I, J, K, _L]>
-    select<A, B, C, D, E, F, G, H, I, J, K, L>(fn: (p: P, D: t.DMetaField) => [A, B, C, D, E, F, G, H, I, J, K, L]): MSV<P, {}, [A, B, C, D, E, F, G, H, I, J, K, L]>
-    // Cbis: select(e => [e.name, e.age, e.total,... 421 more items])
-    select<T extends readonly GField[]>(fn: (p: P, D: t.DMetaField) => [...T]): MSV<P, {}, T>
-    // D: select(e => e.age)
-    select<U extends DPrimitiveField>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [U]>
-    // F: select(e => `${e.name}__${e.total}`)
-    select<U extends Primitive>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [PrimitiveField<U>]>
-    // E: select(e => ({ name: e.name, age: e.age }))
-    select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): MSR<P, U extends P ? ShallowModelFromCollectionList<C> : U>
 
     // X: from('xxx').execute() === from('xxx').select().execute()
     execute(): ReturnType<Simplify<MSR<P, ShallowModelFromCollectionList<C>>>['execute']>
@@ -243,8 +269,8 @@ type DBuilderResult<T extends keyof Models> = {
 
     from<K extends keyof Models['error']>(x: K): Models['error'][K]
 
-    // from<TT extends keyof Models, SS extends StrictCollection[]>(obj: FromResult<TT>)
-    // from<TT extends keyof Models, SS extends StrictCollection[]>(obj: FromResult<TT>)
+    from<TT extends keyof Models, SS extends StrictCollection[]>(obj: FromResult<TT, SS>): FromResult<TT, SS>
+    from<V1 extends VTypes, A1 extends MetaModel, S1 extends SelectModel = {}>(obj: MS<V1, A1, S1>): MS<V1, A1, S1>
 
     loadExtensions(...ext: string[]): DBuilderResult<T> // Use the defined type here
     // fetchSchema(id: string): Promise<Models>

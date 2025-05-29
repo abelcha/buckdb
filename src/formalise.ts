@@ -35,7 +35,7 @@ const formatAlias = (source: { alias?: string; uri: string }) => {
     }
     return formatSource(source)
 }
-const formatAs = (source: { field: string; as?: string }) => {
+const formatAs = (source: DSelectee) => {
     if (source.as && typeof source.as === 'string') {
         return `${source.field.toString().padEnd(20)} AS ${source.as}`
     }

@@ -182,16 +182,34 @@ export interface DDateField extends DAnyField {
 }
 
 export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
+  /**                                                            @default: combine(col0:AGGREGATE_STATE<?>, col1:ANY) -> AGGREGATE_STATE<?>*/
+  combine(col1: DAnyable): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: array_slice(list:ANY, begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
-  array_slice(begin: DAnyable, end: DAnyable, step?: DAnyable | DNumericable): this;
+  array_slice(begin: DAnyable, end: DAnyable, step?: DAnyable | DNumericable): DAny<DNum, DStr>;
   /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: list_slice(list:ANY, begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
   list_slice: this["array_slice"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Returns the number of bits that are set	@example: bit_count(31)	@default: bit_count(x:BIT) -> BIGINT*/
+  bit_count(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the era component from a date or timestamp	@example: era(timestamp '2021-08-03 11:59:44.123456')	@default: era(ts:INTERVAL) -> BIGINT*/
+  era(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the day component from a date or timestamp	@example: day(timestamp '2021-08-03 11:59:44.123456')	@default: day(ts:INTERVAL) -> BIGINT*/
+  day(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract_value(map(['key'], ['val']), 'key')	@default: map_extract_value(map:ANY, key:ANY) -> ANY*/
-  map_extract_value(key: DAnyable, ...vargs: DAnyable[]): this;
+  map_extract_value(key: DAnyable, ...vargs: DAnyable[]): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789	@default: nanosecond(tsns:INTERVAL) -> BIGINT*/
+  nanosecond(): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Concatenate many strings together.	@example: concat('Hello', ' ', 'World')	@default: concat(string:ANY) -> VARCHAR*/
   concat(...vargs: DAnyable[]): DStr;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Sets the nth bit in bitstring to newvalue; the first (leftmost) bit is indexed 0. Returns a new bitstring	@example: set_bit('0110010'::BIT, 2, 0)	@default: set_bit(bitstring:BIT, index:INTEGER, newValue:INTEGER) -> BIT*/
+  set_bit(index: DNumericable, newValue: DNumericable): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the range between the two given enum values as an array. The values must be of the same enum type. When the first parameter is NULL, the result starts with the first value of the enum type. When the second parameter is NULL, the result ends with the last value of the enum type	@example: enum_range_boundary(NULL, 'happy'::mood)	@default: enum_range_boundary(start:ANY, end:ANY) -> VARCHAR[]*/
   enum_range_boundary(end: DAnyable): DArrayField<DVarcharField>;
@@ -199,11 +217,31 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
   /**                                                            @description: Whether or not the provided value is the histogram "other" bin (used for values not belonging to any provided bin)	@example: is_histogram_other_bin(v)	@default: is_histogram_other_bin(val:ANY) -> BOOLEAN*/
   is_histogram_other_bin(): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the week component from a date or timestamp	@example: week(timestamp '2021-08-03 11:59:44.123456')	@default: week(ts:INTERVAL) -> BIGINT*/
+  week(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Constructs a binary-comparable sort key based on a set of input parameters and sort qualifiers	@example: create_sort_key('A', 'DESC')	@default: create_sort_key(parameters:ANY) -> BLOB*/
-  create_sort_key(...vargs: DAnyable[]): this;
+  create_sort_key(...vargs: DAnyable[]): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the year component from a date or timestamp	@example: year(timestamp '2021-08-03 11:59:44.123456')	@default: year(ts:INTERVAL) -> BIGINT*/
+  year(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the hour component from a date or timestamp	@example: hour(timestamp '2021-08-03 11:59:44.123456')	@default: hour(ts:INTERVAL) -> BIGINT*/
+  hour(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Number of bytes in blob.	@example: octet_length('\xAA\xBB'::BLOB)	@default: octet_length(blob:BIT) -> BIGINT*/
+  octet_length(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the timezone_hour component from a date or timestamp	@example: timezone_hour(timestamp '2021-08-03 11:59:44.123456')	@default: timezone_hour(ts:INTERVAL) -> BIGINT*/
+  timezone_hour(): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the name of a given expression	@example: alias(42 + 1)	@default: alias(expr:ANY) -> VARCHAR*/
   alias(): DStr;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:VARINT) -> VARCHAR*/
+  to_hex(): DStr;
+  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: hex(value:VARINT) -> VARCHAR*/
+  hex: this["to_hex"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns a string with statistics about the expression. Expression can be a column, constant, or SQL expression	@example: stats(5)	@default: stats(expression:ANY) -> VARCHAR*/
   stats(): DStr;
@@ -211,14 +249,95 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
   /**                                                            @description: Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example: hash('🦆')	@default: hash(param:ANY) -> UBIGINT*/
   hash(...vargs: DAnyable[]): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @default: host(col0:INET) -> VARCHAR*/
+  host(): DStr;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the epoch component in nanoseconds from a temporal type	@example: epoch_ns(timestamp '2021-08-03 11:59:44.123456')	@default: epoch_ns(temporal:INTERVAL) -> BIGINT*/
+  epoch_ns(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the VectorType of a given column	@example: vector_type(col)	@default: vector_type(col:ANY) -> VARCHAR*/
   vector_type(): DStr;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the month component from a date or timestamp	@example: month(timestamp '2021-08-03 11:59:44.123456')	@default: month(ts:INTERVAL) -> BIGINT*/
+  month(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the value with the named tags from the union. NULL if the tag is not currently selected	@example: union_extract(s, 'k')	@default: union_extract(union:UNION, tag:VARCHAR) -> ANY*/
+  union_extract(tag: DVarcharable): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @default: family(col0:INET) -> UTINYINT*/
+  family(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the decade component from a date or timestamp	@example: decade(timestamp '2021-08-03 11:59:44.123456')	@default: decade(ts:INTERVAL) -> BIGINT*/
+  decade(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @default: netmask(col0:INET) -> INET*/
+  netmask(): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @default: network(col0:INET) -> INET*/
+  network(): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Bitwise XOR	@example: xor(17, 5)	@default: xor(left:BIT, right:BIT) -> BIT*/
+  xor(right: DAnyable): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the second component from a date or timestamp	@example: second(timestamp '2021-08-03 11:59:44.123456')	@default: second(ts:INTERVAL) -> BIGINT*/
+  second(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the minute component from a date or timestamp	@example: minute(timestamp '2021-08-03 11:59:44.123456')	@default: minute(ts:INTERVAL) -> BIGINT*/
+  minute(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the isodow component from a date or timestamp	@example: isodow(timestamp '2021-08-03 11:59:44.123456')	@default: isodow(ts:INTERVAL) -> BIGINT*/
+  isodow(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @default: finalize(col0:AGGREGATE_STATE<?>) -> INVALID*/
+  finalize(): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Retrieve the currently selected tag of the union as an ENUM	@example: union_tag(union_value(k := 'foo'))	@default: union_tag(union:UNION) -> ANY*/
+  union_tag(): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the epoch component in milliseconds from a temporal type	@example: epoch_ms(timestamp '2021-08-03 11:59:44.123456')	@default: epoch_ms(temporal:INTERVAL) -> BIGINT*/
+  epoch_ms(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the epoch component in microseconds from a temporal type	@example: epoch_us(timestamp '2021-08-03 11:59:44.123456')	@default: epoch_us(temporal:INTERVAL) -> BIGINT*/
+  epoch_us(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the timezone_minute component from a date or timestamp	@example: timezone_minute(timestamp '2021-08-03 11:59:44.123456')	@default: timezone_minute(ts:INTERVAL) -> BIGINT*/
+  timezone_minute(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @default: broadcast(col0:INET) -> INET*/
+  broadcast(): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns all values of the input enum type as an array	@example: enum_range(NULL::mood)	@default: enum_range(enm:ANY) -> VARCHAR[]*/
   enum_range(): DArrayField<DVarcharField>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Returns first starting index of the specified substring within bits, or zero if it is not present. The first (leftmost) bit is indexed 1	@example: bit_position('010'::BIT, '1110101'::BIT)	@default: bit_position(substring:BIT, bitstring:BIT) -> INTEGER*/
+  bit_position(bitstring: DAnyable): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @default: bit_length(col0:BIT) -> BIGINT*/
+  bit_length(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the weekday component from a date or timestamp	@example: weekday(timestamp '2021-08-03 11:59:44.123456')	@default: weekday(ts:INTERVAL) -> BIGINT*/
+  weekday(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the isoyear component from a date or timestamp	@example: isoyear(timestamp '2021-08-03 11:59:44.123456')	@default: isoyear(ts:INTERVAL) -> BIGINT*/
+  isoyear(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the quarter component from a date or timestamp	@example: quarter(timestamp '2021-08-03 11:59:44.123456')	@default: quarter(ts:INTERVAL) -> BIGINT*/
+  quarter(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the century component from a date or timestamp	@example: century(timestamp '2021-08-03 11:59:44.123456')	@default: century(ts:INTERVAL) -> BIGINT*/
+  century(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the epoch component from a temporal type	@example: epoch(timestamp '2021-08-03 11:59:44.123456')	@default: epoch(temporal:INTERVAL) -> DOUBLE*/
+  epoch(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the numeric value backing the given enum value	@example: enum_code('happy'::mood)	@default: enum_code(enm:ANY) -> ANY*/
-  enum_code(): this;
+  enum_code(): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the yearweek component from a date or timestamp	@example: yearweek(timestamp '2021-08-03 11:59:44.123456')	@default: yearweek(ts:INTERVAL) -> BIGINT*/
+  yearweek(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the timezone component from a date or timestamp	@example: timezone(timestamp '2021-08-03 11:59:44.123456')	@default: timezone(ts:INTERVAL) -> BIGINT*/
+  timezone(): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Whether or not we can implicitly cast from the source type to the other type	@example: can_implicitly_cast(NULL::INTEGER, NULL::BIGINT)	@default: can_cast_implicitly(sourceType:ANY, targetType:ANY) -> BOOLEAN*/
   can_cast_implicitly(targetType: DAnyable): DBoolField;
@@ -229,28 +348,65 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
   /**                                                            @description: Returns the last value of the input enum type	@example: enum_last(NULL::mood)	@default: enum_last(enm:ANY) -> VARCHAR*/
   enum_last(): DStr;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the dayofweek component from a date or timestamp	@example: dayofweek(timestamp '2021-08-03 11:59:44.123456')	@default: dayofweek(ts:INTERVAL) -> BIGINT*/
+  dayofweek(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the dayofyear component from a date or timestamp	@example: dayofyear(timestamp '2021-08-03 11:59:44.123456')	@default: dayofyear(ts:INTERVAL) -> BIGINT*/
+  dayofyear(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the name of the data type of the result of the expression	@example: typeof('abc')	@default: typeof(expression:ANY) -> VARCHAR*/
   typeof(): DStr;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the lowest value of the set of input parameters	@example: least(42, 84)	@default: least(arg1:ANY) -> ANY*/
-  least(...vargs: DAnyable[]): this;
+  least(...vargs: DAnyable[]): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Converts the value to binary representation	@example: bin(42)	@default: to_binary(value:VARINT) -> VARCHAR*/
+  to_binary(): DStr;
+  /**                                                            @description: Converts the value to binary representation	@example: bin(42)	@default: bin(value:VARINT) -> VARCHAR*/
+  bin: this["to_binary"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Pads the bitstring until the specified length	@example: bitstring('1010'::BIT, 7)	@default: bitstring(bitstring:BIT, length:INTEGER) -> BIT*/
+  bitstring(length: DNumericable): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Generates bin_count equi-width bins between the min and max. If enabled nice_rounding makes the numbers more readable/less jagged	@example: equi_width_bins(0, 10, 2, true)	@default: equi_width_bins(min:ANY, max:ANY, binCount:BIGINT, niceRounding:BOOLEAN) -> ANY[]*/
   equi_width_bins(max: DAnyable, binCount: DNumericable, niceRounding: DBoolable): DArrayField<DAnyField>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: If arg2 is NULL, return NULL. Otherwise, return arg1.	@example: constant_or_null(42, NULL)	@default: constant_or_null(arg1:ANY, arg2:ANY) -> ANY*/
-  constant_or_null(arg2: DAnyable, ...vargs: DAnyable[]): this;
+  constant_or_null(arg2: DAnyable, ...vargs: DAnyable[]): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the first value of the input enum type	@example: enum_first(NULL::mood)	@default: enum_first(enm:ANY) -> VARCHAR*/
   enum_first(): DStr;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the weekofyear component from a date or timestamp	@example: weekofyear(timestamp '2021-08-03 11:59:44.123456')	@default: weekofyear(ts:INTERVAL) -> BIGINT*/
+  weekofyear(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: map_extract(map:ANY, key:ANY) -> ANY*/
-  map_extract(key: DAnyable, ...vargs: DAnyable[]): this;
+  map_extract(key: DAnyable, ...vargs: DAnyable[]): DAny<DNum, DStr>;
   /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: element_at(map:ANY, key:ANY) -> ANY*/
   element_at: this["map_extract"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
-  greatest(...vargs: DAnyable[]): this;
+  greatest(...vargs: DAnyable[]): DAny<DNum, DStr>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the dayofmonth component from a date or timestamp	@example: dayofmonth(timestamp '2021-08-03 11:59:44.123456')	@default: dayofmonth(ts:INTERVAL) -> BIGINT*/
+  dayofmonth(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the millennium component from a date or timestamp	@example: millennium(timestamp '2021-08-03 11:59:44.123456')	@default: millennium(ts:INTERVAL) -> BIGINT*/
+  millennium(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: length(string:BIT) -> BIGINT*/
+  length(): DNum;
+  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: len(string:BIT) -> BIGINT*/
+  len: this["length"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extracts the nth bit from bitstring; the first (leftmost) bit is indexed 0	@example: get_bit('0110010'::BIT, 2)	@default: get_bit(bitstring:BIT, index:INTEGER) -> INTEGER*/
+  get_bit(index: DNumericable): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the millisecond component from a date or timestamp	@example: millisecond(timestamp '2021-08-03 11:59:44.123456')	@default: millisecond(ts:INTERVAL) -> BIGINT*/
+  millisecond(): DNum;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
+  /**                                                            @description: Extract the microsecond component from a date or timestamp	@example: microsecond(timestamp '2021-08-03 11:59:44.123456')	@default: microsecond(ts:INTERVAL) -> BIGINT*/
+  microsecond(): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
 }
 

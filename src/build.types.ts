@@ -253,5 +253,6 @@ export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResul
 export declare function DBuilder(): DBuilderResult<''>
 
 // Updated DBuilder declaration with catalog
-export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<T>
+export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Partial<t.DSettings>):
+    T extends keyof Models ? DBuilderResult<T> : DBuilderResult<''>
 // DBuilder()('s')

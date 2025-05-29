@@ -5,3 +5,4 @@ duckdb-node-neo
 .buck
 src/.buck
 data
+demo/dist

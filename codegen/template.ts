@@ -46,10 +46,11 @@ export interface DDateField extends DAnyField {
 }
 
 export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
-    /*{renderMethods({type: 'DAny', typeMap: {...gentypes, any: 'this'}})}*/
+    /*{renderMethods({type: 'DAny', typeMap: {...gentypes }})}*/
 }
 
 export interface DAnyComp extends DAny<DNumericComp, DVarcharComp> {
+    
 }
 
 export interface DAnyField extends DAny<DNumericField, DVarcharField> {

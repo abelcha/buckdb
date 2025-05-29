@@ -373,3 +373,6 @@ test('array slicer', () => {
 test('rental_date', () => {
   expect(parse(e => e.Rental.rental_date === null)).toBe("Rental.rental_date IS NULL")
 })
+test('literral', () => {
+  expect(parseObject(e => `_a_${e.comment}_b_`)).toEqual([['', '', "('_a_' || comment || '_b_')"]])
+})

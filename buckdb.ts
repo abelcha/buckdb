@@ -54,6 +54,7 @@ const mapValueRec = (value: DuckDBValue) => {
 
 function buildResult(reader: DuckDBResultReader) {
     const rows = reader.getRows()
+    // @ts-ignore
     const columnNames = reader.result.columnNames()
     const rtn = []
     for (let item of rows) {

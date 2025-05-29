@@ -229,7 +229,7 @@ import * as t from "./types";
 export interface Models {
     ["data/source.db"]: {
         ["orders"]: {
-            ["order_id"]: t.DOtherField; // Reverted
+            ["order_id"]: t.DAnyField; // Reverted
             ["customer"]: t.DStructField<{
                 ["name"]: t.DVarcharField; // Reverted
                 ["address"]: t.DStructField<{

@@ -19,18 +19,22 @@ Akira.from('Staff').select(e => e.first_name)
 // AND rental_date + INTERVAL film.rental_duration DAY < CURRENT_DATE()
 // ORDER BY title
 // LIMIT 5;
+from('duckdb_functions()')
+.select(e => `__${e.comment}_`)
+.execute()
 
 const r = Akira.from('Rental')
     .innerJoin('Customer', 'customer_id')
     .innerJoin('Address', 'address_id')
     .innerJoin('Film', e => e.Rental.customer_id === e.Customer.customer_id)
-    .select(e => [`${e.Customer.last_name}, ${e.Customer.first_name}`])
+    .select(e => `${e.Customer.last_name}, ${e.Customer.first_name}`)
     .where(e => (
         e.Rental.rental_date === null 
         // && e.rental_date !== e.Film.rental_duration
     ))
     .orderBy('title')
     .limit(5)
+    // .distinctOn('Address.city_id')
 
 
 

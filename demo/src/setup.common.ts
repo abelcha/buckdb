@@ -55,7 +55,7 @@ const typedef = (await import('@external/src/typedef.ts?raw')).default
 
 const types = (await import('@external/.buck/types.ts?raw')).default
 const utils = (await import('@external/src/utils.ts?raw')).default
-const bindings = (await import('@external/src/bindings.ts?raw')).default
+const core = (await import('@external/buckdb.core.ts?raw')).default
 const copy = (await import('@external/src/copy.ts?raw')).default
 const formalise = (await import('@external/src/formalise.ts?raw')).default
 const deepMap = (await import('@external/src/deep-map.ts?raw')).default
@@ -92,7 +92,7 @@ loadFile(table3, '.buck/table3.ts')
 loadFile(buildTypes, 'src/build.types.ts')
 loadFile(deepMap, 'src/deep-map.ts')
 loadFile(build, 'src/build.ts')
-loadFile(bindings, 'src/bindings.ts')
+loadFile(core, 'buckdb.core.ts')
 loadFile(buckdb, 'buckdb.ts')
 loadFile(demo, 'demo.ts')
 loadFile(typedef, 'src/typedef.ts')

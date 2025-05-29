@@ -23,8 +23,10 @@
       "vscode/*": ["../../monaco-vscode-api/dist/main/*"]
     },
     "typeRoots": [
-      "./node_modules/@types"
+      "./node_modules/@types",
+      "../../node_modules/@types" // Also check root node_modules
     ],
+    "types": ["bun-types"], // Add bun-types
     "skipLibCheck": true
   },
   "include": ["src", "vite.config.ts", "vite.netlify.config.ts", "update-local-dependencies.ts"]

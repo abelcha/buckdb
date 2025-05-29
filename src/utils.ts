@@ -9,6 +9,8 @@ export const deriveName = <T extends string>(value: T): DeriveName<T> => {
     return result.replace(/[^a-zA-Z0-9_]/g, '') as DeriveName<T>
 }
 
+export type Dict = Record<string, any>
+
 export const wrap = (value: string, charA: string, charB = charA): string => {
     if (value[0] === charA && value[value.length - 1] === charB) {
         return value

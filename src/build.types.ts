@@ -1,6 +1,6 @@
 import { Models } from '../.buck/table3'
 import * as t from '../.buck/types'
-import { DuckdbCon } from './bindings'
+import { DuckdbCon } from '../buckdb.core'
 import { DDirection } from './build'
 import { CopyToInterface } from './copy'
 import { ToPlain } from './deep-map'
@@ -69,56 +69,56 @@ export type VTypes = 'frame' | 'records' | 'values' | 'grouped' | 'keyed' | 'row
 type PArray<X> = Promise<X[]>
 type PRecord<X> = Promise<Record<string, X>>
 
-type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = [], SelectedSingle extends GField = t.DAnyField> = {
-    row: (this: MS<'row', Available, Selected, SelectedValues, SelectedSingle>) => Promise<SelectedValues extends [] ? ToPlain<Selected> : ToPlain<SelectedValues>>
-    values: (this: MS<'values', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToPlain<SelectedValues>>
-    records: (this: MS<'records', Available, Selected, SelectedValues, SelectedSingle>) => PArray<ToPlain<Selected>>
+type FnMap<Available extends MetaModel, Selected extends SelectModel = {}, SelectedValues = []> = {
+    row: (this: MS<'row', Available, Selected, SelectedValues>) => Promise<SelectedValues extends [] ? ToPlain<Selected> : ToPlain<SelectedValues>>
+    values: (this: MS<'values', Available, Selected, SelectedValues>) => PArray<ToPlain<SelectedValues>>
+    records: (this: MS<'records', Available, Selected, SelectedValues>) => PArray<ToPlain<Selected>>
 
-    grouped: (this: MS<'grouped', Available, Selected, SelectedValues, SelectedSingle>) => PRecord<ToPlain<Selected>[]>
-    keyed: (this: MS<'keyed', Available, Selected, SelectedValues, SelectedSingle>) => PRecord<ToPlain<Selected>>
-    frame: (this: MS<'frame', Available, Selected, SelectedValues, SelectedSingle>) => Promise<ToPlain<SelectedSingle>[]>
+    grouped: (this: MS<'grouped', Available, Selected, SelectedValues>) => PRecord<ToPlain<Selected>[]>
+    keyed: (this: MS<'keyed', Available, Selected, SelectedValues>) => PRecord<ToPlain<Selected>>
+    frame: (this: MS<'frame', Available, Selected, SelectedValues>) => PArray<ToPlain<SelectedValues extends [infer F] ? F : any>>
 }
 
-type MSR<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'records', A, S, SV, SS>
-type MSV<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'values', A, S, SV, SS>
-type MSF<A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> = MS<'frame', A, S, SV, SS>
+type MSR<A extends MetaModel, S extends SelectModel = {}, SV = []> = MS<'records', A, S, SV>
+type MSV<A extends MetaModel, S extends SelectModel = {}, SV = []> = MS<'values', A, S, SV>
+type MSF<A extends MetaModel, S extends SelectModel = {}, SV = []> = MS<'frame', A, S, SV>
 
 
 export type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
 
-export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField> {
-    execute: FnMap<A, S, SV, SS>[V]
+export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = []> {
+    execute: FnMap<A, S, SV>[V]
     exec: this['execute']
     show: this['execute']
     dump: (opts?: { state?: boolean }) => this
 
-    orderBy<U_ extends ([KeyPicker<A, S>, DDirection?][])>(...key: U_): MS<V, A, S, SV, SS>
-    orderBy<U extends ('ALL' | KeyPicker<A, S>)>(k: U, d?: DDirection): MS<V, A, S, SV, SS>
-    orderBy<Z>(_callback: (p: A & S, D: t.DMetaField) => Z, d?: DDirection): MS<V, A, S, SV, SS>
+    orderBy<U_ extends ([KeyPicker<A, S>, DDirection?][])>(...key: U_): MS<V, A, S, SV>
+    orderBy<U extends ('ALL' | KeyPicker<A, S>)>(k: U, d?: DDirection): MS<V, A, S, SV>
+    orderBy<Z>(_callback: (p: A & S, D: t.DMetaField) => Z, d?: DDirection): MS<V, A, S, SV>
 
-    groupBy<G extends KeyPicker<A, S, 'ALL'>>(...keys: G[] | G[][] | (['GROUPING SETS', G[][]] | ['CUBE' | 'ROLLUP', G[]])): MS<'grouped', A, S, SV, SS>
+    groupBy<G extends KeyPicker<A, S, 'ALL'>>(...keys: G[] | G[][] | (['GROUPING SETS', G[][]] | ['CUBE' | 'ROLLUP', G[]])): MS<'grouped', A, S, SV>
 
-    countBy<G extends (KeyPicker<A, S>)>(key: G): MS<'values', A, S, [string, number], SS>
+    countBy<G extends (KeyPicker<A, S>)>(key: G): MS<'values', A, S, [string, number]>
 
 
-    keyBy<G extends (KeyPicker<A, S>)>(key: G): MS<'keyed', A, S, SV, SS>
+    keyBy<G extends (KeyPicker<A, S>)>(key: G): MS<'keyed', A, S, SV>
 
-    minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'row', A, S, SV, SS>
+    minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'row', A, S, SV>
 
     maxBy: this['minBy']
 
-    where(fn: (p: ToComp<Merge<A, S>>, D: t.DMetaField) => any): MS<V, A, S, SV, SS>
-    where(rawStr: string): MS<V, A, S, SV, SS>
+    where(fn: (p: ToComp<Merge<A, S>>, D: t.DMetaField) => any): MS<V, A, S, SV>
+    where(rawStr: string): MS<V, A, S, SV>
 
     having: this['where']
-    distinctOn<G extends KeyPicker<A, S>>(...key: G[] | G[][]): MS<V, A, S, SV, SS>
+    distinctOn<G extends KeyPicker<A, S>>(...key: G[] | G[][]): MS<V, A, S, SV>
 
     // except<VV extends V, A extends MetaModel, S extends Selected>(a: MS<VV, A, S>): MS<VV, A, S>
     union<V2 extends VTypes, A2 extends MetaModel, S2 extends SelectModel>(a: MS<V2, A2, S2>): MS<V2, A & A2, S & S2>
     unionAll: this['union']
     unionByName: this['union']
     unionAllByName: this['union']
-    except(a: MS<any, any, any>): MS<V, A, S, SV, SS>
+    except(a: MS<any, any, any>): MS<V, A, S, SV>
     exceptAll: this['except']
     intersect: this['except']
     intersectAll: this['except']
@@ -195,9 +195,9 @@ export interface FromResult<Ressource extends keyof Models, C extends StrictColl
     // Cbis: select(e => [e.name, e.age, e.total,... 421 more items])
     select<T extends readonly GField[]>(fn: (p: P, D: t.DMetaField) => [...T]): MSV<P, {}, T>
     // D: select(e => e.age)
-    select<U extends DPrimitiveField>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [], U>
+    select<U extends DPrimitiveField>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [U]>
     // F: select(e => `${e.name}__${e.total}`)
-    select<U extends Primitive>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [], PrimitiveField<U>>
+    select<U extends Primitive>(fn: (p: P, D: t.DMetaField) => U): MSF<P, {}, [PrimitiveField<U>]>
     // E: select(e => ({ name: e.name, age: e.age }))
     select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): MSR<P, U extends P ? ShallowModelFromCollectionList<C> : U>
 
@@ -242,6 +242,9 @@ type DBuilderResult<T extends keyof Models> = {
         & InitialMaterializedResult<[DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }>]> // Use the alias
 
     from<K extends keyof Models['error']>(x: K): Models['error'][K]
+
+    // from<TT extends keyof Models, SS extends StrictCollection[]>(obj: FromResult<TT>)
+    // from<TT extends keyof Models, SS extends StrictCollection[]>(obj: FromResult<TT>)
 
     loadExtensions(...ext: string[]): DBuilderResult<T> // Use the defined type here
     // fetchSchema(id: string): Promise<Models>

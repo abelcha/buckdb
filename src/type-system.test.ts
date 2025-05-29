@@ -711,7 +711,7 @@ test('d.test.ts', async () => {
         const ___ = D.Struct({ toto: 123, lol: [{ xx: 123 }] }) satisfies { toto: t.DNumericField; lol: t.DArrayField<{ xx: t.DNumericField }> }
 
         const _x__ =
-            D.Struct(null as { toto: t.DNumericField; lol: t.DArrayField<t.DVarcharField> }) satisfies { toto: t.DNumericField; lol: t.DArrayField<t.DVarcharField> }
+            D.Struct(null as unknown as { toto: t.DNumericField; lol: t.DArrayField<t.DVarcharField> }) satisfies { toto: t.DNumericField; lol: t.DArrayField<t.DVarcharField> }
 
         const __ =
             D.Struct({ toto: 123, z: ['a', 'b', 'c'] }) satisfies { toto: t.DNumericField; z: t.DArrayField<t.DVarcharField> }

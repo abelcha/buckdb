@@ -465,7 +465,7 @@ export function parseObject<T extends Record<string, any>>(expr: Expr<T> | strin
     return [['', '', node.value]]
   }
   if (node.type === 'TemplateLiteral') {
-    return [['', '', node.quasis[0]?.value?.cooked]]
+    return [['', '', transformDuckdb(node, params, context)]]
   }
   if (node.type === 'Identifier' && params.has(node.name)) {
     const p = params.get(node.name)

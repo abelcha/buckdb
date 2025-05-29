@@ -2,6 +2,16 @@ import { describe, expect, it } from 'bun:test'
 import { mapTypes, mapTypesProps, TypeProps, PatternMatchers } from './typedef'
 
 describe('typedef', () => {
+    it('mapTypesProps', () => {
+        expect(mapTypesProps('[]', true)).toHaveProperty('rawType', 'any[]')
+        expect(mapTypesProps('VARCHAR[]', true)).toHaveProperty('rawType', 'string[]')
+        expect(mapTypesProps('VARCHAR[]', false)).toHaveProperty('rawType', 'any[]')
+        expect(mapTypesProps('TIMESTAMP', true)).toHaveProperty('rawType', 'Date')
+        expect(mapTypesProps('INTEGER', true)).toHaveProperty('rawType', 'number')
+        expect(mapTypesProps('BOOLEAN', true)).toHaveProperty('rawType', 'boolean')
+        expect(mapTypesProps('STRUCT', true)).toHaveProperty('rawType', 'Record<string,any>')
+        expect(mapTypesProps('VARCHAR', true)).toHaveProperty('rawType', 'string')
+    })
     it('should map SQL types correctly', () => {
         expect(mapTypes('VARCHAR')).toBe('DVarchar')
         expect(mapTypes('INTEGER')).toBe('DNumeric')

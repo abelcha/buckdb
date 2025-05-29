@@ -27,11 +27,22 @@ test('direclty from', async () => {
     ).toBe(`COPY (FROM duckdb_functions() SELECT function_oid, function_name) TO 's3://bucket/data.csv' (FORMAT CSV, HEADER TRUE)`)
 })
 
+test('copy with different format (parquet)', async () => {
+    expect(
+        copy(from('duckdb_types()').select()).to('events.parquet', { field_ids: ['a', 'b'],  compression_level: 5 }).toSql({ trim: true })
+    ).toBe(`COPY (FROM duckdb_types() SELECT *) TO 'events.parquet' (COMPRESSION_LEVEL 5, FIELD_IDS ['a', 'b'])`)
+})
 
 test('copy with different format (JSON)', async () => {
     expect(
         copy(from('duckdb_types()').select()).to('events.json', { format: 'json' }).toSql({ trim: true })
     ).toBe(`COPY (FROM duckdb_types() SELECT *) TO 'events.json' (FORMAT JSON)`)
+})
+
+test('copy with partition', async () => {
+    expect(
+        copy(from('duckdb_types()').select()).to('events.json', { format: 'json', partition_by: 'database_name' }).toSql({ trim: true })
+    ).toBe(`COPY (FROM duckdb_types() SELECT *) TO 'events.json' (FORMAT JSON, PARTITION_BY database_name)`)
 })
 
 test('copy with multiple options', async () => {

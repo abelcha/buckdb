@@ -358,7 +358,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
       },
     }
 
-    if (!(node.type in MapFunc)) {
+    if (!(node?.type in MapFunc)) {
       if (context?.log !== false) {
         console.log(JSON.stringify(node, null, 2))
       }
@@ -459,6 +459,7 @@ const handleExcluded = ({ excluded }: { excluded: string[] } & any) => {
 export function parseObject<T extends Record<string, any>>(expr: Expr<T> | string | Function, context = {}) {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()
   const ast = jsep(fnstr) as ArrowFunctionExpression
+
   const params = extractParamsContext(ast)
   const node = ast.body
   if (node.type === 'Literal') {

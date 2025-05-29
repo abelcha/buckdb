@@ -130,7 +130,7 @@ function xcopy(
             }
 
             // Add any other options, handling types correctly
-            Object.entries(options).forEach(([key, value]) => {
+            Object.entries(options).toSorted().forEach(([key, value]) => {
                 // Skip options already handled
                 if (key === 'partition_by') {
                     optionsArray.push(`PARTITION_BY ${formalize(value)}`)
@@ -142,7 +142,7 @@ function xcopy(
 
                 const keyUpper = key.toUpperCase()
                 if (Array.isArray(value)) {
-                    optionsArray.push(`${keyUpper} (${value.map(v => `'${v}'`).join(', ')})`)
+                    optionsArray.push(`${keyUpper} [${value.map(v => `'${v}'`).join(', ')}]`)
                 } else if (typeof value === 'string') {
                     // Quote string values
                     optionsArray.push(`${keyUpper} '${value}'`)

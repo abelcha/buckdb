@@ -376,3 +376,69 @@ test('rental_date', () => {
 test('literral', () => {
   expect(parseObject(e => `_a_${e.comment}_b_`)).toEqual([['', '', "('_a_' || comment || '_b_')"]])
 })
+
+// describe('jsep plugin coverage', () => { // TODO: fix describe is not defined
+test('jsep plugin coverage: ternary operator with high precedence left side', () => {
+  expect(() => parse('e.a = e.b ? e.c : e.d')).toThrow('Unexpected "=" at character 4')
+})
+
+test('jsep plugin coverage: arrow function with sequence expression params', () => {
+  // jsep parses (e.a, e.b) as a SequenceExpression, which is valid JS but not typical for arrow func params
+  // The main parser then simplifies this. For jsep direct test, this is the expected raw output.
+  expect(jsep('(e.a, e.b) => e.a + e.b').type).toBe('ArrowFunctionExpression')
+})
+
+test('jsep plugin coverage: object literal with computed property name and spread', () => {
+  const prop = 'dynamicProp'
+  // parseObject needs a function, so this one remains as a function
+  // This test is more about the main parser's handling of jsep output.
+  expect(() => parseObject((e, D) => ({ [prop]: e.value, ...e.rest }))).toThrow()
+})
+
+test('jsep plugin coverage: regex literal with escape characters and flags', () => {
+  // Note: .match is not a standard SQL function, this tests jsep's regex parsing.
+  // The transformation to regexp_matches happens in the main parser logic, not jsep itself.
+  expect(jsep('e.text.match(/\\/\\\\[\\w\\s]+\\//gi)').type).toBe('CallExpression')
+})
+
+test('jsep plugin coverage: template literal with various escape sequences', () => {
+  expect(parse('e => `\\n\\r\\t\\b\\f\\v\\`\\$`')).toBe("'\n\r\t\b\f\v`$'")
+})
+
+test('jsep plugin coverage: tagged template literal with member expression tag', () => {
+  expect(jsep('e.tag.sub`template`').type).toBe('TaggedTemplateExpression')
+})
+
+test('jsep plugin coverage: empty or invalid expressions', () => {
+  expect(() => jsep('')).toThrow('Empty expression') // Compound
+  expect(() => jsep('e.fn(e.a,,e.c)')).toThrow('Unexpected token ,') // gobbleArguments in call
+  expect(jsep('[e.a,,e.c]').type).toBe("ArrayExpression") // gobbleArguments in array
+  expect(() => jsep('({a:})')).toThrow('unexpected object property') // gobbleObjectExpression
+  expect(() => jsep('/invalid\\/`')).toThrow('Unclosed Regex') // gobbleRegexLiteral
+})
+
+test('jsep plugin coverage: gobbleIdentifier error cases', () => {
+  expect(() => jsep('e + #')).toThrow("Expected expression after +")
+})
+
+test('jsep plugin coverage: gobbleNumericLiteral error cases', () => {
+  expect(() => parse('e => 123.e')).toThrow("Expected exponent (123.e)")
+  expect(() => parse('e => 123e')).toThrow("Expected exponent (123e)")
+  expect(() => parse('e => 123.ef')).toThrow("Expected exponent (123.ef)")
+  expect(() => parse('e => 123abc')).toThrow("Variable names cannot start with a number (123a)")
+  expect(() => parse('e => e.a + .')).toThrow("Unexpected period")
+})
+
+test('jsep plugin coverage: gobbleStringLiteral error cases', () => {
+  expect(() => parse('e => "unclosed string')).toThrow('Unclosed quote after "unclosed string')
+})
+
+test('jsep plugin coverage: gobbleGroup error cases', () => {
+  expect(() => parse('e => (e.a + e.b')).toThrow('Unclosed (')
+  expect(() => parse('e => ()')).toThrow('Empty group expression')
+})
+
+test('jsep plugin coverage: gobbleToken error cases', () => {
+  expect(() => parse('e => -')).toThrow("missing unaryOp argument")
+})
+//})

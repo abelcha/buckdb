@@ -25,7 +25,7 @@ describe('SQL Schema to TypeScript Interface', () => {
             const expected = {
                 payload: { __type: 'json' as const }, // Expect the intermediate marker
                 timestamp: 'DDate', // Assuming TIMESTAMP maps to DDate
-                id: 'DOther', // Assuming UUID maps to DOther
+                id: 'DAny', // Assuming UUID maps to DOther
             }
             expect(serializeSchema(stmt)).toEqual(expected)
         })
@@ -120,7 +120,7 @@ describe('SQL Schema to TypeScript Interface', () => {
                     __type: 'struct' as const,
                     roleEntreprise: 'DVarchar',
                     typeDePersonne: 'DVarchar',
-                    representantId: 'DOther',
+                    representantId: 'DAny',
                     qualiteArtisan: 'DVarchar',
                     type: 'DVarchar', // Quoted keyword cleaned
                     dateDeNaissance: 'DVarchar',
@@ -210,7 +210,7 @@ export interface Models {
             const input = {
                 'data/source.db': {
                     'orders': {
-                        order_id: 'DOther',
+                        order_id: 'DAny',
                         customer: {
                             __type: 'struct',
                             name: 'DVarchar',

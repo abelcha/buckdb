@@ -89,7 +89,7 @@ export const TypeProps = {
 }
 
 export const mapTypes = (type: string) => {
-  if (!type) return 'DOther'
+  if (!type) return 'DAny'
   const t = type.toUpperCase()
   if (t.match(/^(ANY)$/)) return 'DAny'
   if (t.match(/(\[\]$|^LIST$|^ARRAY$|\w+\[\w+\])/)) return 'DArray'
@@ -101,7 +101,7 @@ export const mapTypes = (type: string) => {
   if (t.match(/^MAP/)) return 'DMap'
   if (t.match(/^BLOB/)) return 'DBlob'
   if (t.match(/^(DATE|TIME)[\w\s]*/)) return 'DDate'
-  return 'DOther'
+  return 'DAny'
 }
 
 export const mapTypesProps = (type: string, details = false) => {

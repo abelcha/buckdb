@@ -19,7 +19,7 @@ test('basic tests', async () => {
             function_name: string
             description: string
         }[]>
-    
+
     expect(result1).toBeInstanceOf(Array)
     expect(result1.length).toBeGreaterThan(0)
     expect(result1[0]).toHaveProperty('function_name')
@@ -32,7 +32,7 @@ test('basic tests', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
-    
+
     expect(z).toBeInstanceOf(Array)
     expect(z.length).toBeGreaterThan(0)
     expect(z[0]).toHaveProperty('function_name')
@@ -49,7 +49,7 @@ test('full tests', async () => {
             a: string
             b: number
         }[]
-    
+
     expect(result).toBeInstanceOf(Array)
     if (result.length > 0) {
         expect(result[0]).toHaveProperty('a')
@@ -69,7 +69,7 @@ test('where clause type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
-    
+
     expect(result1).toBeInstanceOf(Array)
     result1.forEach(item => {
         expect(item).toHaveProperty('function_name')
@@ -98,7 +98,7 @@ test('string operations type checking', async () => {
             upper_name: string
             name_length: number
         }[]>
-    
+
     expect(result1).toBeInstanceOf(Array)
     expect(result1.length).toBeGreaterThan(0)
     expect(result1[0]).toHaveProperty('upper_name')
@@ -113,7 +113,7 @@ test('string operations type checking', async () => {
         .execute() satisfies E<{
             upper_name: number
         }[]>
-    
+
     expect(result2).toBeInstanceOf(Array)
     expect(result2.length).toBeGreaterThan(0)
     expect(result2[0]).toHaveProperty('upper_name')
@@ -155,7 +155,7 @@ test('groupBy type checking', async () => {
             // function_type: string;
             function_name: string
         }[]>
-    
+
     expect(zz).toBeInstanceOf(Object)
     expect(typeof zz).toBe('object')
     const keys = Object.keys(zz)
@@ -181,7 +181,7 @@ test('single row result type checking', async () => {
             function_name: string
             description: string
         }>
-    
+
     expect(result1).toBeDefined()
     expect(result1).toHaveProperty('function_name')
     expect(result1).toHaveProperty('description')
@@ -199,7 +199,7 @@ test('single row result type checking', async () => {
             function_name: string
             description: string
         }>
-    
+
     expect(result2).toBeDefined()
     expect(result2).toHaveProperty('function_name')
     expect(result2).toHaveProperty('description')
@@ -220,7 +220,7 @@ test('keyed result type checking', async () => {
                 description: string[]
             }>
         >
-    
+
     expect(r).toBeInstanceOf(Object)
     expect(typeof r).toBe('object')
     const keys = Object.keys(r)
@@ -243,7 +243,7 @@ test('limit and offset type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
-    
+
     expect(result).toBeInstanceOf(Array)
     expect(result.length).toBeLessThanOrEqual(10)
     result.forEach(item => {
@@ -315,7 +315,7 @@ test('sample method type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
-    
+
     expect(result1).toBeInstanceOf(Array)
     expect(result1.length).toBeLessThanOrEqual(10)
     result1.forEach(item => {
@@ -331,7 +331,7 @@ test('sample method type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
-    
+
     expect(result2).toBeInstanceOf(Array)
     result2.forEach(item => {
         expect(item).toHaveProperty('function_name')
@@ -348,7 +348,7 @@ test('context method type checking', async () => {
         .execute() satisfies E<{
             function_name: string
         }[]>
-    
+
     expect(result).toBeInstanceOf(Array)
     expect(result.length).toBeGreaterThan(0)
     result.forEach(item => {
@@ -371,7 +371,7 @@ test('multiple joins type checking', async () => {
             type1: string
             type2: string
         }[]
-    
+
     expect(r).toBeInstanceOf(Array)
     r.forEach(item => {
         expect(item).toHaveProperty('function_name')
@@ -398,7 +398,7 @@ test('complex query type checking', async () => {
             type_name: string
             combined: string
         }[]
-    
+
     expect(result).toBeInstanceOf(Array)
     result.forEach(item => {
         expect(item).toHaveProperty('function_name')
@@ -483,7 +483,7 @@ test('numeric operations type checking', async () => {
             length_squared: number
             length_sqrt: number
         }[]>
-    
+
     expect(result).toBeInstanceOf(Array)
     expect(result.length).toBeGreaterThan(0)
     result.forEach(item => {
@@ -540,7 +540,7 @@ test('ambiguous type inference - complex expressions', async () => {
         .execute() satisfies E<{
             complex_result: number
         }[]>
-    
+
     expect(result1).toBeInstanceOf(Array)
     expect(result1.length).toBeGreaterThan(0)
     result1.forEach(item => {
@@ -560,7 +560,7 @@ test('ambiguous type inference - complex expressions', async () => {
                 // todo: fix json parsing
                 nested_result: Record<string, any> | string
             }[]>
-    
+
     expect(r).toBeInstanceOf(Array)
     r.forEach(item => {
         expect(item).toHaveProperty('nested_result')
@@ -578,7 +578,7 @@ test('ambiguous type inference - type conversions', async () => {
         .execute() satisfies E<{
             converted_result: string
         }[]>
-    
+
     expect(result1).toBeInstanceOf(Array)
     expect(result1.length).toBeGreaterThan(0)
     result1.forEach(item => {
@@ -598,7 +598,7 @@ test('ambiguous type inference - type conversions', async () => {
             xxx: string
             implicit_result: number
         }[]>
-    
+
     expect(r).toBeInstanceOf(Array)
     expect(r.length).toBeGreaterThan(0)
     r.forEach(item => {
@@ -726,7 +726,13 @@ test('d.test.ts', async () => {
 })
 
 test('META type checking ', async () => {
-    const errs = await Bun.$`tsgo|grep -E  'deep-map.ts|test.ts'`.nothrow().text();
+    const res = await Bun.$`tsgo --project tsconfig.typecheck.json|grep -E  'deep-map.ts|test.ts'`.nothrow()
+    if (res.exitCode !== 0) {
+        console.log('Error in command execution:')
+        console.error(res.stderr.toString())
+        return
+    }
+    const errs = res.text();
     if (errs) {
         console.log(errs)
     }

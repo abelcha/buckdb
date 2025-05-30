@@ -3,8 +3,9 @@ import { sortBy } from 'es-toolkit'
 import * as t from '../.buck/types'
 import { MemoryDB } from '../buckdb'
 import { builder } from './build'
-import { FromResult } from './build.types'
+import { DBuilderResult, FromResultModel, Withor } from './build.types'
 import { FromPlain } from './deep-map'
+import { Models } from '../.buck/table3'
 
 const fns = await MemoryDB.from('duckdb_functions()').select().execute()
 type E<T> = T
@@ -424,7 +425,7 @@ test('kitchen_sink', async () => {
         scope: t.DVarcharField
     }
 
-    async function checkSelect(db: FromResult<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
+    async function checkSelect(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
         db.select(e => e satisfies RecPeople)
 
         db.join('duckdb_settings()', 'oo', 'name').select(e => e satisfies RecPeople & { oo: Setting })
@@ -614,7 +615,7 @@ test('ambiguous type inference - type conversions', async () => {
 })
 
 test('build-tests', () => {
-    async function checkSelect(db: FromResult<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>, db2: FromResult<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'duckdb_functions' }]>) {
+    async function checkSelect(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>, db2: FromResultModel<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'duckdb_functions' }]>) {
 
         const respk = await db.select(e => e).execute() satisfies
             { name: string; age: number; total: number, people?: never }[]
@@ -645,7 +646,7 @@ test('build-tests', () => {
 })
 
 test('kitchen_sing2', async () => {
-    async function checkSelect3(db: FromResult<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'tt' }]>, D: t.DMetaField) {
+    async function checkSelect3(db: FromResultModel<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'tt' }]>, D: t.DMetaField) {
         const rv = await db.select((e, D) => ({
             // function_name: e.function_oid,
             function_name: e.function_oid,
@@ -737,4 +738,86 @@ test('META type checking ', async () => {
         console.log(errs)
     }
     expect(errs).toBeEmpty();
+})
+
+test('unshallowing', async () => {
+    const xxx = async function xx(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
+        const resp = await db.select(e => e).execute() satisfies { name: string; age: number; total: number, people?: never }[]
+        const respX = await db.select().execute() satisfies { name: string; age: number; total: number, people?: never }[]
+    }
+})
+
+test('with', async () => {
+    async function checkSelect3(db: DBuilderResult<Models, 's3://a1738/akira09.db'>) {
+
+        const i3 = await db.with(
+            (accDB) => ({ titi: accDB.from('duckdb_functions()').select('function_name', 'function_oid') }),
+            accDB => ({ tata: accDB.from('titi').select(e => ({ xfname: e.function_name })) })
+        ).from('tata').select().orderBy(x => x.xfname.len()).limit(1).execute() satisfies { xfname: string }[]
+
+        expect(i3).toEqual([{ xfname: '%' }])
+
+        const i4 =
+            await db.with(
+                (accDB) => ({ titi: accDB.from('duckdb_functions()').select() }),
+                accDB => ({ tata: accDB.from('titi').select(e => ({ last_name: e.function_name, first_name: e.database_name.split('') })) }),
+                accDB => ({ tutu: accDB.from('tata').select(e => ({ ...e, last_name_len: e.last_name.len() })) }),
+            )
+                .from('tutu')
+                .select()
+                // .dump()
+                // .execute()
+                .orderBy('last_name', 'DESC')
+                .limit(1)
+                .exec() satisfies {
+                    last_name: string;
+                    first_name: string[];
+                    last_name_len: number;
+                }[]
+        expect(i4).toEqual([
+            {
+                last_name: "~~~",
+                first_name: ["s", "y", "s", "t", "e", "m"],
+                last_name_len: 3,
+            }
+        ])
+    }
+    async function __(www: Withor<Models, 's3://a1738/akira09.db'>) {
+        const r =
+            await www.with(
+                accDB => ({ titi: accDB.from('Actor').select('first_name', 'last_name') }),
+            ).from('titi').select().execute() satisfies { first_name: string; last_name: string }[]
+        const r2 =
+            await www.with(
+                accDB => ({ titi: accDB.from('Actor').select('first_name', 'last_name', 'last_update') }),
+                accDB => ({ tata: accDB.from('titi').select(e => ({ xfname: e.first_name })) })
+            ).from('tata').select().execute() satisfies { xfname: string }[]
+        const r3 =
+            await www.with(
+                accDB => ({ titi: accDB.from('Actor').select('first_name', 'last_name', 'Actor.actor_id') }),
+                accDB => ({ tata: accDB.from('titi').select(e => ({ xfname: e.first_name })) })
+            ).from('titi').select().execute() satisfies { first_name: string; last_name: string }[]
+        const r4 = await www.with(
+            accDB => ({ titi: accDB.from('Actor').select('first_name', 'last_name', 'Actor.actor_id') }),
+            accDB => ({ tata: accDB.from('titi').select(e => ({ xfname: e.first_name })) }),
+            accDB => ({ tutu: accDB.from('tata').select(e => ({ xlen: e.xfname.len() })) })
+        ).from('tutu').select().execute() satisfies { xlen: number }[]
+        const r5 = await www.with(
+            accDB => ({ titi: accDB.from('Actor').select('first_name', 'last_name', 'Actor.actor_id') }),
+            accDB => ({ tata: accDB.from('titi').select(e => ({ ...e, xfname: e.first_name })) }),
+            accDB => ({ tutu: accDB.from('tata').select(e => ({ dbname: e.last_name, xlen: e.xfname.len() })) }),
+            accDB => ({ toto: accDB.from('tutu').select((e, D) => ({ l: e.dbname, cnt: D.avg(e.xlen) })).groupBy('l') })
+        ).from('tutu').select().execute() satisfies { xlen: number, dbname: string }[]
+        const r6 =
+            await www.with(
+                accDB => ({
+                    films: accDB.from('Film').select().where(e => e.rental_rate > 10),
+                    cat: accDB.from('Film_category').select('category_id', 'Film_category')
+                }),
+                // accDB => ({ tata: accDB.from('titi').select(e => ({ xfname: e.first_name })) })
+            ).from('films').join('cat', e => e.cat.category_id === e.films.film_id).select('cat.category_id', 'category_id', 'film_id', 'rental_rate').exec()
+        // .from('titi').select().execute() satisfies { first_name: string; last_name: string }[]
+    }
+
+    await checkSelect3(MemoryDB)
 })

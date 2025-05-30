@@ -58,7 +58,9 @@ const joinMembers = (members: any[]) => {
   }
   return members?.reduce?.((acc, member) => {
     if (!acc) return member
-
+    if (member === "'*'") {
+      return acc + '.*'
+    }
     if (typeof member === 'number') {
       return acc + '[' + member.toString().replace('.', ':') + ']'
     }

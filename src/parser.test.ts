@@ -367,6 +367,11 @@ test('count(*)', () => {
   const result = parse((e, D) => D.count('*'))
   expect(result).toBe('count(*)')
 })
+
+test('alias.*', () => {
+  expect(parse((e, D) => e.whatever["*"])).toBe('whatever.*')
+  expect(parse((e, D) => e.toto.whatever["*"])).toBe('toto.whatever.*')
+})
 test('array slicer', () => {
   expect(parse(e => e.timezone.string_split('/')[1])).toBe("timezone.string_split('/')[1]")
 })
@@ -441,4 +446,3 @@ test('jsep plugin coverage: gobbleGroup error cases', () => {
 test('jsep plugin coverage: gobbleToken error cases', () => {
   expect(() => parse('e => -')).toThrow("missing unaryOp argument")
 })
-//})

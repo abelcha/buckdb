@@ -28,6 +28,8 @@ export type NestedKeyOf<ObjectType extends Record<string, any>> = {
 export type StrictCollection = { catalog: string; uri: string; alias: string }
 // Utility type to merge two types into a frame object
 export type Merge<T, U> = { [K in keyof T | keyof U]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never }
+export type TripleMerge<T, U, V> = { [K in keyof T | keyof U | keyof V]: K extends keyof V ? V[K] : K extends keyof U ? U[K] : K extends keyof T ? T[K] : never }
+
 export type DefaultizeCollection<C> = // Renamed 'Collection' to 'C' for clarity
     // 1. If all properties (catalog, uri, alias) are present, return as is.
     C extends { catalog: string; uri: string; alias: string } ? C
@@ -39,27 +41,26 @@ export type DefaultizeCollection<C> = // Renamed 'Collection' to 'C' for clarity
     // 4. Otherwise, it's not a valid input structure.
     : never
 
-export type ModelForCollection<C extends StrictCollection> = C extends { catalog: infer R; uri: infer T } // Use uri T for lookup
-    ? R extends keyof Models ? T extends keyof Models[R] ? Models[R][T] : T extends keyof Models[''] ? Models[''][T] : {} : {}
+export type ModelForCollection<Mods extends Models, C extends StrictCollection> = C extends { catalog: infer R; uri: infer T } // Use uri T for lookup
+    ? R extends keyof Mods ? T extends keyof Mods[R] ? Mods[R][T] : T extends keyof Mods[''] ? Mods[''][T] : {} : {}
     : {}
 
 export const v__ = Symbol('alias')
 
 export type ShallowModel<T extends Record<string, any>> = {
-    [K in keyof T as T[K] extends Record<typeof v__, true> ? never : K]: T[K]
+    [K in keyof T as T[K] extends Record<typeof v__, 1> ? never : K]: T[K]
 }
 
-type ModelFromCollectionList<C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? Simplify<Merge<Merge<{ [K in F['alias']]: { [v__]: true } & ModelForCollection<F> }, ModelForCollection<F>>, ModelFromCollectionList<Rest>>>
+interface TFlag {
+    [v__]: never
+}
+type ModelFromCollectionList<Mods extends Models, C extends StrictCollection[]> =
+    C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]]
+    ? TripleMerge<{ [K in F['alias']]: TFlag & ModelForCollection<Mods, F> }, ModelForCollection<Mods, F>, ModelFromCollectionList<Mods, Rest>>
     : {} // Base case should be an empty object for merging
 // Recursive type to merge all models from collections, using alias as key
-export type ShallowModelFromCollectionList<C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? ModelForCollection<F> & ModelFromCollectionList<Rest>
+export type ShallowModelFromCollectionList<Mods extends Models, C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? ModelForCollection<Mods, F> & ModelFromCollectionList<Mods, Rest>
     : {} // Base case should be an empty object for merging
-
-
-type uuuz = ModelFromCollectionList<[{ catalog: '', uri: 'duckdb_functions()', alias: 'ddx' }]>
-
-function __(u: ShallowModel<uuuz>) {
-}
 
 export type DRawField = t.DAnyField
 
@@ -68,7 +69,7 @@ export type DNestedField = t.DArrayField | t.DStructField | t.DJsonField | t.DMa
 export type GField = DPrimitiveField | DNestedField | DRawField | t.DArrayField<DNestedField | DPrimitiveField>
 
 export interface GenericRecursive<T> {
-    [key: string]: T | GenericRecursive<T> | string | number | boolean
+    [key: string]: T | GenericRecursive<T> | string | number | boolean | unknown
 }
 export type SelectModel = GenericRecursive<GField>
 export type MetaModel = GenericRecursive<GField>
@@ -119,7 +120,7 @@ type MSF<A extends MetaModel, S extends SelectModel = {}, SV = []> = MS<'frame',
 
 export type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
 
-export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = []> extends Selectors<S> {
+export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = MetaModel, SV = []> extends Selectors<S> {
     execute: FnMap<A, S, SV>[V]
     exec: this['execute']
     show: this['execute']
@@ -199,55 +200,79 @@ export interface Selectors<P extends MetaModel> {
 
 }
 
-export interface FromResult<Ressource extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> extends Selectors<P> {
-    join
-        <
-            K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>,
-            A extends string
-        >(
-            table: K,
-            alias: A,
-            using: KeyIntersection<P, ModelForCollection<DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>>>
-        )
-        : FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
-    join
-        <
-            K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>
-        >(
-            table: K,
-            using: KeyIntersection<P, ModelForCollection<DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>>>
-        )
-        : FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
 
-    join<K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>, A extends string>(table: K, alias: A, fn: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>>, D: t.DMetaField) => any): FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
-    join<K extends Extract<keyof Models[Ressource], string> | Extract<keyof Models[''], string>>(table: K, fn: (p: ToComp<ModelFromCollectionList<[...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>>, D: t.DMetaField) => any): FromResult<Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
+export type FromResultModel<Ressource extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<Models, C>> = FromResult<Models, Ressource, C, P>
+
+export interface FromResult<Mods extends Models, Ressource extends keyof Mods, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<Mods, C>> extends Selectors<P> {
+    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>, A extends string>(table: K, alias: A, using: KeyIntersection<P, ModelForCollection<Mods, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>>>)
+        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
+    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>>(table: K, using: KeyIntersection<P, ModelForCollection<Mods, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>>>)
+        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
+    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>, A extends string>(table: K, alias: A, fn: (p: ToComp<ModelFromCollectionList<Mods, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>>, D: t.DMetaField) => any)
+        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
+    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>>(table: K, fn: (p: ToComp<ModelFromCollectionList<Mods, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>>, D: t.DMetaField) => any)
+        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
     leftJoin: this['join']
     rightJoin: this['join']
     crossJoin: this['join']
     naturalJoin: this['join']
     innerJoin: this['join']
 
-    // X: from('xxx').execute() === from('xxx').select().execute()
-    execute(): ReturnType<Simplify<MSR<P, ShallowModelFromCollectionList<C>>>['execute']>
+    execute(): ReturnType<Simplify<MSR<P, ShallowModelFromCollectionList<Models, C>>>['execute']>
     ensureSchemas(): Promise<void>
 }
 
 
-export type InitialMaterializedResult<C extends StrictCollection[]> = MS<'records', ModelFromCollectionList<C>>
-
-export interface UpdateResult<T extends keyof Models, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<C>> {
-    set<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): UpdateResult<T, C, P>
-    where<X>(fn: (p: ToComp<P>, D: t.DMetaField) => X): UpdateResult<T, C, P>
-    where(...callback: string[]): UpdateResult<T, C, P>
+export interface UpdateResult<Mods extends Models, T extends keyof Mods, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<Mods, C>> {
+    set<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): UpdateResult<Mods, T, C, P>
+    where<X>(fn: (p: ToComp<P>, D: t.DMetaField) => X): UpdateResult<Mods, T, C, P>
+    where(...callback: string[]): UpdateResult<Mods, T, C, P>
     execute(): Promise<any>
     toSql(opts?: any): string
 }
 
+type ExtractSelectModel<T> = T extends MS<any, any, infer S, any> ? S : T extends Record<string, MS<any, any, any, any>> ? { [K in keyof T]: ExtractSelectModel<T[K]> } : SelectModel
+type WithResult<Mods extends Models, T extends keyof Mods, Schema> = DBuilderResult<Mods & Record<T, Schema>, T>
+type WithAccDB<Mods extends Models, T extends keyof Mods, Schema> = DBuilderResult<Mods & Record<T, Schema>, T>
+type MSRecord = Record<string, MS<any, any, any>>
+
+// type InitialMaterializedResult<C extends StrictCollection[]> = MS<'records', ModelFromCollectionList<C>>
+export interface Withor<Mods extends Models, T extends keyof Mods> {
+    with<O extends MSRecord>(fn: (accDB: DBuilderResult<Mods, T>) => O): WithResult<Mods, T, ExtractSelectModel<O>>
+
+    with<O1 extends MSRecord, O2 extends MSRecord>(
+        fn1: (accDB: DBuilderResult<Mods, T>) => O1,
+        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>>) => O2
+    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2>>
+
+    with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord>(
+        fn1: (accDB: DBuilderResult<Mods, T>) => O1,
+        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>>) => O2,
+        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>>) => O3
+    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3>>
+
+    with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord, O4 extends MSRecord>(
+        fn1: (accDB: DBuilderResult<Mods, T>) => O1,
+        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>>) => O2,
+        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>>) => O3,
+        fn4: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O3>>) => O4
+    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3 & O4>>
+
+    with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord, O4 extends MSRecord, O5 extends MSRecord>(
+        fn1: (accDB: DBuilderResult<Mods, T>) => O1,
+        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>>) => O2,
+        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>>) => O3,
+        fn4: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O3>>) => O4,
+        fn5: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O4>>) => O5
+    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3 & O4 & O5>>
+}
+
+
 
 // Define the return type for DBuilder
-type DBuilderResult<T extends keyof Models> = {
+export interface DBuilderResult<Mods extends Models, T extends keyof Mods> extends Withor<Mods, T> {
     ddb: DuckdbCon
-    settings(s: Partial<t.DSettings>): DBuilderResult<T>
+    settings(s: Partial<t.DSettings>): DBuilderResult<Mods, T>
     fetchTables: () => Promise<[string, any][]>
 
     create(s: string, opts?: Partial<{ replace: boolean; ifNotExists: boolean }>): {
@@ -257,31 +282,34 @@ type DBuilderResult<T extends keyof Models> = {
         }
     }
 
-    update<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string> & string>>(table: K1): UpdateResult<T, [DefaultizeCollection<{ catalog: T; uri: K1 }>]>
+    update<K1 extends Simplify<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string> & string>>(table: K1): UpdateResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1 }>]>
 
-    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>, A extends string>(table: K1, alias: A):
-        & FromResult<T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>]>
-        & InitialMaterializedResult<[DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>]> // Use the alias
+    from<K1 extends Simplify<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string>>, A extends string>(table: K1, alias: A):
+        & FromResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>]>
+        & MS<'records', ModelFromCollectionList<Mods, DefaultizeCollection<{ catalog: T; uri: K1; alias: A }[]>>>
 
-    from<K1 extends Simplify<Extract<keyof Models[T], string> | Extract<keyof Models[''], string>>>(table: K1):
-        & FromResult<T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }>]>
-        & InitialMaterializedResult<[DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }>]> // Use the alias
+    from<K1 extends Simplify<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string>>>(table: K1):
+        & FromResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }>]>
+        & MS<'records', ModelFromCollectionList<Mods, DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }[]>>>
 
-    from<K extends keyof Models['error']>(x: K): Models['error'][K]
 
-    from<TT extends keyof Models, SS extends StrictCollection[]>(obj: FromResult<TT, SS>): FromResult<TT, SS>
+    from<K extends keyof Mods['error']>(x: K): Mods['error'][K]
+
+    from<TT extends keyof Mods, SS extends StrictCollection[]>(obj: FromResult<Mods, TT, SS>): FromResult<Mods, TT, SS>
     from<V1 extends VTypes, A1 extends MetaModel, S1 extends SelectModel = {}>(obj: MS<V1, A1, S1>): MS<V1, A1, S1>
 
-    loadExtensions(...ext: string[]): DBuilderResult<T> // Use the defined type here
-    // fetchSchema(id: string): Promise<Models>
+    loadExtensions(...ext: string[]): DBuilderResult<Mods, T> // Use the defined type here
+    // fetchSchema(id: string): Promise<Mods>
     describe(id: string): Promise<any>
+
 }
 
+
+
 // Overload for settings only
-export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResult<''>
-export declare function DBuilder(): DBuilderResult<''>
+export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>
+export declare function DBuilder(): DBuilderResult<Models, ''>
 
 // Updated DBuilder declaration with catalog
 export declare function DBuilder<T extends TRessource>(catalog: T, settings?: Partial<t.DSettings>):
-    T extends keyof Models ? DBuilderResult<T> : DBuilderResult<''>
-// DBuilder()('s')
+    T extends keyof Models ? DBuilderResult<Models, T> : DBuilderResult<Models, ''>

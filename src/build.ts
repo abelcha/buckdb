@@ -1,7 +1,8 @@
+import { mapValues } from 'es-toolkit'
 import * as t from '../.buck/types'
 import { DuckdbCon } from '../buckdb.core'
 import { DBuilder } from './build.types'
-import { dump, formalize, toSql } from './formalise'
+import { dump, formalize, serializeCreate, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
 import { deriveName, keyBy, upperFirst, wrap } from './utils'
@@ -12,6 +13,7 @@ export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST'
 export type DOrder = { field: string; direction?: DDirection }
 export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' | 'INNER JOIN' }
 export type DCopyTo = { uri: string; options?: Record<string, any> }
+export type DCte = { query: string; name?: string }
 export type Parseable = string | Function
 export const dstate = {
     copyTo: [] as DCopyTo[],
@@ -31,6 +33,7 @@ export const dstate = {
     agg: null as string | null,
     action: 'select' as 'select' | 'update' | 'upsert' | 'create',
     updated: [] as DSelectee[],
+    ctes: [] as DCte[],
     setops: [] as {
         type:
         | 'UNION'
@@ -88,9 +91,10 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 // console.log(state)
                 const formatAGG = (e: Promise<any>) => state.agg ? e.then(resp => resp[0]) : e
                 const str = toSql(Object.assign(state, props))
-                for await (const dt of state.datasources) {
-                    await ddb.ensureSchema(dt.uri)
-                }
+                if (!state.ctes.length)
+                    for await (const dt of state.datasources) {
+                        await ddb.ensureSchema(dt.uri)
+                    }
                 if (state.selected.length === 1) {
                     const [{ as, raw, field }] = state.selected
                     if (as === null && !raw && field) {
@@ -230,68 +234,26 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 ddb.lazyExtensions(...ext as string[])
                 return this
             },
-            describe: (uri: string) => ddb.describe(uri),
-            from: (table: string, alias?: string) =>
-                fromRes({
-                    ...dstate,
-                    action: 'select',
-                    datasources: [{
-                        catalog: handle,
-                        uri: table,
-                        alias: alias, // || deriveName(table),
-                    }],
-                }),
-            update: (table: string, alias?: string) =>
-                fromRes({
-                    ...dstate,
-                    action: 'update',
-                    datasources: [{
-                        catalog: handle,
-                        uri: table,
-                        alias: alias, // || deriveName(table),
-                    }],
-                }),
-            create: (table: string, p: Partial<{ replace: boolean; ifNotExists: boolean }> = {}) => {
-                const createSerialize = (ex: string) => {
-                    if (table.match(/\.(.sv|json*|parquet)$/)) {
-                        return `COPY (${ex}) TO '${table}'`
-                    }
-                    return [
-                        'CREATE',
-                        p.replace ? 'OR REPLACE' : '',
-                        'TABLE',
-                        p.ifNotExists ? 'IF NOT EXISTS' : '',
-                        table,
-                        'AS',
-                        ex,
-                    ].filter(Boolean).join(' ')
-                }
-
+            with: function (...arr: (() => any)[]) {
+                const ctes = arr.flatMap(x => Object.entries(x(this)))
+                    .map(([k, v], i) => ({ name: k, query: v?.toSql({ trim: true }) }))
                 return {
-                    toSql: () => table,
-                    as: function (...items: any[]) {
-                        if (items.length === 1 && Array.isArray(items[0])) {
-                            items = items[0]
-                        }
-                        const getQuery = () => {
-                            if (items[0]?.toSql) {
-                                return createSerialize(items[0]?.toSql())
-                            }
-                            const tempname = 'tmp_' + Math.random() / 1e-17
-                            return [
-                                `CREATE TEMP TABLE ${tempname} (j JSON)`,
-                                `INSERT INTO ${tempname} VALUES ${items.map(it => `('${JSON.stringify(it)}')`).join(',\n')}`,
-                                'SET variable S = ' + wrap(`select json_group_structure(j)::varchar from ${tempname}`, '(', ')'),
-                                createSerialize("SELECT UNNEST(json_transform(j, getvariable('S'))) FROM " + tempname),
-                            ].join(';\n')
-                        }
-                        return {
-                            toSql: () => getQuery(),
-                            execute: () => ddb.run(getQuery()),
-                        }
-                    },
+                    from: (table: string, alias?: string) =>
+                        fromRes({ ...dstate, ctes, action: 'select', datasources: [{ catalog: handle, uri: table, alias: alias }] }),
                 }
             },
+            describe: (uri: string) => ddb.describe(uri),
+            from: (table: string, alias?: string) =>
+                fromRes({ ...dstate, action: 'select', datasources: [{ catalog: handle, uri: table, alias: alias }] }),
+            update: (table: string, alias?: string) =>
+                fromRes({ ...dstate, action: 'update', datasources: [{ catalog: handle, uri: table, alias: alias }] }),
+            create: (table: string, p: Partial<{ replace: boolean; ifNotExists: boolean }> = {}) => ({
+                toSql: () => table,
+                as: (...items: any[]) => ({
+                    toSql: () => serializeCreate(table, items, p),
+                    execute: () => ddb.run(serializeCreate(table, items, p)),
+                }),
+            }),
         }
         // } as unknown as typeof DBuilder
         // return fromRes as unknown as typeof DBuilder

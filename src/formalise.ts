@@ -101,6 +101,7 @@ export function toSql(state: DState & { trim?: boolean }) {
     }
 
     const components = [
+        state.ctes.length ? `WITH ${state.ctes.map(e => `${e.name} AS (${e.query})`).join(', ')}` : '',
         'FROM',
         serializeDatasource(state.datasources),
         CR + ' SELECT',
@@ -140,3 +141,35 @@ export const dump = (state: DState, opts?: { state?: boolean }) => {
 }
 
 export const formalize = (e: string | Function, context = {}) => typeof e === 'function' ? parse(e, context) : e
+
+
+const createSerialize = (table: string, ex: string, opts: Record<string, any> = {}) => {
+    if (table.match(/\.(.sv|json*|parquet)$/)) {
+        return `COPY (${ex}) TO '${table}'`
+    }
+    return [
+        'CREATE',
+        opts.replace ? 'OR REPLACE' : '',
+        'TABLE',
+        opts.ifNotExists ? 'IF NOT EXISTS' : '',
+        table,
+        'AS',
+        ex,
+    ].filter(Boolean).join(' ')
+}
+
+export const serializeCreate = (table: string, items: any[], opts: Record<string, any> = {}) => {
+    if (items.length === 1 && Array.isArray(items[0])) {
+        items = items[0]
+    }
+    if (items[0]?.toSql) {
+        return createSerialize(table, items[0]?.toSql(), opts)
+    }
+    const tempname = 'tmp_' + Math.random() / 1e-17
+    return [
+        `CREATE TEMP TABLE ${tempname} (j JSON)`,
+        `INSERT INTO ${tempname} VALUES ${items.map(it => `('${JSON.stringify(it)}')`).join(',\n')}`,
+        'SET variable S = ' + wrap(`select json_group_structure(j)::varchar from ${tempname}`, '(', ')'),
+        createSerialize(table, "SELECT UNNEST(json_transform(j, getvariable('S'))) FROM " + tempname, opts),
+    ].join(';\n')
+}

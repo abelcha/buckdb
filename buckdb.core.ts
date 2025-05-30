@@ -21,11 +21,11 @@ export abstract class BuckDBBase implements DuckdbCon {
     abstract run(sql: string): Promise<any>
     abstract ensureSchema(uri: string): Promise<any>
     readonly cmdQueue = new CommandQueue()
-    
+
     constructor(
         public handle?: string,
         public settings?: Record<string, any>,
-    ) {}
+    ) { }
 
     lazySettings(s: Partial<DSettings>) {
         this.cmdQueue.pushSettings(s)
@@ -33,7 +33,7 @@ export abstract class BuckDBBase implements DuckdbCon {
     }
 
     lazyAttach(uri: string, alias?: string, options?: { readonly: boolean }) {
-        this.cmdQueue.pushAttach(uri, alias || deriveName(uri), options)
+        // this.cmdQueue.pushAttach(uri, alias || deriveName(uri), options)
         return this
     }
 

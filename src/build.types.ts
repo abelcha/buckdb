@@ -82,13 +82,9 @@ type PrimitiveField<T> = T extends number ? t.DNumericField
     : T extends boolean ? t.DBoolField
     : t.DAnyField
 
-type Last<T extends any[]> = T extends [...infer Rest, infer L] ? L : never
-
 type KeyIntersection<A, B> = {
     [K in keyof A & keyof B]: K
 }[keyof A & keyof B]
-
-type uuu = KeyIntersection<{ lol: 123, tata: 42 }, { tata: 42, toto: 12, lol: 'x' }>
 
 
 type ToComp<x> = x

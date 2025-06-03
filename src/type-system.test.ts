@@ -812,7 +812,7 @@ test('with', async () => {
 
 
 test('META type checking ', async () => {
-    const res = await Bun.$`tsgo --project tsconfig.typecheck.json|grep -E  'deep-map.ts|test.ts'`.quiet().nothrow()
+    const res = await Bun.$`tsgo  --noEmit --skipLibCheck |grep -E  'deep-map.ts|test.ts'`.quiet().nothrow()
     // if (res.exitCode !== 0) {
     //     console.log('Error in command execution:', res.stderr.toString(),res.stdout.toString())
     //     console.error(res.stderr.toString())

@@ -1,13 +1,13 @@
-import * as t from './.buck/types'
 import { builder } from './src/build'
 import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './src/readers'
 export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx }
+// @ts-ignore
 import type * as DuckdbTyped from '@duckdb/duckdb-wasm/dist/types/src/index'
 // @ts-ignore
 import * as _Duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm'
+import { BuckDBBase } from './buckdb.core'
+import { isBucket } from './src/utils'
 const Duckdb = _Duckdb as typeof DuckdbTyped
-import { BuckDBBase, CommandQueue, DuckdbCon } from './buckdb.core'
-import { formatSource, isBucket } from './src/utils'
 
 class BuckDBWasm extends BuckDBBase {
     readonly type = 'wasm' as const
@@ -34,7 +34,7 @@ class BuckDBWasm extends BuckDBBase {
             )
 
             const worker = new Worker(worker_url)
-            const logger = new Duckdb.ConsoleLogger()
+            const logger = new Duckdb.VoidLogger()
             const db = new Duckdb.AsyncDuckDB(logger, worker)
 
             await db.instantiate(bundle.mainModule, bundle.pthreadWorker)
@@ -66,7 +66,7 @@ class BuckDBWasm extends BuckDBBase {
 
     private async _executeQueuedCommands(): Promise<void> {
         if (!this._con) throw new Error('Database connection not initialized.')
-        const cmds = this.cmdQueue.flush()
+        const cmds = this.queue.flush()
         if (cmds.length > 0) {
             for await (const cmd of cmds) {
                 // Use query for setup commands like attach, extensions, settings
@@ -90,6 +90,7 @@ class BuckDBWasm extends BuckDBBase {
         if (opts?.withSchema && !sql.trim().toUpperCase().startsWith('COPY')) {
             const schemaReader = await this._con.query('DESCRIBE ' + sql)
             const schema = schemaReader.toArray().map(e => e.toJSON())
+            console.log({ schema })
             Object.defineProperty(rtn, 'schema', { value: schema, enumerable: false })
         }
         return rtn

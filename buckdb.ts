@@ -6,7 +6,7 @@ export * as readers from './src/readers'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { BuckDBBase, CommandQueue, DuckdbCon } from './buckdb.core'
 import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
-import { deriveName, formatSource, isBucket, Dict } from './src/utils'
+import { deriveName, isBucket, Dict } from './src/utils'
 
 
 class JsonModelTable {
@@ -126,7 +126,7 @@ class BuckDBNode extends BuckDBBase {
     }
     async query(sql: string, opts: Record<string, any> = {}) {
         await this._initDB()
-        const cmds = this.cmdQueue.flush()
+        const cmds = this.queue.flush()
         for (const cmd of cmds) {
             await this._connection.run(cmd)
         }

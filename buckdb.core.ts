@@ -1,11 +1,12 @@
 import { DSettings } from './.buck/types'
-import { formatSource, deriveName } from './src/utils'
+import { formatSource } from './src/formalise'
+import { deriveName } from './src/utils'
 
 export type DuckdbCon = {
-    type: 'wasm' | 'node'
+    type: 'wasm' | 'node' | 'remote'
     isBucket?: boolean
     handle?: string | null
-    cmdQueue: CommandQueue
+    queue: CommandQueue
     run: (sql: string) => Promise<any>
     lazyAttach: (path: string, alias: string, options?: { readonly: boolean }) => any
     ensureSchema: (uri: string) => Promise<any>
@@ -16,11 +17,11 @@ export type DuckdbCon = {
 }
 
 export abstract class BuckDBBase implements DuckdbCon {
-    abstract readonly type: 'wasm' | 'node'
+    abstract readonly type: 'wasm' | 'node' | 'remote'
     abstract query(sql: string, opts?: Record<string, any>): Promise<any[]>
     abstract run(sql: string): Promise<any>
     abstract ensureSchema(uri: string): Promise<any>
-    readonly cmdQueue = new CommandQueue()
+    readonly queue = new CommandQueue()
 
     constructor(
         public handle?: string,
@@ -28,17 +29,17 @@ export abstract class BuckDBBase implements DuckdbCon {
     ) { }
 
     lazySettings(s: Partial<DSettings>) {
-        this.cmdQueue.pushSettings(s)
+        this.queue.pushSettings(s)
         return this
     }
 
     lazyAttach(uri: string, alias?: string, options?: { readonly: boolean }) {
-        // this.cmdQueue.pushAttach(uri, alias || deriveName(uri), options)
+        this.queue.pushAttach(uri, alias || deriveName(uri), options)
         return this
     }
 
     lazyExtensions(...extensions: string[]) {
-        this.cmdQueue.pushExtensions(...extensions)
+        this.queue.pushExtensions(...extensions)
         return this
     }
 
@@ -51,7 +52,15 @@ export class CommandQueue {
     constructor() {
         this.queue = []
     }
+    usedDB: string | null = null
     queue: string[]
+
+    getUsedDB() {
+        if (!this.usedDB) {
+            return ''
+        }
+        return `USE ${this.usedDB};`
+    }
     pushSettings(settings: Partial<DSettings> = {}) {
         const sts = Object.entries(settings).map(([key, value]) => `SET ${key} = '${value}'`)
         if (sts.length) {
@@ -61,7 +70,8 @@ export class CommandQueue {
     }
     pushAttach(path: string, alias: string, options?: { readonly: boolean }) {
         const opts = options?.readonly ? '(READONLY)' : ''
-        this.queue.push(`ATTACH '${path}' AS ${alias} ${opts}`, `USE ${alias}`)
+        this.queue.push(`ATTACH IF NOT EXISTS '${path}' AS ${alias} ${opts}`, `USE ${alias}`)
+        this.usedDB = alias
         return this
     }
     pushExtensions(...extensions: string[]) {

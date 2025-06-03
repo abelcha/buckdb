@@ -1,7 +1,7 @@
 import { getService, initialize as initializeMonacoService, IStorageService, IWorkbenchLayoutService } from '@codingame/monaco-vscode-api'
 import getQuickAccessServiceOverride from '@codingame/monaco-vscode-quickaccess-service-override'
 import { BrowserStorageService } from '@codingame/monaco-vscode-storage-service-override'
-import * as Buck from '@external/buckdb.wasm'
+import * as Buck from '@external/buckdb.remote'
 
 Object.assign(window, Buck)
 // Buck.duckdb.db.

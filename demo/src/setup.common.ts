@@ -63,7 +63,7 @@ const table3 = (await import('@external/.buck/table3.ts?raw')).default
 const tablejson = (await import('@external/.buck/table.json?raw')).default
 const buildTypes = (await import('@external/src/build.types.ts?raw')).default
 const build = (await import('@external/src/build.ts?raw')).default
-const buckdb = (await import('@external/buckdb.wasm.ts?raw')).default
+const buckdb = (await import('@external/buckdb.remote.ts?raw')).default
 const isTutorial = new URLSearchParams(location.search).has('tutorial')
 const demo = !isTutorial
     ? (await import('@external/demo.ts?raw')).default

@@ -132,8 +132,9 @@ const getFuncId = (z: IFns) => {
 }
 global.duckdb_settings = await instance.from('duckdb_settings()').execute()
 
-global.generateSettings = () => {
-    return global.duckdb_settings.map(e => buildJSDoc(e) + `  ${e.name}: ${mapTypesProps(e.input_type).rawType},`).join('\n')
+global.generateSettings = (xmap: Record<string, string[]> = {}) => {
+    console.log({xmap})
+    return global.duckdb_settings.map(e => buildJSDoc(e) + `  ${e.name}: ${xmap[e.name] || mapTypesProps(e.input_type).rawType},`).join('\n')
 }
 
 type Opts = { type: string; match: () => boolean; typeMap: Record<string, any>; slice: number; override: string[] }

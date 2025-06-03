@@ -22,22 +22,6 @@ export declare const sId: unique symbol;
 export declare const sComptype: unique symbol;
 export declare const sAnti: unique symbol;
 export declare const sInferred: unique symbol;
-// export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {}
-
-// export type FromPrimitive<T> = T extends string ? DVarcharField : T extends number ? DNumericField
-//     : T extends boolean ? DBoolField
-//     : T extends Date ? DDateField
-//     : T
-// export type FromPrimitiveDeep<T> = T extends DField ? T
-//     : T extends readonly any[] ? { [I in keyof T]: FromPrimitiveDeep<T[I]> }
-//     : T extends object ? {
-//         [K in keyof T as K extends string | number ? K : never]: T[K] extends Array<infer U> ? DArrayField<U extends object ? FromPrimitiveDeep<U> : FromPrimitive<U>>
-//         : T[K] extends object ? FromPrimitiveDeep<T[K]>
-//         : FromPrimitive<T[K]>
-//     }
-//     : FromPrimitive<T>
-
-// export type NestedFromPrimitive<T> = Simplify<FromPrimitiveDeep<T>>
 
 export interface DDateField extends DAnyField {
   [sInferred]: Date;
@@ -3729,6 +3713,11 @@ export interface DGlobal<DNum, DStr> {
   array_slice<T>(list: DArrayField<T> | T[], begin: number, end: number, step?: number): DArrayField<FromPlain<T>>;
 }
 
+export interface DKeywords<DNum, DStr> {
+  Distinct<X>(val: X): X;
+}
+
+export type DKeywordsField = DKeywords<DNumericField, DVarcharField>;
 export type DGlobalField = DGlobal<DNumericField, DVarcharField>;
 // export type DGlobalComp = DGlobal<DNumericComp, DVarcharComp>
 
@@ -3744,7 +3733,7 @@ export type DConstructorsField = DConstructors<DNumericField, DVarcharField>;
 export type DMacroAGField = DMacroAG<DNumericField, DVarcharField>;
 export type DMacroField = DMacro<DNumericField, DVarcharField>;
 
-export type DMetaField = DGlobalField & DAggregateField & DConstructorsField & DGlobalPatternMatchers & DCastorsField & DMacroField & DMacroAGField;
+export type DMetaField = DGlobalField & DAggregateField & DConstructorsField & DGlobalPatternMatchers & DCastorsField & DMacroField & DMacroAGField & DKeywordsField;
 // export type DMetaComp = DGlobalComp & DAggregateComp & DConstructorsComp & DGlobalPatternMatchers & DCastorsComp
 
 export interface DConstructors<DNum, DStr> {
@@ -3876,7 +3865,7 @@ export interface DGlobalPatternMatchers {
 
 export interface DSettings {
   /**                                                            @description: Access mode of the database (AUTOMATIC, READ_ONLY or READ_WRITE)*/
-  access_mode: string;
+  access_mode: "AUTOMATIC" | "READ_ONLY" | "READ_WRITE";
   /**                                                            @description: Whether to enable the allocator background thread.*/
   allocator_background_threads: boolean;
   /**                                                            @description: If a bulk deallocation larger than this occurs, flush outstanding allocations.*/

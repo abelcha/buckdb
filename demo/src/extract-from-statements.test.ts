@@ -469,7 +469,7 @@ describe('Coverage tests', () => {
         const results = extractFromStatementsAST(testCode)
         // console.log(results) // Keep for debugging if needed, but remove for final
         const expectedResults = [
-            { chain: "Buck('res1')", param: "param1", resource: null, fromChain: "from('param1')", cleanFromChain: "from('param1')", lineStart: 4, lineEnd: 4 },
+            { chain: "Buck('res1')", param: "param1", resource: 'res1', fromChain: "from('param1')", cleanFromChain: "from('param1')", lineStart: 4, lineEnd: 4 },
             { chain: "someVar", param: "param2", resource: null, fromChain: "from('param2')", cleanFromChain: "from('param2')", lineStart: 6, lineEnd: 6 },
             { chain: "someVar", param: "param2", resource: null, fromChain: "from('param2')", cleanFromChain: "from('param2')", lineStart: 6, lineEnd: 6 }, // Duplicate
             { chain: "Buck('res3').settings()", param: "param3", resource: null, fromChain: "from('param3')", cleanFromChain: "from('param3')", lineStart: 7, lineEnd: 7 },
@@ -479,29 +479,59 @@ describe('Coverage tests', () => {
             { chain: null, param: "direct_from", resource: null, fromChain: "from('direct_from').select().execute()", cleanFromChain: "from('direct_from').select()", lineStart: 22, lineEnd: 22 },
             { chain: "Buck('another_res').settings()", param: "leading_expr", resource: "another_res", fromChain: "from('leading_expr').filter().execute()", cleanFromChain: "from('leading_expr').filter()", lineStart: 26, lineEnd: 26 }
         ];
-        expect(results).toHaveLength(expectedResults.length); // Ensure no extra/missing items
-        expect(results).toEqual(expect.arrayContaining(expectedResults.map(item => expect.objectContaining(item))));
+        expect(results).toEqual(expectedResults);
 
 
         const buckResults = extractBuckStatement(testCode)
         expect(buckResults).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({
-              resource: null,
-              options: expect.objectContaining({ opt: 1 }),
-            }),
-            expect.objectContaining({ resource: 'resOnly' }),
-            expect.objectContaining({
-              resource: 'resWithOptions',
-              options: expect.objectContaining({ opt: true }),
-              
-            }),
-            expect.objectContaining({
-              fullCall: 'Buck(123)',
-              resource: null,
-              options: null,
-            }),
-          ]),
+            expect.arrayContaining([
+                expect.objectContaining({
+                    resource: null,
+                    options: expect.objectContaining({ opt: 1 }),
+                }),
+                expect.objectContaining({ resource: 'resOnly' }),
+                expect.objectContaining({
+                    resource: 'resWithOptions',
+                    options: expect.objectContaining({ opt: true }),
+
+                }),
+                expect.objectContaining({
+                    fullCall: 'Buck(123)',
+                    resource: null,
+                    options: null,
+                }),
+            ]),
         )
+    })
+
+    test('test case1', () => {
+        const testCode = `const xx = Buck('s3://a424/')\nawait xx.from('files/macif.parquet').exec()`
+        const result = extractFromStatementsAST(testCode)
+        expect(result).toEqual([
+            {
+                chain: "Buck('s3://a424/')",
+                cleanFromChain: "from('files/macif.parquet')",
+                fromChain: "from('files/macif.parquet').exec()",
+                lineEnd: 2,
+                lineStart: 2,
+                param: "files/macif.parquet",
+                resource: 's3://a424/',
+            }
+        ]) // Expect empty array for no input
+    })
+    test('test case2', () => {
+        const testCode = `await Buck('s3://a1738').from('files/macif.parquet').exec()`
+        const result = extractFromStatementsAST(testCode)
+        expect(result).toEqual([
+            {
+                chain: "Buck('s3://a1738')",
+                cleanFromChain: "from('files/macif.parquet')",
+                fromChain: "from('files/macif.parquet').exec()",
+                lineEnd: 1,
+                lineStart: 1,
+                param: "files/macif.parquet",
+                resource: 's3://a1738',
+            }
+        ])
     })
 })

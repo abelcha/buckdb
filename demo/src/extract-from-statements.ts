@@ -32,7 +32,7 @@ export function findVariableInitializerText(identifier: ts.Identifier, sourceFil
         .find(decl => ts.isIdentifier(decl.name) && decl.name.text === name && decl.initializer)
 
     if (!declaration?.initializer) return null
-    
+
     const init = declaration.initializer
     if (ts.isCallExpression(init) && ts.isIdentifier(init.expression) && init.expression.text === 'Buck') {
         return init.getText(sourceFile)
@@ -78,14 +78,14 @@ const evaluateLiteralNode = (node: ts.Expression, sourceFile: ts.SourceFile): an
 const evaluateObjectLiteral = (node: ts.ObjectLiteralExpression, sourceFile: ts.SourceFile): Record<string, any> | null => {
     const props = node.properties.filter(ts.isPropertyAssignment)
     if (props.length !== node.properties.length) return null
-    
+
     const entries = props.map(prop => {
         const propName = ts.isIdentifier(prop.name) ? prop.name.text : ts.isStringLiteral(prop.name) ? prop.name.text : null
         if (!propName) return null
         const value = evaluateLiteralNode(prop.initializer, sourceFile)
         return value === undefined ? null : [propName, value] as const
     })
-    
+
     return entries.every(e => e !== null) ? Object.fromEntries(entries) : null
 }
 
@@ -109,7 +109,8 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
             const fromCallNode = node.initializer
             const propAccess = fromCallNode.expression as ts.PropertyAccessExpression
             const expressionBeforeFrom = propAccess.expression
-            const fromParameterNode = fromCallNode.arguments[0]!
+            const fromParameterNode = fromCallNode.arguments[0]
+            if (!fromParameterNode) return
             const fromParameterUnquoted = getUnquotedText(fromParameterNode, sourceFile)
             let buckResource: string | null = null
             let buckInitializerText: string | null = expressionBeforeFrom.getText(sourceFile)
@@ -272,10 +273,13 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
                 }
 
                 if (fromCallTargetNode?.arguments.length) {
-                    const paramPart = getUnquotedText(fromCallTargetNode.arguments[0]!, sourceFile)
+                    const firstArg = fromCallTargetNode.arguments[0]
+                    if (!firstArg) return
+                    const paramPart = getUnquotedText(firstArg, sourceFile)
                     let chainPart: string | null = null
                     let resourcePart: string | null = null
 
+                    // console.log('DEBUGx: expressionLeadingToFrom:', expressionLeadingToFrom?.getText(sourceFile))
                     if (expressionLeadingToFrom) {
                         const originalLeadingText = expressionLeadingToFrom.getText(sourceFile)
                         chainPart = originalLeadingText
@@ -284,13 +288,19 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
                         while (ts.isPropertyAccessExpression(baseOfLeadingExpr) || ts.isCallExpression(baseOfLeadingExpr)) {
                             baseOfLeadingExpr = baseOfLeadingExpr.expression
                         }
+                        // console.log('======', baseOfLeadingExpr.kind, baseOfLeadingExpr.text)
 
                         if (ts.isIdentifier(baseOfLeadingExpr)) {
-                            const buckInitializer = findVariableInitializerText(baseOfLeadingExpr, sourceFile)
+                            // console.log('uuuuuuuuuuuu', baseOfLeadingExpr.getText())
+                            const bi = findVariableInitializerText(baseOfLeadingExpr, sourceFile)
+                            const buckInitializer = bi || expressionLeadingToFrom?.getText(sourceFile)
+                            // console.log({ buckInitializer })
                             if (buckInitializer?.startsWith('Buck(')) {
-                                chainPart = originalLeadingText.replace(baseOfLeadingExpr.getText(sourceFile), buckInitializer)
+                                if (bi)
+                                    chainPart = originalLeadingText.replace(baseOfLeadingExpr.getText(sourceFile), buckInitializer)
 
                                 const tempSourceBuck = ts.createSourceFile('tempBuck.ts', buckInitializer, ts.ScriptTarget.Latest, true)
+                                // console.log({ tempSourceBuck })
                                 ts.forEachChild(tempSourceBuck, n => {
                                     const bn = ts.isExpressionStatement(n) && ts.isCallExpression(n.expression) ? n.expression : ts.isCallExpression(n) ? n : null
                                     if (bn && ts.isIdentifier(bn.expression) && bn.expression.text === 'Buck' && bn.arguments.length > 0) {
@@ -300,6 +310,19 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
                                         }
                                     }
                                 })
+                            } else if (baseOfLeadingExpr.getText() == 'Buck') {
+
+                            }
+                        } else if (ts.isIdentifier(baseOfLeadingExpr) && baseOfLeadingExpr.text === 'Buck') {
+                            //  @ts-ignore
+                            if (baseOfLeadingExpr?.arguments.length > 0) {
+                                //  @ts-ignore
+                                const firstArg = baseOfLeadingExpr.arguments[0]
+                                console.log('DEBUG: First arg:', firstArg?.getText(sourceFile), 'isString:', ts.isStringLiteral(firstArg), 'isTemplate:', ts.isNoSubstitutionTemplateLiteral(firstArg))
+                                if (firstArg && (ts.isStringLiteral(firstArg) || ts.isNoSubstitutionTemplateLiteral(firstArg))) {
+                                    resourcePart = getUnquotedText(firstArg, sourceFile)
+                                    console.log('DEBUG: Set resourcePart to:', resourcePart)
+                                }
                             }
                         }
                     }
@@ -320,7 +343,7 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
                     const lineStart = sourceFile.getLineAndCharacterOfPosition(executableChainNode.getStart(sourceFile)).line + 1
                     const lineEnd = sourceFile.getLineAndCharacterOfPosition(executableChainNode.getEnd()).line + 1
 
-                    fromStatements.push({ chain: chainPart, param: paramPart, resource: resourcePart, fromChain: actualFromChainText, cleanFromChain: cleanFromChainPart, lineStart, lineEnd })
+                    fromStatements.push({ chain: chainPart, param: paramPart, resource: resourcePart || null, fromChain: actualFromChainText, cleanFromChain: cleanFromChainPart, lineStart, lineEnd })
                     processedStatementNodes.add(currentStatementNode)
                     return
                 }
@@ -365,7 +388,6 @@ export function extractBuckStatement(text: string): BuckStatementParts[] {
 
             let resource: string | null = null
             let options: Record<string, any> | null = null
-
             if (node.arguments.length > 0) {
                 const arg0 = node.arguments[0]!
                 if (ts.isObjectLiteralExpression(arg0)) {

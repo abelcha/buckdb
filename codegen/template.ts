@@ -50,7 +50,7 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
 }
 
 export interface DAnyComp extends DAny<DNumericComp, DVarcharComp> {
-    
+
 }
 
 export interface DAnyField extends DAny<DNumericField, DVarcharField> {
@@ -67,12 +67,14 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, 'map' | 'filt
     /*{renderMethods({
         type:'DArray',
         typeMap: { 'array': 'DArrayField<T>' },
-        override: ['array_transform', 'array_filter', 'array_reduce']
+        override: ['array_transform', 'array_filter', 'array_reduce' ,'array_slice']
     })}*/
     array_reduce<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): FromPlain<U>
     array_transform<U>(lambda: (x: T) => U): DArrayField<FromPlain<U>>
     array_filter(lambda: (x: T) => any): DArrayField<T>
+    array_slice(begin: number, end: number, step?: number): DArrayField<FromPlain<T>>
     map: this['array_transform']
+
 }
 
 export interface DBoolField extends DAnyField {
@@ -152,12 +154,13 @@ export interface DGlobal<DNum, DStr> {
         match: (e) => e.function_type === 'scalar',
         typeMap: { numeric: 'DNum', varchar: 'DStr' },
         slice: 0,
-        override: ['array_transform', 'array_filter', 'array_reduce']
+        override: ['array_transform', 'array_filter', 'array_reduce', 'array_slice']
     })}*/
     // array_transform<T, U>(list: T[], lambda: (x: T) => U): DArrayField<FromPlain<U>>
     array_transform<T, U>(list: DArrayField<T> | T[], lambda: (x: FromPlain<T>) => U): DArrayField<FromPlain<U>>
     array_reduce<T, U>(list: DArrayField<T> | T[], lambda: (accumulator: U, currentValue: FromPlain<T>) => U, initialValue: U): FromPlain<U>;
     array_filter<T>(list: DArrayField<T> | T[], lambda: (x: T) => any): DArrayField<T>
+    array_slice<T>(list: DArrayField<T> | T[], begin: number, end: number, step?: number): DArrayField<FromPlain<T>>
 }
 
 export type DGlobalField = DGlobal<DNumericField, DVarcharField>

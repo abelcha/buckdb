@@ -3,7 +3,7 @@ import * as _ from './template.ts'
 import { camelCase, groupBy, maxBy, range, sortBy, uniq, uniqBy } from 'es-toolkit'
 import { Buck } from '../buckdb.ts'
 import { mapTypes, mapTypesProps } from '../src/typedef.ts'
-import { wrap, Ω } from '../src/utils.ts'
+import { wrap, Σ } from '../src/utils.ts'
 
 const getCommunityExtensions = () => {
     return fetch('https://api.github.com/repos/duckdb/community-extensions/contents/extensions')
@@ -12,8 +12,8 @@ const getCommunityExtensions = () => {
 }
 
 const community_extensions = [] // await getCommunityExtensions()
-global.duckdb_extensions = await Buck().from('duckdb_extensions()').select(e => e.extension_name).execute()
-const allextensions = ['arrow', 'aws', 'azure', 'delta', 'excel', 'fts', 'h3', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui']
+global.duckdb_extensions = await Buck('').from('duckdb_extensions()').select(e => e.extension_name).execute()
+const allextensions = ['aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui']
 
 const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')
@@ -26,7 +26,16 @@ async function getMergedResults() {
         .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters', 'schema_name', 'macro_definition')
         .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
         .orderBy('function_name')
-    let results = await query.execute()
+    let results = (await query.execute())
+        .map(res => {
+            if (res.parameter_types[0] === 'ANY' && res.parameters[0] === 'list') {
+                res.parameter_types[0] = 'ANY[]'
+            }
+            if (res.parameter_types[0] === 'ANY' && res.parameters[0] === 'map') {
+                res.parameter_types[0] = 'MAP(ANY, ANY)'
+            }
+            return res
+        })
     // .concat(anyFuncs).concat(addFuncs as any);
 
     // 5. Merge function names and parameter types
@@ -112,6 +121,7 @@ const banMethods = (e: IFns, type: string) => {
         || e.return_type?.startsWith('INTERVAL')
         || (type !== 'DDate' && e.return_type?.match(/^(DATE|TIME)/))
         || (type !== 'DJson' && e.function_name.startsWith('json'))
+        || type === 'DAny' && e.parameter_types[0] !== 'ANY'
 }
 let total = 0
 
@@ -132,7 +142,7 @@ const getFunctions = (xfns: IFns[], opts: Opts) => {
     const funcs = uniqBy(
         typeof opts.match === 'function'
             ? xfns.filter(opts.match)
-            : xfns.filter(e => e.function_type in Ω('scalar', 'macro') && e.args[0]?.dtypes.includes(opts.type as any) && !banMethods(e, opts.type)),
+            : xfns.filter(e => e.function_type in Σ('scalar', 'macro') && e.args[0]?.dtypes.includes(opts.type as any) && !banMethods(e, opts.type)),
         e => e.function_name + genArgs(e.args, e.varargs),
     )
     // .filter(z => JSON.stringify(z).match(/\b(array|any)\b/img))
@@ -150,6 +160,7 @@ const formatFunctions = (p: ReturnType<typeof getFunctions>, opts: Opts) => {
             const [fst, ...rest] = sortBy(values, [e => -e.signatures[0].function_name.length])
             const fsig = fst.signatures[0]
             const char = opts.type ? '- ' : '… '
+
             return fst.signatures.map(e => global.renderMethod(e, opts.typeMap || {}, opts.slice ?? 1, override.includes(fsig.function_name)))
                 .concat(
                     rest.map(e => e.signatures[0]).map(e => `${buildJSDoc(e)} ${e.function_name}: this['${fsig.function_name}'];`),

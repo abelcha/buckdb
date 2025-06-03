@@ -63,7 +63,7 @@ export interface DDateField extends DAnyField {
   /**                                                            @description: Create a list of values between start and stop - the stop parameter is exclusive	@example: range(2, 5, 3)	@default: range(start:TIMESTAMP WITH TIME ZONE, stop:TIMESTAMP WITH TIME ZONE, step:INTERVAL) -> TIMESTAMP WITH TIME ZONE[]*/
   range(stop: DDateable, step: DAnyable): DArrayField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DDate] - - - - - - -  */
-  /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789	@default: nanosecond(tsns:DATE) -> BIGINT*/
+  /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789')	@default: nanosecond(tsns:DATE) -> BIGINT*/
   nanosecond(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DDate] - - - - - - -  */
   /**                                                            @description: Extract the week component from a date or timestamp	@example: week(timestamp '2021-08-03 11:59:44.123456')	@default: week(ts:DATE) -> BIGINT*/
@@ -126,7 +126,7 @@ export interface DDateField extends DAnyField {
   /**                                                            @description: Extract the century component from a date or timestamp	@example: century(timestamp '2021-08-03 11:59:44.123456')	@default: century(ts:DATE) -> BIGINT*/
   century(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DDate] - - - - - - -  */
-  /**                                                            @description: Converts a TIME WITH TIME ZONE to an integer sort key	@example: timetz_byte_comparable('18:18:16.21-07:00'::TIME_TZ)	@default: timetz_byte_comparable(timeTz:TIME WITH TIME ZONE) -> UBIGINT*/
+  /**                                                            @description: Converts a TIME WITH TIME ZONE to an integer sort key	@example: timetz_byte_comparable('18:18:16.21-07:00'::TIMETZ)	@default: timetz_byte_comparable(timeTz:TIME WITH TIME ZONE) -> UBIGINT*/
   timetz_byte_comparable(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DDate] - - - - - - -  */
   /**                                                            @description: The (English) name of the weekday	@example: dayname(TIMESTAMP '1992-03-22')	@default: dayname(ts:DATE) -> VARCHAR*/
@@ -165,9 +165,9 @@ export interface DDateField extends DAnyField {
   /**                                                            @description: Extract the millennium component from a date or timestamp	@example: millennium(timestamp '2021-08-03 11:59:44.123456')	@default: millennium(ts:DATE) -> BIGINT*/
   millennium(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DDate] - - - - - - -  */
-  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP*/
   add(col1: DAnyable | DDateable | DNumericable): DDateField;
-  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIME WITH TIME ZONE*/
   add(col1: DAnyable | DDateable): DDateField;
   /**                                                            @default: add(col0:TIMESTAMP, col1:INTERVAL) -> TIMESTAMP*/
   add(col1: DAnyable): DDateField;
@@ -182,34 +182,11 @@ export interface DDateField extends DAnyField {
 }
 
 export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
-  /**                                                            @default: combine(col0:AGGREGATE_STATE<?>, col1:ANY) -> AGGREGATE_STATE<?>*/
-  combine(col1: DAnyable): DAny<DNum, DStr>;
+  /**                                                            @description: Map a struct to another struct type, potentially re-ordering, renaming and casting members and filling in defaults for missing values	@example: remap_struct({'i': 1, 'j': 2}, NULL::ROW(v1 INT, v2 INT, v3 INT), {'v1': 'j', 'v3': 'i'}, {'v2': NULL::INTEGER})	@default: remap_struct(input:ANY, targetType:ANY, mapping:ANY, defaults:ANY) -> ANY*/
+  remap_struct(targetType: DAnyable, mapping: DAnyable, defaults: DAnyable): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: array_slice(list:ANY, begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
-  array_slice(begin: DAnyable, end: DAnyable, step?: DAnyable | DNumericable): DAny<DNum, DStr>;
-  /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: list_slice(list:ANY, begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
-  list_slice: this["array_slice"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Returns the number of bits that are set	@example: bit_count(31)	@default: bit_count(x:BIT) -> BIGINT*/
-  bit_count(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the era component from a date or timestamp	@example: era(timestamp '2021-08-03 11:59:44.123456')	@default: era(ts:INTERVAL) -> BIGINT*/
-  era(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the day component from a date or timestamp	@example: day(timestamp '2021-08-03 11:59:44.123456')	@default: day(ts:INTERVAL) -> BIGINT*/
-  day(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract_value(map(['key'], ['val']), 'key')	@default: map_extract_value(map:ANY, key:ANY) -> ANY*/
-  map_extract_value(key: DAnyable, ...vargs: DAnyable[]): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789	@default: nanosecond(tsns:INTERVAL) -> BIGINT*/
-  nanosecond(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Concatenate many strings together.	@example: concat('Hello', ' ', 'World')	@default: concat(string:ANY) -> VARCHAR*/
-  concat(...vargs: DAnyable[]): DStr;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Sets the nth bit in bitstring to newvalue; the first (leftmost) bit is indexed 0. Returns a new bitstring	@example: set_bit('0110010'::BIT, 2, 0)	@default: set_bit(bitstring:BIT, index:INTEGER, newValue:INTEGER) -> BIT*/
-  set_bit(index: DNumericable, newValue: DNumericable): DAny<DNum, DStr>;
+  /**                                                            @description: Casts the first argument to the type of the second argument	@example: cast_to_type('42', NULL::INTEGER)	@default: cast_to_type(param:ANY, type:ANY) -> ANY*/
+  cast_to_type(type: DAnyable): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the range between the two given enum values as an array. The values must be of the same enum type. When the first parameter is NULL, the result starts with the first value of the enum type. When the second parameter is NULL, the result ends with the last value of the enum type	@example: enum_range_boundary(NULL, 'happy'::mood)	@default: enum_range_boundary(start:ANY, end:ANY) -> VARCHAR[]*/
   enum_range_boundary(end: DAnyable): DArrayField<DVarcharField>;
@@ -217,31 +194,14 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
   /**                                                            @description: Whether or not the provided value is the histogram "other" bin (used for values not belonging to any provided bin)	@example: is_histogram_other_bin(v)	@default: is_histogram_other_bin(val:ANY) -> BOOLEAN*/
   is_histogram_other_bin(): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the week component from a date or timestamp	@example: week(timestamp '2021-08-03 11:59:44.123456')	@default: week(ts:INTERVAL) -> BIGINT*/
-  week(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Constructs a binary-comparable sort key based on a set of input parameters and sort qualifiers	@example: create_sort_key('A', 'DESC')	@default: create_sort_key(parameters:ANY) -> BLOB*/
   create_sort_key(...vargs: DAnyable[]): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the year component from a date or timestamp	@example: year(timestamp '2021-08-03 11:59:44.123456')	@default: year(ts:INTERVAL) -> BIGINT*/
-  year(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the hour component from a date or timestamp	@example: hour(timestamp '2021-08-03 11:59:44.123456')	@default: hour(ts:INTERVAL) -> BIGINT*/
-  hour(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Number of bytes in blob.	@example: octet_length('\xAA\xBB'::BLOB)	@default: octet_length(blob:BIT) -> BIGINT*/
-  octet_length(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the timezone_hour component from a date or timestamp	@example: timezone_hour(timestamp '2021-08-03 11:59:44.123456')	@default: timezone_hour(ts:INTERVAL) -> BIGINT*/
-  timezone_hour(): DNum;
+  /**                                                            @description: Concatenates many strings together.	@example: concat('Hello', ' ', 'World')	@default: concat(string:ANY) -> VARCHAR*/
+  concat(...vargs: DAnyable[]): DStr;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the name of a given expression	@example: alias(42 + 1)	@default: alias(expr:ANY) -> VARCHAR*/
   alias(): DStr;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:VARINT) -> VARCHAR*/
-  to_hex(): DStr;
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: hex(value:VARINT) -> VARCHAR*/
-  hex: this["to_hex"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns a string with statistics about the expression. Expression can be a column, constant, or SQL expression	@example: stats(5)	@default: stats(expression:ANY) -> VARCHAR*/
   stats(): DStr;
@@ -249,124 +209,26 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
   /**                                                            @description: Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example: hash('🦆')	@default: hash(param:ANY) -> UBIGINT*/
   hash(...vargs: DAnyable[]): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @default: host(col0:INET) -> VARCHAR*/
-  host(): DStr;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the epoch component in nanoseconds from a temporal type	@example: epoch_ns(timestamp '2021-08-03 11:59:44.123456')	@default: epoch_ns(temporal:INTERVAL) -> BIGINT*/
-  epoch_ns(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the VectorType of a given column	@example: vector_type(col)	@default: vector_type(col:ANY) -> VARCHAR*/
   vector_type(): DStr;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the month component from a date or timestamp	@example: month(timestamp '2021-08-03 11:59:44.123456')	@default: month(ts:INTERVAL) -> BIGINT*/
-  month(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the value with the named tags from the union. NULL if the tag is not currently selected	@example: union_extract(s, 'k')	@default: union_extract(union:UNION, tag:VARCHAR) -> ANY*/
-  union_extract(tag: DVarcharable): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @default: family(col0:INET) -> UTINYINT*/
-  family(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the decade component from a date or timestamp	@example: decade(timestamp '2021-08-03 11:59:44.123456')	@default: decade(ts:INTERVAL) -> BIGINT*/
-  decade(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @default: netmask(col0:INET) -> INET*/
-  netmask(): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @default: network(col0:INET) -> INET*/
-  network(): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Bitwise XOR	@example: xor(17, 5)	@default: xor(left:BIT, right:BIT) -> BIT*/
-  xor(right: DAnyable): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the second component from a date or timestamp	@example: second(timestamp '2021-08-03 11:59:44.123456')	@default: second(ts:INTERVAL) -> BIGINT*/
-  second(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the minute component from a date or timestamp	@example: minute(timestamp '2021-08-03 11:59:44.123456')	@default: minute(ts:INTERVAL) -> BIGINT*/
-  minute(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the isodow component from a date or timestamp	@example: isodow(timestamp '2021-08-03 11:59:44.123456')	@default: isodow(ts:INTERVAL) -> BIGINT*/
-  isodow(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @default: finalize(col0:AGGREGATE_STATE<?>) -> INVALID*/
-  finalize(): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Retrieve the currently selected tag of the union as an ENUM	@example: union_tag(union_value(k := 'foo'))	@default: union_tag(union:UNION) -> ANY*/
-  union_tag(): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the epoch component in milliseconds from a temporal type	@example: epoch_ms(timestamp '2021-08-03 11:59:44.123456')	@default: epoch_ms(temporal:INTERVAL) -> BIGINT*/
-  epoch_ms(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the epoch component in microseconds from a temporal type	@example: epoch_us(timestamp '2021-08-03 11:59:44.123456')	@default: epoch_us(temporal:INTERVAL) -> BIGINT*/
-  epoch_us(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the timezone_minute component from a date or timestamp	@example: timezone_minute(timestamp '2021-08-03 11:59:44.123456')	@default: timezone_minute(ts:INTERVAL) -> BIGINT*/
-  timezone_minute(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @default: broadcast(col0:INET) -> INET*/
-  broadcast(): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns all values of the input enum type as an array	@example: enum_range(NULL::mood)	@default: enum_range(enm:ANY) -> VARCHAR[]*/
   enum_range(): DArrayField<DVarcharField>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Returns first starting index of the specified substring within bits, or zero if it is not present. The first (leftmost) bit is indexed 1	@example: bit_position('010'::BIT, '1110101'::BIT)	@default: bit_position(substring:BIT, bitstring:BIT) -> INTEGER*/
-  bit_position(bitstring: DAnyable): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @default: bit_length(col0:BIT) -> BIGINT*/
-  bit_length(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the weekday component from a date or timestamp	@example: weekday(timestamp '2021-08-03 11:59:44.123456')	@default: weekday(ts:INTERVAL) -> BIGINT*/
-  weekday(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the isoyear component from a date or timestamp	@example: isoyear(timestamp '2021-08-03 11:59:44.123456')	@default: isoyear(ts:INTERVAL) -> BIGINT*/
-  isoyear(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the quarter component from a date or timestamp	@example: quarter(timestamp '2021-08-03 11:59:44.123456')	@default: quarter(ts:INTERVAL) -> BIGINT*/
-  quarter(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the century component from a date or timestamp	@example: century(timestamp '2021-08-03 11:59:44.123456')	@default: century(ts:INTERVAL) -> BIGINT*/
-  century(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the epoch component from a temporal type	@example: epoch(timestamp '2021-08-03 11:59:44.123456')	@default: epoch(temporal:INTERVAL) -> DOUBLE*/
-  epoch(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the numeric value backing the given enum value	@example: enum_code('happy'::mood)	@default: enum_code(enm:ANY) -> ANY*/
   enum_code(): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the yearweek component from a date or timestamp	@example: yearweek(timestamp '2021-08-03 11:59:44.123456')	@default: yearweek(ts:INTERVAL) -> BIGINT*/
-  yearweek(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the timezone component from a date or timestamp	@example: timezone(timestamp '2021-08-03 11:59:44.123456')	@default: timezone(ts:INTERVAL) -> BIGINT*/
-  timezone(): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Whether or not we can implicitly cast from the source type to the other type	@example: can_implicitly_cast(NULL::INTEGER, NULL::BIGINT)	@default: can_cast_implicitly(sourceType:ANY, targetType:ANY) -> BOOLEAN*/
   can_cast_implicitly(targetType: DAnyable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Returns the size of the map (or the number of entries in the map)	@example: cardinality( map([4, 2], ['a', 'b']) );	@default: cardinality(map:ANY) -> UBIGINT*/
-  cardinality(...vargs: DAnyable[]): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the last value of the input enum type	@example: enum_last(NULL::mood)	@default: enum_last(enm:ANY) -> VARCHAR*/
   enum_last(): DStr;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the dayofweek component from a date or timestamp	@example: dayofweek(timestamp '2021-08-03 11:59:44.123456')	@default: dayofweek(ts:INTERVAL) -> BIGINT*/
-  dayofweek(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the dayofyear component from a date or timestamp	@example: dayofyear(timestamp '2021-08-03 11:59:44.123456')	@default: dayofyear(ts:INTERVAL) -> BIGINT*/
-  dayofyear(): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the name of the data type of the result of the expression	@example: typeof('abc')	@default: typeof(expression:ANY) -> VARCHAR*/
   typeof(): DStr;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the lowest value of the set of input parameters	@example: least(42, 84)	@default: least(arg1:ANY) -> ANY*/
   least(...vargs: DAnyable[]): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Converts the value to binary representation	@example: bin(42)	@default: to_binary(value:VARINT) -> VARCHAR*/
-  to_binary(): DStr;
-  /**                                                            @description: Converts the value to binary representation	@example: bin(42)	@default: bin(value:VARINT) -> VARCHAR*/
-  bin: this["to_binary"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Pads the bitstring until the specified length	@example: bitstring('1010'::BIT, 7)	@default: bitstring(bitstring:BIT, length:INTEGER) -> BIT*/
-  bitstring(length: DNumericable): DAny<DNum, DStr>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Generates bin_count equi-width bins between the min and max. If enabled nice_rounding makes the numbers more readable/less jagged	@example: equi_width_bins(0, 10, 2, true)	@default: equi_width_bins(min:ANY, max:ANY, binCount:BIGINT, niceRounding:BOOLEAN) -> ANY[]*/
   equi_width_bins(max: DAnyable, binCount: DNumericable, niceRounding: DBoolable): DArrayField<DAnyField>;
@@ -377,36 +239,8 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
   /**                                                            @description: Returns the first value of the input enum type	@example: enum_first(NULL::mood)	@default: enum_first(enm:ANY) -> VARCHAR*/
   enum_first(): DStr;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the weekofyear component from a date or timestamp	@example: weekofyear(timestamp '2021-08-03 11:59:44.123456')	@default: weekofyear(ts:INTERVAL) -> BIGINT*/
-  weekofyear(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: map_extract(map:ANY, key:ANY) -> ANY*/
-  map_extract(key: DAnyable, ...vargs: DAnyable[]): DAny<DNum, DStr>;
-  /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: element_at(map:ANY, key:ANY) -> ANY*/
-  element_at: this["map_extract"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
   /**                                                            @description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
   greatest(...vargs: DAnyable[]): DAny<DNum, DStr>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the dayofmonth component from a date or timestamp	@example: dayofmonth(timestamp '2021-08-03 11:59:44.123456')	@default: dayofmonth(ts:INTERVAL) -> BIGINT*/
-  dayofmonth(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the millennium component from a date or timestamp	@example: millennium(timestamp '2021-08-03 11:59:44.123456')	@default: millennium(ts:INTERVAL) -> BIGINT*/
-  millennium(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: length(string:BIT) -> BIGINT*/
-  length(): DNum;
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: len(string:BIT) -> BIGINT*/
-  len: this["length"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extracts the nth bit from bitstring; the first (leftmost) bit is indexed 0	@example: get_bit('0110010'::BIT, 2)	@default: get_bit(bitstring:BIT, index:INTEGER) -> INTEGER*/
-  get_bit(index: DNumericable): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the millisecond component from a date or timestamp	@example: millisecond(timestamp '2021-08-03 11:59:44.123456')	@default: millisecond(ts:INTERVAL) -> BIGINT*/
-  millisecond(): DNum;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
-  /**                                                            @description: Extract the microsecond component from a date or timestamp	@example: microsecond(timestamp '2021-08-03 11:59:44.123456')	@default: microsecond(ts:INTERVAL) -> BIGINT*/
-  microsecond(): DNum;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DAny] - - - - - - -  */
 }
 
@@ -431,12 +265,6 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filt
   array_resize(size: DAnyable, value?: DAnyable): DArrayField<T>;
   /**                                                            @description: Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example: list_resize([1, 2, 3], 5, 0)	@default: list_resize(list:ANY[], size:ANY, value:ANY | ) -> ANY[]*/
   list_resize: this["array_resize"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: len(string:ANY[]) -> BIGINT*/
-  len(): DNumericField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
-  /**                                                            @default: add(col0:ANY[], col1:ANY[]) -> ANY[]*/
-  add(col1: DArrayable): DArrayField<T>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
   /**                                                            @description: Compute the cosine similarity between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_cosine_similarity([1, 2, 3], [1, 2, 3])	@default: array_cosine_similarity(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_cosine_similarity(arr2: DArrayable): DNumericField;
@@ -470,8 +298,6 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filt
   list_contains: this["array_contains"];
   /**                                                            @description: Returns true if the list contains the element.	@example: list_contains([1, 2, NULL], 1)	@default: array_has(list:ANY[], element:ANY) -> BOOLEAN*/
   array_has: this["array_contains"];
-  /**                                                            @description: Returns true if the list contains the element.	@example: contains([1, 2, NULL], 1)	@default: contains(list:ANY[], element:ANY) -> BOOLEAN*/
-  contains: this["array_contains"];
   /**                                                            @description: Returns true if the list contains the element.	@example: list_contains([1, 2, NULL], 1)	@default: list_has(list:ANY[], element:ANY) -> BOOLEAN*/
   list_has: this["array_contains"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
@@ -481,6 +307,13 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filt
   list_filter: this["array_filter"];
   /**                                                            @description: Constructs a list from those elements of the input list for which the lambda function returns true	@example: list_filter([3, 4, 5], x -> x > 4)	@default: filter(list:ANY[], lambda:LAMBDA) -> ANY[]*/
   filter: this["array_filter"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: character_length(string:ANY[]) -> BIGINT*/
+  character_length(): DNumericField;
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: char_length(string:ANY[]) -> BIGINT*/
+  char_length: this["character_length"];
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: len(string:ANY[]) -> BIGINT*/
+  len: this["character_length"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
   /**                                                            @description: Compute the distance between two lists	@example: list_distance([1, 2, 3], [1, 2, 3])	@default: list_distance(list1:DOUBLE[], list2:DOUBLE[]) -> DOUBLE*/
   list_distance(list2: DArrayable): DNumericField;
@@ -506,28 +339,33 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filt
   /**                                                            @description: Removes all duplicates and NULLs from a list. Does not preserve the original order	@example: list_distinct([1, 1, NULL, -3, 1, 5])	@default: list_distinct(list:ANY[]) -> ANY[]*/
   list_distinct: this["array_distinct"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
+  /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: array_slice(list:ANY[], begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
+  // array_slice(begin: DAnyable, end: DAnyable, step?:DAnyable | DNumericable): DAnyField
+  /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: list_slice(list:ANY[], begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
+  list_slice: this["array_slice"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
   /**                                                            @description: Sorts the elements of the list	@example: list_sort([3, 6, 1, 2])	@default: array_sort(list:ANY[], col1:VARCHAR | , col2:VARCHAR | ) -> ANY[]*/
   array_sort(col1?: DAnyable | DVarcharable, col2?: DAnyable | DVarcharable): DArrayField<T>;
   /**                                                            @description: Sorts the elements of the list	@example: list_sort([3, 6, 1, 2])	@default: list_sort(list:ANY[], col1:VARCHAR | , col2:VARCHAR | ) -> ANY[]*/
   list_sort: this["array_sort"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
+  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list. When an initial value is provided, it is used as the first argument to the lambda function	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: array_reduce(list:ANY[], lambda:LAMBDA, initial:ANY | ) -> ANY*/
+  // array_reduce(lambda: DAnyable, initial?:DAnyable): DAnyField
+  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list. When an initial value is provided, it is used as the first argument to the lambda function	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: list_reduce(list:ANY[], lambda:LAMBDA, initial:ANY | ) -> ANY*/
+  list_reduce: this["array_reduce"];
+  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list. When an initial value is provided, it is used as the first argument to the lambda function	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: reduce(list:ANY[], lambda:LAMBDA, initial:ANY | ) -> ANY*/
+  reduce: this["array_reduce"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
   /**                                                            @description: Get subfield (equivalent to extract)	@example: date_part('minute', TIMESTAMP '1992-09-20 20:38:40')	@default: date_part(ts:VARCHAR[], col1:DATE | INTERVAL | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> STRUCT()*/
   date_part(col1: DAnyable | DDateable): DStructField;
   /**                                                            @description: Get subfield (equivalent to extract)	@example: date_part('minute', TIMESTAMP '1992-09-20 20:38:40')	@default: datepart(ts:VARCHAR[], col1:DATE | INTERVAL | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> STRUCT()*/
   datepart: this["date_part"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
+  /**                                                            @description: Returns true if the `list` contains the `element`.	@example: contains([1, 2, NULL], 1)	@default: contains(list:ANY[], element:ANY) -> BOOLEAN*/
+  contains(element: DAnyable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
   /**                                                            @description: Flatten a nested list by one level	@example: flatten([[1, 2, 3], [4, 5]])	@default: flatten(nestedList:ANY[][]) -> ANY[]*/
   flatten(): DArrayField<T>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
-  /**                                                            @description: Returns the length of the list.	@example: array_length([1,2,3])	@default: array_length(list:ANY[], col1:BIGINT | ) -> BIGINT*/
-  array_length(col1?: DAnyable | DNumericable): DNumericField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
-  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: array_reduce(list:ANY[], lambda:LAMBDA) -> ANY*/
-  // array_reduce(lambda: DAnyable): DAnyField
-  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: list_reduce(list:ANY[], lambda:LAMBDA) -> ANY*/
-  list_reduce: this["array_reduce"];
-  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: reduce(list:ANY[], lambda:LAMBDA) -> ANY*/
-  reduce: this["array_reduce"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
   /**                                                            @description: Returns the index of their sorted position.	@example: list_grade_up([3, 6, 1, 2])	@default: array_grade_up(list:ANY[], col1:VARCHAR | , col2:VARCHAR | ) -> ANY[]*/
   array_grade_up(col1?: DAnyable | DVarcharable, col2?: DAnyable | DVarcharable): DArrayField<T>;
@@ -556,15 +394,6 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filt
   /**                                                            @description: Compute the inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_inner_product([1, 2, 3], [1, 2, 3])	@default: array_dot_product(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_dot_product: this["array_inner_product"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
-  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])	@default: array_concat(list1:ANY[], list2:ANY[]) -> ANY[]*/
-  array_concat(list2: DArrayable): DArrayField<T>;
-  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])	@default: list_concat(list1:ANY[], list2:ANY[]) -> ANY[]*/
-  list_concat: this["array_concat"];
-  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])	@default: array_cat(list1:ANY[], list2:ANY[]) -> ANY[]*/
-  array_cat: this["array_concat"];
-  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])	@default: list_cat(list1:ANY[], list2:ANY[]) -> ANY[]*/
-  list_cat: this["array_concat"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
   /**                                                            @description: Returns a list with the BOOLEANs in mask_list applied as a mask to the value_list.	@example: list_where([10, 20, 30, 40], [true, false, false, true])	@default: array_where(valueList:ANY[], maskList:BOOLEAN[]) -> ANY[]*/
   array_where(maskList: DArrayable): DArrayField<T>;
   /**                                                            @description: Returns a list with the BOOLEANs in mask_list applied as a mask to the value_list.	@example: list_where([10, 20, 30, 40], [true, false, false, true])	@default: list_where(valueList:ANY[], maskList:BOOLEAN[]) -> ANY[]*/
@@ -579,6 +408,9 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filt
   list_element(index: DNumericable): DAnyField;
   /**                                                            @description: Extract the indexth (1-based) value from the list.	@example: list_extract([4, 5, 6], 3)	@default: list_extract(list:ANY[], index:BIGINT) -> ANY*/
   list_extract: this["list_element"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
+  /**                                                            @description: Returns the length of the `list`.	@example: array_length([1,2,3])	@default: array_length(list:ANY[], col1:BIGINT | ) -> BIGINT*/
+  array_length(col1?: DAnyable | DNumericable): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DArray] - - - - - - -  */
   /**                                                            @description: Extract the indexth (1-based) value from the array.	@example: array_extract('DuckDB', 2)	@default: array_extract(list:ANY[], index:BIGINT) -> ANY*/
   array_extract(index: DNumericable): DAnyField;
@@ -613,6 +445,7 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filt
   array_reduce<U>(lambda: (accumulator: U, currentValue: T) => U, initialValue: U): FromPlain<U>;
   array_transform<U>(lambda: (x: T) => U): DArrayField<FromPlain<U>>;
   array_filter(lambda: (x: T) => any): DArrayField<T>;
+  array_slice(begin: number, end: number, step?: number): DArrayField<FromPlain<T>>;
   map: this["array_transform"];
 }
 
@@ -641,10 +474,22 @@ export type DStructField<T = {}> = T & _DStructField<T>;
 export interface DMapField {
   // [sInferred]: string;
   // [sComptype]: string;
+  /**                                                            @description: Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract_value(map(['key'], ['val']), 'key')	@default: map_extract_value(map:MAP(ANY, ANY), key:ANY) -> ANY*/
+  map_extract_value(key: DAnyable, ...vargs: DAnyable[]): DAnyField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DMap] - - - - - - -  */
   /**                                                            @description: Checks if a map contains a given key.	@example: map_contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')	@default: map_contains(map:MAP(ANY, ANY), key:ANY) -> BOOLEAN*/
   map_contains(key: DAnyable): DBoolField;
-  /**                                                            @description: Checks if a map contains a given key.	@example: contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')	@default: contains(map:MAP(ANY, ANY), key:ANY) -> BOOLEAN*/
-  contains: this["map_contains"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DMap] - - - - - - -  */
+  /**                                                            @description: Checks if a `map` contains a given `key`.	@example: contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')	@default: contains(map:MAP(ANY, ANY), key:ANY) -> BOOLEAN*/
+  contains(key: DAnyable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DMap] - - - - - - -  */
+  /**                                                            @description: Returns the size of the map (or the number of entries in the map)	@example: cardinality( map([4, 2], ['a', 'b']) );	@default: cardinality(map:MAP(ANY, ANY)) -> UBIGINT*/
+  cardinality(...vargs: DAnyable[]): DNumericField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DMap] - - - - - - -  */
+  /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: map_extract(map:MAP(ANY, ANY), key:ANY) -> ANY*/
+  map_extract(key: DAnyable, ...vargs: DAnyable[]): DAnyField;
+  /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: element_at(map:MAP(ANY, ANY), key:ANY) -> ANY*/
+  element_at: this["map_extract"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DMap] - - - - - - -  */
 }
 
@@ -727,58 +572,65 @@ export type DJsonField = _DJsonField & Record<string, any>;
 export interface _DVarcharField extends DAnyField {
   [sInferred]: string;
   [sComptype]: DVarcharComp;
-  /**                                                            @description: Convert string to lower case	@example: lower('Hello')	@default: lcase(string:VARCHAR) -> VARCHAR*/
-  lcase(): DVarcharField;
-  /**                                                            @description: Convert string to lower case	@example: lower('Hello')	@default: lower(string:VARCHAR) -> VARCHAR*/
-  lower: this["lcase"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns the head of the path similarly to Python's os.path.dirname. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirpath('path/to/file.csv', 'system')	@default: parse_dirpath(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
   parse_dirpath(separator?: DAnyable | DVarcharable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Concatenate strings together separated by the specified separator.	@example: concat_ws(', ', 'Banana', 'Apple', 'Melon')	@default: concat_ws(separator:VARCHAR, string:ANY) -> VARCHAR*/
-  concat_ws(string: DAnyable, ...vargs: DAnyable[]): DVarcharField;
+  /**                                                            @description: Number of grapheme clusters in `string`.	@example: length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')	@default: length_grapheme(string:VARCHAR) -> BIGINT*/
+  length_grapheme(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example: substring('Hello', 2, 2)	@default: substring(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
-  substring(start: DNumericable, length?: DAnyable | DNumericable): DVarcharField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if search_string is found within string.	@example: contains('abc', 'a')	@default: contains(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
-  contains(searchString: DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Convert string to Unicode NFC normalized string. Useful for comparisons and ordering if text data is mixed between NFC normalized and not.	@example: nfc_normalize('ardèch')	@default: nfc_normalize(string:VARCHAR) -> VARCHAR*/
-  nfc_normalize(): DVarcharField;
+  /**                                                            @description: If `string` contains the regexp `pattern`, replaces the matching part with `replacement`. A set of optional `options` can be set.	@example: regexp_replace('hello', '[lo]', '-')	@default: regexp_replace(string:VARCHAR, pattern:VARCHAR, replacement:VARCHAR, options:VARCHAR | ) -> VARCHAR*/
+  regexp_replace(pattern: DVarcharable | RegExp, replacement: DVarcharable, options?: DAnyable | DVarcharable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Removes any occurrences of any of the characters from either side of the string	@example: trim('>>>>test<<', '><')	@default: trim(string:VARCHAR, characters:VARCHAR | ) -> VARCHAR*/
   trim(characters?: DAnyable | DVarcharable): DVarcharField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Converts the string to hexadecimal representation.	@example: hex('Hello')	@default: to_hex(string:VARCHAR) -> VARCHAR*/
+  to_hex(): DVarcharField;
+  /**                                                            @description: Converts the string to hexadecimal representation.	@example: hex('Hello')	@default: hex(string:VARCHAR) -> VARCHAR*/
+  hex: this["to_hex"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Extract the indexth (1-based) value from the list.	@example: list_extract([4, 5, 6], 3)	@default: list_element(list:VARCHAR, index:BIGINT) -> VARCHAR*/
   list_element(index: DNumericable): DVarcharField;
   /**                                                            @description: Extract the indexth (1-based) value from the list.	@example: list_extract([4, 5, 6], 3)	@default: list_extract(list:VARCHAR, index:BIGINT) -> VARCHAR*/
   list_extract: this["list_element"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Convert string to upper case.	@example: upper('Hello')	@default: ucase(string:VARCHAR) -> VARCHAR*/
-  ucase(): DVarcharField;
-  /**                                                            @description: Convert string to upper case.	@example: upper('Hello')	@default: upper(string:VARCHAR) -> VARCHAR*/
-  upper: this["ucase"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Return the current value of the sequence. Note that nextval must be called at least once prior to calling currval.	@example: currval('my_sequence_name')	@default: currval(sequenceName:VARCHAR) -> BIGINT*/
   currval(): DNumericField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Strips accents from `string`.	@example: strip_accents('mühleisen')	@default: strip_accents(string:VARCHAR) -> VARCHAR*/
+  strip_accents(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Extract the right-most count characters	@example: right('Hello🦆', 3)	@default: right(string:VARCHAR, count:BIGINT) -> VARCHAR*/
   right(count: DNumericable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: If string contains the regexp pattern, returns the capturing group specified by optional parameter group. The group must be a constant value. If no group is given, it defaults to 0. A set of optional options can be set.	@example: regexp_extract('abc', '([a-z])(b)', 1)	@default: regexp_extract(string:VARCHAR, pattern:VARCHAR, group0:INTEGER | VARCHAR[] | , options:VARCHAR | ) -> VARCHAR*/
-  regexp_extract(pattern: DVarcharable | RegExp, group0?: DAnyable | DArrayable | DNumericable, options?: DAnyable | DVarcharable): DVarcharField;
+  /**                                                            @description: Extracts the left-most count characters	@example: left('Hello🦆', 2)	@default: left(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  left(count: DNumericable): DVarcharField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns true if `string` contains the regexp `pattern`, false otherwise. A set of optional `options` can be set.	@example: regexp_matches('anabanana', '(an)*')	@default: regexp_matches(string:VARCHAR, pattern:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
+  regexp_matches(pattern: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns false if the `string` matches the `like_specifier` (see Pattern Matching) using case-sensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: not_like_escape('a%c', 'a$%c', '$')	@default: not_like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  not_like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns the current value of the configuration setting	@example: current_setting('access_mode')	@default: current_setting(settingName:VARCHAR) -> ANY*/
   current_setting(): DAnyField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Extracts the right-most count grapheme clusters	@example: right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: right_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  right_grapheme(count: DNumericable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The number of complete partitions between the timestamps	@example: date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: date_sub(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   date_sub(startdate: DDateable, enddate: DDateable): DNumericField;
   /**                                                            @description: The number of complete partitions between the timestamps	@example: date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: datesub(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   datesub: this["date_sub"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Parse the message into the expected logical type	@example: parse_duckdb_log_message('FileSystem', log_message)	@default: parse_duckdb_log_message(type:VARCHAR, message:VARCHAR) -> ANY*/
+  parse_duckdb_log_message(message: DVarcharable): DAnyField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns the top-level directory name. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirname('path/to/file.csv', 'system')	@default: parse_dirname(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
   parse_dirname(separator?: DAnyable | DVarcharable): DVarcharField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Concatenates strings together separated by the specified separator.	@example: concat_ws(', ', 'Banana', 'Apple', 'Melon')	@default: concat_ws(separator:VARCHAR, string:ANY) -> VARCHAR*/
+  concat_ws(string: DAnyable, ...vargs: DAnyable[]): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The Jaro similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaro_similarity('duck', 'duckdb', 0.5)	@default: jaro_similarity(str1:VARCHAR, str2:VARCHAR, scoreCutoff:DOUBLE | ) -> DOUBLE*/
   jaro_similarity(str2: DVarcharable, scoreCutoff?: DAnyable | DNumericable): DNumericField;
@@ -797,25 +649,19 @@ export interface _DVarcharField extends DAnyField {
   /**                                                            @description: Extract the indexth (1-based) value from the array.	@example: array_extract('DuckDB', 2)	@default: array_extract(list:VARCHAR, index:BIGINT) -> VARCHAR*/
   array_extract(index: DNumericable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: len(string:VARCHAR) -> BIGINT*/
-  len(): DNumericField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Throws the given error message	@example: error('access_mode')	@default: error(message:VARCHAR) -> "NULL"*/
   error(): DAnyField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns an integer that represents the Unicode code point of the first character of the string	@example: ascii('Ω')	@default: ascii(string:VARCHAR) -> INTEGER*/
   ascii(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Converts a value from binary representation to a blob	@example: unbin('0110')	@default: from_binary(value:VARCHAR) -> BLOB*/
-  from_binary(): DAnyField;
-  /**                                                            @description: Converts a value from binary representation to a blob	@example: unbin('0110')	@default: unbin(value:VARCHAR) -> BLOB*/
-  unbin: this["from_binary"];
+  /**                                                            @description: If `string` contains the regexp `pattern`, returns the capturing group specified by optional parameter `group`. The group must be a constant value. If no group is given, it defaults to 0. A set of optional `options` can be set.	@example: regexp_extract('abc', '([a-z])(b)', 1)	@default: regexp_extract(string:VARCHAR, pattern:VARCHAR, group0:INTEGER | VARCHAR[] | , options:VARCHAR | ) -> VARCHAR*/
+  regexp_extract(pattern: DVarcharable | RegExp, group0?: DAnyable | DArrayable | DNumericable, options?: DAnyable | DVarcharable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Convert a base64 encoded string to a character string	@example: from_base64('QQ==')	@default: from_base64(string:VARCHAR) -> BLOB*/
-  from_base64(): DAnyField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: If string contains the regexp pattern, replaces the matching part with replacement. A set of optional options can be set.	@example: regexp_replace('hello', '[lo]', '-')	@default: regexp_replace(string:VARCHAR, pattern:VARCHAR, replacement:VARCHAR, options:VARCHAR | ) -> VARCHAR*/
-  regexp_replace(pattern: DVarcharable | RegExp, replacement: DVarcharable, options?: DAnyable | DVarcharable): DVarcharField;
+  /**                                                            @description: Converts `string` to lower case	@example: lower('Hello')	@default: lcase(string:VARCHAR) -> VARCHAR*/
+  lcase(): DVarcharField;
+  /**                                                            @description: Converts `string` to lower case	@example: lower('Hello')	@default: lower(string:VARCHAR) -> VARCHAR*/
+  lower: this["lcase"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns true if string begins with search_string	@example: starts_with('abc','a')	@default: starts_with(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
   starts_with(searchString: DVarcharable): DBoolField;
@@ -823,32 +669,30 @@ export interface _DVarcharField extends DAnyField {
   /**                                                            @default: from_json_strict(col0:VARCHAR, col1:VARCHAR) -> ANY*/
   from_json_strict(col1: DVarcharable): DAnyField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns the MD5 hash of the value as a string	@example: md5('123')	@default: md5(value:VARCHAR) -> VARCHAR*/
-  md5(): DVarcharField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The number of partition boundaries between the timestamps	@example: date_diff('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: date_diff(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   date_diff(startdate: DDateable, enddate: DDateable): DNumericField;
   /**                                                            @description: The number of partition boundaries between the timestamps	@example: date_diff('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: datediff(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   datediff: this["date_diff"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns the SHA1 hash of the value	@example: sha1('hello')	@default: sha1(value:VARCHAR) -> VARCHAR*/
-  sha1(): DVarcharField;
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: regexp_split_to_array(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  regexp_split_to_array(regex: DVarcharable | RegExp, col2?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: string_split_regex(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  string_split_regex: this["regexp_split_to_array"];
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: str_split_regex(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  str_split_regex: this["regexp_split_to_array"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: string_to_array(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  string_to_array(separator: DVarcharable): DArrayField<DVarcharField>;
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: string_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  string_split: this["string_to_array"];
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: str_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  str_split: this["string_to_array"];
+  /**                                                            @description: Converts `string` to upper case.	@example: upper('Hello')	@default: ucase(string:VARCHAR) -> VARCHAR*/
+  ucase(): DVarcharField;
+  /**                                                            @description: Converts `string` to upper case.	@example: upper('Hello')	@default: upper(string:VARCHAR) -> VARCHAR*/
+  upper: this["ucase"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract substring of length grapheme clusters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example: substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)	@default: substring_grapheme(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
+  /**                                                            @description: Converts a value from binary representation to a blob.	@example: unbin('0110')	@default: from_binary(value:VARCHAR) -> BLOB*/
+  from_binary(): DAnyField;
+  /**                                                            @description: Converts a value from binary representation to a blob.	@example: unbin('0110')	@default: unbin(value:VARCHAR) -> BLOB*/
+  unbin: this["from_binary"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Extract substring of `length` grapheme clusters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)	@default: substring_grapheme(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
   substring_grapheme(start: DNumericable, length?: DAnyable | DNumericable): DVarcharField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if the entire string matches the regex. A set of optional options can be set.	@example: regexp_full_match('anabanana', '(an)*')	@default: regexp_full_match(string:VARCHAR, regex:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
-  regexp_full_match(regex: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns the MD5 hash of the value as an INT128	@example: md5_number('123')	@default: md5_number(value:VARCHAR) -> HUGEINT*/
-  md5_number(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example: hamming('duck','luck')	@default: mismatches(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   mismatches(str2: DVarcharable): DNumericField;
@@ -858,26 +702,24 @@ export interface _DVarcharField extends DAnyField {
   /**                                                            @description: Reverses the string	@example: reverse('hello')	@default: reverse(string:VARCHAR) -> VARCHAR*/
   reverse(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if string contains the regexp pattern, false otherwise. A set of optional options can be set.	@example: regexp_matches('anabanana', '(an)*')	@default: regexp_matches(string:VARCHAR, pattern:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
-  regexp_matches(pattern: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Formats a string using fmt syntax	@example: format('Benchmark "{}" took {} seconds', 'CSV', 42)	@default: format(format:VARCHAR) -> VARCHAR*/
   format(...vargs: DAnyable[]): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: stem(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   stem(col1: DVarcharable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: character_length(string:VARCHAR) -> BIGINT*/
+  character_length(): DNumericField;
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: char_length(string:VARCHAR) -> BIGINT*/
+  char_length: this["character_length"];
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: len(string:VARCHAR) -> BIGINT*/
+  len: this["character_length"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Pads the bitstring until the specified length	@example: bitstring('1010'::BIT, 7)	@default: bitstring(bitstring:VARCHAR, length:INTEGER) -> BIT*/
   bitstring(length: DNumericable): DAnyField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Writes to the logger	@example: write_log('Hello')	@default: write_log(string:VARCHAR) -> ANY*/
   write_log(...vargs: DAnyable[]): DAnyField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns the SHA256 hash of the value	@example: sha256('hello')	@default: sha256(value:VARCHAR) -> VARCHAR*/
-  sha256(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: html_escape(col0:VARCHAR, col1:BOOLEAN | ) -> VARCHAR*/
   html_escape(col1?: DAnyable | DBoolable): DVarcharField;
@@ -887,6 +729,12 @@ export interface _DVarcharField extends DAnyField {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The Jaro-Winkler similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaro_winkler_similarity('duck', 'duckdb', 0.5)	@default: jaro_winkler_similarity(str1:VARCHAR, str2:VARCHAR, scoreCutoff:DOUBLE | ) -> DOUBLE*/
   jaro_winkler_similarity(str2: DVarcharable, scoreCutoff?: DAnyable | DNumericable): DNumericField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns the MD5 hash of the `value` as a string	@example: md5('123')	@default: md5(value:VARCHAR) -> VARCHAR*/
+  md5(): DVarcharField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns the SHA1 hash of the `value`	@example: sha1('hello')	@default: sha1(value:VARCHAR) -> VARCHAR*/
+  sha1(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Replaces each character in string that matches a character in the from set with the corresponding character in the to set. If from is longer than to, occurrences of the extra characters in from are deleted	@example: translate('12345', '143', 'ax')	@default: translate(string:VARCHAR, from:VARCHAR, to:VARCHAR) -> VARCHAR*/
   translate(from: DVarcharable, to: DVarcharable): DVarcharField;
@@ -908,6 +756,9 @@ export interface _DVarcharField extends DAnyField {
   /**                                                            @description: Returns the unicode codepoint of the first character of the string	@example: unicode('ü')	@default: ord(str:VARCHAR) -> INTEGER*/
   ord: this["unicode"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns the MD5 hash of the `value` as an INT128	@example: md5_number('123')	@default: md5_number(value:VARCHAR) -> UHUGEINT*/
+  md5_number(): DNumericField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Pads the string with the character from the left until it has count characters	@example: lpad('hello', 10, '>')	@default: lpad(string:VARCHAR, count:INTEGER, character:VARCHAR) -> VARCHAR*/
   lpad(count: DNumericable, character: DVarcharable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
@@ -919,6 +770,9 @@ export interface _DVarcharField extends DAnyField {
   /**                                                            @description: The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example: levenshtein('duck','db')	@default: editdist3(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   editdist3: this["levenshtein"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example: instr('test test','es')	@default: position(haystack:VARCHAR, needle:VARCHAR) -> BIGINT*/
   position(needle: DVarcharable): DNumericField;
   /**                                                            @description: Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example: instr('test test','es')	@default: strpos(haystack:VARCHAR, needle:VARCHAR) -> BIGINT*/
@@ -926,11 +780,14 @@ export interface _DVarcharField extends DAnyField {
   /**                                                            @description: Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example: instr('test test','es')	@default: instr(haystack:VARCHAR, needle:VARCHAR) -> BIGINT*/
   instr: this["position"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns the SHA256 hash of the `value`	@example: sha256('hello')	@default: sha256(value:VARCHAR) -> VARCHAR*/
+  sha256(): DVarcharField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Formats a string using printf syntax	@example: printf('Benchmark "%s" took %d seconds', 'CSV', 42)	@default: printf(format:VARCHAR) -> VARCHAR*/
   printf(...vargs: DAnyable[]): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example: like_escape('a%c', 'a$%c', '$')	@default: like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /**                                                            @description: Returns true if `search_string` is found within `string`.	@example: contains('abc', 'a')	@default: contains(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
+  contains(searchString: DVarcharable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns a list of the components (directories and filename) in the path similarly to Python's pathlib.PurePath::parts. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_path('path/to/file.csv', 'system')	@default: parse_path(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR[]*/
   parse_path(separator?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
@@ -950,81 +807,76 @@ export interface _DVarcharField extends DAnyField {
   /**                                                            @default: bit_length(col0:VARCHAR) -> BIGINT*/
   bit_length(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Split the string along the regex and extract all occurrences of group. A set of optional options can be set.	@example: regexp_extract_all('hello_world', '([a-z ]+)_?', 1)	@default: regexp_extract_all(string:VARCHAR, regex:VARCHAR, group0:INTEGER | , options:VARCHAR | ) -> VARCHAR[]*/
-  regexp_extract_all(regex: DVarcharable | RegExp, group0?: DAnyable | DNumericable, options?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:VARCHAR) -> VARCHAR*/
-  to_hex(): DVarcharField;
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: hex(value:VARCHAR) -> VARCHAR*/
-  hex: this["to_hex"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Convert varchar to blob. Converts utf-8 characters into literal encoding	@example: encode('my_string_with_ü')	@default: encode(string:VARCHAR) -> BLOB*/
-  encode(): DAnyField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: ends_with(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
   ends_with(col1: DVarcharable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Escapes special patterns to turn string into a regular expression similarly to Python's re.escape function.	@example: regexp_escape('https://duckdb.org')	@default: regexp_escape(string:VARCHAR) -> VARCHAR*/
+  regexp_escape(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: from_json(col0:VARCHAR, col1:VARCHAR) -> ANY*/
   from_json(col1: DVarcharable): DAnyField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Splits the `string` along the `regex` and extract all occurrences of `group`. A set of optional `options` can be set.	@example: regexp_extract_all('hello_world', '([a-z ]+)_?', 1)	@default: regexp_extract_all(string:VARCHAR, regex:VARCHAR, group0:INTEGER | , options:VARCHAR | ) -> VARCHAR[]*/
+  regexp_extract_all(regex: DVarcharable | RegExp, group0?: DAnyable | DNumericable, options?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: getvariable(col0:VARCHAR) -> ANY*/
   getvariable(): DAnyField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-sensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: like_escape('a%c', 'a$%c', '$')	@default: like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Get subfield (equivalent to extract)	@example: date_part('minute', TIMESTAMP '1992-09-20 20:38:40')	@default: date_part(ts:VARCHAR, col1:DATE | INTERVAL | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   date_part(col1: DAnyable | DDateable): DNumericField;
   /**                                                            @description: Get subfield (equivalent to extract)	@example: date_part('minute', TIMESTAMP '1992-09-20 20:38:40')	@default: datepart(ts:VARCHAR, col1:DATE | INTERVAL | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   datepart: this["date_part"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns false if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example: not_ilike_escape('A%c', 'a$%C', '$')	@default: not_ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  not_ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Pads the string with the character from the right until it has count characters	@example: rpad('hello', 10, '<')	@default: rpad(string:VARCHAR, count:INTEGER, character:VARCHAR) -> VARCHAR*/
   rpad(count: DNumericable, character: DVarcharable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Converts a value from hexadecimal representation to a blob	@example: unhex('2A')	@default: from_hex(value:VARCHAR) -> BLOB*/
-  from_hex(): DAnyField;
-  /**                                                            @description: Converts a value from hexadecimal representation to a blob	@example: unhex('2A')	@default: unhex(value:VARCHAR) -> BLOB*/
-  unhex: this["from_hex"];
+  /**                                                            @description: Converts `string` to Unicode NFC normalized string. Useful for comparisons and ordering if text data is mixed between NFC normalized and not.	@example: nfc_normalize('ardèch')	@default: nfc_normalize(string:VARCHAR) -> VARCHAR*/
+  nfc_normalize(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Number of bytes in string.	@example: strlen('🦆')	@default: strlen(string:VARCHAR) -> BIGINT*/
-  strlen(): DNumericField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Number of grapheme clusters in string.	@example: length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')	@default: length_grapheme(string:VARCHAR) -> BIGINT*/
-  length_grapheme(): DNumericField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract the left-most count grapheme clusters	@example: left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: left_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  left_grapheme(count: DNumericable): DVarcharField;
+  /**                                                            @description: Converts a base64 encoded `string` to a character string (`BLOB`).	@example: from_base64('QQ==')	@default: from_base64(string:VARCHAR) -> BLOB*/
+  from_base64(): DAnyField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: html_unescape(col0:VARCHAR) -> VARCHAR*/
   html_unescape(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Escapes all potentially meaningful regexp characters in the input string	@example: regexp_escape('https://duckdb.org')	@default: regexp_escape(string:VARCHAR) -> VARCHAR*/
-  regexp_escape(): DVarcharField;
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: string_to_array(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  string_to_array(separator: DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: string_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  string_split: this["string_to_array"];
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: str_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  str_split: this["string_to_array"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Strips accents from string.	@example: strip_accents('mühleisen')	@default: strip_accents(string:VARCHAR) -> VARCHAR*/
-  strip_accents(): DVarcharField;
+  /**                                                            @description: Converts the `string` to `BLOB`. Converts UTF-8 characters into literal encoding.	@example: encode('my_string_with_ü')	@default: encode(string:VARCHAR) -> BLOB*/
+  encode(): DAnyField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns true if the entire `string` matches the `regex`. A set of optional `options` can be set.	@example: regexp_full_match('anabanana', '(an)*')	@default: regexp_full_match(string:VARCHAR, regex:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
+  regexp_full_match(regex: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Return the following value of the sequence.	@example: nextval('my_sequence_name')	@default: nextval(sequenceName:VARCHAR) -> BIGINT*/
   nextval(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Converts a value from hexadecimal representation to a blob.	@example: unhex('2A')	@default: from_hex(value:VARCHAR) -> BLOB*/
+  from_hex(): DAnyField;
+  /**                                                            @description: Converts a value from hexadecimal representation to a blob.	@example: unhex('2A')	@default: unhex(value:VARCHAR) -> BLOB*/
+  unhex: this["from_hex"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns false if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: not_ilike_escape('A%c', 'a$%C', '$')	@default: not_ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  not_ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: icu_sort_key(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   icu_sort_key(col1: DVarcharable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract the left-most count characters	@example: left('Hello🦆', 2)	@default: left(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  left(count: DNumericable): DVarcharField;
+  /**                                                            @description: Extract substring of `length` characters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring('Hello', 2, 2)	@default: substring(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
+  substring(start: DNumericable, length?: DAnyable | DNumericable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: regexp_split_to_array(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  regexp_split_to_array(separator: DVarcharable, col2?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: string_split_regex(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  string_split_regex: this["regexp_split_to_array"];
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: str_split_regex(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  str_split_regex: this["regexp_split_to_array"];
+  /**                                                            @description: Number of bytes in `string`.	@example: strlen('🦆')	@default: strlen(string:VARCHAR) -> BIGINT*/
+  strlen(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns false if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example: not_like_escape('a%c', 'a$%c', '$')	@default: not_like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  not_like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract the right-most count grapheme clusters	@example: right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: right_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  right_grapheme(count: DNumericable): DVarcharField;
+  /**                                                            @description: Extracts the left-most count grapheme clusters	@example: left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: left_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  left_grapheme(count: DNumericable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Converts a date to a string according to the format string.	@example: strftime(date '1992-01-01', '%a, %-d %B %Y')	@default: strftime(data:VARCHAR, format:DATE | TIMESTAMP | TIMESTAMP_NS) -> VARCHAR*/
   strftime(format: DDateable): DVarcharField;
@@ -1098,9 +950,6 @@ export interface _DNumericField extends DAnyField {
   /**                                                            @description: Computes the log of the gamma function	@example: lgamma(2)	@default: lgamma(x:DOUBLE) -> DOUBLE*/
   lgamma(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 16.0 KB)	@example: format_bytes(1000 * 16)	@default: formatReadableDecimalSize(bytes:BIGINT) -> VARCHAR*/
-  formatReadableDecimalSize(): DVarcharField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Returns true if the floating point value is finite, false otherwise	@example: isfinite(5.5)	@default: isfinite(x:DOUBLE) -> BOOLEAN*/
   isfinite(): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
@@ -1119,10 +968,8 @@ export interface _DNumericField extends DAnyField {
   /**                                                            @description: Returns the cube root of x	@example: cbrt(8)	@default: cbrt(x:DOUBLE) -> DOUBLE*/
   cbrt(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: formatReadableSize(bytes:BIGINT) -> VARCHAR*/
-  formatReadableSize(): DVarcharField;
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: format_bytes(bytes:BIGINT) -> VARCHAR*/
-  format_bytes: this["formatReadableSize"];
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 16.0 KB)	@example: format_bytes(1000 * 16)	@default: formatReadableDecimalSize(bytes:BIGINT) -> VARCHAR*/
+  formatReadableDecimalSize(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @default: subtract(col0:BIGINT, col1:BIGINT | ) -> BIGINT*/
   subtract(col1?: DAnyable | DNumericable): DNumericField;
@@ -1163,6 +1010,11 @@ export interface _DNumericField extends DAnyField {
   /**                                                            @description: Computes e to the power of x	@example: exp(1)	@default: exp(x:DOUBLE) -> DOUBLE*/
   exp(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: formatReadableSize(bytes:BIGINT) -> VARCHAR*/
+  formatReadableSize(): DVarcharField;
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: format_bytes(bytes:BIGINT) -> VARCHAR*/
+  format_bytes: this["formatReadableSize"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Computes the arctangent of x	@example: atan(0.5)	@default: atan(x:DOUBLE) -> DOUBLE*/
   atan(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
@@ -1186,11 +1038,6 @@ export interface _DNumericField extends DAnyField {
   /**                                                            @default: multiply(col0:BIGINT, col1:BIGINT) -> BIGINT*/
   multiply(col1: DNumericable): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:BIGINT) -> VARCHAR*/
-  to_hex(): DVarcharField;
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: hex(value:BIGINT) -> VARCHAR*/
-  hex: this["to_hex"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Factorial of x. Computes the product of the current integer and all integers below it	@example: 4!	@default: factorial(x:INTEGER) -> HUGEINT*/
   factorial(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
@@ -1200,13 +1047,18 @@ export interface _DNumericField extends DAnyField {
   /**                                                            @default: excel_text(col0:DOUBLE, col1:VARCHAR) -> VARCHAR*/
   excel_text(col1: DVarcharable): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
-  /**                                                            @description: Rounds x to s decimal places	@example: round(42.4332, 2)	@default: round(x:DECIMAL, precision:INTEGER | ) -> DECIMAL*/
+  /**                                                            @description: Rounds x to s decimal places	@example: round(42.4332, 2)	@default: round(x:BIGINT, precision:INTEGER | ) -> BIGINT*/
   round(precision?: DAnyable | DNumericable): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Computes x to the power of y	@example: pow(2, 3)	@default: power(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   power(y: DNumericable): DNumericField;
   /**                                                            @description: Computes x to the power of y	@example: pow(2, 3)	@default: pow(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   pow: this["power"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
+  /**                                                            @description: Converts the value to hexadecimal representation.	@example: hex(42)	@default: to_hex(value:BIGINT) -> VARCHAR*/
+  to_hex(): DVarcharField;
+  /**                                                            @description: Converts the value to hexadecimal representation.	@example: hex(42)	@default: hex(value:BIGINT) -> VARCHAR*/
+  hex: this["to_hex"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Computes the greatest common divisor of x and y	@example: greatest_common_divisor(42, 57)	@default: greatest_common_divisor(x:BIGINT, y:BIGINT) -> BIGINT*/
   greatest_common_divisor(y: DNumericable): DNumericField;
@@ -1235,58 +1087,65 @@ export interface _DNumericField extends DAnyField {
 export type DNumericField = _DNumericField & number;
 
 export interface _DVarcharComp extends DAnyComp {
-  /**                                                            @description: Convert string to lower case	@example: lower('Hello')	@default: lcase(string:VARCHAR) -> VARCHAR*/
-  lcase(): string & _DVarcharComp;
-  /**                                                            @description: Convert string to lower case	@example: lower('Hello')	@default: lower(string:VARCHAR) -> VARCHAR*/
-  lower: this["lcase"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns the head of the path similarly to Python's os.path.dirname. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirpath('path/to/file.csv', 'system')	@default: parse_dirpath(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
   parse_dirpath(separator?: DAnyable | DVarcharable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Concatenate strings together separated by the specified separator.	@example: concat_ws(', ', 'Banana', 'Apple', 'Melon')	@default: concat_ws(separator:VARCHAR, string:ANY) -> VARCHAR*/
-  concat_ws(string: DAnyable, ...vargs: DAnyable[]): string & _DVarcharComp;
+  /**                                                            @description: Number of grapheme clusters in `string`.	@example: length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')	@default: length_grapheme(string:VARCHAR) -> BIGINT*/
+  length_grapheme(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example: substring('Hello', 2, 2)	@default: substring(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
-  substring(start: DNumericable, length?: DAnyable | DNumericable): string & _DVarcharComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if search_string is found within string.	@example: contains('abc', 'a')	@default: contains(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
-  contains(searchString: DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Convert string to Unicode NFC normalized string. Useful for comparisons and ordering if text data is mixed between NFC normalized and not.	@example: nfc_normalize('ardèch')	@default: nfc_normalize(string:VARCHAR) -> VARCHAR*/
-  nfc_normalize(): string & _DVarcharComp;
+  /**                                                            @description: If `string` contains the regexp `pattern`, replaces the matching part with `replacement`. A set of optional `options` can be set.	@example: regexp_replace('hello', '[lo]', '-')	@default: regexp_replace(string:VARCHAR, pattern:VARCHAR, replacement:VARCHAR, options:VARCHAR | ) -> VARCHAR*/
+  regexp_replace(pattern: DVarcharable | RegExp, replacement: DVarcharable, options?: DAnyable | DVarcharable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Removes any occurrences of any of the characters from either side of the string	@example: trim('>>>>test<<', '><')	@default: trim(string:VARCHAR, characters:VARCHAR | ) -> VARCHAR*/
   trim(characters?: DAnyable | DVarcharable): string & _DVarcharComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Converts the string to hexadecimal representation.	@example: hex('Hello')	@default: to_hex(string:VARCHAR) -> VARCHAR*/
+  to_hex(): string & _DVarcharComp;
+  /**                                                            @description: Converts the string to hexadecimal representation.	@example: hex('Hello')	@default: hex(string:VARCHAR) -> VARCHAR*/
+  hex: this["to_hex"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Extract the indexth (1-based) value from the list.	@example: list_extract([4, 5, 6], 3)	@default: list_element(list:VARCHAR, index:BIGINT) -> VARCHAR*/
   list_element(index: DNumericable): string & _DVarcharComp;
   /**                                                            @description: Extract the indexth (1-based) value from the list.	@example: list_extract([4, 5, 6], 3)	@default: list_extract(list:VARCHAR, index:BIGINT) -> VARCHAR*/
   list_extract: this["list_element"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Convert string to upper case.	@example: upper('Hello')	@default: ucase(string:VARCHAR) -> VARCHAR*/
-  ucase(): string & _DVarcharComp;
-  /**                                                            @description: Convert string to upper case.	@example: upper('Hello')	@default: upper(string:VARCHAR) -> VARCHAR*/
-  upper: this["ucase"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Return the current value of the sequence. Note that nextval must be called at least once prior to calling currval.	@example: currval('my_sequence_name')	@default: currval(sequenceName:VARCHAR) -> BIGINT*/
   currval(): number & _DNumericComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Strips accents from `string`.	@example: strip_accents('mühleisen')	@default: strip_accents(string:VARCHAR) -> VARCHAR*/
+  strip_accents(): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Extract the right-most count characters	@example: right('Hello🦆', 3)	@default: right(string:VARCHAR, count:BIGINT) -> VARCHAR*/
   right(count: DNumericable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: If string contains the regexp pattern, returns the capturing group specified by optional parameter group. The group must be a constant value. If no group is given, it defaults to 0. A set of optional options can be set.	@example: regexp_extract('abc', '([a-z])(b)', 1)	@default: regexp_extract(string:VARCHAR, pattern:VARCHAR, group0:INTEGER | VARCHAR[] | , options:VARCHAR | ) -> VARCHAR*/
-  regexp_extract(pattern: DVarcharable | RegExp, group0?: DAnyable | DArrayable | DNumericable, options?: DAnyable | DVarcharable): string & _DVarcharComp;
+  /**                                                            @description: Extracts the left-most count characters	@example: left('Hello🦆', 2)	@default: left(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  left(count: DNumericable): string & _DVarcharComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns true if `string` contains the regexp `pattern`, false otherwise. A set of optional `options` can be set.	@example: regexp_matches('anabanana', '(an)*')	@default: regexp_matches(string:VARCHAR, pattern:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
+  regexp_matches(pattern: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns false if the `string` matches the `like_specifier` (see Pattern Matching) using case-sensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: not_like_escape('a%c', 'a$%c', '$')	@default: not_like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  not_like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns the current value of the configuration setting	@example: current_setting('access_mode')	@default: current_setting(settingName:VARCHAR) -> ANY*/
   current_setting(): DAnyComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Extracts the right-most count grapheme clusters	@example: right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: right_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  right_grapheme(count: DNumericable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The number of complete partitions between the timestamps	@example: date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: date_sub(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   date_sub(startdate: DDateable, enddate: DDateable): number & _DNumericComp;
   /**                                                            @description: The number of complete partitions between the timestamps	@example: date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: datesub(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   datesub: this["date_sub"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Parse the message into the expected logical type	@example: parse_duckdb_log_message('FileSystem', log_message)	@default: parse_duckdb_log_message(type:VARCHAR, message:VARCHAR) -> ANY*/
+  parse_duckdb_log_message(message: DVarcharable): DAnyComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns the top-level directory name. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirname('path/to/file.csv', 'system')	@default: parse_dirname(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
   parse_dirname(separator?: DAnyable | DVarcharable): string & _DVarcharComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Concatenates strings together separated by the specified separator.	@example: concat_ws(', ', 'Banana', 'Apple', 'Melon')	@default: concat_ws(separator:VARCHAR, string:ANY) -> VARCHAR*/
+  concat_ws(string: DAnyable, ...vargs: DAnyable[]): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The Jaro similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaro_similarity('duck', 'duckdb', 0.5)	@default: jaro_similarity(str1:VARCHAR, str2:VARCHAR, scoreCutoff:DOUBLE | ) -> DOUBLE*/
   jaro_similarity(str2: DVarcharable, scoreCutoff?: DAnyable | DNumericable): number & _DNumericComp;
@@ -1305,25 +1164,19 @@ export interface _DVarcharComp extends DAnyComp {
   /**                                                            @description: Extract the indexth (1-based) value from the array.	@example: array_extract('DuckDB', 2)	@default: array_extract(list:VARCHAR, index:BIGINT) -> VARCHAR*/
   array_extract(index: DNumericable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: len(string:VARCHAR) -> BIGINT*/
-  len(): number & _DNumericComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Throws the given error message	@example: error('access_mode')	@default: error(message:VARCHAR) -> "NULL"*/
   error(): DAnyComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns an integer that represents the Unicode code point of the first character of the string	@example: ascii('Ω')	@default: ascii(string:VARCHAR) -> INTEGER*/
   ascii(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Converts a value from binary representation to a blob	@example: unbin('0110')	@default: from_binary(value:VARCHAR) -> BLOB*/
-  from_binary(): DAnyComp;
-  /**                                                            @description: Converts a value from binary representation to a blob	@example: unbin('0110')	@default: unbin(value:VARCHAR) -> BLOB*/
-  unbin: this["from_binary"];
+  /**                                                            @description: If `string` contains the regexp `pattern`, returns the capturing group specified by optional parameter `group`. The group must be a constant value. If no group is given, it defaults to 0. A set of optional `options` can be set.	@example: regexp_extract('abc', '([a-z])(b)', 1)	@default: regexp_extract(string:VARCHAR, pattern:VARCHAR, group0:INTEGER | VARCHAR[] | , options:VARCHAR | ) -> VARCHAR*/
+  regexp_extract(pattern: DVarcharable | RegExp, group0?: DAnyable | DArrayable | DNumericable, options?: DAnyable | DVarcharable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Convert a base64 encoded string to a character string	@example: from_base64('QQ==')	@default: from_base64(string:VARCHAR) -> BLOB*/
-  from_base64(): DAnyComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: If string contains the regexp pattern, replaces the matching part with replacement. A set of optional options can be set.	@example: regexp_replace('hello', '[lo]', '-')	@default: regexp_replace(string:VARCHAR, pattern:VARCHAR, replacement:VARCHAR, options:VARCHAR | ) -> VARCHAR*/
-  regexp_replace(pattern: DVarcharable | RegExp, replacement: DVarcharable, options?: DAnyable | DVarcharable): string & _DVarcharComp;
+  /**                                                            @description: Converts `string` to lower case	@example: lower('Hello')	@default: lcase(string:VARCHAR) -> VARCHAR*/
+  lcase(): string & _DVarcharComp;
+  /**                                                            @description: Converts `string` to lower case	@example: lower('Hello')	@default: lower(string:VARCHAR) -> VARCHAR*/
+  lower: this["lcase"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns true if string begins with search_string	@example: starts_with('abc','a')	@default: starts_with(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
   starts_with(searchString: DVarcharable): DBoolField;
@@ -1331,32 +1184,30 @@ export interface _DVarcharComp extends DAnyComp {
   /**                                                            @default: from_json_strict(col0:VARCHAR, col1:VARCHAR) -> ANY*/
   from_json_strict(col1: DVarcharable): DAnyComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns the MD5 hash of the value as a string	@example: md5('123')	@default: md5(value:VARCHAR) -> VARCHAR*/
-  md5(): string & _DVarcharComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The number of partition boundaries between the timestamps	@example: date_diff('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: date_diff(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   date_diff(startdate: DDateable, enddate: DDateable): number & _DNumericComp;
   /**                                                            @description: The number of partition boundaries between the timestamps	@example: date_diff('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: datediff(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   datediff: this["date_diff"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns the SHA1 hash of the value	@example: sha1('hello')	@default: sha1(value:VARCHAR) -> VARCHAR*/
-  sha1(): string & _DVarcharComp;
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: regexp_split_to_array(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  regexp_split_to_array(regex: DVarcharable | RegExp, col2?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: string_split_regex(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  string_split_regex: this["regexp_split_to_array"];
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: str_split_regex(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  str_split_regex: this["regexp_split_to_array"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: string_to_array(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  string_to_array(separator: DVarcharable): DArrayField<DVarcharField>;
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: string_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  string_split: this["string_to_array"];
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: str_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  str_split: this["string_to_array"];
+  /**                                                            @description: Converts `string` to upper case.	@example: upper('Hello')	@default: ucase(string:VARCHAR) -> VARCHAR*/
+  ucase(): string & _DVarcharComp;
+  /**                                                            @description: Converts `string` to upper case.	@example: upper('Hello')	@default: upper(string:VARCHAR) -> VARCHAR*/
+  upper: this["ucase"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract substring of length grapheme clusters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example: substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)	@default: substring_grapheme(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
+  /**                                                            @description: Converts a value from binary representation to a blob.	@example: unbin('0110')	@default: from_binary(value:VARCHAR) -> BLOB*/
+  from_binary(): DAnyComp;
+  /**                                                            @description: Converts a value from binary representation to a blob.	@example: unbin('0110')	@default: unbin(value:VARCHAR) -> BLOB*/
+  unbin: this["from_binary"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Extract substring of `length` grapheme clusters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)	@default: substring_grapheme(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
   substring_grapheme(start: DNumericable, length?: DAnyable | DNumericable): string & _DVarcharComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if the entire string matches the regex. A set of optional options can be set.	@example: regexp_full_match('anabanana', '(an)*')	@default: regexp_full_match(string:VARCHAR, regex:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
-  regexp_full_match(regex: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns the MD5 hash of the value as an INT128	@example: md5_number('123')	@default: md5_number(value:VARCHAR) -> HUGEINT*/
-  md5_number(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example: hamming('duck','luck')	@default: mismatches(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   mismatches(str2: DVarcharable): number & _DNumericComp;
@@ -1366,26 +1217,24 @@ export interface _DVarcharComp extends DAnyComp {
   /**                                                            @description: Reverses the string	@example: reverse('hello')	@default: reverse(string:VARCHAR) -> VARCHAR*/
   reverse(): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if string contains the regexp pattern, false otherwise. A set of optional options can be set.	@example: regexp_matches('anabanana', '(an)*')	@default: regexp_matches(string:VARCHAR, pattern:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
-  regexp_matches(pattern: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Formats a string using fmt syntax	@example: format('Benchmark "{}" took {} seconds', 'CSV', 42)	@default: format(format:VARCHAR) -> VARCHAR*/
   format(...vargs: DAnyable[]): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: stem(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   stem(col1: DVarcharable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: character_length(string:VARCHAR) -> BIGINT*/
+  character_length(): number & _DNumericComp;
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: char_length(string:VARCHAR) -> BIGINT*/
+  char_length: this["character_length"];
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: len(string:VARCHAR) -> BIGINT*/
+  len: this["character_length"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Pads the bitstring until the specified length	@example: bitstring('1010'::BIT, 7)	@default: bitstring(bitstring:VARCHAR, length:INTEGER) -> BIT*/
   bitstring(length: DNumericable): DAnyComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Writes to the logger	@example: write_log('Hello')	@default: write_log(string:VARCHAR) -> ANY*/
   write_log(...vargs: DAnyable[]): DAnyComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns the SHA256 hash of the value	@example: sha256('hello')	@default: sha256(value:VARCHAR) -> VARCHAR*/
-  sha256(): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: html_escape(col0:VARCHAR, col1:BOOLEAN | ) -> VARCHAR*/
   html_escape(col1?: DAnyable | DBoolable): string & _DVarcharComp;
@@ -1395,6 +1244,12 @@ export interface _DVarcharComp extends DAnyComp {
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: The Jaro-Winkler similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaro_winkler_similarity('duck', 'duckdb', 0.5)	@default: jaro_winkler_similarity(str1:VARCHAR, str2:VARCHAR, scoreCutoff:DOUBLE | ) -> DOUBLE*/
   jaro_winkler_similarity(str2: DVarcharable, scoreCutoff?: DAnyable | DNumericable): number & _DNumericComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns the MD5 hash of the `value` as a string	@example: md5('123')	@default: md5(value:VARCHAR) -> VARCHAR*/
+  md5(): string & _DVarcharComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns the SHA1 hash of the `value`	@example: sha1('hello')	@default: sha1(value:VARCHAR) -> VARCHAR*/
+  sha1(): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Replaces each character in string that matches a character in the from set with the corresponding character in the to set. If from is longer than to, occurrences of the extra characters in from are deleted	@example: translate('12345', '143', 'ax')	@default: translate(string:VARCHAR, from:VARCHAR, to:VARCHAR) -> VARCHAR*/
   translate(from: DVarcharable, to: DVarcharable): string & _DVarcharComp;
@@ -1416,6 +1271,9 @@ export interface _DVarcharComp extends DAnyComp {
   /**                                                            @description: Returns the unicode codepoint of the first character of the string	@example: unicode('ü')	@default: ord(str:VARCHAR) -> INTEGER*/
   ord: this["unicode"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns the MD5 hash of the `value` as an INT128	@example: md5_number('123')	@default: md5_number(value:VARCHAR) -> UHUGEINT*/
+  md5_number(): number & _DNumericComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Pads the string with the character from the left until it has count characters	@example: lpad('hello', 10, '>')	@default: lpad(string:VARCHAR, count:INTEGER, character:VARCHAR) -> VARCHAR*/
   lpad(count: DNumericable, character: DVarcharable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
@@ -1427,6 +1285,9 @@ export interface _DVarcharComp extends DAnyComp {
   /**                                                            @description: The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example: levenshtein('duck','db')	@default: editdist3(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   editdist3: this["levenshtein"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example: instr('test test','es')	@default: position(haystack:VARCHAR, needle:VARCHAR) -> BIGINT*/
   position(needle: DVarcharable): number & _DNumericComp;
   /**                                                            @description: Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example: instr('test test','es')	@default: strpos(haystack:VARCHAR, needle:VARCHAR) -> BIGINT*/
@@ -1434,11 +1295,14 @@ export interface _DVarcharComp extends DAnyComp {
   /**                                                            @description: Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example: instr('test test','es')	@default: instr(haystack:VARCHAR, needle:VARCHAR) -> BIGINT*/
   instr: this["position"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns the SHA256 hash of the `value`	@example: sha256('hello')	@default: sha256(value:VARCHAR) -> VARCHAR*/
+  sha256(): string & _DVarcharComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Formats a string using printf syntax	@example: printf('Benchmark "%s" took %d seconds', 'CSV', 42)	@default: printf(format:VARCHAR) -> VARCHAR*/
   printf(...vargs: DAnyable[]): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns true if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example: like_escape('a%c', 'a$%c', '$')	@default: like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /**                                                            @description: Returns true if `search_string` is found within `string`.	@example: contains('abc', 'a')	@default: contains(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
+  contains(searchString: DVarcharable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Returns a list of the components (directories and filename) in the path similarly to Python's pathlib.PurePath::parts. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_path('path/to/file.csv', 'system')	@default: parse_path(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR[]*/
   parse_path(separator?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
@@ -1458,81 +1322,76 @@ export interface _DVarcharComp extends DAnyComp {
   /**                                                            @default: bit_length(col0:VARCHAR) -> BIGINT*/
   bit_length(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Split the string along the regex and extract all occurrences of group. A set of optional options can be set.	@example: regexp_extract_all('hello_world', '([a-z ]+)_?', 1)	@default: regexp_extract_all(string:VARCHAR, regex:VARCHAR, group0:INTEGER | , options:VARCHAR | ) -> VARCHAR[]*/
-  regexp_extract_all(regex: DVarcharable | RegExp, group0?: DAnyable | DNumericable, options?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:VARCHAR) -> VARCHAR*/
-  to_hex(): string & _DVarcharComp;
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: hex(value:VARCHAR) -> VARCHAR*/
-  hex: this["to_hex"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Convert varchar to blob. Converts utf-8 characters into literal encoding	@example: encode('my_string_with_ü')	@default: encode(string:VARCHAR) -> BLOB*/
-  encode(): DAnyComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: ends_with(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
   ends_with(col1: DVarcharable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Escapes special patterns to turn string into a regular expression similarly to Python's re.escape function.	@example: regexp_escape('https://duckdb.org')	@default: regexp_escape(string:VARCHAR) -> VARCHAR*/
+  regexp_escape(): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: from_json(col0:VARCHAR, col1:VARCHAR) -> ANY*/
   from_json(col1: DVarcharable): DAnyComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Splits the `string` along the `regex` and extract all occurrences of `group`. A set of optional `options` can be set.	@example: regexp_extract_all('hello_world', '([a-z ]+)_?', 1)	@default: regexp_extract_all(string:VARCHAR, regex:VARCHAR, group0:INTEGER | , options:VARCHAR | ) -> VARCHAR[]*/
+  regexp_extract_all(regex: DVarcharable | RegExp, group0?: DAnyable | DNumericable, options?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: getvariable(col0:VARCHAR) -> ANY*/
   getvariable(): DAnyComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-sensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: like_escape('a%c', 'a$%c', '$')	@default: like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Get subfield (equivalent to extract)	@example: date_part('minute', TIMESTAMP '1992-09-20 20:38:40')	@default: date_part(ts:VARCHAR, col1:DATE | INTERVAL | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   date_part(col1: DAnyable | DDateable): number & _DNumericComp;
   /**                                                            @description: Get subfield (equivalent to extract)	@example: date_part('minute', TIMESTAMP '1992-09-20 20:38:40')	@default: datepart(ts:VARCHAR, col1:DATE | INTERVAL | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   datepart: this["date_part"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns false if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example: not_ilike_escape('A%c', 'a$%C', '$')	@default: not_ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  not_ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Pads the string with the character from the right until it has count characters	@example: rpad('hello', 10, '<')	@default: rpad(string:VARCHAR, count:INTEGER, character:VARCHAR) -> VARCHAR*/
   rpad(count: DNumericable, character: DVarcharable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Converts a value from hexadecimal representation to a blob	@example: unhex('2A')	@default: from_hex(value:VARCHAR) -> BLOB*/
-  from_hex(): DAnyComp;
-  /**                                                            @description: Converts a value from hexadecimal representation to a blob	@example: unhex('2A')	@default: unhex(value:VARCHAR) -> BLOB*/
-  unhex: this["from_hex"];
+  /**                                                            @description: Converts `string` to Unicode NFC normalized string. Useful for comparisons and ordering if text data is mixed between NFC normalized and not.	@example: nfc_normalize('ardèch')	@default: nfc_normalize(string:VARCHAR) -> VARCHAR*/
+  nfc_normalize(): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Number of bytes in string.	@example: strlen('🦆')	@default: strlen(string:VARCHAR) -> BIGINT*/
-  strlen(): number & _DNumericComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Number of grapheme clusters in string.	@example: length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')	@default: length_grapheme(string:VARCHAR) -> BIGINT*/
-  length_grapheme(): number & _DNumericComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract the left-most count grapheme clusters	@example: left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: left_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  left_grapheme(count: DNumericable): string & _DVarcharComp;
+  /**                                                            @description: Converts a base64 encoded `string` to a character string (`BLOB`).	@example: from_base64('QQ==')	@default: from_base64(string:VARCHAR) -> BLOB*/
+  from_base64(): DAnyComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: html_unescape(col0:VARCHAR) -> VARCHAR*/
   html_unescape(): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Escapes all potentially meaningful regexp characters in the input string	@example: regexp_escape('https://duckdb.org')	@default: regexp_escape(string:VARCHAR) -> VARCHAR*/
-  regexp_escape(): string & _DVarcharComp;
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: string_to_array(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  string_to_array(separator: DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: string_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  string_split: this["string_to_array"];
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: str_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  str_split: this["string_to_array"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Strips accents from string.	@example: strip_accents('mühleisen')	@default: strip_accents(string:VARCHAR) -> VARCHAR*/
-  strip_accents(): string & _DVarcharComp;
+  /**                                                            @description: Converts the `string` to `BLOB`. Converts UTF-8 characters into literal encoding.	@example: encode('my_string_with_ü')	@default: encode(string:VARCHAR) -> BLOB*/
+  encode(): DAnyComp;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns true if the entire `string` matches the `regex`. A set of optional `options` can be set.	@example: regexp_full_match('anabanana', '(an)*')	@default: regexp_full_match(string:VARCHAR, regex:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
+  regexp_full_match(regex: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Return the following value of the sequence.	@example: nextval('my_sequence_name')	@default: nextval(sequenceName:VARCHAR) -> BIGINT*/
   nextval(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Converts a value from hexadecimal representation to a blob.	@example: unhex('2A')	@default: from_hex(value:VARCHAR) -> BLOB*/
+  from_hex(): DAnyComp;
+  /**                                                            @description: Converts a value from hexadecimal representation to a blob.	@example: unhex('2A')	@default: unhex(value:VARCHAR) -> BLOB*/
+  unhex: this["from_hex"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
+  /**                                                            @description: Returns false if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: not_ilike_escape('A%c', 'a$%C', '$')	@default: not_ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  not_ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @default: icu_sort_key(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   icu_sort_key(col1: DVarcharable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract the left-most count characters	@example: left('Hello🦆', 2)	@default: left(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  left(count: DNumericable): string & _DVarcharComp;
+  /**                                                            @description: Extract substring of `length` characters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring('Hello', 2, 2)	@default: substring(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
+  substring(start: DNumericable, length?: DAnyable | DNumericable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: regexp_split_to_array(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  regexp_split_to_array(separator: DVarcharable, col2?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: string_split_regex(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  string_split_regex: this["regexp_split_to_array"];
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: str_split_regex(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  str_split_regex: this["regexp_split_to_array"];
+  /**                                                            @description: Number of bytes in `string`.	@example: strlen('🦆')	@default: strlen(string:VARCHAR) -> BIGINT*/
+  strlen(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Returns false if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example: not_like_escape('a%c', 'a$%c', '$')	@default: not_like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  not_like_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
-  /**                                                            @description: Extract the right-most count grapheme clusters	@example: right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: right_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  right_grapheme(count: DNumericable): string & _DVarcharComp;
+  /**                                                            @description: Extracts the left-most count grapheme clusters	@example: left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: left_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  left_grapheme(count: DNumericable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DVarchar] - - - - - - -  */
   /**                                                            @description: Converts a date to a string according to the format string.	@example: strftime(date '1992-01-01', '%a, %-d %B %Y')	@default: strftime(data:VARCHAR, format:DATE | TIMESTAMP | TIMESTAMP_NS) -> VARCHAR*/
   strftime(format: DDateable): string & _DVarcharComp;
@@ -1605,9 +1464,6 @@ export interface _DNumericComp extends DAnyComp {
   /**                                                            @description: Computes the log of the gamma function	@example: lgamma(2)	@default: lgamma(x:DOUBLE) -> DOUBLE*/
   lgamma(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 16.0 KB)	@example: format_bytes(1000 * 16)	@default: formatReadableDecimalSize(bytes:BIGINT) -> VARCHAR*/
-  formatReadableDecimalSize(): string & _DVarcharComp;
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Returns true if the floating point value is finite, false otherwise	@example: isfinite(5.5)	@default: isfinite(x:DOUBLE) -> BOOLEAN*/
   isfinite(): DBoolField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
@@ -1626,10 +1482,8 @@ export interface _DNumericComp extends DAnyComp {
   /**                                                            @description: Returns the cube root of x	@example: cbrt(8)	@default: cbrt(x:DOUBLE) -> DOUBLE*/
   cbrt(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: formatReadableSize(bytes:BIGINT) -> VARCHAR*/
-  formatReadableSize(): string & _DVarcharComp;
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: format_bytes(bytes:BIGINT) -> VARCHAR*/
-  format_bytes: this["formatReadableSize"];
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 16.0 KB)	@example: format_bytes(1000 * 16)	@default: formatReadableDecimalSize(bytes:BIGINT) -> VARCHAR*/
+  formatReadableDecimalSize(): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @default: subtract(col0:BIGINT, col1:BIGINT | ) -> BIGINT*/
   subtract(col1?: DAnyable | DNumericable): number & _DNumericComp;
@@ -1670,6 +1524,11 @@ export interface _DNumericComp extends DAnyComp {
   /**                                                            @description: Computes e to the power of x	@example: exp(1)	@default: exp(x:DOUBLE) -> DOUBLE*/
   exp(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: formatReadableSize(bytes:BIGINT) -> VARCHAR*/
+  formatReadableSize(): string & _DVarcharComp;
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: format_bytes(bytes:BIGINT) -> VARCHAR*/
+  format_bytes: this["formatReadableSize"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Computes the arctangent of x	@example: atan(0.5)	@default: atan(x:DOUBLE) -> DOUBLE*/
   atan(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
@@ -1693,11 +1552,6 @@ export interface _DNumericComp extends DAnyComp {
   /**                                                            @default: multiply(col0:BIGINT, col1:BIGINT) -> BIGINT*/
   multiply(col1: DNumericable): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:BIGINT) -> VARCHAR*/
-  to_hex(): string & _DVarcharComp;
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: hex(value:BIGINT) -> VARCHAR*/
-  hex: this["to_hex"];
-  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Factorial of x. Computes the product of the current integer and all integers below it	@example: 4!	@default: factorial(x:INTEGER) -> HUGEINT*/
   factorial(): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
@@ -1707,13 +1561,18 @@ export interface _DNumericComp extends DAnyComp {
   /**                                                            @default: excel_text(col0:DOUBLE, col1:VARCHAR) -> VARCHAR*/
   excel_text(col1: DVarcharable): string & _DVarcharComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
-  /**                                                            @description: Rounds x to s decimal places	@example: round(42.4332, 2)	@default: round(x:DECIMAL, precision:INTEGER | ) -> DECIMAL*/
+  /**                                                            @description: Rounds x to s decimal places	@example: round(42.4332, 2)	@default: round(x:BIGINT, precision:INTEGER | ) -> BIGINT*/
   round(precision?: DAnyable | DNumericable): number & _DNumericComp;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Computes x to the power of y	@example: pow(2, 3)	@default: power(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   power(y: DNumericable): number & _DNumericComp;
   /**                                                            @description: Computes x to the power of y	@example: pow(2, 3)	@default: pow(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   pow: this["power"];
+  /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
+  /**                                                            @description: Converts the value to hexadecimal representation.	@example: hex(42)	@default: to_hex(value:BIGINT) -> VARCHAR*/
+  to_hex(): string & _DVarcharComp;
+  /**                                                            @description: Converts the value to hexadecimal representation.	@example: hex(42)	@default: hex(value:BIGINT) -> VARCHAR*/
+  hex: this["to_hex"];
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DNumeric] - - - - - - -  */
   /**                                                            @description: Computes the greatest common divisor of x and y	@example: greatest_common_divisor(42, 57)	@default: greatest_common_divisor(x:BIGINT, y:BIGINT) -> BIGINT*/
   greatest_common_divisor(y: DNumericable): number & _DNumericComp;
@@ -1788,7 +1647,7 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Returns the population covariance of input values.	@example: (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / COUNT(*)	@default: covar_pop(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
   covar_pop(y: DNumericable, x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Internal only. Calculates the sum value for all tuples in arg without overflow checks.	@example: sum_no_overflow(A)	@default: sum_no_overflow(arg:BIGINT | DECIMAL | INTEGER) -> HUGEINT*/
+  /**                                                            @description: Internal only. Calculates the sum value for all tuples in arg without overflow checks.	@example: sum_no_overflow(A)	@default: sum_no_overflow(arg:BIGINT | DECIMAL | INTEGER) -> DECIMAL*/
   sum_no_overflow(arg: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the sample standard deviation	@example: sqrt(var_samp(x))	@default: stddev_samp(x:DOUBLE) -> DOUBLE*/
@@ -1804,11 +1663,6 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @example: REGR_COUNT(y, x) * VAR_POP(y)	@default: regr_syy(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
   regr_syy(y: DNumericable, x: DNumericable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DECIMAL*/
-  mean(x: DNumericable): DNum;
-  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: avg(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DOUBLE*/
-  avg: this["mean"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the standard error of the mean	@default: sem(x:DOUBLE) -> DOUBLE*/
   sem(x: DNumericable): DNum;
@@ -1826,7 +1680,7 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Returns the correlation coefficient for non-null pairs in a group.	@example: COVAR_POP(y, x) / (STDDEV_POP(x) * STDDEV_POP(y))	@default: corr(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
   corr(y: DNumericable, x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Calculates the sum value for all tuples in arg.	@example: sum(A)	@default: sum(arg:BIGINT | BOOLEAN | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DOUBLE*/
+  /**                                                            @description: Calculates the sum value for all tuples in arg.	@example: sum(A)	@default: sum(arg:BIGINT | BOOLEAN | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DECIMAL*/
   sum(arg: DBoolable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the sample covariance for non-null pairs in a group.	@example: (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / (COUNT(*) - 1)	@default: covar_samp(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
@@ -1838,9 +1692,6 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Finds the k approximately most occurring values in the data set	@example: approx_top_k(x, 5)	@default: approx_top_k(val:ANY, k:BIGINT) -> ANY[]*/
   approx_top_k(val: DAnyable, k: DNumericable): DArrayField<DAnyField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the middle value of the set. NULL values are ignored. For even value counts, quantitative values are averaged and ordinal values return the lower value.	@example: median(x)	@default: median(x:ANY) -> ANY*/
-  median(x: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the skewness of all input values.	@example: skewness(A)	@default: skewness(x:DOUBLE) -> DOUBLE*/
   skewness(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -1849,6 +1700,9 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the most frequent value for the values within x. NULL values are ignored.	@default: mode(x:ANY) -> ANY*/
   mode(x: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the middle value of the set. NULL values are ignored. For even value counts, interpolate-able types (numeric, date/time) return the average of the two middle values. Non-interpolate-able types (everything else) return the lower of the two middle values.	@example: median(x)	@default: median(x:ANY) -> ANY*/
+  median(x: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the average of the independent variable for non-null pairs in a group, where x is the independent variable and y is the dependent variable.	@default: regr_avgx(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
   regr_avgx(y: DNumericable, x: DNumericable): DNum;
@@ -1889,10 +1743,10 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Returns the first non-null value from arg. This function is affected by ordering.	@default: any_value(arg:DECIMAL) -> DECIMAL*/
   any_value(arg: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:FLOAT) -> DATE*/
+  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:FLOAT) -> TIMESTAMP WITH TIME ZONE*/
   approx_quantile(x: DDateable, pos: DNumericable): DDateField;
-  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DATE | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE | TINYINT, pos:FLOAT[]) -> TIMESTAMP[]*/
-  approx_quantile(x: DDateable | DNumericable, pos: DArrayable): DArrayField<DDateField>;
+  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DATE | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE | TINYINT, pos:FLOAT[]) -> TINYINT[]*/
+  approx_quantile(x: DDateable | DNumericable, pos: DArrayable): DArrayField<DNumericField>;
   /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT, pos:FLOAT) -> DECIMAL*/
   approx_quantile(x: DNumericable, pos: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -1905,7 +1759,7 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   arg_max(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BLOB*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> ANY*/
   arg_max(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:ANY, val:ANY, col2:BIGINT) -> ANY[]*/
   arg_max(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField<DAnyField>;
@@ -1913,57 +1767,66 @@ export interface DAggregate<DNum, DStr> {
   arg_max(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
   arg_max(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: argmax(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: argmax(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
   argmax: this["arg_max"];
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: max_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   max_by: this["arg_max"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
   arg_max_null(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
-  /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> ANY*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BLOB*/
   arg_max_null(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
-  /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> INTEGER*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BIGINT*/
   arg_max_null(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
   /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
   arg_max_null(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
   arg_min(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BLOB*/
   arg_min(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:ANY, val:ANY, col2:BIGINT) -> ANY[]*/
   arg_min(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField<DAnyField>;
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> INTEGER*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BIGINT*/
   arg_min(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
   arg_min(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: argmin(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: argmin(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   argmin: this["arg_min"];
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: min_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: min_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP*/
   min_by: this["arg_min"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   arg_min_null(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BLOB*/
   arg_min_null(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
-  /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> INTEGER*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DOUBLE*/
   arg_min_null(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
   arg_min_null(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIME WITH TIME ZONE*/
+  mean(x: DDateable): DDateField;
+  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:INTERVAL) -> INTERVAL*/
+  mean(x: DAnyable): DAnyField;
+  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DOUBLE*/
+  mean(x: DNumericable): DNum;
+  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: avg(x:TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIMESTAMP*/
+  avg: this["mean"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIT) -> BIT*/
   bit_and(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> UINTEGER*/
+  /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> UHUGEINT*/
   bit_and(arg: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIT) -> BIT*/
   bit_or(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> SMALLINT*/
+  /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> TINYINT*/
   bit_or(arg: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIT) -> BIT*/
   bit_xor(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> TINYINT*/
+  /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> UBIGINT*/
   bit_xor(arg: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the last value of a column. This function is affected by ordering.	@example: last(A)	@default: last(arg:ANY) -> ANY*/
@@ -1973,7 +1836,7 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> INTERVAL*/
   mad(x: DDateable): DAnyField;
-  /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DECIMAL | DOUBLE | FLOAT) -> DOUBLE*/
+  /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DECIMAL | DOUBLE | FLOAT) -> DECIMAL*/
   mad(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the maximum value present in arg.	@example: max(A)	@default: max(arg:ANY) -> ANY*/
@@ -1986,14 +1849,14 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Returns the minimum value present in arg.	@example: min(A)	@default: min(arg:ANY, col1:BIGINT) -> ANY[]*/
   min(arg: DAnyable, col1: DNumericable): DArrayField<DAnyField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:DOUBLE | DOUBLE[]) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:DOUBLE | DOUBLE[]) -> TIME WITH TIME ZONE*/
   quantile_cont(x: DDateable, pos: DArrayable | DNumericable): DDateField;
-  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, pos:DOUBLE | DOUBLE[]) -> DECIMAL*/
+  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, pos:DOUBLE | DOUBLE[]) -> DOUBLE*/
   quantile_cont(x: DNumericable, pos: DArrayable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE[], sampleSize:INTEGER | ) -> TINYINT[]*/
+  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE[], sampleSize:INTEGER | ) -> HUGEINT[]*/
   reservoir_quantile(x: DNumericable, quantile: DArrayable, sampleSize?: DAnyable | DNumericable): DArrayField<DNumericField>;
-  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE, sampleSize:INTEGER | ) -> BIGINT*/
+  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE, sampleSize:INTEGER | ) -> INTEGER*/
   reservoir_quantile(x: DNumericable, quantile: DNumericable, sampleSize?: DAnyable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
 }
@@ -2005,8 +1868,8 @@ export interface DMacroAG<DNum, DStr> {
   /**                                                            @example: list_aggr(l, 'mad')	@default: list_mad(l:ANY[]) -> INTERVAL*/
   list_mad(l: DArrayable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'avg')	@default: list_avg(l:ANY[]) -> DOUBLE*/
-  list_avg(l: DArrayable): DNum;
+  /**                                                            @example: list_aggr(l, 'avg')	@default: list_avg(l:ANY[]) -> TIMESTAMP*/
+  list_avg(l: DArrayable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @example: list_aggr(l, 'max')	@default: list_max(l:ANY[]) -> ANY*/
   list_max(l: DArrayable): DAnyField;
@@ -2017,7 +1880,7 @@ export interface DMacroAG<DNum, DStr> {
   /**                                                            @example: list_aggr(l, 'sem')	@default: list_sem(l:ANY[]) -> DOUBLE*/
   list_sem(l: DArrayable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'sum')	@default: list_sum(l:ANY[]) -> DOUBLE*/
+  /**                                                            @example: list_aggr(l, 'sum')	@default: list_sum(l:ANY[]) -> DECIMAL*/
   list_sum(l: DArrayable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @example: list_aggr(l, 'last')	@default: list_last(l:ANY[]) -> ANY*/
@@ -2149,7 +2012,7 @@ export interface DMacro<DNum, DStr> {
   /**                                                            @example: list_concat(arr, list_value(e))	@default: array_push_back(arr:ANY[], e:) -> null*/
   array_push_back(arr: DArrayable, e: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_filter(list_distinct(l1), (variable_intersect -> list_contains(l2, variable_intersect)))	@default: list_intersect(l1:ANY[], l2:ANY[]) -> null*/
+  /**                                                            @example: list_filter(list_distinct(l1), (lambda variable_intersect: list_contains(l2, variable_intersect)))	@default: list_intersect(l1:ANY[], l2:ANY[]) -> null*/
   list_intersect(l1: DArrayable, l2: DArrayable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @example: CASE  WHEN (((string IS NOT NULL) AND ("delimiter" IS NOT NULL) AND ("position" IS NOT NULL))) THEN (COALESCE(string_split(string, "delimiter")["position"], '')) ELSE NULL END	@default: split_part(string:, delimiter:, position:) -> null*/
@@ -2218,34 +2081,23 @@ export interface DMacro<DNum, DStr> {
 }
 
 export interface DGlobal<DNum, DStr> {
-  /**                                                            @description: Convert string to lower case	@example: lower('Hello')	@default: lcase(string:VARCHAR) -> VARCHAR*/
-  lcase(string: DVarcharable): DStr;
-  /**                                                            @description: Convert string to lower case	@example: lower('Hello')	@default: lower(string:VARCHAR) -> VARCHAR*/
-  lower: this["lcase"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Construct a minute interval	@example: to_minutes(5)	@default: to_minutes(integer:BIGINT) -> INTERVAL*/
   to_minutes(integer: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_num_cells(col0:INTEGER) -> BIGINT*/
-  h3_get_num_cells(col0: DNumericable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_pentagons(col0:INTEGER) -> UBIGINT[]*/
-  h3_get_pentagons(col0: DNumericable): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the head of the path similarly to Python's os.path.dirname. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirpath('path/to/file.csv', 'system')	@default: parse_dirpath(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
   parse_dirpath(string: DVarcharable, separator?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Concatenate strings together separated by the specified separator.	@example: concat_ws(', ', 'Banana', 'Apple', 'Melon')	@default: concat_ws(separator:VARCHAR, string:ANY) -> VARCHAR*/
-  concat_ws(separator: DVarcharable, string: DAnyable, ...vargs: DAnyable[]): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Extract substring of length characters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example: substring('Hello', 2, 2)	@default: substring(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
-  substring(string: DVarcharable, start: DNumericable, length?: DAnyable | DNumericable): DStr;
+  /**                                                            @description: Number of grapheme clusters in `string`.	@example: length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')	@default: length_grapheme(string:VARCHAR) -> BIGINT*/
+  length_grapheme(string: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The timestamp for the given nanoseconds since epoch	@example: make_timestamp(1732117793000000000)	@default: make_timestamp_ns(nanos:BIGINT) -> TIMESTAMP_NS*/
   make_timestamp_ns(nanos: DNumericable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the arctangent (y, x)	@example: atan2(1.0, 0.0)	@default: atan2(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
   atan2(y: DNumericable, x: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Map a struct to another struct type, potentially re-ordering, renaming and casting members and filling in defaults for missing values	@example: remap_struct({'i': 1, 'j': 2}, NULL::ROW(v1 INT, v2 INT, v3 INT), {'v1': 'j', 'v3': 'i'}, {'v2': NULL::INTEGER})	@default: remap_struct(input:ANY, targetType:ANY, mapping:ANY, defaults:ANY) -> ANY*/
+  remap_struct(input: DAnyable, targetType: DAnyable, mapping: DAnyable, defaults: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the named entry from the STRUCT.	@example: struct_extract({'i': 3, 'v2': 3, 'v3': 0}, 'i')	@default: struct_extract(struct:STRUCT, entry:BIGINT | VARCHAR) -> ANY*/
   struct_extract(struct: DStructable, entry: DNumericable | DVarcharable): DAnyField;
@@ -2259,13 +2111,16 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the currently active version of DuckDB in this format: v0.3.2		@example: version()*/
   version(): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: length(string:BIT) -> BIGINT*/
+  length(string: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example: list_resize([1, 2, 3], 5, 0)	@default: array_resize(list:ANY[], size:ANY, value:ANY | ) -> ANY[]*/
   array_resize(list: DArrayable, size: DAnyable, value?: DAnyable): DArrayField<DAnyField>;
   /**                                                            @description: Resizes the list to contain size elements. Initializes new elements with value or NULL if value is not set.	@example: list_resize([1, 2, 3], 5, 0)	@default: list_resize(list:ANY[], size:ANY, value:ANY | ) -> ANY[]*/
   list_resize: this["array_resize"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Convert string to Unicode NFC normalized string. Useful for comparisons and ordering if text data is mixed between NFC normalized and not.	@example: nfc_normalize('ardèch')	@default: nfc_normalize(string:VARCHAR) -> VARCHAR*/
-  nfc_normalize(string: DVarcharable): DStr;
+  /**                                                            @description: If `string` contains the regexp `pattern`, replaces the matching part with `replacement`. A set of optional `options` can be set.	@example: regexp_replace('hello', '[lo]', '-')	@default: regexp_replace(string:VARCHAR, pattern:VARCHAR, replacement:VARCHAR, options:VARCHAR | ) -> VARCHAR*/
+  regexp_replace(string: DVarcharable, pattern: DVarcharable | RegExp, replacement: DVarcharable, options?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Adds field(s)/value(s) to an existing STRUCT with the argument values. The entry name(s) will be the bound variable name(s)	@example: struct_insert({'a': 1}, b := 2)*/
   struct_insert(...vargs: DAnyable[]): DStructField;
@@ -2278,33 +2133,29 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the name of the currently active database	@example: current_database()*/
   current_database(): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: array_slice(list:ANY, begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
-  array_slice(list: DAnyable, begin: DAnyable, end: DAnyable, step?: DAnyable | DNumericable): DAnyField;
-  /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: list_slice(list:ANY, begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
-  list_slice: this["array_slice"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Removes any occurrences of any of the characters from either side of the string	@example: trim('>>>>test<<', '><')	@default: trim(string:VARCHAR, characters:VARCHAR | ) -> VARCHAR*/
   trim(string: DVarcharable, characters?: DAnyable | DVarcharable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Convert string to upper case.	@example: upper('Hello')	@default: ucase(string:VARCHAR) -> VARCHAR*/
-  ucase(string: DVarcharable): DStr;
-  /**                                                            @description: Convert string to upper case.	@example: upper('Hello')	@default: upper(string:VARCHAR) -> VARCHAR*/
-  upper: this["ucase"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Return the current value of the sequence. Note that nextval must be called at least once prior to calling currval.	@example: currval('my_sequence_name')	@default: currval(sequenceName:VARCHAR) -> BIGINT*/
   currval(sequenceName: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Strips accents from `string`.	@example: strip_accents('mühleisen')	@default: strip_accents(string:VARCHAR) -> VARCHAR*/
+  strip_accents(string: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the right-most count characters	@example: right('Hello🦆', 3)	@default: right(string:VARCHAR, count:BIGINT) -> VARCHAR*/
   right(string: DVarcharable, count: DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a century interval	@example: to_centuries(5)	@default: to_centuries(integer:INTEGER) -> INTERVAL*/
+  /**                                                            @description: Construct a century interval	@example: to_centuries(5)	@default: to_centuries(integer:BIGINT) -> INTERVAL*/
   to_centuries(integer: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the cosine similarity between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_cosine_similarity([1, 2, 3], [1, 2, 3])	@default: array_cosine_similarity(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_cosine_similarity(arr1: DArrayable, arr2: DArrayable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a quarter interval	@example: to_quarters(5)	@default: to_quarters(integer:INTEGER) -> INTERVAL*/
+  /**                                                            @description: Construct a quarter interval	@example: to_quarters(5)	@default: to_quarters(integer:BIGINT) -> INTERVAL*/
   to_quarters(integer: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Extracts the left-most count characters	@example: left('Hello🦆', 2)	@default: left(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  left(string: DVarcharable, count: DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Rounds the number up	@example: ceil(17.4)	@default: ceiling(x:DECIMAL) -> DECIMAL*/
   ceiling(x: DNumericable): DNum;
@@ -2314,9 +2165,6 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: json_deserialize_sql(col0:JSON) -> VARCHAR*/
   json_deserialize_sql(col0: DJsonable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: json_serialize_sql(col0:VARCHAR, col1:BOOLEAN | , col2:BOOLEAN | , col3:BOOLEAN | ) -> JSON*/
-  json_serialize_sql(col0: DVarcharable, col1?: DAnyable | DBoolable, col2?: DAnyable | DBoolable, col3?: DAnyable | DBoolable): DJsonField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   to_json(...vargs: DAnyable[]): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Truncates the number	@example: trunc(17.4)	@default: trunc(x:BIGINT) -> BIGINT*/
@@ -2324,6 +2172,9 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the keys of a map as a list	@example: map_keys(map(['key'], ['val']))*/
   map_keys(...vargs: DAnyable[]): DArrayField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if `string` contains the regexp `pattern`, false otherwise. A set of optional `options` can be set.	@example: regexp_matches('anabanana', '(an)*')	@default: regexp_matches(string:VARCHAR, pattern:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
+  regexp_matches(string: DVarcharable, pattern: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the index of the element if the list contains the element. If the element is not found, it returns NULL.	@example: list_position([1, 2, NULL], 2)	@default: array_position(list:ANY[], element:ANY) -> INTEGER*/
   array_position(list: DArrayable, element: DAnyable): DNum;
@@ -2348,8 +2199,11 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Executes the aggregate function name on the elements of list	@example: list_aggregate([1, 2, NULL], 'min')	@default: list_aggr(list:ANY[], name:VARCHAR) -> ANY*/
   list_aggr: this["array_aggregate"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: If string contains the regexp pattern, returns the capturing group specified by optional parameter group. The group must be a constant value. If no group is given, it defaults to 0. A set of optional options can be set.	@example: regexp_extract('abc', '([a-z])(b)', 1)	@default: regexp_extract(string:VARCHAR, pattern:VARCHAR, group0:INTEGER | VARCHAR[] | , options:VARCHAR | ) -> VARCHAR*/
-  regexp_extract(string: DVarcharable, pattern: DVarcharable | RegExp, group0?: DAnyable | DArrayable | DNumericable, options?: DAnyable | DVarcharable): DStr;
+  /**                                                            @description: Returns false if the `string` matches the `like_specifier` (see Pattern Matching) using case-sensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: not_like_escape('a%c', 'a$%c', '$')	@default: not_like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  not_like_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: json_serialize_sql(col0:VARCHAR, col1:BOOLEAN | , col2:BOOLEAN | , col3:BOOLEAN | , col4:BOOLEAN | ) -> JSON*/
+  json_serialize_sql(col0: DVarcharable, col1?: DAnyable | DBoolable, col2?: DAnyable | DBoolable, col3?: DAnyable | DBoolable, col4?: DAnyable | DBoolable): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the distance between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_distance([1, 2, 3], [1, 2, 3])	@default: array_distance(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_distance(arr1: DArrayable, arr2: DArrayable): DNum;
@@ -2369,8 +2223,11 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns true if the floating point value is not a number, false otherwise	@example: isnan('NaN'::FLOAT)	@default: isnan(x:DOUBLE) -> BOOLEAN*/
   isnan(x: DNumericable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract_value(map(['key'], ['val']), 'key')	@default: map_extract_value(map:ANY, key:ANY) -> ANY*/
+  /**                                                            @description: Returns the value for a given key or NULL if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract_value(map(['key'], ['val']), 'key')	@default: map_extract_value(map:MAP(ANY, ANY), key:ANY) -> ANY*/
   map_extract_value(map: DAnyable, key: DAnyable, ...vargs: DAnyable[]): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Extracts the right-most count grapheme clusters	@example: right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: right_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  right_grapheme(string: DVarcharable, count: DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The number of complete partitions between the timestamps	@example: date_sub('hour', TIMESTAMPTZ '1992-09-30 23:59:59', TIMESTAMPTZ '1992-10-01 01:58:00')	@default: date_sub(part:VARCHAR, startdate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE, enddate:DATE | TIME | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   date_sub(part: DVarcharable, startdate: DDateable, enddate: DDateable): DNum;
@@ -2393,19 +2250,19 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   json_quote(...vargs: DAnyable[]): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Concatenate many strings together.	@example: concat('Hello', ' ', 'World')	@default: concat(string:ANY) -> VARCHAR*/
-  concat(string: DAnyable, ...vargs: DAnyable[]): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Zips k LISTs to a new LIST whose length will be that of the longest list. Its elements are structs of k elements from each list list_1, …, list_k, missing elements are replaced with NULL. If truncate is set, all lists are truncated to the smallest list length.	@example: list_zip([1, 2], [3, 4], [5, 6])*/
   array_zip(...vargs: DAnyable[]): DArrayField<DStructField>;
   /**                                                            @description: Zips k LISTs to a new LIST whose length will be that of the longest list. Its elements are structs of k elements from each list list_1, …, list_k, missing elements are replaced with NULL. If truncate is set, all lists are truncated to the smallest list length.	@example: list_zip([1, 2], [3, 4], [5, 6])*/
   list_zip: this["array_zip"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_latlng_to_cell(col0:DOUBLE, col1:DOUBLE, col2:INTEGER) -> UBIGINT*/
-  h3_latlng_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
+  /**                                                            @description: Parse the message into the expected logical type	@example: parse_duckdb_log_message('FileSystem', log_message)	@default: parse_duckdb_log_message(type:VARCHAR, message:VARCHAR) -> ANY*/
+  parse_duckdb_log_message(type: DVarcharable, message: DVarcharable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Sets the nth bit in bitstring to newvalue; the first (leftmost) bit is indexed 0. Returns a new bitstring	@example: set_bit('0110010'::BIT, 2, 0)	@default: set_bit(bitstring:BIT, index:INTEGER, newValue:INTEGER) -> BIT*/
   set_bit(bitstring: DAnyable, index: DNumericable, newValue: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Extract a version for the given UUID.	@example: uuid_extract_version('019482e4-1441-7aad-8127-eec99573b0a0')	@default: uuid_extract_version(uuid:UUID) -> UINTEGER*/
+  uuid_extract_version(uuid: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Constructs a list from those elements of the input list for which the lambda function returns true	@example: list_filter([3, 4, 5], x -> x > 4)	@default: array_filter(list:ANY[], lambda:LAMBDA) -> ANY[]*/
   // array_filter(list: DArrayable, lambda: DAnyable): DArrayField<DAnyField>
@@ -2421,6 +2278,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the top-level directory name. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirname('path/to/file.csv', 'system')	@default: parse_dirname(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
   parse_dirname(string: DVarcharable, separator?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Casts the first argument to the type of the second argument	@example: cast_to_type('42', NULL::INTEGER)	@default: cast_to_type(param:ANY, type:ANY) -> ANY*/
+  cast_to_type(param: DAnyable, type: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the range between the two given enum values as an array. The values must be of the same enum type. When the first parameter is NULL, the result starts with the first value of the enum type. When the second parameter is NULL, the result ends with the last value of the enum type	@example: enum_range_boundary(NULL, 'happy'::mood)	@default: enum_range_boundary(start:ANY, end:ANY) -> VARCHAR[]*/
   enum_range_boundary(start: DAnyable, end: DAnyable): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2432,6 +2292,9 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts secs since epoch to a timestamp with time zone	@example: to_timestamp(1284352323.5)	@default: to_timestamp(sec:DOUBLE) -> TIMESTAMP WITH TIME ZONE*/
   to_timestamp(sec: DNumericable): DDateField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Concatenates strings together separated by the specified separator.	@example: concat_ws(', ', 'Banana', 'Apple', 'Melon')	@default: concat_ws(separator:VARCHAR, string:ANY) -> VARCHAR*/
+  concat_ws(separator: DVarcharable, string: DAnyable, ...vargs: DAnyable[]): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The Jaro similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaro_similarity('duck', 'duckdb', 0.5)	@default: jaro_similarity(str1:VARCHAR, str2:VARCHAR, scoreCutoff:DOUBLE | ) -> DOUBLE*/
   jaro_similarity(str1: DVarcharable, str2: DVarcharable, scoreCutoff?: DAnyable | DNumericable): DNum;
@@ -2450,11 +2313,6 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Throws the given error message	@example: error('access_mode')	@default: error(message:VARCHAR) -> "NULL"*/
   error(message: DVarcharable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns a random UUID similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example: uuid()*/
-  gen_random_uuid(): DAnyField;
-  /**                                                            @description: Returns a random UUID similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example: uuid()*/
-  uuid: this["gen_random_uuid"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the distance between two lists	@example: list_distance([1, 2, 3], [1, 2, 3])	@default: list_distance(list1:DOUBLE[], list2:DOUBLE[]) -> DOUBLE*/
   list_distance(list1: DArrayable, list2: DArrayable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2472,31 +2330,28 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns an integer that represents the Unicode code point of the first character of the string	@example: ascii('Ω')	@default: ascii(string:VARCHAR) -> INTEGER*/
   ascii(string: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Number of bytes in blob.	@example: octet_length('\xAA\xBB'::BLOB)	@default: octet_length(blob:BIT) -> BIGINT*/
-  octet_length(blob: DAnyable): DNum;
+  /**                                                            @description: If `string` contains the regexp `pattern`, returns the capturing group specified by optional parameter `group`. The group must be a constant value. If no group is given, it defaults to 0. A set of optional `options` can be set.	@example: regexp_extract('abc', '([a-z])(b)', 1)	@default: regexp_extract(string:VARCHAR, pattern:VARCHAR, group0:INTEGER | VARCHAR[] | , options:VARCHAR | ) -> VARCHAR*/
+  regexp_extract(string: DVarcharable, pattern: DVarcharable | RegExp, group0?: DAnyable | DArrayable | DNumericable, options?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Converts a value from binary representation to a blob	@example: unbin('0110')	@default: from_binary(value:VARCHAR) -> BLOB*/
-  from_binary(value: DVarcharable): DAnyField;
-  /**                                                            @description: Converts a value from binary representation to a blob	@example: unbin('0110')	@default: unbin(value:VARCHAR) -> BLOB*/
-  unbin: this["from_binary"];
+  /**                                                            @description: Get the current global transaction_id	@example: current_transaction_id()*/
+  current_transaction_id(): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a millenium interval	@example: to_millennia(1)	@default: to_millennia(integer:INTEGER) -> INTERVAL*/
+  /**                                                            @description: Construct a millenium interval	@example: to_millennia(1)	@default: to_millennia(integer:BIGINT) -> INTERVAL*/
   to_millennia(integer: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Concatenates many strings together.	@example: concat('Hello', ' ', 'World')	@default: concat(string:ANY) -> VARCHAR*/
+  concat(string: DAnyable, ...vargs: DAnyable[]): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Converts `string` to lower case	@example: lower('Hello')	@default: lcase(string:VARCHAR) -> VARCHAR*/
+  lcase(string: DVarcharable): DStr;
+  /**                                                            @description: Converts `string` to lower case	@example: lower('Hello')	@default: lower(string:VARCHAR) -> VARCHAR*/
+  lower: this["lcase"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the 2-log of x	@example: log2(8)	@default: log2(x:DOUBLE) -> DOUBLE*/
   log2(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the name of a given expression	@example: alias(42 + 1)	@default: alias(expr:ANY) -> VARCHAR*/
   alias(expr: DAnyable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_uncompact_cells(col0:BIGINT[], col1:INTEGER) -> BIGINT[]*/
-  h3_uncompact_cells(col0: DArrayable, col1: DNumericable): DArrayField<DNumericField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Convert a base64 encoded string to a character string	@example: from_base64('QQ==')	@default: from_base64(string:VARCHAR) -> BLOB*/
-  from_base64(string: DVarcharable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: If string contains the regexp pattern, replaces the matching part with replacement. A set of optional options can be set.	@example: regexp_replace('hello', '[lo]', '-')	@default: regexp_replace(string:VARCHAR, pattern:VARCHAR, replacement:VARCHAR, options:VARCHAR | ) -> VARCHAR*/
-  regexp_replace(string: DVarcharable, pattern: DVarcharable | RegExp, replacement: DVarcharable, options?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns true if string begins with search_string	@example: starts_with('abc','a')	@default: starts_with(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
   starts_with(string: DVarcharable, searchString: DVarcharable): DBoolField;
@@ -2529,6 +2384,13 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example: hash('🦆')	@default: hash(param:ANY) -> UBIGINT*/
   hash(param: DAnyable, ...vargs: DAnyable[]): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: regexp_split_to_array(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  regexp_split_to_array(string: DVarcharable, regex: DVarcharable | RegExp, col2?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: string_split_regex(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  string_split_regex: this["regexp_split_to_array"];
+  /**                                                            @description: Splits the `string` along the `regex`	@example: string_split_regex('hello world; 42', ';? ')	@default: str_split_regex(string:VARCHAR, regex:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
+  str_split_regex: this["regexp_split_to_array"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: host(col0:INET) -> VARCHAR*/
   host(col0: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2551,32 +2413,27 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Computes the log of the gamma function	@example: lgamma(2)	@default: lgamma(x:DOUBLE) -> DOUBLE*/
   lgamma(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  h3_get_res0_cells(): DArrayField<DNumericField>;
+  /**                                                            @description: Converts `string` to upper case.	@example: upper('Hello')	@default: ucase(string:VARCHAR) -> VARCHAR*/
+  ucase(string: DVarcharable): DStr;
+  /**                                                            @description: Converts `string` to upper case.	@example: upper('Hello')	@default: upper(string:VARCHAR) -> VARCHAR*/
+  upper: this["ucase"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns list of schemas. Pass a parameter of True to include implicit schemas	@example: current_schemas(true)	@default: current_schemas(includeImplicit:BOOLEAN) -> VARCHAR[]*/
   current_schemas(includeImplicit: DBoolable): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 16.0 KB)	@example: format_bytes(1000 * 16)	@default: formatReadableDecimalSize(bytes:BIGINT) -> VARCHAR*/
-  formatReadableDecimalSize(bytes: DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: string_to_array(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  string_to_array(string: DVarcharable, separator: DVarcharable): DArrayField<DVarcharField>;
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: string_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  string_split: this["string_to_array"];
-  /**                                                            @description: Splits the string along the separator	@example: string_split('hello-world', '-')	@default: str_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
-  str_split: this["string_to_array"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The time for the given parts	@example: make_time(13, 34, 27.123456)	@default: make_time(hour:BIGINT, minute:BIGINT, seconds:DOUBLE) -> TIME*/
   make_time(hour: DNumericable, minute: DNumericable, seconds: DNumericable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Extract substring of length grapheme clusters starting from character start. Note that a start value of 1 refers to the first character of the string.	@example: substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)	@default: substring_grapheme(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
-  substring_grapheme(string: DVarcharable, start: DNumericable, length?: DAnyable | DNumericable): DStr;
+  /**                                                            @description: Converts a value from binary representation to a blob.	@example: unbin('0110')	@default: from_binary(value:VARCHAR) -> BLOB*/
+  from_binary(value: DVarcharable): DAnyField;
+  /**                                                            @description: Converts a value from binary representation to a blob.	@example: unbin('0110')	@default: unbin(value:VARCHAR) -> BLOB*/
+  unbin: this["from_binary"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a random UUID v7 similar to this: 019482e4-1441-7aad-8127-eec99573b0a0	@example: uuidv7()*/
+  uuidv7(): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts the string text to timestamp according to the format string. Returns NULL on failure.	@example: try_strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')	@default: try_strptime(text:VARCHAR, format:VARCHAR | VARCHAR[]) -> TIMESTAMP*/
   try_strptime(text: DVarcharable, format: DArrayable | DVarcharable): DDateField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns true if the entire string matches the regex. A set of optional options can be set.	@example: regexp_full_match('anabanana', '(an)*')	@default: regexp_full_match(string:VARCHAR, regex:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
-  regexp_full_match(string: DVarcharable, regex: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   current_localtime(): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2585,6 +2442,9 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns a random number between 0 and 1	@example: random()*/
   random(): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Extract substring of `length` grapheme clusters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)	@default: substring_grapheme(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
+  substring_grapheme(string: DVarcharable, start: DNumericable, length?: DAnyable | DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example: hamming('duck','luck')	@default: mismatches(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   mismatches(str1: DVarcharable, str2: DVarcharable): DNum;
@@ -2597,9 +2457,6 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the name of the currently active schema. Default is main	@example: current_schema()*/
   current_schema(): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns true if string contains the regexp pattern, false otherwise. A set of optional options can be set.	@example: regexp_matches('anabanana', '(an)*')	@default: regexp_matches(string:VARCHAR, pattern:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
-  regexp_matches(string: DVarcharable, pattern: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Formats a string using fmt syntax	@example: format('Benchmark "{}" took {} seconds', 'CSV', 42)	@default: format(format:VARCHAR) -> VARCHAR*/
   format(format: DVarcharable, ...vargs: DAnyable[]): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2608,9 +2465,6 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: stem(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   stem(col0: DVarcharable, col1: DVarcharable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Converts the string text to timestamp according to the format string. Throws an error on failure. To return NULL on failure, use try_strptime.	@example: strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')	@default: strptime(text:VARCHAR, format:VARCHAR | VARCHAR[]) -> TIMESTAMP*/
-  strptime(text: DVarcharable, format: DArrayable | DVarcharable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: text(col0:DOUBLE, col1:VARCHAR) -> VARCHAR*/
   text(col0: DNumericable, col1: DVarcharable): DStr;
@@ -2622,11 +2476,6 @@ export interface DGlobal<DNum, DStr> {
   array_has_all(l1: DArrayable, l2: DArrayable): DBoolField;
   /**                                                            @description: Returns true if all elements of l2 are in l1. NULLs are ignored.	@example: list_has_all([1, 2, 3], [2, 3])	@default: list_has_all(l1:ANY[], l2:ANY[]) -> BOOLEAN*/
   list_has_all: this["array_has_all"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Convert a blob to a base64 encoded string	@example: base64('A'::blob)	@default: to_base64(blob:BLOB) -> VARCHAR*/
-  to_base64(blob: DAnyable): DStr;
-  /**                                                            @description: Convert a blob to a base64 encoded string	@example: base64('A'::blob)	@default: base64(blob:BLOB) -> VARCHAR*/
-  base64: this["to_base64"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Construct a microsecond interval	@example: to_microseconds(5)	@default: to_microseconds(integer:BIGINT) -> INTERVAL*/
   to_microseconds(integer: DNumericable): DAnyField;
@@ -2651,14 +2500,16 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Removes all duplicates and NULLs from a list. Does not preserve the original order	@example: list_distinct([1, 1, NULL, -3, 1, 5])	@default: list_distinct(list:ANY[]) -> ANY[]*/
   list_distinct: this["array_distinct"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a random UUIDv4 similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example: uuidv4()*/
+  uuidv4(): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Create a single member UNION containing the argument value. The tag of the value will be the bound variable name	@example: union_value(k := 'hello')*/
   union_value(...vargs: DAnyable[]): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_pentagons_string(col0:INTEGER) -> VARCHAR[]*/
-  h3_get_pentagons_string(col0: DNumericable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns true if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: array_slice(list:ANY[], begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
+  // array_slice(list: DArrayable, begin: DAnyable, end: DAnyable, step?:DAnyable | DNumericable): DAnyField
+  /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: list_slice(list:ANY[], begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
+  list_slice: this["array_slice"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: finalize(col0:AGGREGATE_STATE<?>) -> INVALID*/
   finalize(col0: DAnyable): DAnyField;
@@ -2675,10 +2526,8 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Removes any occurrences of any of the characters from the left side of the string	@example: ltrim('>>>>test<<', '><')	@default: ltrim(string:VARCHAR, characters:VARCHAR | ) -> VARCHAR*/
   ltrim(string: DVarcharable, characters?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: formatReadableSize(bytes:BIGINT) -> VARCHAR*/
-  formatReadableSize(bytes: DNumericable): DStr;
-  /**                                                            @description: Converts bytes to a human-readable presentation (e.g. 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: format_bytes(bytes:BIGINT) -> VARCHAR*/
-  format_bytes: this["formatReadableSize"];
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 16.0 KB)	@example: format_bytes(1000 * 16)	@default: formatReadableDecimalSize(bytes:BIGINT) -> VARCHAR*/
+  formatReadableDecimalSize(bytes: DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The Jaro-Winkler similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaro_winkler_similarity('duck', 'duckdb', 0.5)	@default: jaro_winkler_similarity(str1:VARCHAR, str2:VARCHAR, scoreCutoff:DOUBLE | ) -> DOUBLE*/
   jaro_winkler_similarity(str1: DVarcharable, str2: DVarcharable, scoreCutoff?: DAnyable | DNumericable): DNum;
@@ -2700,6 +2549,18 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: broadcast(col0:INET) -> INET*/
   broadcast(col0: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list. When an initial value is provided, it is used as the first argument to the lambda function	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: array_reduce(list:ANY[], lambda:LAMBDA, initial:ANY | ) -> ANY*/
+  // array_reduce(list: DArrayable, lambda: DAnyable, initial?:DAnyable): DAnyField
+  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list. When an initial value is provided, it is used as the first argument to the lambda function	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: list_reduce(list:ANY[], lambda:LAMBDA, initial:ANY | ) -> ANY*/
+  list_reduce: this["array_reduce"];
+  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list. When an initial value is provided, it is used as the first argument to the lambda function	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: reduce(list:ANY[], lambda:LAMBDA, initial:ANY | ) -> ANY*/
+  reduce: this["array_reduce"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a random UUID v4 similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example: uuid()*/
+  gen_random_uuid(): DAnyField;
+  /**                                                            @description: Returns a random UUID v4 similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example: uuid()*/
+  uuid: this["gen_random_uuid"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Normalizes an INTERVAL to an equivalent interval	@example: normalized_interval(INTERVAL '30 days')	@default: normalized_interval(interval:INTERVAL) -> INTERVAL*/
   normalized_interval(interval: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2717,6 +2578,9 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: suffix(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
   suffix(col0: DVarcharable, col1: DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Converts the string text to timestamp applying the format strings in the list until one succeeds. Throws an error on failure. To return NULL on failure, use try_strptime.	@example: strptime('4/15/2023 10:56:00', ['%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'])	@default: strptime(text:VARCHAR, formatList:VARCHAR | VARCHAR[]) -> TIMESTAMP*/
+  strptime(text: DVarcharable, formatList: DArrayable | DVarcharable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the next floating point value after x in the direction of y	@example: nextafter(1::float, 2::float)	@default: nextafter(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   nextafter(x: DNumericable, y: DNumericable): DNum;
@@ -2745,14 +2609,8 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Identical to list_value, but generated as part of unpivot for better error messages	@example: unpivot_list(4, 5, 6)*/
   unpivot_list(...vargs: DAnyable[]): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_great_circle_distance(col0:DOUBLE, col1:DOUBLE, col2:DOUBLE, col3:DOUBLE, col4:VARCHAR) -> DOUBLE*/
-  h3_great_circle_distance(col0: DNumericable, col1: DNumericable, col2: DNumericable, col3: DNumericable, col4: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Creates a map from a set of keys and values	@example: map(['key1', 'key2'], ['val1', 'val2'])*/
   map(...vargs: DAnyable[]): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_polygon_wkt_to_cells_experimental(col0:VARCHAR, col1:VARCHAR, col2:INTEGER) -> UBIGINT[]*/
-  h3_polygon_wkt_to_cells_experimental(col0: DVarcharable, col1: DVarcharable, col2: DNumericable): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the value of pi	@example: pi()*/
   pi(): DNum;
@@ -2776,11 +2634,20 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Extract the Julian Day number from a date or timestamp	@example: julian(timestamp '2006-01-01 12:00')	@default: julian(ts:DATE) -> DOUBLE*/
   julian(ts: DDateable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])*/
+  array_concat(...vargs: DArrayable[]): DArrayField<DAnyField>;
+  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])*/
+  list_concat: this["array_concat"];
+  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])*/
+  array_cat: this["array_concat"];
+  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])*/
+  list_cat: this["array_concat"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The (English) name of the month	@example: monthname(TIMESTAMP '1992-09-20')	@default: monthname(ts:DATE) -> VARCHAR*/
   monthname(ts: DDateable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_hexagon_edge_length_avg(col0:INTEGER, col1:VARCHAR) -> DOUBLE*/
-  h3_get_hexagon_edge_length_avg(col0: DNumericable, col1: DVarcharable): DNum;
+  /**                                                            @description: Get the current query_id	@example: current_transaction_id('Hello')*/
+  current_query_id(): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes e to the power of x	@example: exp(1)	@default: exp(x:DOUBLE) -> DOUBLE*/
   exp(x: DNumericable): DNum;
@@ -2791,18 +2658,18 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the last component of the path similarly to Python's os.path.basename. If trim_extension is true, the file extension will be removed (it defaults to false). separator options: system, both_slash (default), forward_slash, backslash	@example: parse_filename('path/to/file.csv', true, 'forward_slash')	@default: parse_filename(string:VARCHAR, trimExtension:BOOLEAN | VARCHAR | , separator:VARCHAR | ) -> VARCHAR*/
   parse_filename(string: DVarcharable, trimExtension?: DAnyable | DBoolable | DVarcharable, separator?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_polygon_wkt_to_cells_experimental_string(col0:VARCHAR, col1:VARCHAR, col2:INTEGER) -> VARCHAR[]*/
-  h3_polygon_wkt_to_cells_experimental_string(col0: DVarcharable, col1: DVarcharable, col2: DNumericable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example: levenshtein('duck','db')	@default: levenshtein(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   levenshtein(str1: DVarcharable, str2: DVarcharable): DNum;
   /**                                                            @description: The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example: levenshtein('duck','db')	@default: editdist3(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   editdist3: this["levenshtein"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_polygon_wkt_to_cells_string(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
-  h3_polygon_wkt_to_cells_string(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: formatReadableSize(bytes:BIGINT) -> VARCHAR*/
+  formatReadableSize(bytes: DNumericable): DStr;
+  /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: format_bytes(bytes:BIGINT) -> VARCHAR*/
+  format_bytes: this["formatReadableSize"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  h3_get_res0_cells_string(): DArrayField<DVarcharField>;
+  /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the arctangent of x	@example: atan(0.5)	@default: atan(x:DOUBLE) -> DOUBLE*/
   atan(x: DNumericable): DNum;
@@ -2836,18 +2703,8 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns whether the signbit is set or not	@example: signbit(-0.0)	@default: signbit(x:DOUBLE) -> BOOLEAN*/
   signbit(x: DNumericable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the length of the list.	@example: array_length([1,2,3])	@default: array_length(list:ANY[], col1:BIGINT | ) -> BIGINT*/
-  array_length(list: DArrayable, col1?: DAnyable | DNumericable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts a value to a string in the given base radix, optionally padding with leading zeros to the minimum length	@example: to_base(42, 16)	@default: to_base(number:BIGINT, radix:INTEGER, minLength:INTEGER | ) -> VARCHAR*/
   to_base(number: DNumericable, radix: DNumericable, minLength?: DAnyable | DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: array_reduce(list:ANY[], lambda:LAMBDA) -> ANY*/
-  // array_reduce(list: DArrayable, lambda: DAnyable): DAnyField
-  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: list_reduce(list:ANY[], lambda:LAMBDA) -> ANY*/
-  list_reduce: this["array_reduce"];
-  /**                                                            @description: Returns a single value that is the result of applying the lambda function to each element of the input list, starting with the first element and then repeatedly applying the lambda function to the result of the previous application and the next element of the list.	@example: list_reduce([1, 2, 3], (x, y) -> x + y)	@default: reduce(list:ANY[], lambda:LAMBDA) -> ANY*/
-  reduce: this["array_reduce"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the index of their sorted position.	@example: list_grade_up([3, 6, 1, 2])	@default: array_grade_up(list:ANY[], col1:VARCHAR | , col2:VARCHAR | ) -> ANY[]*/
   array_grade_up(list: DArrayable, col1?: DAnyable | DVarcharable, col2?: DAnyable | DVarcharable): DArrayField<DAnyField>;
@@ -2858,9 +2715,6 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Formats a string using printf syntax	@example: printf('Benchmark "%s" took %d seconds', 'CSV', 42)	@default: printf(format:VARCHAR) -> VARCHAR*/
   printf(format: DVarcharable, ...vargs: DAnyable[]): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns true if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example: like_escape('a%c', 'a$%c', '$')	@default: like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  like_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the negative inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_negative_inner_product([1, 2, 3], [1, 2, 3])	@default: array_negative_inner_product(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_negative_inner_product(arr1: DArrayable, arr2: DArrayable): DNum;
@@ -2889,7 +2743,7 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Extension of Levenshtein distance to also include transposition of adjacent characters as an allowed edit operation. In other words, the minimum number of edit operations (insertions, deletions, substitutions or transpositions) required to change one string to another. Different case is considered different	@example: damerau_levenshtein('hello', 'world')	@default: damerau_levenshtein(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   damerau_levenshtein(str1: DVarcharable, str2: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Converts a TIME WITH TIME ZONE to an integer sort key	@example: timetz_byte_comparable('18:18:16.21-07:00'::TIME_TZ)	@default: timetz_byte_comparable(timeTz:TIME WITH TIME ZONE) -> UBIGINT*/
+  /**                                                            @description: Converts a TIME WITH TIME ZONE to an integer sort key	@example: timetz_byte_comparable('18:18:16.21-07:00'::TIMETZ)	@default: timetz_byte_comparable(timeTz:TIME WITH TIME ZONE) -> UBIGINT*/
   timetz_byte_comparable(timeTz: DDateable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   get_delta_test_expression(): DArrayField<DVarcharField>;
@@ -2909,34 +2763,25 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: The (English) name of the weekday	@example: dayname(TIMESTAMP '1992-03-22')	@default: dayname(ts:DATE) -> VARCHAR*/
   dayname(ts: DDateable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Split the string along the regex and extract all occurrences of group. A set of optional options can be set.	@example: regexp_extract_all('hello_world', '([a-z ]+)_?', 1)	@default: regexp_extract_all(string:VARCHAR, regex:VARCHAR, group0:INTEGER | , options:VARCHAR | ) -> VARCHAR[]*/
-  regexp_extract_all(string: DVarcharable, regex: DVarcharable | RegExp, group0?: DAnyable | DNumericable, options?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_inner_product([1, 2, 3], [1, 2, 3])	@default: array_inner_product(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_inner_product(arr1: DArrayable, arr2: DArrayable): DNum;
   /**                                                            @description: Compute the inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_inner_product([1, 2, 3], [1, 2, 3])	@default: array_dot_product(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_dot_product: this["array_inner_product"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Convert varchar to blob. Converts utf-8 characters into literal encoding	@example: encode('my_string_with_ü')	@default: encode(string:VARCHAR) -> BLOB*/
-  encode(string: DVarcharable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: ends_with(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
   ends_with(col0: DVarcharable, col1: DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])	@default: array_concat(list1:ANY[], list2:ANY[]) -> ANY[]*/
-  array_concat(list1: DArrayable, list2: DArrayable): DArrayField<DAnyField>;
-  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])	@default: list_concat(list1:ANY[], list2:ANY[]) -> ANY[]*/
-  list_concat: this["array_concat"];
-  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])	@default: array_cat(list1:ANY[], list2:ANY[]) -> ANY[]*/
-  array_cat: this["array_concat"];
-  /**                                                            @description: Concatenates two lists.	@example: list_concat([2, 3], [4, 5, 6])	@default: list_cat(list1:ANY[], list2:ANY[]) -> ANY[]*/
-  list_cat: this["array_concat"];
+  /**                                                            @description: Escapes special patterns to turn string into a regular expression similarly to Python's re.escape function.	@example: regexp_escape('https://duckdb.org')	@default: regexp_escape(string:VARCHAR) -> VARCHAR*/
+  regexp_escape(string: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the size of the map (or the number of entries in the map)	@example: cardinality( map([4, 2], ['a', 'b']) );	@default: cardinality(map:ANY) -> UBIGINT*/
+  /**                                                            @description: Returns the size of the map (or the number of entries in the map)	@example: cardinality( map([4, 2], ['a', 'b']) );	@default: cardinality(map:MAP(ANY, ANY)) -> UBIGINT*/
   cardinality(map: DAnyable, ...vargs: DAnyable[]): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cells_to_multi_polygon_wkt(col0:BIGINT[]) -> VARCHAR*/
-  h3_cells_to_multi_polygon_wkt(col0: DArrayable): DStr;
+  /**                                                            @description: Converts `blob` to `VARCHAR`. Fails if `blob` is not valid UTF-8.	@example: decode('\xC3\xBC'::BLOB)	@default: decode(blob:BLOB) -> VARCHAR*/
+  decode(blob: DAnyable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Splits the `string` along the `regex` and extract all occurrences of `group`. A set of optional `options` can be set.	@example: regexp_extract_all('hello_world', '([a-z ]+)_?', 1)	@default: regexp_extract_all(string:VARCHAR, regex:VARCHAR, group0:INTEGER | , options:VARCHAR | ) -> VARCHAR[]*/
+  regexp_extract_all(string: DVarcharable, regex: DVarcharable | RegExp, group0?: DAnyable | DNumericable, options?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Factorial of x. Computes the product of the current integer and all integers below it	@example: 4!	@default: factorial(x:INTEGER) -> HUGEINT*/
   factorial(x: DNumericable): DNum;
@@ -2952,8 +2797,11 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the last value of the input enum type	@example: enum_last(NULL::mood)	@default: enum_last(enm:ANY) -> VARCHAR*/
   enum_last(enm: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a day interval	@example: to_days(5)	@default: to_days(integer:INTEGER) -> INTERVAL*/
+  /**                                                            @description: Construct a day interval	@example: to_days(5)	@default: to_days(integer:BIGINT) -> INTERVAL*/
   to_days(integer: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-sensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: like_escape('a%c', 'a$%c', '$')	@default: like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  like_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Absolute value	@example: abs(-17.4)	@default: abs(x:BIGINT) -> BIGINT*/
   abs(x: DNumericable): DNum;
@@ -2964,8 +2812,8 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the name of the data type of the result of the expression	@example: typeof('abc')	@default: typeof(expression:ANY) -> VARCHAR*/
   typeof(expression: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns false if the string matches the like_specifier (see Pattern Matching) using case-insensitive matching. escape_character is used to search for wildcard characters in the string.	@example: not_ilike_escape('A%c', 'a$%C', '$')	@default: not_ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  not_ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /**                                                            @description: Extract the timestamp for the given UUID v7.	@example: uuid_extract_timestamp('019482e4-1441-7aad-8127-eec99573b0a0')	@default: uuid_extract_timestamp(uuid:UUID) -> TIMESTAMP WITH TIME ZONE*/
+  uuid_extract_timestamp(uuid: DAnyable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the lowest value of the set of input parameters	@example: least(42, 84)	@default: least(arg1:ANY) -> ANY*/
   least(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField;
@@ -2978,30 +2826,28 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: excel_text(col0:DOUBLE, col1:VARCHAR) -> VARCHAR*/
   excel_text(col0: DNumericable, col1: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Get the current connection_id	@example: current_connection_id()*/
+  current_connection_id(): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Pads the string with the character from the right until it has count characters	@example: rpad('hello', 10, '<')	@default: rpad(string:VARCHAR, count:INTEGER, character:VARCHAR) -> VARCHAR*/
   rpad(string: DVarcharable, count: DNumericable, character: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Converts `string` to Unicode NFC normalized string. Useful for comparisons and ordering if text data is mixed between NFC normalized and not.	@example: nfc_normalize('ardèch')	@default: nfc_normalize(string:VARCHAR) -> VARCHAR*/
+  nfc_normalize(string: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Create an ARRAY containing the argument values.	@example: array_value(4, 5, 6)*/
   array_value(...vargs: DAnyable[]): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Rounds x to s decimal places	@example: round(42.4332, 2)	@default: round(x:DECIMAL, precision:INTEGER | ) -> DECIMAL*/
+  /**                                                            @description: Converts a base64 encoded `string` to a character string (`BLOB`).	@example: from_base64('QQ==')	@default: from_base64(string:VARCHAR) -> BLOB*/
+  from_base64(string: DVarcharable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Rounds x to s decimal places	@example: round(42.4332, 2)	@default: round(x:BIGINT, precision:INTEGER | ) -> BIGINT*/
   round(x: DNumericable, precision?: DAnyable | DNumericable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Converts a value from hexadecimal representation to a blob	@example: unhex('2A')	@default: from_hex(value:VARCHAR) -> BLOB*/
-  from_hex(value: DVarcharable): DAnyField;
-  /**                                                            @description: Converts a value from hexadecimal representation to a blob	@example: unhex('2A')	@default: unhex(value:VARCHAR) -> BLOB*/
-  unhex: this["from_hex"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Number of bytes in string.	@example: strlen('🦆')	@default: strlen(string:VARCHAR) -> BIGINT*/
-  strlen(string: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes x to the power of y	@example: pow(2, 3)	@default: power(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   power(x: DNumericable, y: DNumericable): DNum;
   /**                                                            @description: Computes x to the power of y	@example: pow(2, 3)	@default: pow(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   pow: this["power"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Number of grapheme clusters in string.	@example: length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')	@default: length_grapheme(string:VARCHAR) -> BIGINT*/
-  length_grapheme(string: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the current timestamp	@example: get_current_timestamp()*/
   get_current_timestamp(): DDateField;
@@ -3010,13 +2856,10 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the current timestamp	@example: get_current_timestamp()*/
   now: this["get_current_timestamp"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Extract the left-most count grapheme clusters	@example: left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: left_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  left_grapheme(string: DVarcharable, count: DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a week interval	@example: to_weeks(5)	@default: to_weeks(integer:INTEGER) -> INTERVAL*/
+  /**                                                            @description: Construct a week interval	@example: to_weeks(5)	@default: to_weeks(integer:BIGINT) -> INTERVAL*/
   to_weeks(integer: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a year interval	@example: to_years(5)	@default: to_years(integer:INTEGER) -> INTERVAL*/
+  /**                                                            @description: Construct a year interval	@example: to_years(5)	@default: to_years(integer:BIGINT) -> INTERVAL*/
   to_years(integer: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: If arg2 is NULL, return NULL. Otherwise, return arg1.	@example: constant_or_null(42, NULL)	@default: constant_or_null(arg1:ANY, arg2:ANY) -> ANY*/
@@ -3031,36 +2874,34 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: html_unescape(col0:VARCHAR) -> VARCHAR*/
   html_unescape(col0: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Escapes all potentially meaningful regexp characters in the input string	@example: regexp_escape('https://duckdb.org')	@default: regexp_escape(string:VARCHAR) -> VARCHAR*/
-  regexp_escape(string: DVarcharable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the greatest common divisor of x and y	@example: greatest_common_divisor(42, 57)	@default: greatest_common_divisor(x:BIGINT, y:BIGINT) -> BIGINT*/
   greatest_common_divisor(x: DNumericable, y: DNumericable): DNum;
   /**                                                            @description: Computes the greatest common divisor of x and y	@example: greatest_common_divisor(42, 57)	@default: gcd(x:BIGINT, y:BIGINT) -> BIGINT*/
   gcd: this["greatest_common_divisor"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: string_to_array(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  string_to_array(string: DVarcharable, separator: DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: string_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  string_split: this["string_to_array"];
+  /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: str_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
+  str_split: this["string_to_array"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Create a STRUCT containing the argument values. The entry name will be the bound variable name.	@example: struct_pack(i := 4, s := 'string')*/
   struct_pack(...vargs: DAnyable[]): DStructField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_hexagon_area_avg(col0:INTEGER, col1:VARCHAR) -> DOUBLE*/
-  h3_get_hexagon_area_avg(col0: DNumericable, col1: DVarcharable): DNum;
+  /**                                                            @description: Returns the length of the `list`.	@example: array_length([1,2,3])	@default: array_length(list:ANY[], col1:BIGINT | ) -> BIGINT*/
+  array_length(list: DArrayable, col1?: DAnyable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Interpolation of (x-1) factorial (so decimal inputs are allowed)	@example: gamma(5.5)	@default: gamma(x:DOUBLE) -> DOUBLE*/
   gamma(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: map_extract(map:ANY, key:ANY) -> ANY*/
+  /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: map_extract(map:MAP(ANY, ANY), key:ANY) -> ANY*/
   map_extract(map: DAnyable, key: DAnyable, ...vargs: DAnyable[]): DAnyField;
-  /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: element_at(map:ANY, key:ANY) -> ANY*/
+  /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: element_at(map:MAP(ANY, ANY), key:ANY) -> ANY*/
   element_at: this["map_extract"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
   greatest(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_polygon_wkt_to_cells(col0:VARCHAR, col1:INTEGER) -> UBIGINT[]*/
-  h3_polygon_wkt_to_cells(col0: DVarcharable, col1: DNumericable): DArrayField<DNumericField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: length(string:BIT) -> BIGINT*/
-  length(string: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the hyperbolic cos of x	@example: cosh(1)	@default: cosh(x:DOUBLE) -> DOUBLE*/
   cosh(x: DNumericable): DNum;
@@ -3071,23 +2912,23 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: The timestamp for the given parts	@example: make_timestamp(1992, 9, 20, 13, 34, 27.123456)	@default: make_timestamp(year:BIGINT, month:BIGINT | , day:BIGINT | , hour:BIGINT | , minute:BIGINT | , seconds:DOUBLE | ) -> TIMESTAMP*/
   make_timestamp(year: DNumericable, month?: DAnyable | DNumericable, day?: DAnyable | DNumericable, hour?: DAnyable | DNumericable, minute?: DAnyable | DNumericable, seconds?: DAnyable | DNumericable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Converts the `string` to `BLOB`. Converts UTF-8 characters into literal encoding.	@example: encode('my_string_with_ü')	@default: encode(string:VARCHAR) -> BLOB*/
+  encode(string: DVarcharable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the hyperbolic sin of x	@example: sinh(1)	@default: sinh(x:DOUBLE) -> DOUBLE*/
   sinh(x: DNumericable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_compact_cells(col0:BIGINT[]) -> BIGINT[]*/
-  h3_compact_cells(col0: DArrayable): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Construct a second interval	@example: to_seconds(5.5)	@default: to_seconds(double:DOUBLE) -> INTERVAL*/
   to_seconds(double: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the entire `string` matches the `regex`. A set of optional `options` can be set.	@example: regexp_full_match('anabanana', '(an)*')	@default: regexp_full_match(string:VARCHAR, regex:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
+  regexp_full_match(string: DVarcharable, regex: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Merge the multiple STRUCTs into a single STRUCT.	@example: struct_concat(struct_pack(i := 4), struct_pack(s := 'string'))*/
   struct_concat(...vargs: DAnyable[]): DStructField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a month interval	@example: to_months(5)	@default: to_months(integer:INTEGER) -> INTERVAL*/
+  /**                                                            @description: Construct a month interval	@example: to_months(5)	@default: to_months(integer:BIGINT) -> INTERVAL*/
   to_months(integer: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Strips accents from string.	@example: strip_accents('mühleisen')	@default: strip_accents(string:VARCHAR) -> VARCHAR*/
-  strip_accents(string: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the entry from the STRUCT by position (starts at 1!).	@example: struct_extract_at({'i': 3, 'v2': 3, 'v3': 0}, 2)	@default: struct_extract_at(struct:STRUCT, entry:BIGINT) -> ANY*/
   struct_extract_at(struct: DStructable, entry: DNumericable): DAnyField;
@@ -3114,42 +2955,36 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Rounds x to next even number by rounding away from zero	@example: even(2.9)	@default: even(x:DOUBLE) -> DOUBLE*/
   even(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_h3_to_string(col0:BIGINT) -> VARCHAR*/
-  h3_h3_to_string(col0: DNumericable): DStr;
+  /**                                                            @description: Converts a value from hexadecimal representation to a blob.	@example: unhex('2A')	@default: from_hex(value:VARCHAR) -> BLOB*/
+  from_hex(value: DVarcharable): DAnyField;
+  /**                                                            @description: Converts a value from hexadecimal representation to a blob.	@example: unhex('2A')	@default: unhex(value:VARCHAR) -> BLOB*/
+  unhex: this["from_hex"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns false if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: not_ilike_escape('A%c', 'a$%C', '$')	@default: not_ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
+  not_ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: icu_sort_key(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   icu_sort_key(col0: DVarcharable, col1: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Extract the left-most count characters	@example: left('Hello🦆', 2)	@default: left(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  left(string: DVarcharable, count: DNumericable): DStr;
+  /**                                                            @description: Converts a `blob` to a base64 encoded `string`.	@example: base64('A'::BLOB)	@default: to_base64(blob:BLOB) -> VARCHAR*/
+  to_base64(blob: DAnyable): DStr;
+  /**                                                            @description: Converts a `blob` to a base64 encoded `string`.	@example: base64('A'::BLOB)	@default: base64(blob:BLOB) -> VARCHAR*/
+  base64: this["to_base64"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_string_to_h3(col0:VARCHAR) -> UBIGINT*/
-  h3_string_to_h3(col0: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Convert blob to varchar. Fails if blob is not valid utf-8	@example: decode('\xC3\xBC'::BLOB)	@default: decode(blob:BLOB) -> VARCHAR*/
-  decode(blob: DAnyable): DStr;
+  /**                                                            @description: Extract substring of `length` characters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring('Hello', 2, 2)	@default: substring(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
+  substring(string: DVarcharable, start: DNumericable, length?: DAnyable | DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the map entries as a list of keys/values	@example: map_entries(map(['key'], ['val']))*/
   map_entries(...vargs: DAnyable[]): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: regexp_split_to_array(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  regexp_split_to_array(string: DVarcharable, separator: DVarcharable, col2?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: string_split_regex(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  string_split_regex: this["regexp_split_to_array"];
-  /**                                                            @description: Splits the string along the regex	@example: string_split_regex('hello␣world; 42', ';?␣')	@default: str_split_regex(string:VARCHAR, separator:VARCHAR, col2:VARCHAR | ) -> VARCHAR[]*/
-  str_split_regex: this["regexp_split_to_array"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_latlng_to_cell_string(col0:DOUBLE, col1:DOUBLE, col2:INTEGER) -> VARCHAR*/
-  h3_latlng_to_cell_string(col0: DNumericable, col1: DNumericable, col2: DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns false if the string matches the like_specifier (see Pattern Matching) using case-sensitive matching. escape_character is used to search for wildcard characters in the string.	@example: not_like_escape('a%c', 'a$%c', '$')	@default: not_like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
-  not_like_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
+  /**                                                            @description: Number of bytes in `string`.	@example: strlen('🦆')	@default: strlen(string:VARCHAR) -> BIGINT*/
+  strlen(string: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the logarithm of x to base b. b may be omitted, in which case the default 10	@example: log(2, 64)	@default: log(b:DOUBLE, x:DOUBLE | ) -> DOUBLE*/
   log(b: DNumericable, x?: DAnyable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Extract the right-most count grapheme clusters	@example: right_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: right_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
-  right_grapheme(string: DVarcharable, count: DNumericable): DStr;
+  /**                                                            @description: Extracts the left-most count grapheme clusters	@example: left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: left_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
+  left_grapheme(string: DVarcharable, count: DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Subtract arguments, resulting in the time difference between the two timestamps	@example: age(TIMESTAMP '2001-04-10', TIMESTAMP '1992-09-20')	@default: age(timestamp:TIMESTAMP WITH TIME ZONE, timestamp__01:TIMESTAMP WITH TIME ZONE | ) -> INTERVAL*/
   age(timestamp: DDateable, timestamp__01?: DAnyable | DDateable): DAnyField;
@@ -3162,25 +2997,24 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns a list based on the elements selected by the index_list.	@example: list_select([10, 20, 30, 40], [1, 4])	@default: list_select(valueList:ANY[], indexList:BIGINT[]) -> ANY[]*/
   list_select: this["array_select"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a decade interval	@example: to_decades(5)	@default: to_decades(integer:INTEGER) -> INTERVAL*/
+  /**                                                            @description: Construct a decade interval	@example: to_decades(5)	@default: to_decades(integer:BIGINT) -> INTERVAL*/
   to_decades(integer: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the cross product of two arrays of size 3. The array elements can not be NULL.	@example: array_cross_product([1, 2, 3], [1, 2, 3])	@default: array_cross_product(arr:DOUBLE[3], arr__01:DOUBLE[3]) -> DOUBLE[3]*/
   array_cross_product(arr: DArrayable, arr__01: DArrayable): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: add(col0:ANY[], col1:ANY[]) -> ANY[]*/
-  add(col0: DArrayable, col1: DArrayable): DArrayField<DAnyField>;
+  add(...vargs: DArrayable[]): DArrayField<DAnyField>;
   /**                                                            @default: add(col0:BIGINT, col1:BIGINT | ) -> BIGINT*/
   add(col0: DNumericable, col1?: DAnyable | DNumericable): DNum;
-  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP*/
   add(col0: DDateable, col1: DAnyable | DDateable | DNumericable): DDateField;
   /**                                                            @default: add(col0:INTEGER, col1:DATE) -> DATE*/
   add(col0: DNumericable, col1: DDateable): DDateField;
-  /**                                                            @default: add(col0:INTERVAL, col1:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP) -> TIME WITH TIME ZONE*/
+  /**                                                            @default: add(col0:INTERVAL, col1:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP) -> TIMESTAMP*/
   add(col0: DAnyable, col1: DDateable): DDateField;
   /**                                                            @default: add(col0:INTERVAL, col1:INTERVAL) -> INTERVAL*/
   add(col0: DAnyable, col1: DAnyable): DAnyField;
-  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIME WITH TIME ZONE*/
   add(col0: DDateable, col1: DAnyable | DDateable): DDateField;
   /**                                                            @default: add(col0:TIMESTAMP, col1:INTERVAL) -> TIMESTAMP*/
   add(col0: DDateable, col1: DAnyable): DDateField;
@@ -3221,11 +3055,22 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Extract the century component from a date or timestamp	@example: century(timestamp '2021-08-03 11:59:44.123456')	@default: century(ts:INTERVAL) -> BIGINT*/
   century(ts: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns true if the list contains the element.	@example: contains([1, 2, NULL], 1)	@default: contains(list:ANY[], element:ANY) -> BOOLEAN*/
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: character_length(string:ANY[]) -> BIGINT*/
+  character_length(string: DArrayable): DNum;
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: character_length(string:BIT) -> BIGINT*/
+  character_length(string: DAnyable): DNum;
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: character_length(string:VARCHAR) -> BIGINT*/
+  character_length(string: DVarcharable): DNum;
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: char_length(string:ANY[]) -> BIGINT*/
+  char_length: this["character_length"];
+  /**                                                            @description: Number of characters in `string`.	@example: length('Hello🦆')	@default: len(string:ANY[]) -> BIGINT*/
+  len: this["character_length"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the `list` contains the `element`.	@example: contains([1, 2, NULL], 1)	@default: contains(list:ANY[], element:ANY) -> BOOLEAN*/
   contains(list: DArrayable, element: DAnyable): DBoolField;
-  /**                                                            @description: Checks if a map contains a given key.	@example: contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')	@default: contains(map:MAP(ANY, ANY), key:ANY) -> BOOLEAN*/
+  /**                                                            @description: Checks if a `map` contains a given `key`.	@example: contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')	@default: contains(map:MAP(ANY, ANY), key:ANY) -> BOOLEAN*/
   contains(map: DAnyable, key: DAnyable): DBoolField;
-  /**                                                            @description: Returns true if search_string is found within string.	@example: contains('abc', 'a')	@default: contains(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
+  /**                                                            @description: Returns true if `search_string` is found within `string`.	@example: contains('abc', 'a')	@default: contains(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
   contains(string: DVarcharable, searchString: DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Get subfield (equivalent to extract)	@example: date_part('minute', TIMESTAMP '1992-09-20 20:38:40')	@default: date_part(ts:VARCHAR, col1:DATE | INTERVAL | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
@@ -3239,7 +3084,7 @@ export interface DGlobal<DNum, DStr> {
   date_trunc(part: DVarcharable, timestamp: DDateable): DDateField;
   /**                                                            @description: Truncate to specified precision	@example: date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')	@default: date_trunc(part:VARCHAR, timestamp:INTERVAL) -> INTERVAL*/
   date_trunc(part: DVarcharable, timestamp: DAnyable): DAnyField;
-  /**                                                            @description: Truncate to specified precision	@example: date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')	@default: datetrunc(part:VARCHAR, timestamp:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Truncate to specified precision	@example: date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')	@default: datetrunc(part:VARCHAR, timestamp:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIMESTAMP*/
   datetrunc: this["date_trunc"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the day component from a date or timestamp	@example: day(timestamp '2021-08-03 11:59:44.123456')	@default: day(ts:DATE) -> BIGINT*/
@@ -3316,218 +3161,15 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Create a list of values between start and stop - the stop parameter is inclusive	@example: generate_series(2, 5, 3)	@default: generate_series(start:TIMESTAMP WITH TIME ZONE, stop:TIMESTAMP WITH TIME ZONE, step:INTERVAL) -> TIMESTAMP WITH TIME ZONE[]*/
   generate_series(start: DDateable, stop: DDateable, step: DAnyable): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_are_neighbor_cells(col0:BIGINT, col1:BIGINT) -> BOOLEAN*/
-  h3_are_neighbor_cells(col0: DNumericable, col1: DNumericable): DBoolField;
-  /**                                                            @default: h3_are_neighbor_cells(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
-  h3_are_neighbor_cells(col0: DVarcharable, col1: DVarcharable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_area(col0:BIGINT, col1:VARCHAR) -> DOUBLE*/
-  h3_cell_area(col0: DNumericable, col1: DVarcharable): DNum;
-  /**                                                            @default: h3_cell_area(col0:VARCHAR, col1:VARCHAR) -> DOUBLE*/
-  h3_cell_area(col0: DVarcharable, col1: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_boundary_wkt(col0:BIGINT) -> VARCHAR*/
-  h3_cell_to_boundary_wkt(col0: DNumericable): DStr;
-  /**                                                            @default: h3_cell_to_boundary_wkt(col0:VARCHAR) -> VARCHAR*/
-  h3_cell_to_boundary_wkt(col0: DVarcharable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_center_child(col0:BIGINT, col1:INTEGER) -> BIGINT*/
-  h3_cell_to_center_child(col0: DNumericable, col1: DNumericable): DNum;
-  /**                                                            @default: h3_cell_to_center_child(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
-  h3_cell_to_center_child(col0: DVarcharable, col1: DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_child_pos(col0:BIGINT, col1:INTEGER) -> BIGINT*/
-  h3_cell_to_child_pos(col0: DNumericable, col1: DNumericable): DNum;
-  /**                                                            @default: h3_cell_to_child_pos(col0:VARCHAR, col1:INTEGER) -> BIGINT*/
-  h3_cell_to_child_pos(col0: DVarcharable, col1: DNumericable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_children(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
-  h3_cell_to_children(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_cell_to_children(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
-  h3_cell_to_children(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_lat(col0:BIGINT) -> DOUBLE*/
-  h3_cell_to_lat(col0: DNumericable): DNum;
-  /**                                                            @default: h3_cell_to_lat(col0:VARCHAR) -> DOUBLE*/
-  h3_cell_to_lat(col0: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_latlng(col0:BIGINT) -> DOUBLE[]*/
-  h3_cell_to_latlng(col0: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_cell_to_latlng(col0:VARCHAR) -> DOUBLE[]*/
-  h3_cell_to_latlng(col0: DVarcharable): DArrayField<DNumericField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_lng(col0:BIGINT) -> DOUBLE*/
-  h3_cell_to_lng(col0: DNumericable): DNum;
-  /**                                                            @default: h3_cell_to_lng(col0:VARCHAR) -> DOUBLE*/
-  h3_cell_to_lng(col0: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_local_ij(col0:BIGINT, col1:BIGINT) -> INTEGER[]*/
-  h3_cell_to_local_ij(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_cell_to_local_ij(col0:VARCHAR, col1:VARCHAR) -> VARCHAR[]*/
-  h3_cell_to_local_ij(col0: DVarcharable, col1: DVarcharable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_parent(col0:BIGINT, col1:INTEGER) -> BIGINT*/
-  h3_cell_to_parent(col0: DNumericable, col1: DNumericable): DNum;
-  /**                                                            @default: h3_cell_to_parent(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
-  h3_cell_to_parent(col0: DVarcharable, col1: DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_vertex(col0:BIGINT, col1:INTEGER) -> BIGINT*/
-  h3_cell_to_vertex(col0: DNumericable, col1: DNumericable): DNum;
-  /**                                                            @default: h3_cell_to_vertex(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
-  h3_cell_to_vertex(col0: DVarcharable, col1: DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cell_to_vertexes(col0:BIGINT) -> BIGINT[]*/
-  h3_cell_to_vertexes(col0: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_cell_to_vertexes(col0:VARCHAR) -> VARCHAR[]*/
-  h3_cell_to_vertexes(col0: DVarcharable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_cells_to_directed_edge(col0:BIGINT, col1:BIGINT) -> BIGINT*/
-  h3_cells_to_directed_edge(col0: DNumericable, col1: DNumericable): DNum;
-  /**                                                            @default: h3_cells_to_directed_edge(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
-  h3_cells_to_directed_edge(col0: DVarcharable, col1: DVarcharable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_child_pos_to_cell(col0:BIGINT, col1:BIGINT | UBIGINT, col2:INTEGER) -> BIGINT*/
-  h3_child_pos_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
-  /**                                                            @default: h3_child_pos_to_cell(col0:BIGINT, col1:VARCHAR, col2:INTEGER) -> VARCHAR*/
-  h3_child_pos_to_cell(col0: DNumericable, col1: DVarcharable, col2: DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_directed_edge_to_boundary_wkt(col0:BIGINT) -> VARCHAR*/
-  h3_directed_edge_to_boundary_wkt(col0: DNumericable): DStr;
-  /**                                                            @default: h3_directed_edge_to_boundary_wkt(col0:VARCHAR) -> VARCHAR*/
-  h3_directed_edge_to_boundary_wkt(col0: DVarcharable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_directed_edge_to_cells(col0:BIGINT) -> UBIGINT[]*/
-  h3_directed_edge_to_cells(col0: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_directed_edge_to_cells(col0:VARCHAR) -> VARCHAR[]*/
-  h3_directed_edge_to_cells(col0: DVarcharable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_edge_length(col0:BIGINT, col1:VARCHAR) -> DOUBLE*/
-  h3_edge_length(col0: DNumericable, col1: DVarcharable): DNum;
-  /**                                                            @default: h3_edge_length(col0:VARCHAR, col1:VARCHAR) -> DOUBLE*/
-  h3_edge_length(col0: DVarcharable, col1: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_base_cell_number(col0:BIGINT) -> INTEGER*/
-  h3_get_base_cell_number(col0: DNumericable): DNum;
-  /**                                                            @default: h3_get_base_cell_number(col0:VARCHAR) -> INTEGER*/
-  h3_get_base_cell_number(col0: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_directed_edge_destination(col0:BIGINT) -> BIGINT*/
-  h3_get_directed_edge_destination(col0: DNumericable): DNum;
-  /**                                                            @default: h3_get_directed_edge_destination(col0:VARCHAR) -> VARCHAR*/
-  h3_get_directed_edge_destination(col0: DVarcharable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_directed_edge_origin(col0:BIGINT) -> BIGINT*/
-  h3_get_directed_edge_origin(col0: DNumericable): DNum;
-  /**                                                            @default: h3_get_directed_edge_origin(col0:VARCHAR) -> VARCHAR*/
-  h3_get_directed_edge_origin(col0: DVarcharable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_icosahedron_faces(col0:BIGINT) -> INTEGER[]*/
-  h3_get_icosahedron_faces(col0: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_get_icosahedron_faces(col0:VARCHAR) -> INTEGER[]*/
-  h3_get_icosahedron_faces(col0: DVarcharable): DArrayField<DNumericField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_get_resolution(col0:BIGINT) -> INTEGER*/
-  h3_get_resolution(col0: DNumericable): DNum;
-  /**                                                            @default: h3_get_resolution(col0:VARCHAR) -> INTEGER*/
-  h3_get_resolution(col0: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_grid_disk(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
-  h3_grid_disk(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_grid_disk(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
-  h3_grid_disk(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_grid_disk_distances(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
-  h3_grid_disk_distances(col0: DNumericable, col1: DNumericable): DArrayField;
-  /**                                                            @default: h3_grid_disk_distances(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
-  h3_grid_disk_distances(col0: DVarcharable, col1: DNumericable): DArrayField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_grid_disk_distances_safe(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
-  h3_grid_disk_distances_safe(col0: DNumericable, col1: DNumericable): DArrayField;
-  /**                                                            @default: h3_grid_disk_distances_safe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
-  h3_grid_disk_distances_safe(col0: DVarcharable, col1: DNumericable): DArrayField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_grid_disk_distances_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
-  h3_grid_disk_distances_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
-  /**                                                            @default: h3_grid_disk_distances_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
-  h3_grid_disk_distances_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_grid_disk_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
-  h3_grid_disk_unsafe(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_grid_disk_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
-  h3_grid_disk_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_grid_distance(col0:BIGINT, col1:BIGINT) -> BIGINT*/
-  h3_grid_distance(col0: DNumericable, col1: DNumericable): DNum;
-  /**                                                            @default: h3_grid_distance(col0:VARCHAR, col1:VARCHAR) -> BIGINT*/
-  h3_grid_distance(col0: DVarcharable, col1: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_grid_path_cells(col0:BIGINT, col1:BIGINT) -> BIGINT[]*/
-  h3_grid_path_cells(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_grid_path_cells(col0:VARCHAR, col1:VARCHAR) -> VARCHAR[]*/
-  h3_grid_path_cells(col0: DVarcharable, col1: DVarcharable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_grid_ring_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
-  h3_grid_ring_unsafe(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_grid_ring_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
-  h3_grid_ring_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_is_pentagon(col0:BIGINT) -> BOOLEAN*/
-  h3_is_pentagon(col0: DNumericable): DBoolField;
-  /**                                                            @default: h3_is_pentagon(col0:VARCHAR) -> BOOLEAN*/
-  h3_is_pentagon(col0: DVarcharable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_is_res_class_iii(col0:BIGINT) -> BOOLEAN*/
-  h3_is_res_class_iii(col0: DNumericable): DBoolField;
-  /**                                                            @default: h3_is_res_class_iii(col0:VARCHAR) -> BOOLEAN*/
-  h3_is_res_class_iii(col0: DVarcharable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_is_valid_cell(col0:BIGINT) -> BOOLEAN*/
-  h3_is_valid_cell(col0: DNumericable): DBoolField;
-  /**                                                            @default: h3_is_valid_cell(col0:VARCHAR) -> BOOLEAN*/
-  h3_is_valid_cell(col0: DVarcharable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_is_valid_directed_edge(col0:BIGINT) -> BOOLEAN*/
-  h3_is_valid_directed_edge(col0: DNumericable): DBoolField;
-  /**                                                            @default: h3_is_valid_directed_edge(col0:VARCHAR) -> BOOLEAN*/
-  h3_is_valid_directed_edge(col0: DVarcharable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_is_valid_vertex(col0:BIGINT) -> BOOLEAN*/
-  h3_is_valid_vertex(col0: DNumericable): DBoolField;
-  /**                                                            @default: h3_is_valid_vertex(col0:VARCHAR) -> BOOLEAN*/
-  h3_is_valid_vertex(col0: DVarcharable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_local_ij_to_cell(col0:BIGINT, col1:INTEGER, col2:INTEGER) -> BIGINT*/
-  h3_local_ij_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
-  /**                                                            @default: h3_local_ij_to_cell(col0:VARCHAR, col1:INTEGER, col2:INTEGER) -> VARCHAR*/
-  h3_local_ij_to_cell(col0: DVarcharable, col1: DNumericable, col2: DNumericable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_origin_to_directed_edges(col0:BIGINT) -> UBIGINT[]*/
-  h3_origin_to_directed_edges(col0: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_origin_to_directed_edges(col0:VARCHAR) -> VARCHAR[]*/
-  h3_origin_to_directed_edges(col0: DVarcharable): DArrayField<DVarcharField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_vertex_to_lat(col0:BIGINT) -> DOUBLE*/
-  h3_vertex_to_lat(col0: DNumericable): DNum;
-  /**                                                            @default: h3_vertex_to_lat(col0:VARCHAR) -> DOUBLE*/
-  h3_vertex_to_lat(col0: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_vertex_to_latlng(col0:BIGINT) -> DOUBLE[]*/
-  h3_vertex_to_latlng(col0: DNumericable): DArrayField<DNumericField>;
-  /**                                                            @default: h3_vertex_to_latlng(col0:VARCHAR) -> DOUBLE[]*/
-  h3_vertex_to_latlng(col0: DVarcharable): DArrayField<DNumericField>;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_vertex_to_lng(col0:BIGINT) -> DOUBLE*/
-  h3_vertex_to_lng(col0: DNumericable): DNum;
-  /**                                                            @default: h3_vertex_to_lng(col0:VARCHAR) -> DOUBLE*/
-  h3_vertex_to_lng(col0: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:BIGINT) -> VARCHAR*/
+  /**                                                            @description: Converts the value to hexadecimal representation.	@example: hex(42)	@default: to_hex(value:BIGINT) -> VARCHAR*/
   to_hex(value: DNumericable): DStr;
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:BLOB) -> VARCHAR*/
+  /**                                                            @description: Converts `blob` to `VARCHAR` using hexadecimal encoding.	@example: hex('\xAA\xBB'::BLOB)	@default: to_hex(blob:BLOB) -> VARCHAR*/
+  to_hex(blob: DAnyable): DStr;
+  /**                                                            @description: Converts the string to hexadecimal representation.	@example: hex('Hello')	@default: to_hex(string:VARCHAR) -> VARCHAR*/
+  to_hex(string: DVarcharable): DStr;
+  /**                                                            @description: Converts the value to hexadecimal representation.	@example: hex(42)	@default: to_hex(value:VARINT) -> VARCHAR*/
   to_hex(value: DAnyable): DStr;
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: to_hex(value:VARCHAR) -> VARCHAR*/
-  to_hex(value: DVarcharable): DStr;
-  /**                                                            @description: Converts the value to hexadecimal representation	@example: hex(42)	@default: hex(value:BIGINT) -> VARCHAR*/
+  /**                                                            @description: Converts the value to hexadecimal representation.	@example: hex(42)	@default: hex(value:BIGINT) -> VARCHAR*/
   hex: this["to_hex"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the hour component from a date or timestamp	@example: hour(timestamp '2021-08-03 11:59:44.123456')	@default: hour(ts:DATE) -> BIGINT*/
@@ -3616,8 +3258,8 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[]*/
   json_keys(col0: DJsonable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField<DVarcharField>;
-  /**                                                            @default: json_keys(col0:VARCHAR, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[]*/
-  json_keys(col0: DVarcharable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @default: json_keys(col0:VARCHAR, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[][]*/
+  json_keys(col0: DVarcharable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: json_structure(col0:JSON) -> JSON*/
   json_structure(col0: DJsonable): DJsonField;
@@ -3657,13 +3299,6 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: json_value(col0:VARCHAR, col1:BIGINT | VARCHAR) -> VARCHAR*/
   json_value(col0: DVarcharable, col1: DNumericable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: len(string:ANY[]) -> BIGINT*/
-  len(string: DArrayable): DNum;
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: len(string:BIT) -> BIGINT*/
-  len(string: DAnyable): DNum;
-  /**                                                            @description: Number of characters in string.	@example: length('Hello🦆')	@default: len(string:VARCHAR) -> BIGINT*/
-  len(string: DVarcharable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the indexth (1-based) value from the list.	@example: list_extract([4, 5, 6], 3)	@default: list_element(list:ANY[], index:BIGINT) -> ANY*/
   list_element(list: DArrayable, index: DNumericable): DAnyField;
   /**                                                            @description: Extract the indexth (1-based) value from the list.	@example: list_extract([4, 5, 6], 3)	@default: list_element(list:VARCHAR, index:BIGINT) -> VARCHAR*/
@@ -3678,14 +3313,14 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: The date for the given struct.	@example: make_date({'year': 2024, 'month': 11, 'day': 14})	@default: make_date(dateStruct:STRUCT("year" BIGINT, "month" BIGINT, "day" BIGINT)) -> DATE*/
   make_date(dateStruct: DNumericable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the MD5 hash of the value as a string	@example: md5('123')	@default: md5(value:BLOB) -> VARCHAR*/
+  /**                                                            @description: Returns the MD5 hash of the `value` as a string	@example: md5('123')	@default: md5(value:BLOB) -> VARCHAR*/
   md5(value: DAnyable): DStr;
-  /**                                                            @description: Returns the MD5 hash of the value as a string	@example: md5('123')	@default: md5(value:VARCHAR) -> VARCHAR*/
+  /**                                                            @description: Returns the MD5 hash of the `value` as a string	@example: md5('123')	@default: md5(value:VARCHAR) -> VARCHAR*/
   md5(value: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the MD5 hash of the value as an INT128	@example: md5_number('123')	@default: md5_number(value:BLOB) -> HUGEINT*/
+  /**                                                            @description: Returns the MD5 hash of the `value` as an INT128	@example: md5_number('123')	@default: md5_number(value:BLOB) -> UHUGEINT*/
   md5_number(value: DAnyable): DNum;
-  /**                                                            @description: Returns the MD5 hash of the value as an INT128	@example: md5_number('123')	@default: md5_number(value:VARCHAR) -> HUGEINT*/
+  /**                                                            @description: Returns the MD5 hash of the `value` as an INT128	@example: md5_number('123')	@default: md5_number(value:VARCHAR) -> UHUGEINT*/
   md5_number(value: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the microsecond component from a date or timestamp	@example: microsecond(timestamp '2021-08-03 11:59:44.123456')	@default: microsecond(ts:DATE) -> BIGINT*/
@@ -3717,13 +3352,18 @@ export interface DGlobal<DNum, DStr> {
   multiply(col0: DNumericable, col1: DAnyable): DAnyField;
   /**                                                            @default: multiply(col0:BIGINT, col1:BIGINT) -> BIGINT*/
   multiply(col0: DNumericable, col1: DNumericable): DNum;
-  /**                                                            @default: multiply(col0:INTERVAL, col1:BIGINT) -> INTERVAL*/
+  /**                                                            @default: multiply(col0:INTERVAL, col1:DOUBLE) -> INTERVAL*/
   multiply(col0: DAnyable, col1: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789	@default: nanosecond(tsns:DATE) -> BIGINT*/
+  /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789')	@default: nanosecond(tsns:DATE) -> BIGINT*/
   nanosecond(tsns: DDateable): DNum;
-  /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789') => 44123456789	@default: nanosecond(tsns:INTERVAL) -> BIGINT*/
+  /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789')	@default: nanosecond(tsns:INTERVAL) -> BIGINT*/
   nanosecond(tsns: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the number of bytes in the `bitstring`.	@example: octet_length('1101011'::BITSTRING)	@default: octet_length(bitstring:BIT) -> BIGINT*/
+  octet_length(bitstring: DAnyable): DNum;
+  /**                                                            @description: Number of bytes in `blob`.	@example: octet_length('\xAA\xBB'::BLOB)	@default: octet_length(blob:BLOB) -> BIGINT*/
+  octet_length(blob: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the quarter component from a date or timestamp	@example: quarter(timestamp '2021-08-03 11:59:44.123456')	@default: quarter(ts:DATE) -> BIGINT*/
   quarter(ts: DDateable): DNum;
@@ -3747,14 +3387,14 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Extract the second component from a date or timestamp	@example: second(timestamp '2021-08-03 11:59:44.123456')	@default: second(ts:INTERVAL) -> BIGINT*/
   second(ts: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the SHA1 hash of the value	@example: sha1('hello')	@default: sha1(value:BLOB) -> VARCHAR*/
+  /**                                                            @description: Returns the SHA1 hash of the `value`	@example: sha1('hello')	@default: sha1(value:BLOB) -> VARCHAR*/
   sha1(value: DAnyable): DStr;
-  /**                                                            @description: Returns the SHA1 hash of the value	@example: sha1('hello')	@default: sha1(value:VARCHAR) -> VARCHAR*/
+  /**                                                            @description: Returns the SHA1 hash of the `value`	@example: sha1('hello')	@default: sha1(value:VARCHAR) -> VARCHAR*/
   sha1(value: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the SHA256 hash of the value	@example: sha256('hello')	@default: sha256(value:BLOB) -> VARCHAR*/
+  /**                                                            @description: Returns the SHA256 hash of the `value`	@example: sha256('hello')	@default: sha256(value:BLOB) -> VARCHAR*/
   sha256(value: DAnyable): DStr;
-  /**                                                            @description: Returns the SHA256 hash of the value	@example: sha256('hello')	@default: sha256(value:VARCHAR) -> VARCHAR*/
+  /**                                                            @description: Returns the SHA256 hash of the `value`	@example: sha256('hello')	@default: sha256(value:VARCHAR) -> VARCHAR*/
   sha256(value: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts a date to a string according to the format string.	@example: strftime(date '1992-01-01', '%a, %-d %B %Y')	@default: strftime(data:DATE, format:VARCHAR) -> VARCHAR*/
@@ -3826,6 +3466,7 @@ export interface DGlobal<DNum, DStr> {
   array_transform<T, U>(list: DArrayField<T> | T[], lambda: (x: FromPlain<T>) => U): DArrayField<FromPlain<U>>;
   array_reduce<T, U>(list: DArrayField<T> | T[], lambda: (accumulator: U, currentValue: FromPlain<T>) => U, initialValue: U): FromPlain<U>;
   array_filter<T>(list: DArrayField<T> | T[], lambda: (x: T) => any): DArrayField<T>;
+  array_slice<T>(list: DArrayField<T> | T[], begin: number, end: number, step?: number): DArrayField<FromPlain<T>>;
 }
 
 export type DGlobalField = DGlobal<DNumericField, DVarcharField>;
@@ -4002,6 +3643,8 @@ export interface DSettings {
   arrow_lossless_conversion: boolean;
   /**                                                            @description: Whether export to Arrow format should use ListView as the physical layout for LIST columns*/
   arrow_output_list_view: boolean;
+  /**                                                            @description: The maximum number of rows we need on the left side of an ASOF join to use a nested loop join*/
+  asof_loop_join_threshold: number;
   /**                                                            @description: Overrides the custom endpoint for extension installation on autoloading*/
   autoinstall_extension_repository: string;
   /**                                                            @description: Whether known extensions are allowed to be automatically installed when a query depends on them*/
@@ -4030,6 +3673,8 @@ export interface DSettings {
   debug_force_no_cross_product: boolean;
   /**                                                            @description: DEBUG SETTING: skip checkpointing on commit*/
   debug_skip_checkpoint_on_commit: boolean;
+  /**                                                            @description: DEBUG SETTING: enable vector verification*/
+  debug_verify_vector: string;
   /**                                                            @description: DEBUG SETTING: switch window mode to use*/
   debug_window_mode: string;
   /**                                                            @description: The default block size for new duckdb database files (new as-in, they do not yet exist).*/
@@ -4044,6 +3689,8 @@ export interface DSettings {
   default_order: string;
   /**                                                            @description: Allows switching the default storage for secrets*/
   default_secret_storage: string;
+  /**                                                            @description: Disable casting from timestamp to timestamptz */
+  disable_timestamptz_casts: boolean;
   /**                                                            @description: Disable a specific set of compression methods (comma separated)*/
   disabled_compression_methods: string;
   /**                                                            @description: Disable specific file systems preventing access (e.g. LocalFileSystem)*/
@@ -4058,6 +3705,8 @@ export interface DSettings {
   dynamic_or_filter_threshold: number;
   /**                                                            @description: Allow the database to access external state (through e.g. loading/installing modules, COPY TO/FROM, CSV readers, pandas replacement scans, etc)*/
   enable_external_access: boolean;
+  /**                                                            @description: Allow the database to cache external files (e.g., Parquet) in memory.*/
+  enable_external_file_cache: boolean;
   /**                                                            @description: Allow scans on FSST compressed segments to emit compressed vectors to utilize late decompression*/
   enable_fsst_vectors: boolean;
   /**                                                            @description: Enables HTTP logging*/
@@ -4114,6 +3763,8 @@ export interface DSettings {
   index_scan_percentage: number;
   /**                                                            @description: Whether or not the / operator defaults to integer division, or to floating point division*/
   integer_division: boolean;
+  /**                                                            @description: Configures the use of the deprecated single arrow operator (->) for lambda functions.*/
+  lambda_syntax: string;
   /**                                                            @description: The maximum amount of rows in the LIMIT/SAMPLE for which we trigger late materialization*/
   late_materialization_max_rows: number;
   /**                                                            @description: Whether or not the configuration can be altered*/
@@ -4176,6 +3827,8 @@ export interface DSettings {
   progress_bar_time: number;
   /**                                                            @description: When a scalar subquery returns multiple rows - return a random row instead of returning an error.*/
   scalar_subquery_error_on_multiple_rows: boolean;
+  /**                                                            @description: Partially process tasks before rescheduling - allows for more scheduler fairness between separate queries*/
+  scheduler_process_partial: boolean;
   /**                                                            @description: Sets the default search schema. Equivalent to setting search_path to a single value.*/
   schema: string;
   /**                                                            @description: Sets the default catalog search path as a comma-separated list of values*/
@@ -4256,4 +3909,4 @@ export interface DSettings {
   binary_as_string: boolean;
 }
 
-export type DExtensions = "arrow" | "autocomplete" | "avro" | "aws" | "azure" | "bigquery" | "blockduck" | "cache_httpfs" | "capi_quack" | "chsql" | "chsql_native" | "core_functions" | "cronjob" | "crypto" | "datasketches" | "delta" | "duckpgq" | "evalexpr_rhai" | "excel" | "faiss" | "file_dialog" | "flockmtl" | "fts" | "fuzzycomplete" | "geography" | "gsheets" | "h3" | "hostfs" | "http_client" | "httpfs" | "httpserver" | "iceberg" | "icu" | "inet" | "jemalloc" | "json" | "lindel" | "magic" | "motherduck" | "mysql_scanner" | "nanoarrow" | "netquack" | "open_prompt" | "parquet" | "pbix" | "pivot_table" | "postgres_scanner" | "prql" | "psql" | "quack" | "read_stat" | "rusty_quack" | "sheetreader" | "shellfs" | "spatial" | "sqlite_scanner" | "substrait" | "tpcds" | "tpch" | "tsid" | "ui" | "ulid" | "vss" | "webmacro" | "zipfs" | string | {};
+export type DExtensions = "autocomplete" | "aws" | "azure" | "core_functions" | "delta" | "encodings" | "excel" | "fts" | "hostfs" | "http_client" | "httpfs" | "httpserver" | "iceberg" | "icu" | "inet" | "jemalloc" | "json" | "motherduck" | "mysql_scanner" | "parquet" | "parser_tools" | "postgres_scanner" | "spatial" | "sqlite_scanner" | "tpcds" | "tpch" | "ui" | "vss" | string | {};

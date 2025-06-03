@@ -1,12 +1,15 @@
-// @ts-nocheck
 import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin'
 import * as fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
+import { highlightSql, currentStyles } from './highlighter'
+import { timecolor } from '../timecolor'
+
 const pkg = JSON.parse(
     fs.readFileSync(new URL('./package.json', import.meta.url).pathname).toString(),
 )
 import wasm from 'vite-plugin-wasm'
+import { spawn } from 'child_process'
 
 const localDependencies = Object.entries(pkg.dependencies as Record<string, string>)
     .filter(([, version]) => version.startsWith('file:../../monaco-vscode-api/'))
@@ -14,6 +17,8 @@ const localDependencies = Object.entries(pkg.dependencies as Record<string, stri
 export default defineConfig({
     build: {
         target: 'esnext',
+        
+        sourcemap: false, // Disable sourcemaps
     },
     worker: {
         format: 'es',
@@ -25,7 +30,6 @@ export default defineConfig({
             name: 'configure-response-headers',
             apply: 'serve',
             configureServer: (server) => {
-                console.log('GLOBALTHIS', !!globalThis.Bun)
                 server.middlewares.use((_req, res, next) => {
                     res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless')
                     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
@@ -91,9 +95,9 @@ export default defineConfig({
             apply: 'serve',
             handleHotUpdate({ file, server, modules }) {
                 // Use path.resolve to ensure consistent path format
-                console.log('HMR', file)
+                console.log('HMR', file, modules.map(m => m.url))
                 // const targetFile = path.resolve(__dirname, 'src/main.v2.ts');
-                if (file.includes('/buckdb/')) {
+                if (file.match(/demo|tutorial|.buck/)) {
                     console.log(`[HMR Prevent] Update detected for ${file}. Preventing reload.`)
                     // Returning an empty array prevents the update from being processed
                     // and thus stops the full page reload for this specific file.
@@ -101,6 +105,24 @@ export default defineConfig({
                 }
                 // For all other files, let Vite handle HMR as usual
                 return modules
+            },
+        },
+        {
+            name: 'start-duckdb-http-server',
+            apply: 'serve',
+            async configureServer(server) {
+                const duckdbProcess = spawn('duckdb_httpserver_cli',
+                    "--port 9998 --load hostfs --auth ".split(' ')
+                )
+                duckdbProcess.stdout.on('data', (data) => {
+                    console.log(`[DuckDB] ${data.toString()}`)
+                })
+                duckdbProcess.stderr.on('data', (data) => {
+                    console.log(`[DuckDB] ${data.toString()}`)
+                })
+                duckdbProcess.on('close', (code) => {
+                    console.log(`[DuckDB] process exited with code ${code}`)
+                })
             },
         },
     ],
@@ -133,12 +155,29 @@ export default defineConfig({
         },
     },
     server: {
-        allowedHosts: ['reel-wx-supreme-flame.trycloudflare.com'],
         port: 5173,
         host: '0.0.0.0',
         fs: {
             allow: ['../../../'], // allow to load codicon.ttf from monaco-editor in the parent folder and monaco-vscode-api package resources
         },
+        proxy: {
+            '/duckdb': {
+                target: 'http://localhost:9998',
+                changeOrigin: true,
+                rewrite: (path) => path.replace(/^\/duckdb/, ''),
+                configure: (proxy) => {
+                    proxy.on('proxyReq', (proxyReq, req, res) => {
+                        const chunks: Buffer[] = []
+                        req.on('data', chunk => chunks.push(chunk))
+                        req.on('end', () => {
+                            const body = Buffer.concat(chunks).toString()
+                            console.log(currentStyles.comment, '-----------', timecolor(new Date().toISOString()), currentStyles.comment, '----------')
+                            console.log(highlightSql(body))
+                        })
+                    })
+                },
+            },
+        }
     },
     define: {
         rootDirectory: JSON.stringify(__dirname),

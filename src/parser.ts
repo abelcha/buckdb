@@ -1,7 +1,7 @@
 import { DMetaField } from '../.buck/types'
 import jsep, { ArrayExpression, ArrowFunctionExpression, BinaryExpression, CallExpression, ConditionalExpression, Expression, Identifier, Literal, MemberExpression, ObjectExpression, Property, SequenceExpression, SpreadElement, TemplateElement, TemplateLiteral, UnaryExpression } from './jsep'
 import { LitteralTypesMap, PatternMatchers, PolyfillMapping, UnmethodMapping } from './typedef'
-import { wrap, Ω } from './utils'
+import { wrap, Σ } from './utils'
 
 const RegexpFuncsWthOptions = new Map([
   ['regexp_extract', 3],
@@ -81,7 +81,7 @@ function hasStringLiteral(node: BinaryExpression | Expression): boolean {
   if (!node) return false
   // Check for nested string literals in binary expressions
   if (node.type === 'BinaryExpression') {
-    return hasStringLiteral(node.left) || hasStringLiteral(node.right)
+    return hasStringLiteral(node.right) || hasStringLiteral(node.left)
   }
   // Direct string literal
   return node.type === 'Literal' && typeof node.value === 'string'
@@ -270,7 +270,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
           if (node.callee.type === 'MemberExpression' && node.callee.object?.type === 'Identifier' && params.has(node.callee.object.name)) {
             return `${args[0]} ${keyword} ${args.slice(1).join(joinWith)}`
           }
-          if (lastCallee in Ω('SimilarTo', 'regexp_matches') && firstValue instanceof RegExp && firstValue.flags) {
+          if (lastCallee in Σ('SimilarTo', 'regexp_matches') && firstValue instanceof RegExp && firstValue.flags) {
             return `regexp_matches(${calleeArr.slice(0, -1)}, ${args[0]}, '${firstValue?.flags}')`
           }
           return `${calleeArr.slice(0, -1)} ${keyword} ${args.join(joinWith)}`
@@ -339,7 +339,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
           if (node.test.type === 'UnaryExpression' && node.test.operator === '!') {
             return transformNode(node.test.argument) + ' IS NULL'
           }
-          if (node.test.type in Ω('MemberExpression', 'Identifier')) {
+          if (node.test.type in Σ('MemberExpression', 'Identifier')) {
             return transformNode(node.test) + ' IS NOT NULL'
           }
           return transformNode(node.test)

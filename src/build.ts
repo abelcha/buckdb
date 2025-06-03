@@ -1,11 +1,10 @@
-import { mapValues } from 'es-toolkit'
 import * as t from '../.buck/types'
 import { DuckdbCon } from '../buckdb.core'
 import { DBuilder } from './build.types'
 import { dump, formalize, serializeCreate, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
-import { deriveName, keyBy, upperFirst, wrap } from './utils'
+import { deriveName, isBucket, keyBy, upperFirst, wrap, Σ } from './utils'
 
 export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
 export type DSelectee = { field: string; as?: string | number; raw?: string }
@@ -60,17 +59,22 @@ export const deriveState = (s: DState, kmap: Record<keyof DState | string, any |
     }, s) as DState
 }
 
+const parseArgs = (args: any[]) => {
+    const handle = typeof args[0] === 'string' ? args[0] : ''
+    const opts = (typeof args[0] === 'object' ? args[0] : (args[1] || {})) as Partial<t.DSettings>
+    return { handle, opts }
+}
 
 export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
-    function database(a: any, b: any) {
-        const handle = typeof a === 'string' ? a : ''
-        const opts = (typeof a === 'object' ? a : (b || {})) as Partial<t.DSettings>
+    function database(...args: any[]) {
+        const { handle, opts } = parseArgs(args)
         const ddb = new Ddb(handle, opts)
         if (opts && Object.keys(opts).length && ddb.type === 'wasm') {
             ddb.lazySettings(opts)
+
         }
-        if (handle && typeof handle === 'string' && handle !== ':memory:' && ddb.type === 'wasm') {
-            ddb.lazyAttach(handle, deriveName(handle), { readonly: true })
+        if (handle && handle !== ':memory:' && ddb.type in Σ('remote', 'wasm') && !isBucket(handle)) {
+            ddb.lazyAttach(handle, deriveName(handle), { readonly: ddb.type === 'wasm' })
         }
         const fromRes = (state = dstate) => {
             const _join = (joinType: DDatasource['join'] = 'JOIN') =>
@@ -92,12 +96,11 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 const formatAGG = (e: Promise<any>) => state.agg ? e.then(resp => resp[0]) : e
                 const str = toSql(Object.assign(state, props))
                 if (!state.ctes.length)
-                    for await (const dt of state.datasources) {
+                    for await (const dt of state.datasources)
                         await ddb.ensureSchema(dt.uri)
-                    }
                 if (state.selected.length === 1) {
                     const [{ as, raw, field }] = state.selected
-                    if (as === null && !raw && field) {
+                    if ((as === null && !raw && field) || raw) {
                         return ddb.query(str, { rows: true, ...props }).then(resp => resp.map(e => e[0]))
                     }
                 }
@@ -105,7 +108,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     return formatAGG(ddb.query(str, { rows: true, ...props }))
                 }
                 if (state?.keyBy) {
-                    return ddb.query(str, props).then(resp => keyBy(resp, state.keyBy))
+                    return ddb.query(str, props).then(resp => keyBy(resp, state.keyBy as string))
                 }
                 return formatAGG(ddb.query(str, props))
             }
@@ -235,8 +238,8 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 return this
             },
             with: function (...arr: (() => any)[]) {
-                const ctes = arr.flatMap(x => Object.entries(x(this)))
-                    .map(([k, v], i) => ({ name: k, query: v?.toSql({ trim: true }) }))
+                // @ts-ignore
+                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query: v?.toSql({ trim: true }) }))
                 return {
                     from: (table: string, alias?: string) =>
                         fromRes({ ...dstate, ctes, action: 'select', datasources: [{ catalog: handle, uri: table, alias: alias }] }),

@@ -18,17 +18,6 @@ export const wrap = (value: string, charA: string, charB = charA): string => {
     return `${charA}${value}${charB}`
 }
 
-export const formatSource = ({ catalog = '', uri = '' }) => {
-    if (!uri.trim().endsWith(')')) {
-        if (isBucket(catalog) && uri.match(/^\w/) && !uri.includes('://')) {
-            uri = catalog.replace(/\/*$/, '/' + uri)
-        }
-        if (uri.match(/\.\w{2,10}$/)) {
-            uri = `'${uri}'`
-        }
-    }
-    return uri
-}
 
 export const upperFirst = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1)
@@ -42,7 +31,7 @@ export const isPlainObject = (obj: any) => {
     return Object.prototype.toString.call(obj) === '[object Object]'
 }
 
-export const Ω = (...values: any[]) => {
+export const Σ = (...values: any[]) => {
     const rtn: Record<string, any> = {}
     for (let i in values) {
         rtn[values[i]] = +i + 1

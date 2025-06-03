@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test'
-import { wrap, formatSource, upperFirst, last, isPlainObject, Ω, keyBy, isBucket } from './utils'
+import { wrap, upperFirst, last, isPlainObject, Σ, keyBy, isBucket } from './utils'
+import { formatSource } from './formalise'
 
 describe('utils', () => {
     it('should wrap strings', () => {

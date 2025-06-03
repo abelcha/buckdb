@@ -13,7 +13,7 @@ const getCommunityExtensions = () => {
 
 const community_extensions = [] // await getCommunityExtensions()
 global.duckdb_extensions = await Buck('').from('duckdb_extensions()').select(e => e.extension_name).execute()
-const allextensions = ['aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui']
+const allextensions = ['h3', 'aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui']
 
 const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')

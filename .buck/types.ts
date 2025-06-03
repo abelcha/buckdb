@@ -165,9 +165,9 @@ export interface DDateField extends DAnyField {
   /**                                                            @description: Extract the millennium component from a date or timestamp	@example: millennium(timestamp '2021-08-03 11:59:44.123456')	@default: millennium(ts:DATE) -> BIGINT*/
   millennium(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DDate] - - - - - - -  */
-  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP*/
+  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP WITH TIME ZONE*/
   add(col1: DAnyable | DDateable | DNumericable): DDateField;
-  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIME WITH TIME ZONE*/
+  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIMESTAMP WITH TIME ZONE*/
   add(col1: DAnyable | DDateable): DDateField;
   /**                                                            @default: add(col0:TIMESTAMP, col1:INTERVAL) -> TIMESTAMP*/
   add(col1: DAnyable): DDateField;
@@ -502,8 +502,8 @@ export interface _DJsonField {
   /**                                                            @default: json_deserialize_sql(col0:JSON) -> VARCHAR*/
   json_deserialize_sql(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DJson] - - - - - - -  */
-  /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[]*/
-  json_keys(col1?: DAnyable | DArrayable | DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[][]*/
+  json_keys(col1?: DAnyable | DArrayable | DVarcharable): DArrayField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DJson] - - - - - - -  */
   /**                                                            @default: json_transform_strict(col0:JSON, col1:VARCHAR) -> ANY*/
   json_transform_strict(col1: DVarcharable): DAnyField;
@@ -1680,7 +1680,7 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Returns the correlation coefficient for non-null pairs in a group.	@example: COVAR_POP(y, x) / (STDDEV_POP(x) * STDDEV_POP(y))	@default: corr(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
   corr(y: DNumericable, x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Calculates the sum value for all tuples in arg.	@example: sum(A)	@default: sum(arg:BIGINT | BOOLEAN | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DECIMAL*/
+  /**                                                            @description: Calculates the sum value for all tuples in arg.	@example: sum(A)	@default: sum(arg:BIGINT | BOOLEAN | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> HUGEINT*/
   sum(arg: DBoolable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the sample covariance for non-null pairs in a group.	@example: (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / (COUNT(*) - 1)	@default: covar_samp(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
@@ -1745,9 +1745,9 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:FLOAT) -> TIMESTAMP WITH TIME ZONE*/
   approx_quantile(x: DDateable, pos: DNumericable): DDateField;
-  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DATE | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE | TINYINT, pos:FLOAT[]) -> TINYINT[]*/
-  approx_quantile(x: DDateable | DNumericable, pos: DArrayable): DArrayField<DNumericField>;
-  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT, pos:FLOAT) -> DECIMAL*/
+  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DATE | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE | TINYINT, pos:FLOAT[]) -> TIMESTAMP WITH TIME ZONE[]*/
+  approx_quantile(x: DDateable | DNumericable, pos: DArrayable): DArrayField;
+  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT, pos:FLOAT) -> INTEGER*/
   approx_quantile(x: DNumericable, pos: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example: first(A)	@default: arbitrary(arg:ANY) -> ANY*/
@@ -1757,19 +1757,19 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example: first(A)	@default: first(arg:ANY) -> ANY*/
   first: this["arbitrary"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP*/
   arg_max(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> ANY*/
   arg_max(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:ANY, val:ANY, col2:BIGINT) -> ANY[]*/
   arg_max(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField<DAnyField>;
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DECIMAL*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BIGINT*/
   arg_max(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
   arg_max(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: argmax(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: argmax(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP*/
   argmax: this["arg_max"];
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: max_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: max_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
   max_by: this["arg_max"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
@@ -1781,7 +1781,7 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
   arg_max_null(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   arg_min(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BLOB*/
   arg_min(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
@@ -1791,16 +1791,16 @@ export interface DAggregate<DNum, DStr> {
   arg_min(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
   arg_min(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: argmin(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: argmin(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
   argmin: this["arg_min"];
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: min_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: min_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
   min_by: this["arg_min"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   arg_min_null(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
-  /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BLOB*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> ANY*/
   arg_min_null(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
-  /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DOUBLE*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BIGINT*/
   arg_min_null(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
   arg_min_null(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
@@ -1816,17 +1816,17 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIT) -> BIT*/
   bit_and(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> UHUGEINT*/
+  /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> TINYINT*/
   bit_and(arg: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIT) -> BIT*/
   bit_or(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> TINYINT*/
+  /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> UHUGEINT*/
   bit_or(arg: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIT) -> BIT*/
   bit_xor(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> UBIGINT*/
+  /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> USMALLINT*/
   bit_xor(arg: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the last value of a column. This function is affected by ordering.	@example: last(A)	@default: last(arg:ANY) -> ANY*/
@@ -1836,7 +1836,7 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> INTERVAL*/
   mad(x: DDateable): DAnyField;
-  /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DECIMAL | DOUBLE | FLOAT) -> DECIMAL*/
+  /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DECIMAL | DOUBLE | FLOAT) -> DOUBLE*/
   mad(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the maximum value present in arg.	@example: max(A)	@default: max(arg:ANY) -> ANY*/
@@ -1851,12 +1851,12 @@ export interface DAggregate<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:DOUBLE | DOUBLE[]) -> TIME WITH TIME ZONE*/
   quantile_cont(x: DDateable, pos: DArrayable | DNumericable): DDateField;
-  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, pos:DOUBLE | DOUBLE[]) -> DOUBLE*/
+  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, pos:DOUBLE | DOUBLE[]) -> TINYINT*/
   quantile_cont(x: DNumericable, pos: DArrayable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE[], sampleSize:INTEGER | ) -> HUGEINT[]*/
+  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE[], sampleSize:INTEGER | ) -> DOUBLE[]*/
   reservoir_quantile(x: DNumericable, quantile: DArrayable, sampleSize?: DAnyable | DNumericable): DArrayField<DNumericField>;
-  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE, sampleSize:INTEGER | ) -> INTEGER*/
+  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE, sampleSize:INTEGER | ) -> DOUBLE*/
   reservoir_quantile(x: DNumericable, quantile: DNumericable, sampleSize?: DAnyable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
 }
@@ -1880,7 +1880,7 @@ export interface DMacroAG<DNum, DStr> {
   /**                                                            @example: list_aggr(l, 'sem')	@default: list_sem(l:ANY[]) -> DOUBLE*/
   list_sem(l: DArrayable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'sum')	@default: list_sum(l:ANY[]) -> DECIMAL*/
+  /**                                                            @example: list_aggr(l, 'sum')	@default: list_sum(l:ANY[]) -> HUGEINT*/
   list_sum(l: DArrayable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @example: list_aggr(l, 'last')	@default: list_last(l:ANY[]) -> ANY*/
@@ -2084,6 +2084,12 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Construct a minute interval	@example: to_minutes(5)	@default: to_minutes(integer:BIGINT) -> INTERVAL*/
   to_minutes(integer: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_num_cells(col0:INTEGER) -> BIGINT*/
+  h3_get_num_cells(col0: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_pentagons(col0:INTEGER) -> UBIGINT[]*/
+  h3_get_pentagons(col0: DNumericable): DArrayField<DNumericField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the head of the path similarly to Python's os.path.dirname. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirpath('path/to/file.csv', 'system')	@default: parse_dirpath(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
   parse_dirpath(string: DVarcharable, separator?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2258,11 +2264,17 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Parse the message into the expected logical type	@example: parse_duckdb_log_message('FileSystem', log_message)	@default: parse_duckdb_log_message(type:VARCHAR, message:VARCHAR) -> ANY*/
   parse_duckdb_log_message(type: DVarcharable, message: DVarcharable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_latlng_to_cell(col0:DOUBLE, col1:DOUBLE, col2:INTEGER) -> UBIGINT*/
+  h3_latlng_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Sets the nth bit in bitstring to newvalue; the first (leftmost) bit is indexed 0. Returns a new bitstring	@example: set_bit('0110010'::BIT, 2, 0)	@default: set_bit(bitstring:BIT, index:INTEGER, newValue:INTEGER) -> BIT*/
   set_bit(bitstring: DAnyable, index: DNumericable, newValue: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract a version for the given UUID.	@example: uuid_extract_version('019482e4-1441-7aad-8127-eec99573b0a0')	@default: uuid_extract_version(uuid:UUID) -> UINTEGER*/
   uuid_extract_version(uuid: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_polygon_wkt_to_cells_experimental(col0:VARCHAR, col1:INTEGER | VARCHAR, col2:INTEGER | VARCHAR) -> UBIGINT[]*/
+  h3_polygon_wkt_to_cells_experimental(col0: DVarcharable, col1: DNumericable | DVarcharable, col2: DNumericable | DVarcharable): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Constructs a list from those elements of the input list for which the lambda function returns true	@example: list_filter([3, 4, 5], x -> x > 4)	@default: array_filter(list:ANY[], lambda:LAMBDA) -> ANY[]*/
   // array_filter(list: DArrayable, lambda: DAnyable): DArrayField<DAnyField>
@@ -2353,6 +2365,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the name of a given expression	@example: alias(42 + 1)	@default: alias(expr:ANY) -> VARCHAR*/
   alias(expr: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_uncompact_cells(col0:BIGINT[], col1:INTEGER) -> BIGINT[]*/
+  h3_uncompact_cells(col0: DArrayable, col1: DNumericable): DArrayField<DNumericField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns true if string begins with search_string	@example: starts_with('abc','a')	@default: starts_with(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
   starts_with(string: DVarcharable, searchString: DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2412,6 +2427,8 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the log of the gamma function	@example: lgamma(2)	@default: lgamma(x:DOUBLE) -> DOUBLE*/
   lgamma(x: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  h3_get_res0_cells(): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts `string` to upper case.	@example: upper('Hello')	@default: ucase(string:VARCHAR) -> VARCHAR*/
   ucase(string: DVarcharable): DStr;
@@ -2506,6 +2523,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Create a single member UNION containing the argument value. The tag of the value will be the bound variable name	@example: union_value(k := 'hello')*/
   union_value(...vargs: DAnyable[]): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_pentagons_string(col0:INTEGER) -> VARCHAR[]*/
+  h3_get_pentagons_string(col0: DNumericable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: array_slice(list:ANY[], begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
   // array_slice(list: DArrayable, begin: DAnyable, end: DAnyable, step?:DAnyable | DNumericable): DAnyField
   /**                                                            @description: list_slice with added step feature.	@example: list_slice([4, 5, 6], 1, 3, 2)	@default: list_slice(list:ANY[], begin:ANY, end:ANY, step:BIGINT | ) -> ANY*/
@@ -2561,6 +2581,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns a random UUID v4 similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example: uuid()*/
   uuid: this["gen_random_uuid"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_polygon_wkt_to_cells_experimental_string(col0:VARCHAR, col1:INTEGER | VARCHAR, col2:INTEGER | VARCHAR) -> VARCHAR[]*/
+  h3_polygon_wkt_to_cells_experimental_string(col0: DVarcharable, col1: DNumericable | DVarcharable, col2: DNumericable | DVarcharable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Normalizes an INTERVAL to an equivalent interval	@example: normalized_interval(INTERVAL '30 days')	@default: normalized_interval(interval:INTERVAL) -> INTERVAL*/
   normalized_interval(interval: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2594,7 +2617,7 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Computes the arccosine of x	@example: acos(0.5)	@default: acos(x:DOUBLE) -> DOUBLE*/
   acos(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example: time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')	@default: time_bucket(bucketWidth:INTERVAL, timestamp:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, origin:DATE | INTERVAL | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR | ) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Truncate TIMESTAMPTZ by the specified interval bucket_width. Buckets are aligned relative to origin TIMESTAMPTZ. The origin defaults to 2000-01-03 00:00:00+00 for buckets that do not include a month or year interval, and to 2000-01-01 00:00:00+00 for month and year buckets	@example: time_bucket(INTERVAL '2 weeks', TIMESTAMP '1992-04-20 15:26:00-07', TIMESTAMP '1992-04-01 00:00:00-07')	@default: time_bucket(bucketWidth:INTERVAL, timestamp:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, origin:DATE | INTERVAL | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR | ) -> DATE*/
   time_bucket(bucketWidth: DAnyable, timestamp: DDateable, origin?: DAnyable | DDateable | DVarcharable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the cotangent of x	@example: cot(0.5)	@default: cot(x:DOUBLE) -> DOUBLE*/
@@ -2608,6 +2631,9 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Identical to list_value, but generated as part of unpivot for better error messages	@example: unpivot_list(4, 5, 6)*/
   unpivot_list(...vargs: DAnyable[]): DArrayField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_great_circle_distance(col0:DOUBLE, col1:DOUBLE, col2:DOUBLE, col3:DOUBLE, col4:VARCHAR) -> DOUBLE*/
+  h3_great_circle_distance(col0: DNumericable, col1: DNumericable, col2: DNumericable, col3: DNumericable, col4: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Creates a map from a set of keys and values	@example: map(['key1', 'key2'], ['val1', 'val2'])*/
   map(...vargs: DAnyable[]): DAnyField;
@@ -2646,6 +2672,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: The (English) name of the month	@example: monthname(TIMESTAMP '1992-09-20')	@default: monthname(ts:DATE) -> VARCHAR*/
   monthname(ts: DDateable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_hexagon_edge_length_avg(col0:INTEGER, col1:VARCHAR) -> DOUBLE*/
+  h3_get_hexagon_edge_length_avg(col0: DNumericable, col1: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Get the current query_id	@example: current_transaction_id('Hello')*/
   current_query_id(): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2663,10 +2692,15 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: The minimum number of single-character edits (insertions, deletions or substitutions) required to change one string to the other. Different case is considered different	@example: levenshtein('duck','db')	@default: editdist3(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   editdist3: this["levenshtein"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_polygon_wkt_to_cells_string(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_polygon_wkt_to_cells_string(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: formatReadableSize(bytes:BIGINT) -> VARCHAR*/
   formatReadableSize(bytes: DNumericable): DStr;
   /**                                                            @description: Converts bytes to a human-readable presentation (e.g., 16000 -> 15.6 KiB)	@example: format_bytes(1000 * 16)	@default: format_bytes(bytes:BIGINT) -> VARCHAR*/
   format_bytes: this["formatReadableSize"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  h3_get_res0_cells_string(): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
   ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
@@ -2780,6 +2814,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Converts `blob` to `VARCHAR`. Fails if `blob` is not valid UTF-8.	@example: decode('\xC3\xBC'::BLOB)	@default: decode(blob:BLOB) -> VARCHAR*/
   decode(blob: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cells_to_multi_polygon_wkt(col0:BIGINT[]) -> VARCHAR*/
+  h3_cells_to_multi_polygon_wkt(col0: DArrayable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Splits the `string` along the `regex` and extract all occurrences of `group`. A set of optional `options` can be set.	@example: regexp_extract_all('hello_world', '([a-z ]+)_?', 1)	@default: regexp_extract_all(string:VARCHAR, regex:VARCHAR, group0:INTEGER | , options:VARCHAR | ) -> VARCHAR[]*/
   regexp_extract_all(string: DVarcharable, regex: DVarcharable | RegExp, group0?: DAnyable | DNumericable, options?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2892,6 +2929,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the length of the `list`.	@example: array_length([1,2,3])	@default: array_length(list:ANY[], col1:BIGINT | ) -> BIGINT*/
   array_length(list: DArrayable, col1?: DAnyable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_hexagon_area_avg(col0:INTEGER, col1:VARCHAR) -> DOUBLE*/
+  h3_get_hexagon_area_avg(col0: DNumericable, col1: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Interpolation of (x-1) factorial (so decimal inputs are allowed)	@example: gamma(5.5)	@default: gamma(x:DOUBLE) -> DOUBLE*/
   gamma(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2902,6 +2942,9 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
   greatest(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_polygon_wkt_to_cells(col0:VARCHAR, col1:INTEGER) -> UBIGINT[]*/
+  h3_polygon_wkt_to_cells(col0: DVarcharable, col1: DNumericable): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the hyperbolic cos of x	@example: cosh(1)	@default: cosh(x:DOUBLE) -> DOUBLE*/
   cosh(x: DNumericable): DNum;
@@ -2917,6 +2960,9 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the hyperbolic sin of x	@example: sinh(1)	@default: sinh(x:DOUBLE) -> DOUBLE*/
   sinh(x: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_compact_cells(col0:BIGINT[]) -> BIGINT[]*/
+  h3_compact_cells(col0: DArrayable): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Construct a second interval	@example: to_seconds(5.5)	@default: to_seconds(double:DOUBLE) -> INTERVAL*/
   to_seconds(double: DNumericable): DAnyField;
@@ -2963,6 +3009,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns false if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: not_ilike_escape('A%c', 'a$%C', '$')	@default: not_ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
   not_ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_h3_to_string(col0:BIGINT) -> VARCHAR*/
+  h3_h3_to_string(col0: DNumericable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: icu_sort_key(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   icu_sort_key(col0: DVarcharable, col1: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2971,11 +3020,17 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Converts a `blob` to a base64 encoded `string`.	@example: base64('A'::BLOB)	@default: base64(blob:BLOB) -> VARCHAR*/
   base64: this["to_base64"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_string_to_h3(col0:VARCHAR) -> UBIGINT*/
+  h3_string_to_h3(col0: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract substring of `length` characters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring('Hello', 2, 2)	@default: substring(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
   substring(string: DVarcharable, start: DNumericable, length?: DAnyable | DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the map entries as a list of keys/values	@example: map_entries(map(['key'], ['val']))*/
   map_entries(...vargs: DAnyable[]): DArrayField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_latlng_to_cell_string(col0:DOUBLE, col1:DOUBLE, col2:INTEGER) -> VARCHAR*/
+  h3_latlng_to_cell_string(col0: DNumericable, col1: DNumericable, col2: DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Number of bytes in `string`.	@example: strlen('🦆')	@default: strlen(string:VARCHAR) -> BIGINT*/
   strlen(string: DVarcharable): DNum;
@@ -3006,15 +3061,15 @@ export interface DGlobal<DNum, DStr> {
   add(...vargs: DArrayable[]): DArrayField<DAnyField>;
   /**                                                            @default: add(col0:BIGINT, col1:BIGINT | ) -> BIGINT*/
   add(col0: DNumericable, col1?: DAnyable | DNumericable): DNum;
-  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP*/
+  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP WITH TIME ZONE*/
   add(col0: DDateable, col1: DAnyable | DDateable | DNumericable): DDateField;
   /**                                                            @default: add(col0:INTEGER, col1:DATE) -> DATE*/
   add(col0: DNumericable, col1: DDateable): DDateField;
-  /**                                                            @default: add(col0:INTERVAL, col1:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP) -> TIMESTAMP*/
+  /**                                                            @default: add(col0:INTERVAL, col1:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP) -> TIME WITH TIME ZONE*/
   add(col0: DAnyable, col1: DDateable): DDateField;
   /**                                                            @default: add(col0:INTERVAL, col1:INTERVAL) -> INTERVAL*/
   add(col0: DAnyable, col1: DAnyable): DAnyField;
-  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIME WITH TIME ZONE*/
+  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIMESTAMP WITH TIME ZONE*/
   add(col0: DDateable, col1: DAnyable | DDateable): DDateField;
   /**                                                            @default: add(col0:TIMESTAMP, col1:INTERVAL) -> TIMESTAMP*/
   add(col0: DDateable, col1: DAnyable): DDateField;
@@ -3161,6 +3216,211 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Create a list of values between start and stop - the stop parameter is inclusive	@example: generate_series(2, 5, 3)	@default: generate_series(start:TIMESTAMP WITH TIME ZONE, stop:TIMESTAMP WITH TIME ZONE, step:INTERVAL) -> TIMESTAMP WITH TIME ZONE[]*/
   generate_series(start: DDateable, stop: DDateable, step: DAnyable): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_are_neighbor_cells(col0:BIGINT, col1:BIGINT) -> BOOLEAN*/
+  h3_are_neighbor_cells(col0: DNumericable, col1: DNumericable): DBoolField;
+  /**                                                            @default: h3_are_neighbor_cells(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
+  h3_are_neighbor_cells(col0: DVarcharable, col1: DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_area(col0:BIGINT, col1:VARCHAR) -> DOUBLE*/
+  h3_cell_area(col0: DNumericable, col1: DVarcharable): DNum;
+  /**                                                            @default: h3_cell_area(col0:VARCHAR, col1:VARCHAR) -> DOUBLE*/
+  h3_cell_area(col0: DVarcharable, col1: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_boundary_wkt(col0:BIGINT) -> VARCHAR*/
+  h3_cell_to_boundary_wkt(col0: DNumericable): DStr;
+  /**                                                            @default: h3_cell_to_boundary_wkt(col0:VARCHAR) -> VARCHAR*/
+  h3_cell_to_boundary_wkt(col0: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_center_child(col0:BIGINT, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_center_child(col0: DNumericable, col1: DNumericable): DNum;
+  /**                                                            @default: h3_cell_to_center_child(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
+  h3_cell_to_center_child(col0: DVarcharable, col1: DNumericable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_child_pos(col0:BIGINT, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_child_pos(col0: DNumericable, col1: DNumericable): DNum;
+  /**                                                            @default: h3_cell_to_child_pos(col0:VARCHAR, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_child_pos(col0: DVarcharable, col1: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_children(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
+  h3_cell_to_children(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_cell_to_children(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_cell_to_children(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_lat(col0:BIGINT) -> DOUBLE*/
+  h3_cell_to_lat(col0: DNumericable): DNum;
+  /**                                                            @default: h3_cell_to_lat(col0:VARCHAR) -> DOUBLE*/
+  h3_cell_to_lat(col0: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_latlng(col0:BIGINT) -> DOUBLE[]*/
+  h3_cell_to_latlng(col0: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_cell_to_latlng(col0:VARCHAR) -> DOUBLE[]*/
+  h3_cell_to_latlng(col0: DVarcharable): DArrayField<DNumericField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_lng(col0:BIGINT) -> DOUBLE*/
+  h3_cell_to_lng(col0: DNumericable): DNum;
+  /**                                                            @default: h3_cell_to_lng(col0:VARCHAR) -> DOUBLE*/
+  h3_cell_to_lng(col0: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_local_ij(col0:BIGINT, col1:BIGINT) -> INTEGER[]*/
+  h3_cell_to_local_ij(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_cell_to_local_ij(col0:VARCHAR, col1:VARCHAR) -> VARCHAR[]*/
+  h3_cell_to_local_ij(col0: DVarcharable, col1: DVarcharable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_parent(col0:BIGINT, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_parent(col0: DNumericable, col1: DNumericable): DNum;
+  /**                                                            @default: h3_cell_to_parent(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
+  h3_cell_to_parent(col0: DVarcharable, col1: DNumericable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_vertex(col0:BIGINT, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_vertex(col0: DNumericable, col1: DNumericable): DNum;
+  /**                                                            @default: h3_cell_to_vertex(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
+  h3_cell_to_vertex(col0: DVarcharable, col1: DNumericable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cell_to_vertexes(col0:BIGINT) -> BIGINT[]*/
+  h3_cell_to_vertexes(col0: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_cell_to_vertexes(col0:VARCHAR) -> VARCHAR[]*/
+  h3_cell_to_vertexes(col0: DVarcharable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_cells_to_directed_edge(col0:BIGINT, col1:BIGINT) -> BIGINT*/
+  h3_cells_to_directed_edge(col0: DNumericable, col1: DNumericable): DNum;
+  /**                                                            @default: h3_cells_to_directed_edge(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
+  h3_cells_to_directed_edge(col0: DVarcharable, col1: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_child_pos_to_cell(col0:BIGINT, col1:BIGINT | UBIGINT, col2:INTEGER) -> UBIGINT*/
+  h3_child_pos_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
+  /**                                                            @default: h3_child_pos_to_cell(col0:BIGINT, col1:VARCHAR, col2:INTEGER) -> VARCHAR*/
+  h3_child_pos_to_cell(col0: DNumericable, col1: DVarcharable, col2: DNumericable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_directed_edge_to_boundary_wkt(col0:BIGINT) -> VARCHAR*/
+  h3_directed_edge_to_boundary_wkt(col0: DNumericable): DStr;
+  /**                                                            @default: h3_directed_edge_to_boundary_wkt(col0:VARCHAR) -> VARCHAR*/
+  h3_directed_edge_to_boundary_wkt(col0: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_directed_edge_to_cells(col0:BIGINT) -> UBIGINT[]*/
+  h3_directed_edge_to_cells(col0: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_directed_edge_to_cells(col0:VARCHAR) -> VARCHAR[]*/
+  h3_directed_edge_to_cells(col0: DVarcharable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_edge_length(col0:BIGINT, col1:VARCHAR) -> DOUBLE*/
+  h3_edge_length(col0: DNumericable, col1: DVarcharable): DNum;
+  /**                                                            @default: h3_edge_length(col0:VARCHAR, col1:VARCHAR) -> DOUBLE*/
+  h3_edge_length(col0: DVarcharable, col1: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_base_cell_number(col0:BIGINT) -> INTEGER*/
+  h3_get_base_cell_number(col0: DNumericable): DNum;
+  /**                                                            @default: h3_get_base_cell_number(col0:VARCHAR) -> INTEGER*/
+  h3_get_base_cell_number(col0: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_directed_edge_destination(col0:BIGINT) -> BIGINT*/
+  h3_get_directed_edge_destination(col0: DNumericable): DNum;
+  /**                                                            @default: h3_get_directed_edge_destination(col0:VARCHAR) -> VARCHAR*/
+  h3_get_directed_edge_destination(col0: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_directed_edge_origin(col0:BIGINT) -> BIGINT*/
+  h3_get_directed_edge_origin(col0: DNumericable): DNum;
+  /**                                                            @default: h3_get_directed_edge_origin(col0:VARCHAR) -> VARCHAR*/
+  h3_get_directed_edge_origin(col0: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_icosahedron_faces(col0:BIGINT) -> INTEGER[]*/
+  h3_get_icosahedron_faces(col0: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_get_icosahedron_faces(col0:VARCHAR) -> INTEGER[]*/
+  h3_get_icosahedron_faces(col0: DVarcharable): DArrayField<DNumericField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_get_resolution(col0:BIGINT) -> INTEGER*/
+  h3_get_resolution(col0: DNumericable): DNum;
+  /**                                                            @default: h3_get_resolution(col0:VARCHAR) -> INTEGER*/
+  h3_get_resolution(col0: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_grid_disk(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
+  h3_grid_disk(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_grid_disk(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_grid_disk(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_grid_disk_distances(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
+  h3_grid_disk_distances(col0: DNumericable, col1: DNumericable): DArrayField;
+  /**                                                            @default: h3_grid_disk_distances(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
+  h3_grid_disk_distances(col0: DVarcharable, col1: DNumericable): DArrayField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_grid_disk_distances_safe(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
+  h3_grid_disk_distances_safe(col0: DNumericable, col1: DNumericable): DArrayField;
+  /**                                                            @default: h3_grid_disk_distances_safe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
+  h3_grid_disk_distances_safe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_grid_disk_distances_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
+  h3_grid_disk_distances_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
+  /**                                                            @default: h3_grid_disk_distances_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
+  h3_grid_disk_distances_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_grid_disk_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
+  h3_grid_disk_unsafe(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_grid_disk_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_grid_disk_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_grid_distance(col0:BIGINT, col1:BIGINT) -> BIGINT*/
+  h3_grid_distance(col0: DNumericable, col1: DNumericable): DNum;
+  /**                                                            @default: h3_grid_distance(col0:VARCHAR, col1:VARCHAR) -> BIGINT*/
+  h3_grid_distance(col0: DVarcharable, col1: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_grid_path_cells(col0:BIGINT, col1:BIGINT) -> BIGINT[]*/
+  h3_grid_path_cells(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_grid_path_cells(col0:VARCHAR, col1:VARCHAR) -> VARCHAR[]*/
+  h3_grid_path_cells(col0: DVarcharable, col1: DVarcharable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_grid_ring_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
+  h3_grid_ring_unsafe(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_grid_ring_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_grid_ring_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_is_pentagon(col0:BIGINT) -> BOOLEAN*/
+  h3_is_pentagon(col0: DNumericable): DBoolField;
+  /**                                                            @default: h3_is_pentagon(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_pentagon(col0: DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_is_res_class_iii(col0:BIGINT) -> BOOLEAN*/
+  h3_is_res_class_iii(col0: DNumericable): DBoolField;
+  /**                                                            @default: h3_is_res_class_iii(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_res_class_iii(col0: DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_is_valid_cell(col0:BIGINT) -> BOOLEAN*/
+  h3_is_valid_cell(col0: DNumericable): DBoolField;
+  /**                                                            @default: h3_is_valid_cell(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_valid_cell(col0: DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_is_valid_directed_edge(col0:BIGINT) -> BOOLEAN*/
+  h3_is_valid_directed_edge(col0: DNumericable): DBoolField;
+  /**                                                            @default: h3_is_valid_directed_edge(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_valid_directed_edge(col0: DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_is_valid_vertex(col0:BIGINT) -> BOOLEAN*/
+  h3_is_valid_vertex(col0: DNumericable): DBoolField;
+  /**                                                            @default: h3_is_valid_vertex(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_valid_vertex(col0: DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_local_ij_to_cell(col0:BIGINT, col1:INTEGER, col2:INTEGER) -> BIGINT*/
+  h3_local_ij_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
+  /**                                                            @default: h3_local_ij_to_cell(col0:VARCHAR, col1:INTEGER, col2:INTEGER) -> VARCHAR*/
+  h3_local_ij_to_cell(col0: DVarcharable, col1: DNumericable, col2: DNumericable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_origin_to_directed_edges(col0:BIGINT) -> UBIGINT[]*/
+  h3_origin_to_directed_edges(col0: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_origin_to_directed_edges(col0:VARCHAR) -> VARCHAR[]*/
+  h3_origin_to_directed_edges(col0: DVarcharable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_vertex_to_lat(col0:BIGINT) -> DOUBLE*/
+  h3_vertex_to_lat(col0: DNumericable): DNum;
+  /**                                                            @default: h3_vertex_to_lat(col0:VARCHAR) -> DOUBLE*/
+  h3_vertex_to_lat(col0: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_vertex_to_latlng(col0:BIGINT) -> DOUBLE[]*/
+  h3_vertex_to_latlng(col0: DNumericable): DArrayField<DNumericField>;
+  /**                                                            @default: h3_vertex_to_latlng(col0:VARCHAR) -> DOUBLE[]*/
+  h3_vertex_to_latlng(col0: DVarcharable): DArrayField<DNumericField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: h3_vertex_to_lng(col0:BIGINT) -> DOUBLE*/
+  h3_vertex_to_lng(col0: DNumericable): DNum;
+  /**                                                            @default: h3_vertex_to_lng(col0:VARCHAR) -> DOUBLE*/
+  h3_vertex_to_lng(col0: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts the value to hexadecimal representation.	@example: hex(42)	@default: to_hex(value:BIGINT) -> VARCHAR*/
   to_hex(value: DNumericable): DStr;
   /**                                                            @description: Converts `blob` to `VARCHAR` using hexadecimal encoding.	@example: hex('\xAA\xBB'::BLOB)	@default: to_hex(blob:BLOB) -> VARCHAR*/
@@ -3256,8 +3516,8 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: json_extract_string(col0:VARCHAR, col1:BIGINT | VARCHAR) -> VARCHAR*/
   json_extract_string(col0: DVarcharable, col1: DNumericable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[]*/
-  json_keys(col0: DJsonable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[][]*/
+  json_keys(col0: DJsonable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField;
   /**                                                            @default: json_keys(col0:VARCHAR, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[][]*/
   json_keys(col0: DVarcharable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -3909,4 +4169,4 @@ export interface DSettings {
   binary_as_string: boolean;
 }
 
-export type DExtensions = "autocomplete" | "aws" | "azure" | "core_functions" | "delta" | "encodings" | "excel" | "fts" | "hostfs" | "http_client" | "httpfs" | "httpserver" | "iceberg" | "icu" | "inet" | "jemalloc" | "json" | "motherduck" | "mysql_scanner" | "parquet" | "parser_tools" | "postgres_scanner" | "spatial" | "sqlite_scanner" | "tpcds" | "tpch" | "ui" | "vss" | string | {};
+export type DExtensions = "autocomplete" | "aws" | "azure" | "core_functions" | "delta" | "encodings" | "excel" | "fts" | "h3" | "hostfs" | "http_client" | "httpfs" | "httpserver" | "iceberg" | "icu" | "inet" | "jemalloc" | "json" | "motherduck" | "mysql_scanner" | "parquet" | "parser_tools" | "postgres_scanner" | "spatial" | "sqlite_scanner" | "tpcds" | "tpch" | "ui" | "vss" | string | {};

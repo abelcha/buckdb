@@ -138,12 +138,15 @@ window.MonacoEnvironment = {
     },
 }
 
+const queryParmas = new URLSearchParams(location.search)
+const intlay = parseInt(queryParmas.get('inlay'))
+console.log('-->', queryParmas.has('inlay') && !isNaN(intlay) ? intlay : 0)
 await Promise.all([
     // initCustomThemeRegister(),
     initUserConfiguration(JSON.stringify({
         ...defaultConfiguration,
-        // Enable quick suggestions within strings
-        'breadcrumbs.enabled': false,
+        'editor.inlayHints.enabled': !queryParmas.has('inlay') ? 'offUnlessPressed' : 'onUnlessPressed',
+        'editor.inlayHints.maximumLength': queryParmas.has('inlay') && !isNaN(intlay) ? intlay : 0,
         'editor.quickSuggestions': {
             'other': true,
             'comments': false,

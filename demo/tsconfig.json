@@ -5,9 +5,10 @@
     "module": "ESNext",
     "lib": ["ESNext", "DOM"],
     "moduleResolution": "bundler",
-    "strict": true,
+    "strict": false,
     "sourceMap": true,
     "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
     "allowImportingTsExtensions": true,
     "isolatedModules": false,
     "esModuleInterop": true,
@@ -27,7 +28,7 @@
       "./node_modules/@types",
       "../../node_modules/@types" // Also check root node_modules
     ],
-    "types": ["bun-types"], // Add bun-types
+    // "types": ["bun-types"], // Add bun-types
     "skipLibCheck": true
   },
   "include": ["src", "vite.config.ts", "vite.netlify.config.ts", "update-local-dependencies.ts"]

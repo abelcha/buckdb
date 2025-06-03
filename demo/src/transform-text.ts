@@ -3,6 +3,7 @@ import type { IDisposable } from 'monaco-editor'
 import { EventEmitter, TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
 import contentjson from '@external/.buck/table.json' // Use relative path
 import { generateInterface, serializeDescribe } from '@external/src/interface-generator' // Use relative path
+import { isFile, isFunction } from '@external/src/utils'
 import { BuckStatementParts, extractBuckStatement, extractFromStatementsAST, FromStatementParts } from '../src/extract-from-statements'
 import { writeFile } from './setup.common'
 
@@ -19,13 +20,13 @@ export const BuckFromChain = (opts: { chain: string }) => {
     return new Function(`return (${opts.chain})`)()
 }
 
-function transformCode(parts: { cleanFromChain: string; lineStart: number }[]): string {
+function transformCode(parts: FromStatementParts[]): string {
     const arr = new Array().fill(null)
     let j = 0
     for (const st of parts || []) {
         let res: string[] = []
         try {
-            res = execToSql(st.cleanFromChain).split('\n')
+            res = execToSql((st.chain ? st.chain + '.' : '') + st.cleanFromChain).split('\n')
         } catch (err) {
             res = ['Error: ', String(st), String(err)]
         }
@@ -83,7 +84,7 @@ class Schemes {
     upsertFromStatements = async (statements: FromStatementParts[]) => {
         let toUpdate = false
         for (const statement of statements) {
-            if (!statement.param.match(/(\w{2,13}|\))$/)) {
+            if (!isFile(statement.param) && !isFunction(statement.param)) {
                 continue
             }
             const resource = statement.resource || ''

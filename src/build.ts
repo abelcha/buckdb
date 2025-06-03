@@ -221,9 +221,6 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 toSql: function (props = { pretty: false }) {
                     return toSql(Object.assign(state, props))
                 },
-                toString: function () {
-                    return this.toSql()
-                },
             }
         }
         return {

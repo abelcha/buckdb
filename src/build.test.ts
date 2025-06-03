@@ -340,9 +340,9 @@ describe('create operations', () => {
 })
 
 describe('advanced features - BUG: Template literal handling', () => {
-    it('should handle toString method', () => {
+    it('should handle toSql method', () => {
         const query = MemoryDB.from('duckdb_functions()').select('function_name')
-        const str = query.toString() satisfies string
+        const str = query.toSql() satisfies string
         expectSQL(str, 'FROM duckdb_functions() SELECT function_name')
     })
 

@@ -162,11 +162,6 @@ export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel
 }
 
 
-export interface FrameSelectors<G> {
-    select<U extends DPrimitiveField>(fn: (p: FirstElement<G>, D: t.DMetaField) => U): MS<'frame', {}, {}, [U]>
-
-}
-
 export interface Selectors<P extends MetaModel> {
 
     // A: select()

@@ -115,7 +115,7 @@ export function toSql(state: DState & { trim?: boolean }) {
     }
 
     const components = [
-        state.ctes.length ? `WITH ${state.ctes.map(e => `${e.name} AS (${e.query})`).join(', ')}` : '',
+        state.ctes.length ? `WITH ${state.ctes.map(e => `\n\t${e.name} AS (${e.query})`).join(', ')}\n` : '',
         'FROM',
         serializeDatasource(state.datasources),
         CR + ' SELECT',
@@ -179,7 +179,7 @@ export const serializeCreate = (table: string, items: any[], opts: Record<string
     if (items[0]?.toSql) {
         return createSerialize(table, items[0]?.toSql(), opts)
     }
-    const tempname = 'tmp_' + Math.random() / 1e-17
+    const tempname = 'tmp_' + Math.random() / 1e-18
     return [
         `CREATE TEMP TABLE ${tempname} (j JSON)`,
         `INSERT INTO ${tempname} VALUES ${items.map(it => `('${JSON.stringify(it)}')`).join(',\n')}`,

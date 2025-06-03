@@ -6,9 +6,12 @@ import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
 import { deriveName, isBucket, keyBy, upperFirst, wrap, Σ } from './utils'
 
+export type DAction = 'select' | 'update' | 'upsert' | 'create'
 export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
 export type DSelectee = { field: string; as?: string | number; raw?: string }
 export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST' | 'ASC NULLS LAST' | 'DESC NULLS LAST'
+export type DSetOpType = 'UNION' | 'UNION ALL' | 'UNION BY NAME' | 'UNION ALL BY NAME' | 'EXCEPT' | 'EXCEPT ALL' | 'INTERSECT' | 'INTERSECT ALL'
+export type DSetOp = { type: DSetOpType, value: string }
 export type DOrder = { field: string; direction?: DDirection }
 export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' | 'INNER JOIN' }
 export type DCopyTo = { uri: string; options?: Record<string, any> }
@@ -30,21 +33,10 @@ export const dstate = {
     keyBy: null as string | null,
     countBy: null as string | null,
     agg: null as string | null,
-    action: 'select' as 'select' | 'update' | 'upsert' | 'create',
+    action: 'select' as DAction,
     updated: [] as DSelectee[],
     ctes: [] as DCte[],
-    setops: [] as {
-        type:
-        | 'UNION'
-        | 'UNION ALL'
-        | 'UNION BY NAME'
-        | 'UNION ALL BY NAME'
-        | 'EXCEPT'
-        | 'EXCEPT ALL'
-        | 'INTERSECT'
-        | 'INTERSECT ALL'
-        value: string
-    }[],
+    setops: [] as DSetOp[],
 }
 
 export type DState = typeof dstate

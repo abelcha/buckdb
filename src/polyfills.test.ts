@@ -145,7 +145,7 @@ describe('polyfills', () => {
     })
     it('slice', async () => {
         //  'slice': 'array_slice', // JS is 0-based, DuckDB is 1-based + different handling of negative indices
-        const [resp] = await table.select(e => e.str.array_slice(2 + 1, 7)).execute()
+        const [resp] = await table.select(e => e.str.slice(2 + 1, 7)).execute()
         expect(resp).toEqual(str.slice(2, 7))
     })
     it('split', async () => {

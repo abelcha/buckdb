@@ -1,7 +1,7 @@
 import { expect, test } from 'bun:test'
 import { sortBy } from 'es-toolkit'
 import * as t from '../.buck/types'
-import { MemoryDB } from '../buckdb'
+import { Buck, MemoryDB } from '../buckdb'
 import { builder } from './build'
 import { DBuilderResult, FromResultModel, Withor } from './build.types'
 import { FromPlain } from './deep-map'
@@ -726,20 +726,6 @@ test('d.test.ts', async () => {
 
 })
 
-test('META type checking ', async () => {
-    const res = await Bun.$`tsgo --project tsconfig.typecheck.json|grep -E  'deep-map.ts|test.ts'`.nothrow()
-    if (res.exitCode !== 0) {
-        console.log('Error in command execution:')
-        console.error(res.stderr.toString())
-        return
-    }
-    const errs = res.text();
-    if (errs) {
-        console.log(errs)
-    }
-    expect(errs).toBeEmpty();
-})
-
 test('unshallowing', async () => {
     const xxx = async function xx(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
         const resp = await db.select(e => e).execute() satisfies { name: string; age: number; total: number, people?: never }[]
@@ -748,9 +734,9 @@ test('unshallowing', async () => {
 })
 
 test('with', async () => {
-    async function checkSelect3(db: DBuilderResult<Models, 's3://a1738/akira09.db'>) {
+    async function checkSelect3(db: DBuilderResult<Models, ''>) {
 
-        const i3 = await db.with(
+        const i3 = await Buck().with(
             (accDB) => ({ titi: accDB.from('duckdb_functions()').select('function_name', 'function_oid') }),
             accDB => ({ tata: accDB.from('titi').select(e => ({ xfname: e.function_name })) })
         ).from('tata').select().orderBy(x => x.xfname.len()).limit(1).execute() satisfies { xfname: string }[]
@@ -782,7 +768,9 @@ test('with', async () => {
             }
         ])
     }
-    async function __(www: Withor<Models, 's3://a1738/akira09.db'>) {
+    async function __(www: Withor<Models, 's3://a1738/akira09.db'>, xdb:DBuilderResult<Models, 's3://a1738/akira09.db'>) {
+        const z = xdb.from('Actor', 'qd')
+        
         const r =
             await www.with(
                 accDB => ({ titi: accDB.from('Actor').select('first_name', 'last_name') }),
@@ -820,4 +808,20 @@ test('with', async () => {
     }
 
     await checkSelect3(MemoryDB)
+})
+
+
+test('META type checking ', async () => {
+    const res = await Bun.$`tsgo --project tsconfig.typecheck.json|grep -E  'deep-map.ts|test.ts'`.quiet().nothrow()
+    // if (res.exitCode !== 0) {
+    //     console.log('Error in command execution:', res.stderr.toString(),res.stdout.toString())
+    //     console.error(res.stderr.toString())
+    //     return
+    // }
+    const errs = res.text();
+    console.log(errs)
+    // if (errs) {
+    //     console.log(errs)
+    // }
+    expect(errs).toHaveLength(0)
 })

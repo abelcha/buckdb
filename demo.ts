@@ -1,9 +1,5 @@
 import { Buck, from, MemoryDB } from './buckdb'
 
-// const q = from('duckdb_functions()').select((e, D) => ({
-//         function_name: e.function_oid,
-//         xx: e.function_oid + 1023,
-//     })).exec()
 // .keyBy(e => e.database_name)
 // .groupBy('function_name')
 // .groupBy(e => e.has_side_effects.Ilike('%whatever%'))
@@ -11,12 +7,30 @@ import { Buck, from, MemoryDB } from './buckdb'
 
 // const resp = await q.execute()
 
-const BS = Buck('s3://a1738')
+// const BS = Buck('s3://a1738/')
 
 // const resp = await BS.from('sqlite_master').exec()
+// await Buck('s3://a1738/').from('files/macif.parquet').exec()
 
 
-const respx = await BS.from('files/macif.parquet').exec()
+// Buck('s3://a1738/akira09.db').from('Category')
+
+// Buck('s3://a1738/stations.duckdb').from('Stations')
+
+// Buck('https://blobs.duckdb.org/databases/stations.duckdb').from('Stations')
+
+
+from ('duckdb_functions()')
+const r =
+    Buck('')
+    // .
+        .from('duckdb_functions()')
+        .where(e => e)
+
+
+// from('duckdb_functions()').where(e => e)
+// Buck('/me/dev/buckdb').from('chinok.duckdb')
+
 
 
 // //### 123 test abel
@@ -54,25 +68,25 @@ const respx = await BS.from('files/macif.parquet').exec()
 //         description: description ? description : 'xxx',
 //     })).execute(); // Exclude a field
 
-await from('duckdb_settings()', 's')
-    .select((s, D) => ({
-        setting_name: s.name,
-        description_upper: D.upper(s.description),
-        value_type: s.input_type,
-        match: s.name.regexp_extract_all(/\d+/),
-        config_info: D.Varchar(`Setting: ${s.name} - Type: ${s.input_type}`), // Template literal example
-        example_struct: { name: s.name, value: D.Integer(123), nested: { flag: D.Boolean(true) } }, // Struct/Object
-        example_list: D.List([s.name, s.description, D.Varchar('literal')]), // List/Array
-        casted_name: s.name.as('Varchar', 50), // Simple Cast
-        // complex_cast: D.cast(s.name, 'Varchar', 50), // Complex Cast
-        conditional_desc: s.description !== null ? s.description : D.Varchar('No description'), // Ternary/CASE WHEN
-        numeric_example: D.abs(-5).add(D.sqrt(16)).multiply(2), // Arithmetic and Functions
-        regex_example: D.regexp_replace(s.name, /_/, '-'), // Regex function
-        json_literal: D.Json({ key: 'value', num: 1 }), // JSON Literal
-        date_literal: D.Date('2024-01-01'), // Date Literal
-    }))
-    // .where(s => s.input_type.Like('%INTEGER%') || s.input_type.Like('%FLOAT%'))
-    .execute()
+// await from('duckdb_settings()', 's')
+//     .select((s, D) => ({
+//         setting_name: s.name,
+//         description_upper: D.upper(s.description),
+//         value_type: s.input_type,
+//         match: s.name.regexp_extract_all(/\d+/),
+//         config_info: D.Varchar(`Setting: ${s.name} - Type: ${s.input_type}`), // Template literal example
+//         example_struct: { name: s.name, value: D.Integer(123), nested: { flag: D.Boolean(true) } }, // Struct/Object
+//         example_list: D.List([s.name, s.description, D.Varchar('literal')]), // List/Array
+//         casted_name: s.name.as('Varchar', 50), // Simple Cast
+//         // complex_cast: D.cast(s.name, 'Varchar', 50), // Complex Cast
+//         conditional_desc: s.description !== null ? s.description : D.Varchar('No description'), // Ternary/CASE WHEN
+//         numeric_example: D.abs(-5).add(D.sqrt(16)).multiply(2), // Arithmetic and Functions
+//         regex_example: D.regexp_replace(s.name, /_/, '-'), // Regex function
+//         json_literal: D.Json({ key: 'value', num: 1 }), // JSON Literal
+//         date_literal: D.Date('2024-01-01'), // Date Literal
+//     }))
+//     // .where(s => s.input_type.Like('%INTEGER%') || s.input_type.Like('%FLOAT%'))
+//     .execute()
 
 // // const resp = await from(read_json('s3://a1738/jj.jsonl', {auto_detect: true}))
 // // .select(e =>  [e.cc])

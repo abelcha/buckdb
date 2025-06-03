@@ -1,12 +1,23 @@
 import { Buck, from, MemoryDB } from "./buckdb";
 import { copy } from "./src/copy";
 
-const BS = Buck('s3://a1738')
+const BS = Buck('s3://a1738/')
+
+BS.from('Stations')
 
 
 const Akira = Buck('s3://a1738/akira09.db')
 
-Akira.from('Staff').select(e => e.first_name)
+
+const respxx = await from('duckdb_functions()')
+    .select(e => `__${e.function_name}_${e.return_type}__`)
+    .where(e => !!e.function_name && !!e.return_type)
+    .dump()
+    .execute()
+
+const rx
+    = await Akira.from('Customer').select(e => e.Customer.active).execute()
+
 
 
 // SELECT CONCAT(customer.last_name, ', ', customer.first_name) AS customer,
@@ -20,8 +31,9 @@ Akira.from('Staff').select(e => e.first_name)
 // ORDER BY title
 // LIMIT 5;
 from('duckdb_functions()')
-.select(e => `__${e.comment}_`)
-.execute()
+    .select(e => `__${e.function_name}_${e.return_type}__`)
+    .where(e => !!e.function_name && !!e.return_type)
+    .execute()
 
 const r = Akira.from('Rental')
     .innerJoin('Customer', 'customer_id')
@@ -29,12 +41,13 @@ const r = Akira.from('Rental')
     .innerJoin('Film', e => e.Rental.customer_id === e.Customer.customer_id)
     .select(e => `${e.Customer.last_name}, ${e.Customer.first_name}`)
     .where(e => (
-        e.Rental.rental_date === null 
+        e.Rental.rental_date === null
         // && e.rental_date !== e.Film.rental_duration
     ))
     .orderBy('title')
     .limit(5)
-    // .distinctOn('Address.city_id')
+    .exec()
+// .distinctOn('Address.city_id')
 
 
 
@@ -87,7 +100,7 @@ const z2 =
     await BS.from('geo/cities.parquet').select((e, D) => ({
         roundpop: `${D.round(e.population / 1000, 2)}K - ${e.ascii_name}`,
     }))
-        .where(c => c.population > 1000_000 && c.timezone.regexp_matches(/^Europe/))
+        .where(c => c.population > 1000_000 && c.timezone.match(/^Europe/m))
         .orderBy('population', 'DESC')
         .exec()
 

@@ -114,7 +114,7 @@ registerCustomView({
                     const key = keys ? keys[i] : String(i) // Use object key or index as string for field
                     const schemaEntry = schema?.[i] // Get schema entry by index
                     const headerName = schemaEntry?.column_name ?? (keys ? key : `Column ${i + 1}`) // Use schema name or fallback
-                    const columnType = schemaEntry?.column_type ?? '??' // Use schema type or fallback
+                    const columnType = schemaEntry?.column_type ?? '_' // Use schema type or fallback
 
                     columnDefs.push({
                         field: key, // Use key (string) for field access

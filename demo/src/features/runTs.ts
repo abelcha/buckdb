@@ -77,9 +77,7 @@ export async function runActiveTypeScriptFile(
         try {
             // console.log({ dst }) // Removed log
             const evl = new Function(`return ${dst}`)
-            // console.log('@@@@@@', evl.toString()) // Removed log
             window.globalData = await evl()
-            console.log('GLOBAL DATA', window.globalData)
             // console.log({ dst, globalData: window.globalData, SCHEMAAAA: window.globalData?.schema }) // Removed log (also fixes TS error)
             // console.log('GLOBAL DATA:') // Removed log
             // console.log(window.globalData) // Removed log

@@ -1,4 +1,3 @@
-import * as t from '../.buck/types'
 
 export const DNumeric=  {
   comptype: 'number',
@@ -99,7 +98,7 @@ export const mapTypes = (type: string) => {
   if (t.match(/^JSON/)) return 'DJson'
   if (t.match(/^BOOLEAN/)) return 'DBool'
   if (t.match(/^MAP/)) return 'DMap'
-  if (t.match(/^BLOB/)) return 'DBlob'
+  // if (t.match(/^BLOB/)) return 'DBlob'
   if (t.match(/^(DATE|TIME)[\w\s]*/)) return 'DDate'
   return 'DAny'
 }

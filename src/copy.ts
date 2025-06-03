@@ -1,7 +1,6 @@
 import * as t from '../.buck/types'
-import { from } from '../buckdb'
-import { DuckdbCon } from './bindings'
-import { GField, KeyPicker, MetaModel, MS, NestedKeyOf, SelectModel, VTypes } from './build.types'
+import { DuckdbCon } from '../buckdb.core'
+import { GField, MetaModel, MS, NestedKeyOf, SelectModel, VTypes } from './build.types'
 import { formalize } from './formalise'
 
 type FileFormats = 'parquet' | 'csv' | 'json' | 'arrow' | 'jsonl'
@@ -105,7 +104,7 @@ export interface CopyToInterface<A extends MetaModel, S extends SelectModel = {}
 
 
 declare function _copy<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField>(
-    source: MS<V, A, S, SV, SS> | string
+    source: MS<V, A, S, SV> | string
 ): CopyToInterface<A, S>; // Changed to use the renamed interface
 
 function xcopy(

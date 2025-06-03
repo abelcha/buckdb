@@ -116,7 +116,7 @@ type MSF<A extends MetaModel, S extends SelectModel = {}, SV = []> = MS<'frame',
 
 export type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
 
-export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = MetaModel, SV = []> extends Selectors<S> {
+export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = ShallowModel<A>, SV = []> extends Selectors<S> {
     execute: FnMap<A, S, SV>[V]
     exec: this['execute']
     show: this['execute']
@@ -137,7 +137,7 @@ export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel
 
     maxBy: this['minBy']
 
-    where(fn: (p: ToComp<Merge<A, S>>, D: t.DMetaField) => any): MS<V, A, S, SV>
+    where(fn: (p: A & S, D: t.DMetaField) => any): MS<V, A, S, SV>
     where(rawStr: string): MS<V, A, S, SV>
 
     having: this['where']
@@ -228,12 +228,12 @@ export interface UpdateResult<Mods extends Models, T extends keyof Mods, C exten
 }
 
 type ExtractSelectModel<T> = T extends MS<any, any, infer S, any> ? S : T extends Record<string, MS<any, any, any, any>> ? { [K in keyof T]: ExtractSelectModel<T[K]> } : SelectModel
-type WithResult<Mods extends Models, T extends keyof Mods, Schema> = DBuilderResult<Mods & Record<T, Schema>, T>
-type WithAccDB<Mods extends Models, T extends keyof Mods, Schema> = DBuilderResult<Mods & Record<T, Schema>, T>
+type WithResult<Mods extends Models, T extends keyof Mods & string, Schema> = DBuilderResult<Mods & Record<T, Schema>, T>
+type WithAccDB<Mods extends Models, T extends keyof Mods & string, Schema> = DBuilderResult<Mods & Record<T, Schema>, T>
 type MSRecord = Record<string, MS<any, any, any>>
 
 // type InitialMaterializedResult<C extends StrictCollection[]> = MS<'records', ModelFromCollectionList<C>>
-export interface Withor<Mods extends Models, T extends keyof Mods> {
+export interface Withor<Mods extends Models, T extends keyof Mods & string> {
     with<O extends MSRecord>(fn: (accDB: DBuilderResult<Mods, T>) => O): WithResult<Mods, T, ExtractSelectModel<O>>
 
     with<O1 extends MSRecord, O2 extends MSRecord>(
@@ -266,7 +266,7 @@ export interface Withor<Mods extends Models, T extends keyof Mods> {
 
 
 // Define the return type for DBuilder
-export interface DBuilderResult<Mods extends Models, T extends keyof Mods> extends Withor<Mods, T> {
+export interface DBuilderResult<Mods extends Models, T extends keyof Mods & string> extends Withor<Mods, T> {
     ddb: DuckdbCon
     settings(s: Partial<t.DSettings>): DBuilderResult<Mods, T>
     fetchTables: () => Promise<[string, any][]>
@@ -284,12 +284,12 @@ export interface DBuilderResult<Mods extends Models, T extends keyof Mods> exten
         & FromResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>]>
         & MS<'records', ModelFromCollectionList<Mods, DefaultizeCollection<{ catalog: T; uri: K1; alias: A }[]>>>
 
-    from<K1 extends Simplify<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string>>>(table: K1):
+    from<K1 extends Extract<keyof Mods[''], string> | Extract<keyof Mods[T], string>>(table: K1):
         & FromResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }>]>
-        & MS<'records', ModelFromCollectionList<Mods, DefaultizeCollection<{ catalog: T; uri: K1; alias: DeriveName<K1> }[]>>>
+        & MS<'records', ModelFromCollectionList<Models, [{ catalog: T; uri: K1; alias: DeriveName<K1> }]>>
 
 
-    from<K extends keyof Mods['error']>(x: K): Mods['error'][K]
+    // from<K extends keyof Mods['error']>(x: K): Mods['error'][K]
 
     from<TT extends keyof Mods, SS extends StrictCollection[]>(obj: FromResult<Mods, TT, SS>): FromResult<Mods, TT, SS>
     from<V1 extends VTypes, A1 extends MetaModel, S1 extends SelectModel = {}>(obj: MS<V1, A1, S1>): MS<V1, A1, S1>
@@ -301,6 +301,12 @@ export interface DBuilderResult<Mods extends Models, T extends keyof Mods> exten
 }
 
 
+declare function Buck<T extends keyof Models>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>
+// const r =
+//     Buck('')
+//         .from('xxx')
+//         // .select(e => ({ xxx: e.database_name, yyy: 'e.database_size' }))
+//         .where(e => e.)
 
 // Overload for settings only
 export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>

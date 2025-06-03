@@ -4,33 +4,15 @@ import { DuckdbCon } from '../buckdb.core'
 import { DDirection } from './build'
 import { CopyToInterface } from './copy'
 import { ToPlain } from './deep-map'
+import { Flatten, KeyIntersection, Merge, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge } from './generic-utils'
 import type { DeriveName } from './utils'
 
 type TRessource = keyof Models | (string & {})
-export type AnyString = (string | {})
 
-export type ObjectToValuesTuple<T> = T extends Record<string, any> ? Array<T[keyof T]> : never
-
-export type TypeEq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false
-export type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {}
-export type ToRecord<T> = T extends readonly any[] ? { [K in keyof T as K extends `${number}` ? K : never]: T[K] }
-    : T
-export type ExpectEqual<A, B> = (<G>() => G extends A ? 1 : 2) extends (<G>() => G extends B ? 1 : 2) ? (<G>() => G extends B ? 1 : 2) extends (<G>() => G extends A ? 1 : 2) ? true
-    : { error: 'Types are not equal'; expected: B; got: A }
-    : { error: 'Types are not equal'; expected: B; got: A }
-
-// Helper to force TypeScript to evaluate and reveal the error
-export type Assert<T extends true> = T
-export type NestedKeyOf<ObjectType extends Record<string, any>> = {
-    [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends { [t.sInferred]: infer V } ? `${Key}` : ObjectType[Key] extends object ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}` : `${Key}`
-}[keyof ObjectType & (string | number)]
-
-export type StrictCollection = { catalog: string; uri: string; alias: string }
+type StrictCollection = { catalog: string; uri: string; alias: string }
 // Utility type to merge two types into a frame object
-export type Merge<T, U> = { [K in keyof T | keyof U]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never }
-export type TripleMerge<T, U, V> = { [K in keyof T | keyof U | keyof V]: K extends keyof V ? V[K] : K extends keyof U ? U[K] : K extends keyof T ? T[K] : never }
 
-export type DefaultizeCollection<C> = // Renamed 'Collection' to 'C' for clarity
+type DefaultizeCollection<C> = // Renamed 'Collection' to 'C' for clarity
     // 1. If all properties (catalog, uri, alias) are present, return as is.
     C extends { catalog: string; uri: string; alias: string } ? C
     // 2. If alias is missing, infer uri as T, merge C with { alias: DeriveName<T> }.
@@ -41,16 +23,15 @@ export type DefaultizeCollection<C> = // Renamed 'Collection' to 'C' for clarity
     // 4. Otherwise, it's not a valid input structure.
     : never
 
-export type ModelForCollection<Mods extends Models, C extends StrictCollection> = C extends { catalog: infer R; uri: infer T } // Use uri T for lookup
+type ModelForCollection<Mods extends Models, C extends StrictCollection> = C extends { catalog: infer R; uri: infer T } // Use uri T for lookup
     ? R extends keyof Mods ? T extends keyof Mods[R] ? Mods[R][T] : T extends keyof Mods[''] ? Mods[''][T] : {} : {}
     : {}
 
 export const v__ = Symbol('alias')
 
-export type ShallowModel<T extends Record<string, any>> = {
+type ShallowModel<T extends Record<string, any>> = {
     [K in keyof T as T[K] extends Record<typeof v__, 1> ? never : K]: T[K]
 }
-
 interface TFlag {
     [v__]: never
 }
@@ -59,42 +40,27 @@ type ModelFromCollectionList<Mods extends Models, C extends StrictCollection[]> 
     ? TripleMerge<{ [K in F['alias']]: TFlag & ModelForCollection<Mods, F> }, ModelForCollection<Mods, F>, ModelFromCollectionList<Mods, Rest>>
     : {} // Base case should be an empty object for merging
 // Recursive type to merge all models from collections, using alias as key
-export type ShallowModelFromCollectionList<Mods extends Models, C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? ModelForCollection<Mods, F> & ModelFromCollectionList<Mods, Rest>
+type ShallowModelFromCollectionList<Mods extends Models, C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? ModelForCollection<Mods, F> & ModelFromCollectionList<Mods, Rest>
     : {} // Base case should be an empty object for merging
 
-export type DRawField = t.DAnyField
+type DRawField = t.DAnyField
 
-export type DPrimitiveField = t.DVarcharField | t.DNumericField | t.DDateField | t.DBoolField
-export type DNestedField = t.DArrayField | t.DStructField | t.DJsonField | t.DMapField
+type DPrimitiveField = t.DVarcharField | t.DNumericField | t.DDateField | t.DBoolField
+type DNestedField = t.DArrayField | t.DStructField | t.DJsonField | t.DMapField
 export type GField = DPrimitiveField | DNestedField | DRawField | t.DArrayField<DNestedField | DPrimitiveField>
 
-export interface GenericRecursive<T> {
+interface GenericRecursive<T> {
     [key: string]: T | GenericRecursive<T> | string | number | boolean | unknown
 }
 export type SelectModel = GenericRecursive<GField>
 export type MetaModel = GenericRecursive<GField>
-export type Strish = string | {}
-export type Primitive = null | undefined | string | number | boolean | symbol | bigint
-export type IsPrimitive<T> = [T] extends [Primitive] ? true : false
 
 type PrimitiveField<T> = T extends number ? t.DNumericField
     : T extends string ? t.DVarcharField
     : T extends boolean ? t.DBoolField
     : t.DAnyField
 
-type KeyIntersection<A, B> = {
-    [K in keyof A & keyof B]: K
-}[keyof A & keyof B]
-
-
-type ToComp<x> = x
-
 export type VTypes = 'frame' | 'records' | 'values' | 'grouped' | 'keyed' | 'row'
-
-type PArray<X> = Promise<X[]>
-type PRecord<X> = Promise<Record<string, X>>
-
-type FirstElement<T> = T extends [infer F, ...any[]] ? F : never
 
 // ====================================================================================================
 // ====================================================================================================
@@ -114,7 +80,7 @@ type MSV<A extends MetaModel, S extends SelectModel = {}, SV = []> = MS<'values'
 type MSF<A extends MetaModel, S extends SelectModel = {}, SV = []> = MS<'frame', A, S, SV>
 
 
-export type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
+type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
 
 export interface MS<V extends VTypes, A extends MetaModel, S extends SelectModel = ShallowModel<A>, SV = []> extends Selectors<S> {
     execute: FnMap<A, S, SV>[V]
@@ -199,9 +165,9 @@ export interface FromResult<Mods extends Models, Ressource extends keyof Mods, C
         : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
     join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>>(table: K, using: KeyIntersection<P, ModelForCollection<Mods, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>>>)
         : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
-    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>, A extends string>(table: K, alias: A, fn: (p: ToComp<ModelFromCollectionList<Mods, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>>, D: t.DMetaField) => any)
+    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>, A extends string>(table: K, alias: A, fn: (p: ModelFromCollectionList<Mods, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>, D: t.DMetaField) => any)
         : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>
-    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>>(table: K, fn: (p: ToComp<ModelFromCollectionList<Mods, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>>, D: t.DMetaField) => any)
+    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>>(table: K, fn: (p: ModelFromCollectionList<Mods, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>, D: t.DMetaField) => any)
         : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>
     leftJoin: this['join']
     rightJoin: this['join']
@@ -209,17 +175,15 @@ export interface FromResult<Mods extends Models, Ressource extends keyof Mods, C
     naturalJoin: this['join']
     innerJoin: this['join']
 
-    execute(): ReturnType<Simplify<MSR<P, ShallowModelFromCollectionList<Models, C>>>['execute']>
+    execute(): ReturnType<Flatten<MSR<P, ShallowModelFromCollectionList<Models, C>>>['execute']>
     ensureSchemas(): Promise<void>
 }
 
 
 export interface UpdateResult<Mods extends Models, T extends keyof Mods, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<Mods, C>> {
     set<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): UpdateResult<Mods, T, C, P>
-    where<X>(fn: (p: ToComp<P>, D: t.DMetaField) => X): UpdateResult<Mods, T, C, P>
+    where<X>(fn: (p: P, D: t.DMetaField) => X): UpdateResult<Mods, T, C, P>
     where(...callback: string[]): UpdateResult<Mods, T, C, P>
-    execute(): Promise<any>
-    toSql(opts?: any): string
 }
 
 type ExtractSelectModel<T> = T extends MS<any, any, infer S, any> ? S : T extends Record<string, MS<any, any, any, any>> ? { [K in keyof T]: ExtractSelectModel<T[K]> } : SelectModel
@@ -258,7 +222,13 @@ export interface Withor<Mods extends Models, T extends keyof Mods & string> {
     ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3 & O4 & O5>>
 }
 
-
+interface Resultor<T> {
+    toSql: (opts?: any) => string,
+    execute: () => Promise<T>
+    exec: this['execute']
+    show: this['execute']
+    dump: (opts?: { state?: boolean }) => this
+}
 
 // Define the return type for DBuilder
 export interface DBuilderResult<Mods extends Models, T extends keyof Mods & string> extends Withor<Mods, T> {
@@ -267,15 +237,12 @@ export interface DBuilderResult<Mods extends Models, T extends keyof Mods & stri
     fetchTables: () => Promise<[string, any][]>
 
     create(s: string, opts?: Partial<{ replace: boolean; ifNotExists: boolean }>): {
-        as<U extends Record<string, any>>(...items: U[]): {
-            execute(): Promise<any>
-            toSql(opts?: any): string
-        }
+        as<U extends Record<string, any>>(...items: U[]): Resultor<any>
     }
 
-    update<K1 extends Simplify<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string> & string>>(table: K1): UpdateResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1 }>]>
+    update<K1 extends Flatten<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string> & string>>(table: K1): UpdateResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1 }>]> & Resultor<any>
 
-    from<K1 extends Simplify<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string>>, A extends string>(table: K1, alias: A):
+    from<K1 extends Flatten<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string>>, A extends string>(table: K1, alias: A):
         & FromResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>]>
         & MS<'records', ModelFromCollectionList<Mods, DefaultizeCollection<{ catalog: T; uri: K1; alias: A }[]>>>
 
@@ -299,9 +266,10 @@ export interface DBuilderResult<Mods extends Models, T extends keyof Mods & stri
 declare function Buck<T extends keyof Models>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>
 // const r =
 //     Buck('')
-//         .from('xxx')
+//         .from('data/str-test.jsonl')
 //         // .select(e => ({ xxx: e.database_name, yyy: 'e.database_size' }))
-//         .where(e => e.)
+//         .where(e => e.str === 123)
+
 
 // Overload for settings only
 export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>

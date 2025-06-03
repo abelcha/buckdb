@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'bun:test'
-import { formatOptions } from './formalise'
+import { formatOptions, formatSource } from './formalise'
+
+it('formatSource', () => {
+    const fm = (catalog: string, uri: string) => formatSource({ uri, catalog })
+    expect(fm('', 'tt.json')).toBe(`'tt.json'`)
+    expect(fm('s3://lol/toto', 'tt.json')).toBe(`'s3://lol/toto/tt.json'`)
+    expect(fm('s3://lol/toto//', 'tt.json')).toBe(`'s3://lol/toto/tt.json'`)
+    expect(fm('file:///lol/toto//', 'tt.parquet')).toBe(`'file:///lol/toto/tt.parquet'`)
+    expect(fm('', 'repo_pairs')).toBe(`repo_pairs`)
+    expect(fm('file:///lol/toto//', 'repo_pairs')).toBe(`repo_pairs`)
+})
+
 
 describe('formatOptions', () => {
     it('should handle auto field_ids', () => {

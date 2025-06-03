@@ -4,7 +4,7 @@ import { DBuilder } from './build.types'
 import { dump, formalize, serializeCreate, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
-import { deriveName, isBucket, keyBy, upperFirst, wrap, Σ } from './utils'
+import { deriveName, isBucket, keyBy, last, upperFirst, wrap, Σ } from './utils'
 
 export type DAction = 'select' | 'update' | 'upsert' | 'create'
 export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
@@ -77,7 +77,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     }
                     const using = typeof fn === 'string' ? fn : undefined
                     const joinOn = typeof fn === 'function' ? parse(fn) : undefined
-                    return fromRes(deriveState(state, { datasources: [{ catalog: '', uri: table, alias, join: joinType, joinOn, using }] }))
+                    return fromRes(deriveState(state, { datasources: [{ catalog: handle, uri: table, alias, join: joinType, joinOn, using }] }))
                 }
             const _where = (operator = 'AND') =>
                 function (...conditions: Parseable[]) {
@@ -228,7 +228,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
             },
             with: function (...arr: (() => any)[]) {
                 // @ts-ignore
-                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query: v?.toSql({ trim: true }) }))
+                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query: v?.toSql({ false: true, minTrim: 50 }) }))
                 return {
                     from: (table: string, alias?: string) =>
                         fromRes({ ...dstate, ctes, action: 'select', datasources: [{ catalog: handle, uri: table, alias: alias }] }),

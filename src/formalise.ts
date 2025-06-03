@@ -1,11 +1,12 @@
-import { DCondition, DDatasource, DOrder, DSelectee, DState } from './build'
+import { DCondition, DCte, DDatasource, DOrder, DSelectee, DState } from './build'
 import { copy } from './copy'
 import { parse } from './parser'
-import { isBucket, wrap, isFile } from './utils'
+import { isBucket, wrap, isFile, isFunction } from './utils'
+import { highlightSql } from './highlighter'
 
 export const formatSource = ({ catalog = '', uri = '' }) => {
-    if (!uri.trim().endsWith(')')) {
-        if (isBucket(catalog) && uri.match(/^\w/) && !uri.includes('://')) {
+    if (!isFunction(uri)) {
+        if (isBucket(catalog) && uri.match(/[^\w]/) && !uri.includes('://')) {
             uri = catalog.replace(/\/*$/, '') + '/' + uri
         }
         if (isFile(uri)) {
@@ -99,7 +100,18 @@ const serializeUpdated = (updated: DSelectee[]) => {
 function serializeSetops(setops: { type: string; value: string }[]) {
     return setops.map(e => `\n${e.type}\n${e.value}`).join('')
 }
-export function toSql(state: DState & { trim?: boolean }) {
+
+function serializeCte(e: DCte) {
+    const asq = e.query?.length > 50 ? `\n${e.query}\n` : e.query
+    return `\n\t${e.name} AS (${asq})`
+}
+function serializeCtes(ctes: DCte[]) {
+    if (!ctes.length)
+        return ''
+    return `WITH ${ctes.map(serializeCte).join(', ')}\n`
+
+}
+export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
     const CR = state.trim ? '' : '\n'
     if (state.action === 'update') {
         // return `UPDATE ${state.table} SET ${serializeUpdates(state.updated)} WHERE ${serializeConditions('WHERE')(state.conditions)}`
@@ -115,7 +127,7 @@ export function toSql(state: DState & { trim?: boolean }) {
     }
 
     const components = [
-        state.ctes.length ? `WITH ${state.ctes.map(e => `\n\t${e.name} AS (${e.query})`).join(', ')}\n` : '',
+        serializeCtes(state.ctes),
         'FROM',
         serializeDatasource(state.datasources),
         CR + ' SELECT',
@@ -136,18 +148,15 @@ export function toSql(state: DState & { trim?: boolean }) {
     const comps = components.join(' ').trim()
     if (state.copyTo.length) {
         return copy(comps).to(state.copyTo[0].uri, state.copyTo[0].options).toSql(state)
-        // console.log('copytoooooooooo')
-        return state.copyTo.map(e => `COPY (${CR}${comps}${CR}) TO '${e.uri}' ${wrapIfNotEmpty(formatOptions(e.options))}`).join(CR || ' ')
     }
-    if (state.trim) {
+    if (state.trim && (!state.minTrim || comps.length < state.minTrim)) {
         return comps.replace(/(\s|\n)+/g, ' ').trim()
     }
     return comps
-    // }
 }
 
 export const dump = (state: DState, opts?: { state?: boolean }) => {
-    console.log(toSql(state))
+    console.log(highlightSql(toSql(state)))
     if (opts?.state) {
         console.log(state)
     }

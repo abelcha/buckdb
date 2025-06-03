@@ -1,7 +1,21 @@
 import { DCondition, DDatasource, DOrder, DSelectee, DState } from './build'
 import { copy } from './copy'
 import { parse } from './parser'
-import { formatSource, wrap } from './utils'
+import { isBucket, wrap, isFile } from './utils'
+
+export const formatSource = ({ catalog = '', uri = '' }) => {
+    if (!uri.trim().endsWith(')')) {
+        if (isBucket(catalog) && uri.match(/^\w/) && !uri.includes('://')) {
+            uri = catalog.replace(/\/*$/, '') + '/' + uri
+        }
+        if (isFile(uri)) {
+            uri = `'${uri}'`
+        }
+
+    }
+    return uri
+}
+
 
 const serializeTuple = (id: string) => (p: string[]) => {
     if (!p.length) {

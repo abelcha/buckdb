@@ -48,4 +48,9 @@ export const keyBy = <T extends object, K extends keyof T>(array: T[], key: K): 
 }
 
 
-export const isBucket = e => e?.match(/^s3\:\/\/[^\/]+\/?$/)
+export const isBucket = e => e?.match(/^\w+\:\/\//) && !e.match(/\.\w+$/)
+
+export const isFile = (str: string) => str.match(/\.\w{2,16}$/)
+
+export const isDirectory = (str: string) => !str.match(/\.\w{2,16}$/)
+export const isFunction = (str: string) => str.match(/\)\;*$/) 

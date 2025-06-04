@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
 import { highlightSql, currentStyles } from '../src/highlighter'
-import { timecolor } from '../timecolor'
+import { timecolor } from '../src/timecolor'
 
 const pkg = JSON.parse(
     fs.readFileSync(new URL('./package.json', import.meta.url).pathname).toString(),

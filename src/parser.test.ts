@@ -453,3 +453,23 @@ test('split+len', () => {
   expect(parse(e => e.arr.length)).toEqual(`arr.len()`)
   // expect(parse(e => e.str.split(':').length)).toEqual(`str.string_split(':').len()`)
 })
+
+test.only('raw', () => {
+  // expect(parseObject((e, D) => ({ gg: D.Raw('lol 123') }))).toEqual([['gg', `lol 123`]])
+  expect(parseObject((e, D) => ({ uuu: D.Raw(`(SELECT string_agg(store_name, ', ') FROM (`) }) )).toEqual([['gg', `lol 123`]])
+})
+
+test('comma', () => {
+  expect(parse((e) => e.f1.function_name.Like('%_%'))).toEqual(`f1.function_name LIKE '%_%'`)
+  expect(parse(({ e }) => e._latitude.as('Varchar') + ', ' + e._longitude.as('Varchar'))).toEqual(`(e._latitude::Varchar || ', ' || e._longitude::Varchar)`)
+  expect(parse((e) => e.ff._latitude.as('Varchar'))).toEqual(`ff._latitude::Varchar`)
+
+
+})
+
+test('count filter', () => {
+  expect(parse((e, D) => D.count().filter(e.function_name.len() > 10)))
+    .toEqual(`count() FILTER (function_name.len() > 10)`)
+  expect(parse((e, D) => D.count(e.total).filter(e.function_name.len() > 10)))
+    .toEqual(`count(total) FILTER (function_name.len() > 10)`)
+})

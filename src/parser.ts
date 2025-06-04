@@ -1,6 +1,6 @@
 import { DMetaField } from '../.buck/types'
 import jsep, { ArrayExpression, ArrowFunctionExpression, BinaryExpression, CallExpression, ConditionalExpression, Expression, Identifier, Literal, MemberExpression, ObjectExpression, Property, SequenceExpression, SpreadElement, TemplateElement, TemplateLiteral, UnaryExpression } from './jsep'
-import { LitteralTypesMap, PatternMatchers, PolyfillMapping, UnmethodMapping } from './typedef'
+import { AggregateFunctions, LitteralTypesMap, PatternMatchers, PolyfillMapping, UnmethodMapping } from './typedef'
 import { wrap, Σ } from './utils'
 
 const RegexpFuncsWthOptions = new Map([
@@ -152,11 +152,16 @@ type Topts = {
   closureVars?: string[]
 }
 
+
+
 // type oProps = { subMemberExpression?: boolean, isProperty?: boolean }
 export function transformDuckdb(node: Expression, params = new Map<string, { depth: number; position: number }>(), context: Record<string, any> = {}) {
   function transformTree(node: Expression, opts: Topts = { isFuncArg: false }): any {
     const transformNode = (n: any, o = {}) => transformTree(n, Object.assign({}, opts, o))
     // const transform = (node: any, ..._: any[]) => transformNode(node)
+    const isGlobalMethod = (node: CallExpression) => {
+      return node.callee.type === 'MemberExpression' && node.callee.object.type === 'Identifier' && params.get(node.callee.object.name)?.position === 1
+    }
     const MapFunc = {
       ObjectExpression(node: ObjectExpression) {
         return `{${node.properties.map(transformNode).join(', ')}}`
@@ -259,7 +264,11 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         const secValue = (node.arguments[1] as Literal)?.value
 
         if (UnmethodMapping[lastCallee]) {
+
           const gargs = node.arguments.map(transformNode)
+          if (lastCallee === 'filter' && AggregateFunctions.find(e => calleeArr[0].startsWith(e))) {
+            return `${calleeArr.slice(0, -1)} FILTER (${gargs.join(', ')})`
+          }
           if (node.arguments?.[0]?.type === 'ArrowFunctionExpression') {
             return UnmethodMapping[lastCallee](`${calleeArr.slice(0, -1).join('.')}, ${gargs.join(', ')}`);
           }
@@ -273,18 +282,23 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
           if (lastCallee in Σ('SimilarTo', 'regexp_matches') && firstValue instanceof RegExp && firstValue.flags) {
             return `regexp_matches(${calleeArr.slice(0, -1)}, ${args[0]}, '${firstValue?.flags}')`
           }
-          return `${calleeArr.slice(0, -1)} ${keyword} ${args.join(joinWith)}`
+
+          return `${joinMembers(calleeArr.slice(0, -1))} ${keyword} ${args.join(joinWith)}`
         }
         if (lastCallee === 'as') {
           const gargs = node.arguments.slice(1).map(transformNode)
-          return `${calleeArr.slice(0, -1)}::${firstValue}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
+          return `${joinMembers(calleeArr.slice(0, -1))}::${firstValue}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
         }
 
         if (typeof calleeArr[0] === 'string' && calleeArr[0].toLowerCase() === 'cast' && node.arguments.length >= 2) {
           const supp = args.length > 2 ? `(${node.arguments.map((e: any) => e.value).slice(2).join(', ')})` : ''
           return `CAST(${args[0]} AS ${secValue}${supp})`
         }
-        if (LitteralTypesMap.has(lastCallee) && node.callee.type === 'MemberExpression' && node.callee.object.type === 'Identifier' && params.get(node.callee.object.name)?.position === 1) {
+        if (isGlobalMethod(node) && lastCallee === 'Raw') {
+          // @ts-ignore
+          return transformNode(node.arguments[0], { isFuncArg: true }).slice(1, -1)
+        }
+        if (LitteralTypesMap.has(lastCallee) && isGlobalMethod(node)) {
           const toType = LitteralTypesMap.get(lastCallee)
           if (toType === '') {
             return `(${args[0]})`
@@ -421,6 +435,7 @@ export const extractParamsContext = (ast: Expression) => {
 }
 
 type Expr<T> = (d: T, z: DMetaField) => any
+
 
 export function parse<T extends Record<string, any>>(expr: Expr<T> | string | Function, context = {}) {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()

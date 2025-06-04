@@ -43,6 +43,17 @@ export async function writeFile(
         { create: true, overwrite: true, unlock: false, atomic: false }, // Added missing options
     )
 }
+const tsconf = JSON.stringify({
+    compilerOptions: {
+        strict: true,
+        "noImplicitAny": false,
+        'resolveJsonModule': true,
+        'allowImportingTsExtensions': true,
+        'target': 'ESNext',
+        'module': 'ESNext',
+        'moduleResolution': 'bundler',
+    },
+})
 
 const parser = (await import('@external/src/parser.ts?raw')).default
 const jsep = (await import('@external/src/jsep.ts?raw')).default
@@ -63,27 +74,42 @@ const table3 = (await import('@external/.buck/table3.ts?raw')).default
 const tablejson = (await import('@external/.buck/table.json?raw')).default
 const buildTypes = (await import('@external/src/build.types.ts?raw')).default
 const build = (await import('@external/src/build.ts?raw')).default
+const genericUtils = (await import('@external/src/generic-utils.ts?raw')).default
 const buckdb = (await import('@external/buckdb.remote.ts?raw')).default
-const isTutorial = new URLSearchParams(location.search).has('tutorial')
-const demo = !isTutorial
-    ? (await import('@external/demo.ts?raw')).default
-    : (await import('@external/api-tutorial.ts?raw')).default
-const tsconf = JSON.stringify({
-    compilerOptions: {
-        strict: true,
-        "noImplicitAny": false,
-        'resolveJsonModule': true,
-        'allowImportingTsExtensions': true,
-        'target': 'ESNext',
-        'module': 'ESNext',
-        'moduleResolution': 'bundler',
-    },
-})
+
+// const apiTutorial = (await import('@external/examples/api-tutorial?raw')).default
+// const draft = (await import('@external/examples/draft.ts?raw')).default
+
+
+
+// const isTutorial = new URLSearchParams(location.search).has('tutorial')
+
+// const demo = !isTutorial
+//     ? (await import('@external/demo.ts?raw')).default
+//     : (await import('@external/api-tutorial.ts?raw')).default
+
+const examples = await Promise.all(
+    Object.entries(
+        import.meta.glob('@external/examples/*.ts', { as: 'raw' })
+    ).map(async ([path, loader]) => ({
+        path: path.split('/').pop(),
+        content: await loader(),
+    }))
+)
+for (const example of examples) {
+    loadFile(example.content, `examples/${example.path}`)
+}
+
+// loadFile(draft, 'examples/draft.ts')
+// loadFile(apiTutorial, 'examples/api-tutorial.ts')
+
 
 loadFile(tsconf, 'tsconfig.json')
 loadFile(parser, 'src/parser.ts')
 loadFile(jsep, 'src/jsep.ts')
 loadFile(copy, 'src/copy.ts')
+loadFile(genericUtils, 'src/generic-utils.ts')
+
 loadFile(formalise, 'src/formalise.ts')
 loadFile(types, '.buck/types.ts')
 loadFile(tablejson, '.buck/table.json')
@@ -94,7 +120,7 @@ loadFile(deepMap, 'src/deep-map.ts')
 loadFile(build, 'src/build.ts')
 loadFile(core, 'buckdb.core.ts')
 loadFile(buckdb, 'buckdb.ts')
-loadFile(demo, 'demo.ts')
+// loadFile(demo, 'demo.ts')
 loadFile(typedef, 'src/typedef.ts')
 loadFile(serializer, 'src/serializer.ts')
 loadFile(readers, 'src/readers.ts')
@@ -155,6 +181,8 @@ await Promise.all([
     })),
     initUserKeybindings(defaultKeybindings),
 ])
+const file = '/workspace/examples' + (location.pathname || '/demo.ts')
+
 
 export const constructOptions: IWorkbenchConstructionOptions = {
     remoteAuthority,
@@ -176,8 +204,8 @@ export const constructOptions: IWorkbenchConstructionOptions = {
         'files.hotExit': 'off',
     },
     defaultLayout: {
-        editors: useHtmlFileSystemProvider ? undefined : [{ uri: monaco.Uri.file('/workspace/demo.ts') }],
-        layout: useHtmlFileSystemProvider ? undefined : { editors: { orientation: 0, groups: [{ size: 1 }, { size: 1 }] } },
+        editors: [{ uri: monaco.Uri.file(file) }],
+        layout: { editors: { orientation: 0, groups: [{ size: 1 }, { size: 1 }] } },
         views: [{ id: 'custom-view' }],
         force: resetLayout,
     },

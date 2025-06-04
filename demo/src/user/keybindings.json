@@ -427,5 +427,13 @@
     "key": "alt+shift+p",
     "command": "workbench.action.showCommands"
     // "when": ""
+  },
+  {
+    "key": "alt+t",
+    "command": "workbench.action.quickOpen"
+  },
+  {
+    "key": "alt+w",
+    "command": "workbench.action.closeActiveEditor"
   }
 ]

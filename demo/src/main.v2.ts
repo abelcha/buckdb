@@ -105,7 +105,6 @@ void getApi().then(async (vscode: VsCodeApi) => {
     }
 
     commandDisposables.push(VsCodeWindow.onDidChangeActiveTextEditor(async editor => {
-        // Load virtual content for demo.ts when it becomes active
         if (editor) {
             await openTransformedViewAndSync(editor, transformedProvider, vscode)
             await loadVirtualContentIfNeeded(editor, vscode)

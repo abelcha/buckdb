@@ -1,7 +1,7 @@
-import { Buck, from, MemoryDB } from "./buckdb";
-import { copy } from "./src/copy";
+import { Buck, from } from "../buckdb";
+import { copy } from "../src/copy";
 
-const BS = Buck('s3://a1738/')
+const BS = Buck('s3://a1738/stations.duckdb')
 
 BS.from('Stations')
 

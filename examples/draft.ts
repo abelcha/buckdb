@@ -1,4 +1,6 @@
-import { Buck, from, MemoryDB } from './buckdb'
+import { Buck, from, MemoryDB } from '../buckdb'
+
+
 
 const q =
     from('duckdb_functions()').select((e, D) => ({

@@ -79,7 +79,7 @@ const SubHeader = ({ columnType }) => (
 )
 registerCustomView({
     id: 'custom-view',
-    name: 'Custom demo view',
+    name: 'Custom View',
     order: 0,
     renderBody: function(container: HTMLElement): monaco.IDisposable {
         container.style.display = 'block'

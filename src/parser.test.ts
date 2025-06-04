@@ -446,3 +446,10 @@ test('jsep plugin coverage: gobbleGroup error cases', () => {
 test('jsep plugin coverage: gobbleToken error cases', () => {
   expect(() => parse('e => -')).toThrow("missing unaryOp argument")
 })
+
+
+test('split+len', () => {
+  expect(parse(e => e.str.split(':').lol)).toEqual(`str.string_split(':').lol`)
+  expect(parse(e => e.arr.length)).toEqual(`arr.len()`)
+  // expect(parse(e => e.str.split(':').length)).toEqual(`str.string_split(':').len()`)
+})

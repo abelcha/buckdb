@@ -1,10 +1,10 @@
 const searchParams = new URLSearchParams(window.location.search)
 // import testmd from 'src/user/test.md?raw'
 // // console.log({ testmd })
-// const modules = import.meta.glob('@external/*', { as: 'raw', eager: true, });
+// const modules = import.meta.glob('@buckdb/*', { as: 'raw', eager: true, });
 // console.log({ modules })
 // const file = `src/build-v2.ts?raw`
-// const { default: markdownFileContent } = await import(`@external/src/build-v2.ts?raw`)
+// const { default: markdownFileContent } = await import(`@buckdb/src/build-v2.ts?raw`)
 
 // console.log({ markdownFileContent })
 const locale = searchParams.get('locale')

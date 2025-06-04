@@ -2,7 +2,7 @@ import { getService, IWorkbenchLayoutService } from '@codingame/monaco-vscode-ap
 import { Parts } from '@codingame/monaco-vscode-views-service-override'
 import { transform } from 'sucrase'
 import type * as vscode from 'vscode' // Use type import for vscode API
-import { extractFromStatementsAST } from '../../src/extract-from-statements'
+import { extractFromStatementsAST } from '@buckdb/src/extract-from-statements'
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const getPart = (document: vscode.TextDocument, targetLine: number) => {

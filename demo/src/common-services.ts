@@ -27,7 +27,7 @@ import getLocalizationServiceOverride from '@codingame/monaco-vscode-localizatio
 // import getMcpServiceOverride from '@codingame/monaco-vscode-mcp-service-override'
 // import getMultiDiffEditorServiceOverride from '@codingame/monaco-vscode-multi-diff-editor-service-override'
 import getNotebookServiceOverride from '@codingame/monaco-vscode-notebook-service-override'
-// import getOutlineServiceOverride from '@codingame/monaco-vscode-outline-service-override'
+import getOutlineServiceOverride from '@codingame/monaco-vscode-outline-service-override'
 // import getOutputServiceOverride from '@codingame/monaco-vscode-output-service-override'
 import getPerformanceServiceOverride from '@codingame/monaco-vscode-performance-service-override'
 import getPreferencesServiceOverride from '@codingame/monaco-vscode-preferences-service-override'
@@ -67,7 +67,7 @@ export const commonServices: IEditorOverrideServices = {
     // ...getAuthenticationServiceOverride(),
     // ...getLogServiceOverride(),
     ...getExtensionServiceOverride(workerConfig),
-    ...getExtensionGalleryServiceOverride({ webOnly: false }),
+    // ...getExtensionGalleryServiceOverride({ webOnly: false }),
     ...getModelServiceOverride(),
     // ...getDialogsServiceOverride(),
     ...getConfigurationServiceOverride(),
@@ -78,7 +78,7 @@ export const commonServices: IEditorOverrideServices = {
     ...getLanguagesServiceOverride(),
     // ...getDebugServiceOverride(),
     ...getPreferencesServiceOverride(),
-    // ...getOutlineServiceOverride(),
+    ...getOutlineServiceOverride(),
     // ...getTimelineServiceOverride(),
     ...getBannerServiceOverride(),
     ...getStatusBarServiceOverride(),

@@ -5,12 +5,11 @@ import type * as vsCodeApi from 'vscode'
 import { runActiveTypeScriptFile } from './features/runTs'
 import { openTransformedViewAndSync, scrollSyncMap, transformedScheme } from './sync-view'
 import './imports.ts'
-import { CodeLensProvider, Disposable, EventEmitter, OutputChannel, TextDocumentContentProvider, TextEditor, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode' // Added imports, TextDocument, CodeLensProvider
+import { Disposable, EventEmitter, OutputChannel, TextDocumentContentProvider, TextEditor, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode' // Added imports, TextDocument, CodeLensProvider
 import { s3CompletionProvider } from './completion-provider.ts'
-import { extractFromStatementsAST } from './extract-from-statements'
+import { extractFromStatementsAST } from '@buckdb/src/extract-from-statements'
 import { SqlCodeLensProvider } from './features/sqlCodeLensProvider' // Import the new CodeLensProvider
 import { transformedProvider } from './transform-text'
-// import { runActiveTypeScriptFile } from './features/runTs'; // Removed duplicate import
 type VsCodeApi = typeof vsCodeApi
 
 const { getApi } = registerExtension(
@@ -36,7 +35,7 @@ const { getApi } = registerExtension(
                 { command: 'buckdb.toggleDiskSave', title: 'Toggle Disk Save On/Off' }, // Define command title
             ],
         },
-        enabledApiProposals: ['aiRelatedInformation'],
+        enabledApiProposals: [],
     },
     ExtensionHostKind.LocalProcess,
 )

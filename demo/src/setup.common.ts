@@ -55,53 +55,40 @@ const tsconf = JSON.stringify({
     },
 })
 
-const parser = (await import('@external/src/parser.ts?raw')).default
-const jsep = (await import('@external/src/jsep.ts?raw')).default
+const parser = (await import('@buckdb/src/parser.ts?raw')).default
+const jsep = (await import('@buckdb/src/jsep.ts?raw')).default
 
-const serializer = (await import('@external/src/serializer.ts?raw')).default
-const readers = (await import('@external/src/readers.ts?raw')).default
+const serializer = (await import('@buckdb/src/serializer.ts?raw')).default
+const readers = (await import('@buckdb/src/readers.ts?raw')).default
 
-const interfaceGenerator = (await import('@external/src/interface-generator?raw')).default
-const typedef = (await import('@external/src/typedef.ts?raw')).default
+const interfaceGenerator = (await import('@buckdb/src/interface-generator?raw')).default
+const typedef = (await import('@buckdb/src/typedef.ts?raw')).default
 
-const types = (await import('@external/.buck/types.ts?raw')).default
-const utils = (await import('@external/src/utils.ts?raw')).default
-const core = (await import('@external/buckdb.core.ts?raw')).default
-const copy = (await import('@external/src/copy.ts?raw')).default
-const formalise = (await import('@external/src/formalise.ts?raw')).default
-const deepMap = (await import('@external/src/deep-map.ts?raw')).default
-const table3 = (await import('@external/.buck/table3.ts?raw')).default
-const tablejson = (await import('@external/.buck/table.json?raw')).default
-const buildTypes = (await import('@external/src/build.types.ts?raw')).default
-const build = (await import('@external/src/build.ts?raw')).default
-const genericUtils = (await import('@external/src/generic-utils.ts?raw')).default
-const buckdb = (await import('@external/buckdb.remote.ts?raw')).default
-
-// const apiTutorial = (await import('@external/examples/api-tutorial?raw')).default
-// const draft = (await import('@external/examples/draft.ts?raw')).default
-
-
-
-// const isTutorial = new URLSearchParams(location.search).has('tutorial')
-
-// const demo = !isTutorial
-//     ? (await import('@external/demo.ts?raw')).default
-//     : (await import('@external/api-tutorial.ts?raw')).default
+const types = (await import('@buckdb/.buck/types.ts?raw')).default
+const utils = (await import('@buckdb/src/utils.ts?raw')).default
+const core = (await import('@buckdb/buckdb.core.ts?raw')).default
+const copy = (await import('@buckdb/src/copy.ts?raw')).default
+const formalise = (await import('@buckdb/src/formalise.ts?raw')).default
+const deepMap = (await import('@buckdb/src/deep-map.ts?raw')).default
+const table3 = (await import('@buckdb/.buck/table3.ts?raw')).default
+const tablejson = (await import('@buckdb/.buck/table.json?raw')).default
+const buildTypes = (await import('@buckdb/src/build.types.ts?raw')).default
+const build = (await import('@buckdb/src/build.ts?raw')).default
+const genericUtils = (await import('@buckdb/src/generic-utils.ts?raw')).default
+const buckdb = (await import('@buckdb/buckdb.remote.ts?raw')).default
 
 const examples = await Promise.all(
     Object.entries(
-        import.meta.glob('@external/examples/*.ts', { as: 'raw' })
+        // @ts-ignore
+        import.meta.glob('@buckdb/examples/*.ts', { as: 'raw' })
     ).map(async ([path, loader]) => ({
-        path: path.split('/').pop(),
-        content: await loader(),
+        // @ts-ignore
+        path: path.split('/').pop(), content: await loader()
     }))
 )
 for (const example of examples) {
     loadFile(example.content, `examples/${example.path}`)
 }
-
-// loadFile(draft, 'examples/draft.ts')
-// loadFile(apiTutorial, 'examples/api-tutorial.ts')
 
 
 loadFile(tsconf, 'tsconfig.json')
@@ -164,15 +151,15 @@ window.MonacoEnvironment = {
     },
 }
 
-const queryParmas = new URLSearchParams(location.search)
-const intlay = parseInt(queryParmas.get('inlay'))
-console.log('-->', queryParmas.has('inlay') && !isNaN(intlay) ? intlay : 0)
+const queryParams = new URLSearchParams(location.search)
+const inlay = parseInt(queryParams.get('inlay'))
+console.log('-->', queryParams.has('inlay') && !isNaN(inlay) ? inlay : 0)
 await Promise.all([
     // initCustomThemeRegister(),
     initUserConfiguration(JSON.stringify({
         ...defaultConfiguration,
-        'editor.inlayHints.enabled': !queryParmas.has('inlay') ? 'offUnlessPressed' : 'onUnlessPressed',
-        'editor.inlayHints.maximumLength': queryParmas.has('inlay') && !isNaN(intlay) ? intlay : 0,
+        'editor.inlayHints.enabled': !queryParams.get('inlay')?.length ? 'offUnlessPressed' : 'onUnlessPressed',
+        'editor.inlayHints.maximumLength': queryParams.has('inlay') && !isNaN(inlay) ? inlay : 0,
         'editor.quickSuggestions': {
             'other': true,
             'comments': false,

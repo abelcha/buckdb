@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { extractFromStatementsAST } from '../../src/extract-from-statements' // Adjust path as needed
+import { extractFromStatementsAST } from '@buckdb/src/extract-from-statements' // Adjust path as needed
 
 export class SqlCodeLensProvider implements vscode.CodeLensProvider {
     // Optional: Add an event emitter if you want the lenses to refresh on document changes
@@ -24,7 +24,8 @@ export class SqlCodeLensProvider implements vscode.CodeLensProvider {
 
             for (const part of extractedParts) {
                 // lineStart is 1-based, Range needs 0-based
-                const lineIndex = part.lineEnd 
+                // const lineIndex = part.lineEnd 
+                const lineIndex = part.lineStart 
                 if (lineIndex < 0 || lineIndex >= document.lineCount) continue // Basic bounds check
 
                 const line = document.lineAt(lineIndex)

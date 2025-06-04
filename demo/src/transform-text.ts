@@ -1,10 +1,10 @@
 import { debounce, memoize } from 'es-toolkit'
 import type { IDisposable } from 'monaco-editor'
 import { EventEmitter, TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
-import contentjson from '@external/.buck/table.json' // Use relative path
-import { generateInterface, serializeDescribe } from '@external/src/interface-generator' // Use relative path
-import { isFile, isFunction } from '@external/src/utils'
-import { BuckStatementParts, extractBuckStatement, extractFromStatementsAST, FromStatementParts } from '../src/extract-from-statements'
+import contentjson from '@buckdb/.buck/table.json' // Use relative path
+import { generateInterface, serializeDescribe } from '@buckdb/src/interface-generator' // Use relative path
+import { isFile, isFunction } from '@buckdb/src/utils'
+import { BuckStatementParts, extractBuckStatement, extractFromStatementsAST, FromStatementParts } from '@buckdb/src/extract-from-statements'
 import { writeFile } from './setup.common'
 
 export const transformedScheme = 'transformed'
@@ -149,25 +149,6 @@ const getCode = (uri: Uri): string => {
     return code
 }
 
-// const onTextUpdate = (code: string): string => {
-//     // Extract original URI from the query parameter
-
-//     try {
-//         const parts = extractFromStatementsAST(code);
-//         // upsertFromStatements(bsts, parts)
-//         // for (const st of parts) {
-//         //     try {
-//         //         schemes.upsert(st);
-//         //     } catch (err) {
-//         //         console.error('upsert error', st, err);
-//         //     }
-//         // }
-//         return transformCode(parts);
-//     } catch (error) {
-//         console.error(error)
-//         return `// Error processing document:\n// ${error instanceof Error ? error.message : String(error)}`;
-//     }
-// }
 
 const refreshTypes = debounce(async (code: string) => {
     const parts = extractFromStatementsAST(code)

@@ -20,7 +20,7 @@
     "experimentalDecorators": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
-      "@external/*": ["/me/dev/buckdb/*"],
+      "@buckdb/*": ["/me/dev/buckdb/*"],
       "vscode/vscode/*": ["../../monaco-vscode-api/dist/main/vscode/src/*"],
       "vscode/*": ["../../monaco-vscode-api/dist/main/*"]
     },

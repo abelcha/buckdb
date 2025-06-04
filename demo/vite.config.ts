@@ -186,8 +186,8 @@ export default defineConfig({
         dedupe: ['vscode', ...localDependencies],
         alias: {
             // Map an alias to the external directory
-            '@external': '/me/dev/buckdb',
+            '@buckdb': '/me/dev/buckdb',
         },
     },
 })
-// console.log('===', path.resolve(__dirname, '@external'))
+// console.log('===', path.resolve(__dirname, '@buckdb'))

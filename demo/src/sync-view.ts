@@ -2,7 +2,7 @@ import * as monaco from 'monaco-editor'
 import type { IDisposable } from 'monaco-editor'
 import { languages as VsCodeLanguages, TextDocumentContentProvider, TextEditor, Uri, ViewColumn, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
 import type * as vsCodeApi from 'vscode'
-import { extractFromStatementsAST } from './extract-from-statements' // Added for CodeLens
+import { extractFromStatementsAST } from '@buckdb/src/extract-from-statements' // Added for CodeLens
 type VsCodeApi = typeof vsCodeApi
 
 // Flag to ensure CodeLens provider is registered only once

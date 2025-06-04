@@ -1,22 +1,36 @@
 {
     "compilerOptions": {
-        "strict": true,
-        "noImplicitAny": false,
-        "resolveJsonModule": true,
-        "allowImportingTsExtensions": true,
-        "strictNullChecks": false,
+        "types": [
+            "bun"
+        ],
+        // Environment setup & latest features
+        "lib": [
+            "esnext",
+            "dom"
+        ],
+        "noEmit": true,
         "target": "ESNext",
         "module": "ESNext",
-        "moduleResolution": "bundler",
-        "baseUrl": ".",
-        "paths": {
-            "@external/*": ["/me/dev/buckdb/*"]
-        }
-    },
-    "include": [
-        "src/**/*.ts",
-        "buckdb.*.ts",
-        "demo/src/*.ts",
-        "codegen/*.ts"
-    ]
+        "noImplicitAny": false,
+        "moduleDetection": "force",
+        "jsx": "react-jsx",
+        "allowJs": true,
+        "strictNullChecks": false,
+        // Bundler mode
+        "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
+        "allowImportingTsExtensions": true,
+        "verbatimModuleSyntax": false,
+        "resolveJsonModule": true,
+        // Best practices
+        "strict": true,
+        "isolatedModules": true,
+        "skipLibCheck": true,
+        // "noFallthroughCasesInSwitch": true,
+        // "noUncheckedIndexedAccess": true,
+        // Some stricter flags (disabled by default)
+        "noUnusedLocals": false,
+        "noUnusedParameters": false
+        // "noPropertyAccessFromIndexSignature": false
+    }
 }

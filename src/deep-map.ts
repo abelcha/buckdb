@@ -5,6 +5,112 @@ type ExpectEqual<A, B> = (<G>() => G extends A ? 1 : 2) extends (<G>() => G exte
   : { error: "Types are not equal"; expected: B; got: A }
   : { error: "Types are not equal"; expected: B; got: A };
 
+// Original NestedKeyOf - recurses into all objects (includes prototype methods)
+export type NestedKeyOf<ObjectType extends Record<string, any>> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object 
+    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}` 
+    : `${Key}`
+}[keyof ObjectType & (string | number)]
+
+// Option 1: Exclude common built-in types (Array, Map, Set, Date, etc.)
+export type NestedKeyOf1<ObjectType extends Record<string, any>> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends Array<any> | Map<any, any> | Set<any> | Date | RegExp | Function 
+    ? `${Key}` 
+    : ObjectType[Key] extends object 
+      ? `${Key}` | `${Key}.${NestedKeyOf1<ObjectType[Key]>}` 
+      : `${Key}`
+}[keyof ObjectType & (string | number)]
+
+// Option 2: Only recurse into plain objects (Record<string, any>) that aren't built-ins
+export type NestedKeyOf2<ObjectType extends Record<string, any>> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends Record<string, any>
+    ? ObjectType[Key] extends Array<any> | Map<any, any> | Set<any> | Date | RegExp | Function
+      ? `${Key}`
+      : `${Key}` | `${Key}.${NestedKeyOf2<ObjectType[Key]>}`
+    : `${Key}`
+}[keyof ObjectType & (string | number)]
+
+// Option 3: Use constructor check to detect plain objects
+export type NestedKeyOf3<ObjectType extends Record<string, any>> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends { constructor: ObjectConstructor }
+    ? `${Key}` | `${Key}.${NestedKeyOf3<ObjectType[Key]>}`
+    : `${Key}`
+}[keyof ObjectType & (string | number)]
+
+// Option 4: Check if it has a prototype that's not Object.prototype (more strict)
+type IsPlainObject<T> = T extends object 
+  ? T extends Array<any> | Map<any, any> | Set<any> | Date | RegExp | Function | Promise<any>
+    ? false
+    : true
+  : false
+
+export type NestedKeyOf4<ObjectType extends Record<string, any>> = {
+  [Key in keyof ObjectType & (string | number)]: IsPlainObject<ObjectType[Key]> extends true
+    ? `${Key}` | `${Key}.${NestedKeyOf4<ObjectType[Key]>}`
+    : `${Key}`
+}[keyof ObjectType & (string | number)]
+
+// Option 5: More comprehensive built-in type exclusion
+export type NestedKeyOf5<ObjectType extends Record<string, any>> = {
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends 
+    | Array<any> 
+    | Map<any, any> 
+    | Set<any> 
+    | WeakMap<any, any>
+    | WeakSet<any>
+    | Date 
+    | RegExp 
+    | Function 
+    | Promise<any>
+    | Error
+    | Number
+    | String
+    | Boolean
+    ? `${Key}` 
+    : ObjectType[Key] extends object 
+      ? `${Key}` | `${Key}.${NestedKeyOf5<ObjectType[Key]>}` 
+      : `${Key}`
+}[keyof ObjectType & (string | number)]
+
+// Test the different variations with your example type
+type TestType = { lol: string, ooo: { toto: string }[], xm: Map<string, any>, lolo: { lili: string } }
+
+function testOriginal(ggg: NestedKeyOf<TestType>) {
+  // fail
+  ggg === ''
+  // Original - includes prototype methods like ooo.toSpliced, xm.clear, etc.
+}
+
+function testOption1(ggg: NestedKeyOf1<TestType>) {
+  // OK
+  ggg === ''
+  // Option 1 - should only show: "lol" | "ooo" | "xm" | "lolo" | "lolo.lili"
+}
+
+function testOption2(ggg: NestedKeyOf2<TestType>) {
+  // OK
+  ggg === ''
+  // Option 2 - should only show: "lol" | "ooo" | "xm" | "lolo" | "lolo.lili"
+}
+
+function testOption3(ggg: NestedKeyOf3<TestType>) {
+  // fail
+  ggg === ''
+  // Option 3 - constructor-based check
+}
+
+function testOption4(ggg: NestedKeyOf4<TestType>) {
+  // OK
+  ggg === ''
+  // Option 4 - IsPlainObject helper
+}
+
+function testOption5(ggg: NestedKeyOf5<TestType>) {
+  // OK
+  ggg === ''
+  // Option 5 - comprehensive built-in exclusion
+}
+
 // type nativ = ToJSON<Source>
 type res1 =
   & Assert<ExpectEqual<ToPlain<t.DVarcharField>, string>>

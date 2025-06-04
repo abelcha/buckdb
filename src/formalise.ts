@@ -74,8 +74,20 @@ export const formatOptions = (options?: Record<string, any>): string => {
 export const wrapIfNotEmpty = (value: string) => value ? `(${value})` : ''
 const serializeDatasource = (datasources: DDatasource[]) => {
     return datasources.map((d) => {
-        const jointure = d.joinOn ? `ON (${d.joinOn})` : d.using ? `USING (${d.using})` : ''
-        return d.join ? `${d.join} ${formatAlias(d)} ${jointure}` : formatAlias(d)
+        const getJointure = (d: DDatasource): string => {
+            if (d.using && d.join === 'CROSS JOIN') {
+                return ` AS ${d.using}`
+            }
+            if (d.joinOn) return `ON (${d.joinOn})`;
+            if (d.using) return `USING (${d.using})`;
+            return '';
+        };
+        const jointure = getJointure(d);
+        if (d.join) {
+            return `${d.join} ${formatAlias(d)} ${jointure}`.trim();
+        }
+
+        return formatAlias(d);
     }).join('\n ')
 }
 const serializeSelected = (selected: DSelectee[]) => {
@@ -98,7 +110,7 @@ const serializeUpdated = (updated: DSelectee[]) => {
 }
 
 function serializeSetops(setops: { type: string; value: string }[]) {
-    return setops.map(e => `\n${e.type}\n${e.value}`).join('')
+    return setops.map(e => `\n${e.type}\n(${e.value})`)
 }
 
 function serializeCte(e: DCte) {
@@ -126,7 +138,7 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         ].filter(Boolean).join(' ')
     }
 
-    const components = [
+    let components = [
         serializeCtes(state.ctes),
         'FROM',
         serializeDatasource(state.datasources),
@@ -142,9 +154,11 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         serializeOrder('ORDER BY')(state.orderBy),
         serializeValue('LIMIT')(state.limit),
         serializeValue('OFFSET')(state.offset),
-        serializeSetops(state.setops),
     ].filter(Boolean)
-    // const add = settings ? (settings.join(';') + '\n') : ''
+    if (state.setops.length) {
+        components = ['(', ...components, ')'].concat(...serializeSetops(state.setops))
+    }
+
     const comps = components.join(' ').trim()
     if (state.copyTo.length) {
         return copy(comps).to(state.copyTo[0].uri, state.copyTo[0].options).toSql(state)

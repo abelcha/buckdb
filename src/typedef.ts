@@ -249,3 +249,6 @@ export const UnmethodMapping = {
 
 
 export const PolyfillMapping = Object.assign(PolyfillNumberMapping, PolyfillStringMapping, PolyfillArrayMapping)
+
+
+export const AggregateFunctions = 'entropy mode first arg_max list listagg sum bit_or countif min_by min mean max_by max bit_xor corr regr_r2 mad argmax last avg bit_and var_pop bool_or count sem median arg_min stddev product favg fsum argmin'.split(' ')

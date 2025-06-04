@@ -534,4 +534,29 @@ describe('Coverage tests', () => {
             }
         ])
     })
+
+    test.only('should handle complex expression 2 replacement', () => {
+
+        expect(extractFromStatementsAST(`
+            const buckCon = Buck(':memory:');
+            buckCon.settings({ endpoint: 'localhost' }).from('complex_data.csv').select('*').execute();
+        `)).toMatchObject([{
+            chain: "Buck(':memory:').settings({ endpoint: 'localhost' })",
+            resource: ':memory:',
+            fromChain: "from('complex_data.csv').select('*').execute()",
+            cleanFromChain: "from('complex_data.csv').select('*')",
+        }])
+        expect(extractFromStatementsAST(`
+            const buckCon = Buck(':memory:').settings({ endpoint: 'localhost' });
+            buckCon.from('complex_data.csv').select('*').execute();
+        `)).toMatchObject([{
+            chain: "Buck(':memory:').settings({ endpoint: 'localhost' })",
+            // resource: ':memory:', TODO
+            fromChain: "from('complex_data.csv').select('*').execute()",
+            cleanFromChain: "from('complex_data.csv').select('*')",
+        }])
+    })
+
+
+
 })

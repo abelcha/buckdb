@@ -19,6 +19,31 @@ const removeTrailingMethods = (methods: string[]) => (text: string): string =>
 const normalizeSpacing = (text: string): string =>
     text.replace(/(?:^|\s+)\/\/.*$/gm, '').trim().replace(/\s*\.\s*/g, '.').replace(/\s*\n\s*/g, ' ').replace(/\s+/g, ' ').trim()
 
+// Helper to check if a node is a Buck() call
+function isBuckInitializer(node: ts.Expression): boolean {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'Buck') {
+        return true
+    }
+    return false
+}
+
+// Helper to check if an expression chain contains a Buck call
+function isBuckChain(node: ts.Expression, sourceFile: ts.SourceFile): boolean {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'Buck') {
+        return true
+    }
+    
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+        return isBuckChain(node.expression.expression, sourceFile)
+    }
+    
+    if (ts.isPropertyAccessExpression(node)) {
+        return isBuckChain(node.expression, sourceFile)
+    }
+    
+    return false
+}
+
 export function findVariableInitializerText(identifier: ts.Identifier, sourceFile: ts.SourceFile, visitedIdentifiers = new Set<string>()): string | null {
     const name = identifier.text
     if (visitedIdentifiers.has(name)) return null
@@ -35,6 +60,10 @@ export function findVariableInitializerText(identifier: ts.Identifier, sourceFil
 
     const init = declaration.initializer
     if (ts.isCallExpression(init) && ts.isIdentifier(init.expression) && init.expression.text === 'Buck') {
+        return init.getText(sourceFile)
+    }
+    // Handle call expressions or property access chains that might have Buck in them
+    if ((ts.isCallExpression(init) || ts.isPropertyAccessExpression(init)) && isBuckChain(init, sourceFile)) {
         return init.getText(sourceFile)
     }
     if (ts.isIdentifier(init)) {
@@ -123,7 +152,7 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
             } else if (ts.isPropertyAccessExpression(expressionBeforeFrom) || ts.isCallExpression(expressionBeforeFrom)) {
                 let currentToBase: ts.Expression = expressionBeforeFrom;
                 // Traverse down to the base of the chain (e.g., the Buck() call or an identifier)
-                while (ts.isPropertyAccessExpression(currentToBase) || ts.isCallExpression(currentToBase)) {
+                while (ts.isPropertyAccessExpression(currentToBase) || (ts.isCallExpression(currentToBase) && !isBuckInitializer(currentToBase))) {
                     currentToBase = currentToBase.expression;
                 }
                 // Check if the base is a Buck() call
@@ -134,7 +163,7 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
                 }
             }
 
-            if (ultimateBuckCallText?.startsWith('Buck(')) {
+            if (ultimateBuckCallText) {
                 const tempSource = ts.createSourceFile('tempBuck.ts', ultimateBuckCallText, ts.ScriptTarget.Latest, true);
                 ts.forEachChild(tempSource, n => {
                     const buckNode = ts.isExpressionStatement(n) && ts.isCallExpression(n.expression) ? n.expression : ts.isCallExpression(n) ? n : null;
@@ -214,6 +243,7 @@ export function extractFromStatementsAST(text: string): FromStatementParts[] {
             let baseIdentifierOfChain: ts.Identifier | null = null
             let currentExprForTrace: ts.Expression = executableChainNode.expression
             while (ts.isCallExpression(currentExprForTrace) || ts.isPropertyAccessExpression(currentExprForTrace)) {
+                if (isBuckInitializer(currentExprForTrace)) break
                 currentExprForTrace = currentExprForTrace.expression
             }
             if (ts.isIdentifier(currentExprForTrace)) {

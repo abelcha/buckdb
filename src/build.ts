@@ -226,6 +226,10 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 ddb.lazyExtensions(...ext as string[])
                 return this
             },
+            macros: function (obj: any) {
+                ddb.lazyMacros(obj)
+                return this
+            },
             with: function (...arr: (() => any)[]) {
                 // @ts-ignore
                 const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query: v?.toSql({ false: true, minTrim: 50 }) }))
@@ -243,7 +247,8 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 toSql: () => table,
                 as: (...items: any[]) => ({
                     toSql: () => serializeCreate(table, items, p),
-                    execute: () => ddb.run(serializeCreate(table, items, p)),
+                    execute: () => ddb.run(serializeCreate(table, items, p))
+                        .then(() => ddb.ensureSchema(table)),
                 }),
             }),
         }

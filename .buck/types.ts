@@ -149,14 +149,14 @@ export interface DDateField extends DAnyField {
   /**                                                            @description: Extract the millennium component from a date or timestamp	@example: millennium(timestamp '2021-08-03 11:59:44.123456')	@default: millennium(ts:DATE) -> BIGINT*/
   millennium(): DNumericField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DDate] - - - - - - -  */
-  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> DATE*/
   add(col1: DAnyable | DDateable | DNumericable): DDateField;
-  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIME WITH TIME ZONE*/
   add(col1: DAnyable | DDateable): DDateField;
   /**                                                            @default: add(col0:TIMESTAMP, col1:INTERVAL) -> TIMESTAMP*/
   add(col1: DAnyable): DDateField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DDate] - - - - - - -  */
-  /**                                                            @default: subtract(col0:DATE, col1:INTEGER | INTERVAL) -> TIMESTAMP*/
+  /**                                                            @default: subtract(col0:DATE, col1:INTEGER | INTERVAL) -> DATE*/
   subtract(col1: DAnyable | DNumericable): DDateField;
   /**                                                            @default: subtract(col0:DATE, col1:DATE) -> BIGINT*/
   subtract(col1: DDateable): DNumericField;
@@ -431,6 +431,7 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, "map" | "filt
   array_filter(lambda: (x: T) => any): DArrayField<T>;
   array_slice(begin: number, end: number, step?: number): DArrayField<FromPlain<T>>;
   map: this["array_transform"];
+  array_to_string(sep: DVarcharable): DVarcharField;
 }
 
 export interface DBoolField extends DAnyField {
@@ -486,8 +487,8 @@ export interface _DJsonField {
   /**                                                            @default: json_deserialize_sql(col0:JSON) -> VARCHAR*/
   json_deserialize_sql(): DVarcharField;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DJson] - - - - - - -  */
-  /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[][]*/
-  json_keys(col1?: DAnyable | DArrayable | DVarcharable): DArrayField;
+  /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[]*/
+  json_keys(col1?: DAnyable | DArrayable | DVarcharable): DArrayField<DVarcharField>;
   /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - [DJson] - - - - - - -  */
   /**                                                            @default: json_transform_strict(col0:JSON, col1:VARCHAR) -> ANY*/
   json_transform_strict(col1: DVarcharable): DAnyField;
@@ -1586,56 +1587,65 @@ export type DNumericComp = number & _DNumericComp;
 
 export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Calculates the product of all tuples in arg.	@example: product(A)	@default: product(arg:DOUBLE) -> DOUBLE*/
-  product(arg: DNumericable): DNum;
+  product(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Computes the intersection of a set of geometries	@example: 	@default: ST_Intersection_Agg(col0:GEOMETRY) -> GEOMETRY*/
+  ST_Intersection_Agg(col0: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example: kahan_sum(A)	@default: kahan_sum(arg:DOUBLE) -> DOUBLE*/
-  kahan_sum(arg: DNumericable): DNum;
+  kahan_sum(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example: kahan_sum(A)	@default: sumkahan(arg:DOUBLE) -> DOUBLE*/
   sumkahan: this["kahan_sum"];
   /**                                                            @description: Calculates the sum using a more accurate floating point summation (Kahan Sum).	@example: kahan_sum(A)	@default: fsum(arg:DOUBLE) -> DOUBLE*/
   fsum: this["kahan_sum"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the population covariance of input values	@example: REGR_COUNT(y, x) * COVAR_POP(y, x)	@default: regr_sxy(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  regr_sxy(y: DNumericable, x: DNumericable): DNum;
+  regr_sxy(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns TRUE if every input value is TRUE, otherwise FALSE.	@example: bool_and(A)	@default: bool_and(arg:BOOLEAN) -> BOOLEAN*/
   bool_and(arg: DBoolable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the excess kurtosis (Fisher’s definition) of all input values, with a bias correction according to the sample size	@default: kurtosis(x:DOUBLE) -> DOUBLE*/
-  kurtosis(x: DNumericable): DNum;
+  kurtosis(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  count_star(): DNum;
+  count_star(): DNum & { filter: (x: DAnyable) => DNum };
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Simplifies a set of geometries while maintaining coverage	@example: 	@default: ST_CoverageSimplify_Agg(col0:GEOMETRY, col1:DOUBLE, col2:BOOLEAN | ) -> GEOMETRY*/
+  ST_CoverageSimplify_Agg(col0: DAnyable, col1: DNumericable, col2?: DAnyable | DBoolable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the coefficient of determination for non-null pairs in a group.	@default: regr_r2(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  regr_r2(y: DNumericable, x: DNumericable): DNum;
+  regr_r2(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the average of the dependent variable for non-null pairs in a group, where x is the independent variable and y is the dependent variable.	@default: regr_avgy(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  regr_avgy(y: DNumericable, x: DNumericable): DNum;
+  regr_avgy(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Counts the total number of TRUE values for a boolean column	@example: count_if(A)	@default: count_if(arg:BOOLEAN) -> HUGEINT*/
-  count_if(arg: DBoolable): DNum;
+  count_if(arg: DBoolable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Counts the total number of TRUE values for a boolean column	@example: count_if(A)	@default: countif(arg:BOOLEAN) -> HUGEINT*/
   countif: this["count_if"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the slope of the linear regression line for non-null pairs in a group.	@example: COVAR_POP(x,y) / VAR_POP(x)	@default: regr_slope(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  regr_slope(y: DNumericable, x: DNumericable): DNum;
+  regr_slope(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DECIMAL | DOUBLE | FLOAT) -> DECIMAL*/
+  mad(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Calculates the average using a more accurate floating point summation (Kahan Sum)	@example: favg(A)	@default: favg(x:DOUBLE) -> DOUBLE*/
-  favg(x: DNumericable): DNum;
+  favg(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the sample variance of all input values.	@example: (SUM(x^2) - SUM(x)^2 / COUNT(x)) / (COUNT(x) - 1)	@default: var_samp(x:DOUBLE) -> DOUBLE*/
-  var_samp(x: DNumericable): DNum;
+  var_samp(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Returns the sample variance of all input values.	@example: (SUM(x^2) - SUM(x)^2 / COUNT(x)) / (COUNT(x) - 1)	@default: variance(x:DOUBLE) -> DOUBLE*/
   variance: this["var_samp"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the population covariance of input values.	@example: (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / COUNT(*)	@default: covar_pop(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  covar_pop(y: DNumericable, x: DNumericable): DNum;
+  covar_pop(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Internal only. Calculates the sum value for all tuples in arg without overflow checks.	@example: sum_no_overflow(A)	@default: sum_no_overflow(arg:BIGINT | DECIMAL | INTEGER) -> DECIMAL*/
-  sum_no_overflow(arg: DNumericable): DNum;
+  sum_no_overflow(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the sample standard deviation	@example: sqrt(var_samp(x))	@default: stddev_samp(x:DOUBLE) -> DOUBLE*/
-  stddev_samp(x: DNumericable): DNum;
+  stddev_samp(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Returns the sample standard deviation	@example: sqrt(var_samp(x))	@default: stddev(x:DOUBLE) -> DOUBLE*/
   stddev: this["stddev_samp"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -1643,18 +1653,30 @@ export interface DAggregate<DNum, DStr> {
   histogram_exact(arg: DAnyable, bins: DArrayable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @example: REGR_COUNT(y, x) * VAR_POP(x)	@default: regr_sxx(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  regr_sxx(y: DNumericable, x: DNumericable): DNum;
+  regr_sxx(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @example: REGR_COUNT(y, x) * VAR_POP(y)	@default: regr_syy(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  regr_syy(y: DNumericable, x: DNumericable): DNum;
+  regr_syy(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a LIST of STRUCTs with the fields bucket and count.	@example: histogram(A)	@default: histogram(arg:ANY, col1:ANY[] | ) -> MAP*/
+  histogram(arg: DAnyable, col1?: DAnyable | DArrayable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the standard error of the mean	@default: sem(x:DOUBLE) -> DOUBLE*/
-  sem(x: DNumericable): DNum;
+  sem(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.	@example: quantile_disc(x, 0.5)	@default: quantile_disc(x:ANY, pos:DOUBLE | DOUBLE[] | ) -> ANY*/
-  quantile_disc(x: DAnyable, pos?: DAnyable | DArrayable | DNumericable): DAnyField;
+  // quantile_disc(x: DAnyable, pos?:DAnyable | DArrayable | DNumericable): DAnyField
   /**                                                            @description: Returns the exact quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding exact quantiles.	@example: quantile_disc(x, 0.5)	@default: quantile(x:ANY, pos:DOUBLE | DOUBLE[] | ) -> ANY*/
   quantile: this["quantile_disc"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the invalid edges of a coverage geometry	@example: 	@default: ST_CoverageInvalidEdges_Agg(col0:GEOMETRY, col1:DOUBLE | ) -> GEOMETRY*/
+  ST_CoverageInvalidEdges_Agg(col0: DAnyable, col1?: DAnyable | DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Alias for [ST_Extent_Agg](#st_extent_agg).
+
+Computes the minimal-bounding-box polygon containing the set of input geometries.	@example: SELECT ST_Extent_Agg(geom) FROM UNNEST([ST_Point(1,1), ST_Point(5,5)]) AS _(geom);
+-- POLYGON ((1 1, 1 5, 5 5, 5 1, 1 1))	@default: ST_Envelope_Agg(col0:GEOMETRY) -> GEOMETRY*/
+  ST_Envelope_Agg(col0: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns a LIST containing all the values of a column.	@example: list(A)	@default: array_agg(arg:ANY) -> LIST*/
   array_agg(arg: DAnyable): DArrayField;
@@ -1662,22 +1684,25 @@ export interface DAggregate<DNum, DStr> {
   list: this["array_agg"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the correlation coefficient for non-null pairs in a group.	@example: COVAR_POP(y, x) / (STDDEV_POP(x) * STDDEV_POP(y))	@default: corr(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  corr(y: DNumericable, x: DNumericable): DNum;
+  corr(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Calculates the sum value for all tuples in arg.	@example: sum(A)	@default: sum(arg:BIGINT | BOOLEAN | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> HUGEINT*/
-  sum(arg: DBoolable | DNumericable): DNum;
+  /**                                                            @description: Calculates the sum value for all tuples in arg.	@example: sum(A)	@default: sum(arg:BIGINT | BOOLEAN | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DECIMAL*/
+  sum(arg: DBoolable | DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the sample covariance for non-null pairs in a group.	@example: (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / (COUNT(*) - 1)	@default: covar_samp(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  covar_samp(y: DNumericable, x: DNumericable): DNum;
+  covar_samp(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Unions a set of geometries while maintaining coverage	@example: 	@default: ST_CoverageUnion_Agg(col0:GEOMETRY) -> GEOMETRY*/
+  ST_CoverageUnion_Agg(col0: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the approximate count of distinct elements using HyperLogLog.	@example: approx_count_distinct(A)	@default: approx_count_distinct(any:ANY) -> BIGINT*/
-  approx_count_distinct(any: DAnyable): DNum;
+  approx_count_distinct(any: DAnyable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Finds the k approximately most occurring values in the data set	@example: approx_top_k(x, 5)	@default: approx_top_k(val:ANY, k:BIGINT) -> ANY[]*/
   approx_top_k(val: DAnyable, k: DNumericable): DArrayField<DAnyField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the skewness of all input values.	@example: skewness(A)	@default: skewness(x:DOUBLE) -> DOUBLE*/
-  skewness(x: DNumericable): DNum;
+  skewness(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns a bitstring with bits set for each distinct value.	@example: bitstring_agg(A)	@default: bitstring_agg(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT, col1:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT | , col2:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT | ) -> BIT*/
   bitstring_agg(arg: DNumericable, col1?: DAnyable | DNumericable, col2?: DAnyable | DNumericable): DAnyField;
@@ -1686,98 +1711,105 @@ export interface DAggregate<DNum, DStr> {
   mode(x: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the middle value of the set. NULL values are ignored. For even value counts, interpolate-able types (numeric, date/time) return the average of the two middle values. Non-interpolate-able types (everything else) return the lower of the two middle values.	@example: median(x)	@default: median(x:ANY) -> ANY*/
-  median(x: DAnyable): DAnyField;
+  // median(x: DAnyable): DAnyField
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the average of the independent variable for non-null pairs in a group, where x is the independent variable and y is the dependent variable.	@default: regr_avgx(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  regr_avgx(y: DNumericable, x: DNumericable): DNum;
+  regr_avgx(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the population standard deviation.	@example: sqrt(var_pop(x))	@default: stddev_pop(x:DOUBLE) -> DOUBLE*/
-  stddev_pop(x: DNumericable): DNum;
+  stddev_pop(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the number of non-null values in arg.	@example: count(A)	@default: count(arg:ANY | ) -> BIGINT*/
-  count(arg?: DAnyable): DNum;
+  count(arg?: DAnyable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the log-2 entropy of count input-values.	@default: entropy(x:ANY) -> DOUBLE*/
-  entropy(x: DAnyable): DNum;
+  entropy(x: DAnyable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the number of non-null number pairs in a group.	@example: (SUM(x*y) - SUM(x) * SUM(y) / COUNT(*)) / COUNT(*)	@default: regr_count(y:DOUBLE, x:DOUBLE) -> UINTEGER*/
-  regr_count(y: DNumericable, x: DNumericable): DNum;
+  regr_count(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Concatenates the column string values with an optional separator.	@example: string_agg(A, '-')	@default: group_concat(str:ANY, arg:VARCHAR | ) -> VARCHAR*/
-  group_concat(str: DAnyable, arg?: DAnyable | DVarcharable): DStr;
+  group_concat(str: DAnyable, arg?: DAnyable | DVarcharable): DStr & { filter: (x: DStr) => boolean };
   /**                                                            @description: Concatenates the column string values with an optional separator.	@example: string_agg(A, '-')	@default: string_agg(str:ANY, arg:VARCHAR | ) -> VARCHAR*/
   string_agg: this["group_concat"];
   /**                                                            @description: Concatenates the column string values with an optional separator.	@example: string_agg(A, '-')	@default: listagg(str:ANY, arg:VARCHAR | ) -> VARCHAR*/
   listagg: this["group_concat"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the excess kurtosis (Fisher’s definition) of all input values, without bias correction	@default: kurtosis_pop(x:DOUBLE) -> DOUBLE*/
-  kurtosis_pop(x: DNumericable): DNum;
+  kurtosis_pop(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns TRUE if any input value is TRUE, otherwise FALSE.	@example: bool_or(A)	@default: bool_or(arg:BOOLEAN) -> BOOLEAN*/
   bool_or(arg: DBoolable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the population variance.	@default: var_pop(x:DOUBLE) -> DOUBLE*/
-  var_pop(x: DNumericable): DNum;
+  var_pop(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the intercept of the univariate linear regression line for non-null pairs in a group.	@example: AVG(y)-REGR_SLOPE(y,x)*AVG(x)	@default: regr_intercept(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
-  regr_intercept(y: DNumericable, x: DNumericable): DNum;
+  regr_intercept(y: DNumericable, x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Computes the union of a set of input geometries	@example: 	@default: ST_Union_Agg(col0:GEOMETRY) -> GEOMETRY*/
+  ST_Union_Agg(col0: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Computes the minimal-bounding-box polygon containing the set of input geometries	@example: SELECT ST_Extent_Agg(geom) FROM UNNEST([ST_Point(1,1), ST_Point(5,5)]) AS _(geom);
+-- POLYGON ((1 1, 1 5, 5 5, 5 1, 1 1))	@default: ST_Extent_Agg(col0:GEOMETRY) -> GEOMETRY*/
+  ST_Extent_Agg(col0: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the first non-null value from arg. This function is affected by ordering.	@default: any_value(arg:ANY) -> ANY*/
   any_value(arg: DAnyable): DAnyField;
   /**                                                            @description: Returns the first non-null value from arg. This function is affected by ordering.	@default: any_value(arg:DECIMAL) -> DECIMAL*/
-  any_value(arg: DNumericable): DNum;
+  any_value(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:FLOAT) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:FLOAT) -> DATE*/
   approx_quantile(x: DDateable, pos: DNumericable): DDateField;
-  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DATE | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE | TINYINT, pos:FLOAT[]) -> TIMESTAMP WITH TIME ZONE[]*/
-  approx_quantile(x: DDateable | DNumericable, pos: DArrayable): DArrayField;
-  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT, pos:FLOAT) -> INTEGER*/
-  approx_quantile(x: DNumericable, pos: DNumericable): DNum;
+  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DATE | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE | TINYINT, pos:FLOAT[]) -> BIGINT[]*/
+  approx_quantile(x: DDateable | DNumericable, pos: DArrayable): DArrayField<DNumericField>;
+  /**                                                            @description: Computes the approximate quantile using T-Digest.	@example: approx_quantile(x, 0.5)	@default: approx_quantile(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT, pos:FLOAT) -> BIGINT*/
+  approx_quantile(x: DNumericable, pos: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example: first(A)	@default: arbitrary(arg:ANY) -> ANY*/
   arbitrary(arg: DAnyable): DAnyField;
   /**                                                            @description: Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example: first(A)	@default: arbitrary(arg:DECIMAL) -> DECIMAL*/
-  arbitrary(arg: DNumericable): DNum;
+  arbitrary(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Returns the first value (null or non-null) from arg. This function is affected by ordering.	@example: first(A)	@default: first(arg:ANY) -> ANY*/
   first: this["arbitrary"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   arg_max(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> ANY*/
   arg_max(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:ANY, val:ANY, col2:BIGINT) -> ANY[]*/
   arg_max(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField<DAnyField>;
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BIGINT*/
-  arg_max(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
+  arg_max(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: arg_max(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
-  arg_max(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: argmax(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP*/
+  arg_max(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr & { filter: (x: DStr) => boolean };
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: argmax(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   argmax: this["arg_max"];
-  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: max_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the non-NULL arg expression at that row.	@example: arg_max(A,B)	@default: max_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   max_by: this["arg_max"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   arg_max_null(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
-  /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BLOB*/
+  /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> ANY*/
   arg_max_null(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
   /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BIGINT*/
-  arg_max_null(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
+  arg_max_null(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Finds the row with the maximum val. Calculates the arg expression at that row.	@example: arg_max_null(A,B)	@default: arg_max_null(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
-  arg_max_null(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
+  arg_max_null(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr & { filter: (x: DStr) => boolean };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   arg_min(arg: DDateable, val: DAnyable | DDateable | DNumericable | DVarcharable): DDateField;
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BLOB*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> ANY*/
   arg_min(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:ANY, val:ANY, col2:BIGINT) -> ANY[]*/
   arg_min(arg: DAnyable, val: DAnyable, col2: DNumericable): DArrayField<DAnyField>;
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BIGINT*/
-  arg_min(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
+  arg_min(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: arg_min(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
-  arg_min(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: argmin(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
+  arg_min(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr & { filter: (x: DStr) => boolean };
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: argmin(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   argmin: this["arg_min"];
-  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: min_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @description: Finds the row with the minimum val. Calculates the non-NULL arg expression at that row.	@example: arg_min(A,B)	@default: min_by(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
   min_by: this["arg_min"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> DATE*/
@@ -1785,303 +1817,100 @@ export interface DAggregate<DNum, DStr> {
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:ANY | BLOB, val:ANY | BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> ANY*/
   arg_min_null(arg: DAnyable, val: DAnyable | DDateable | DNumericable | DVarcharable): DAnyField;
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:BIGINT | DECIMAL | DOUBLE | INTEGER, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> BIGINT*/
-  arg_min_null(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum;
+  arg_min_null(arg: DNumericable, val: DAnyable | DDateable | DNumericable | DVarcharable): DNum & { filter: (x: DAnyable) => DNum };
   /**                                                            @description: Finds the row with the minimum val. Calculates the arg expression at that row.	@example: arg_min_null(A,B)	@default: arg_min_null(arg:VARCHAR, val:BIGINT | BLOB | DATE | DOUBLE | HUGEINT | INTEGER | TIMESTAMP | TIMESTAMP WITH TIME ZONE | VARCHAR) -> VARCHAR*/
-  arg_min_null(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr;
+  arg_min_null(arg: DVarcharable, val: DAnyable | DDateable | DNumericable | DVarcharable): DStr & { filter: (x: DStr) => boolean };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIME WITH TIME ZONE*/
+  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIME*/
   mean(x: DDateable): DDateField;
-  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:INTERVAL) -> INTERVAL*/
-  mean(x: DAnyable): DAnyField;
-  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DOUBLE*/
-  mean(x: DNumericable): DNum;
-  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: avg(x:TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIMESTAMP*/
+  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DECIMAL*/
+  mean(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
+  /**                                                            @description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: avg(x:TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIME*/
   avg: this["mean"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIT) -> BIT*/
   bit_and(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> TINYINT*/
-  bit_and(arg: DNumericable): DNum;
+  /**                                                            @description: Returns the bitwise AND of all bits in a given expression.	@example: bit_and(A)	@default: bit_and(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> BIGINT*/
+  bit_and(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIT) -> BIT*/
   bit_or(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> UHUGEINT*/
-  bit_or(arg: DNumericable): DNum;
+  /**                                                            @description: Returns the bitwise OR of all bits in a given expression.	@example: bit_or(A)	@default: bit_or(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> BIGINT*/
+  bit_or(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIT) -> BIT*/
   bit_xor(arg: DAnyable): DAnyField;
-  /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> USMALLINT*/
-  bit_xor(arg: DNumericable): DNum;
+  /**                                                            @description: Returns the bitwise XOR of all bits in a given expression.	@example: bit_xor(A)	@default: bit_xor(arg:BIGINT | HUGEINT | INTEGER | SMALLINT | TINYINT | UBIGINT | UHUGEINT | UINTEGER | USMALLINT | UTINYINT) -> BIGINT*/
+  bit_xor(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the last value of a column. This function is affected by ordering.	@example: last(A)	@default: last(arg:ANY) -> ANY*/
-  last(arg: DAnyable): DAnyField;
+  // last(arg: DAnyable): DAnyField
   /**                                                            @description: Returns the last value of a column. This function is affected by ordering.	@example: last(A)	@default: last(arg:DECIMAL) -> DECIMAL*/
-  last(arg: DNumericable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> INTERVAL*/
-  mad(x: DDateable): DAnyField;
-  /**                                                            @description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DECIMAL | DOUBLE | FLOAT) -> DOUBLE*/
-  mad(x: DNumericable): DNum;
+  // last(arg: DNumericable): DNum & { filter: (x: DAnyable) => DNum }
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the maximum value present in arg.	@example: max(A)	@default: max(arg:ANY) -> ANY*/
-  max(arg: DAnyable): DAnyField;
+  // max(arg: DAnyable): DAnyField
   /**                                                            @description: Returns the maximum value present in arg.	@example: max(A)	@default: max(arg:ANY, col1:BIGINT) -> ANY[]*/
-  max(arg: DAnyable, col1: DNumericable): DArrayField<DAnyField>;
+  // max(arg: DAnyable, col1: DNumericable): DArrayField<DAnyField>
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the minimum value present in arg.	@example: min(A)	@default: min(arg:ANY) -> ANY*/
-  min(arg: DAnyable): DAnyField;
+  // min(arg: DAnyable): DAnyField
   /**                                                            @description: Returns the minimum value present in arg.	@example: min(A)	@default: min(arg:ANY, col1:BIGINT) -> ANY[]*/
-  min(arg: DAnyable, col1: DNumericable): DArrayField<DAnyField>;
+  // min(arg: DAnyable, col1: DNumericable): DArrayField<DAnyField>
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:DOUBLE | DOUBLE[]) -> TIME WITH TIME ZONE*/
+  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE, pos:DOUBLE | DOUBLE[]) -> DATE*/
   quantile_cont(x: DDateable, pos: DArrayable | DNumericable): DDateField;
-  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, pos:DOUBLE | DOUBLE[]) -> TINYINT*/
-  quantile_cont(x: DNumericable, pos: DArrayable | DNumericable): DNum;
+  /**                                                            @description: Returns the interpolated quantile number between 0 and 1 . If pos is a LIST of FLOATs, then the result is a LIST of the corresponding interpolated quantiles.		@example: quantile_cont(x, 0.5)	@default: quantile_cont(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, pos:DOUBLE | DOUBLE[]) -> BIGINT*/
+  quantile_cont(x: DNumericable, pos: DArrayable | DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE[], sampleSize:INTEGER | ) -> DOUBLE[]*/
+  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE[], sampleSize:INTEGER | ) -> BIGINT[]*/
   reservoir_quantile(x: DNumericable, quantile: DArrayable, sampleSize?: DAnyable | DNumericable): DArrayField<DNumericField>;
-  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE, sampleSize:INTEGER | ) -> DOUBLE*/
-  reservoir_quantile(x: DNumericable, quantile: DNumericable, sampleSize?: DAnyable | DNumericable): DNum;
+  /**                                                            @description: Gives the approximate quantile using reservoir sampling, the sample size is optional and uses 8192 as a default size.	@example: reservoir_quantile(A,0.5,1024)	@default: reservoir_quantile(x:BIGINT | DECIMAL | DOUBLE | FLOAT | HUGEINT | INTEGER | SMALLINT | TINYINT, quantile:DOUBLE, sampleSize:INTEGER | ) -> BIGINT*/
+  reservoir_quantile(x: DNumericable, quantile: DNumericable, sampleSize?: DAnyable | DNumericable): DNum & { filter: (x: DAnyable) => DNum };
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  greatest<X>(...vargs: X[]): FromPlain<X>;
+  max<X>(...vargs: X[]): FromPlain<X>;
+  median<X>(...vargs: X[]): FromPlain<X>;
+  min<X>(...vargs: X[]): FromPlain<X>;
+  last<X>(...vargs: X[]): FromPlain<X>;
+  first<X>(...vargs: X[]): FromPlain<X>;
+  quantile_disc(...vargs: DAnyable): DNumericField;
 }
 
 export interface DMacroAG<DNum, DStr> {
-  /**                                                            @example: list_aggr(l, 'approx_count_distinct')	@default: list_approx_count_distinct(l:ANY[]) -> BIGINT*/
-  list_approx_count_distinct(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'mad')	@default: list_mad(l:ANY[]) -> INTERVAL*/
-  list_mad(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'avg')	@default: list_avg(l:ANY[]) -> TIMESTAMP*/
-  list_avg(l: DArrayable): DDateField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'max')	@default: list_max(l:ANY[]) -> ANY*/
-  list_max(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'min')	@default: list_min(l:ANY[]) -> ANY*/
-  list_min(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'sem')	@default: list_sem(l:ANY[]) -> DOUBLE*/
-  list_sem(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'sum')	@default: list_sum(l:ANY[]) -> HUGEINT*/
-  list_sum(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'last')	@default: list_last(l:ANY[]) -> ANY*/
-  list_last(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'mode')	@default: list_mode(l:ANY[]) -> ANY*/
-  list_mode(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'first')	@default: list_first(l:ANY[]) -> ANY*/
-  list_first(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'count')	@default: list_count(l:ANY[]) -> BIGINT*/
-  list_count(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'median')	@default: list_median(l:ANY[]) -> ANY*/
-  list_median(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'bit_or')	@default: list_bit_or(l:ANY[]) -> BIT*/
-  list_bit_or(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'bit_and')	@default: list_bit_and(l:ANY[]) -> BIT*/
-  list_bit_and(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'bool_or')	@default: list_bool_or(l:ANY[]) -> BOOLEAN*/
-  list_bool_or(l: DArrayable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'bit_xor')	@default: list_bit_xor(l:ANY[]) -> BIT*/
-  list_bit_xor(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'var_pop')	@default: list_var_pop(l:ANY[]) -> DOUBLE*/
-  list_var_pop(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'entropy')	@default: list_entropy(l:ANY[]) -> DOUBLE*/
-  list_entropy(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'product')	@default: list_product(l:ANY[]) -> DOUBLE*/
-  list_product(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'bool_and')	@default: list_bool_and(l:ANY[]) -> BOOLEAN*/
-  list_bool_and(l: DArrayable): DBoolField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'var_samp')	@default: list_var_samp(l:ANY[]) -> DOUBLE*/
-  list_var_samp(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'skewness')	@default: list_skewness(l:ANY[]) -> DOUBLE*/
-  list_skewness(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'kurtosis')	@default: list_kurtosis(l:ANY[]) -> DOUBLE*/
-  list_kurtosis(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(CAST(arr AS VARCHAR[]), 'string_agg', sep)	@default: array_to_string(arr:ANY[], sep:) -> null*/
-  array_to_string(arr: DArrayable, sep: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'any_value')	@default: list_any_value(l:ANY[]) -> ANY*/
-  list_any_value(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'histogram')	@default: list_histogram(l:ANY[]) -> null*/
-  list_histogram(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'stddev_pop')	@default: list_stddev_pop(l:ANY[]) -> DOUBLE*/
-  list_stddev_pop(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'string_agg')	@default: list_string_agg(l:ANY[]) -> VARCHAR*/
-  list_string_agg(l: DArrayable): DStr;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'stddev_samp')	@default: list_stddev_samp(l:ANY[]) -> DOUBLE*/
-  list_stddev_samp(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(CAST(arr AS VARCHAR[]), 'string_agg', sep)	@default: array_to_string_comma_default(arr:ANY[], sep:) -> null*/
-  array_to_string_comma_default(arr: DArrayable, sep: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_aggr(l, 'kurtosis_pop')	@default: list_kurtosis_pop(l:ANY[]) -> DOUBLE*/
-  list_kurtosis_pop(l: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
 }
 
 export interface DMacro<DNum, DStr> {
-  /**                                                            @example: round_even(x, n)	@default: roundbankers(x:, n:) -> null*/
-  roundbankers(x: DAnyable, n: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: current_user*/
-  user(): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_concat(l, list_value(e))	@default: list_append(l:ANY[], e:) -> null*/
-  list_append(l: DArrayable, e: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: unnest(string_split_regex("text", pattern))	@default: regexp_split_to_table(text:, pattern:) -> null*/
-  regexp_split_to_table(text: DAnyable, pattern: DAnyable | RegExp): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: weighted_avg("value", weight)	@default: wavg(value:, weight:) -> null*/
-  wavg(value: DAnyable, weight: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_concat(list_value(e), l)	@default: list_prepend(e:, l:ANY[]) -> null*/
-  list_prepend(e: DAnyable, l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: 'duckdb'*/
-  current_role(): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: 'duckdb'*/
-  current_user(): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: 'duckdb'*/
-  session_user(): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: json_extract(x, '$')	@default: json(x:) -> null*/
-  json(x: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: CAST(x AS STRUCT(path VARCHAR, "type" VARCHAR, filters_before VARCHAR[], filters_after VARCHAR[], files_before BIGINT, files_after BIGINT))	@default: parse_delta_filter_logline(x:) -> null*/
-  parse_delta_filter_logline(x: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: main.current_database()*/
-  current_catalog(): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: exp(avg(ln(x)))	@default: geomean(x:) -> null*/
-  geomean(x: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: CAST((('{' || string_agg(((to_json(CAST(n AS VARCHAR)) || ':') || CASE  WHEN ((v IS NULL)) THEN (CAST('null' AS "JSON")) ELSE to_json(v) END), ',')) || '}') AS "JSON")	@default: json_group_object(n:, v:) -> null*/
-  json_group_object(n: DAnyable, v: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_append(arr, el)	@default: array_append(arr:ANY[], el:) -> null*/
-  array_append(arr: DArrayable, el: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_prepend(el, arr)	@default: array_prepend(el:, arr:ANY[]) -> null*/
-  array_prepend(el: DAnyable, arr: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: (date + "interval")	@default: date_add(date:, interval:) -> null*/
-  date_add(date: DAnyable, interval: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_concat(arr, list_value(e))	@default: array_push_back(arr:ANY[], e:) -> null*/
-  array_push_back(arr: DArrayable, e: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_filter(list_distinct(l1), (lambda variable_intersect: list_contains(l2, variable_intersect)))	@default: list_intersect(l1:ANY[], l2:ANY[]) -> null*/
-  list_intersect(l1: DArrayable, l2: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: CASE  WHEN (((string IS NOT NULL) AND ("delimiter" IS NOT NULL) AND ("position" IS NOT NULL))) THEN (COALESCE(string_split(string, "delimiter")["position"], '')) ELSE NULL END	@default: split_part(string:, delimiter:, position:) -> null*/
-  split_part(string: DAnyable, delimiter: DAnyable, position: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_intersect(l1, l2)	@default: array_intersect(l1:ANY[], l2:ANY[]) -> null*/
-  array_intersect(l1: DArrayable, l2: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_concat(list_value(e), arr)	@default: array_push_front(arr:ANY[], e:) -> null*/
-  array_push_front(arr: DArrayable, e: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: l[:-:-1]	@default: list_reverse(l:ANY[]) -> null*/
-  list_reverse(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: geomean(x)	@default: geometric_mean(x:) -> null*/
-  geometric_mean(x: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: list_reverse(l)	@default: array_reverse(l:ANY[]) -> null*/
-  array_reverse(l: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: floor((x / y))	@default: fdiv(x:, y:) -> null*/
-  fdiv(x: DAnyable, y: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: (x - (y * floor((x / y))))	@default: fmod(x:, y:) -> null*/
-  fmod(x: DAnyable, y: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: (sum(("value" * weight)) / sum(CASE  WHEN (("value" IS NOT NULL)) THEN (weight) ELSE 0 END))	@default: weighted_avg(value:, weight:) -> null*/
-  weighted_avg(value: DAnyable, weight: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: CAST((('[' || string_agg(CASE  WHEN ((x IS NULL)) THEN (CAST('null' AS "JSON")) ELSE to_json(x) END, ',')) || ']') AS "JSON")	@default: json_group_array(x:) -> null*/
-  json_group_array(x: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: CASE  WHEN ((a = b)) THEN (NULL) ELSE a END	@default: nullif(a:, b:) -> null*/
-  nullif(a: DAnyable, b: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: arr[:(len(arr) - 1)]	@default: array_pop_back(arr:ANY[]) -> null*/
-  array_pop_back(arr: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: (SELECT block_size FROM pragma_database_size() WHERE (database_name = db_name))	@default: get_block_size(dbName:) -> null*/
-  get_block_size(dbName: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: arr[2:]	@default: array_pop_front(arr:ANY[]) -> null*/
-  array_pop_front(arr: DArrayable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: contains(map_values("map"), "value")	@default: map_contains_value(map:, value:) -> null*/
-  map_contains_value(map: DAnyable, value: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: CAST(CAST(CAST(CAST(md5_number(param) AS BIT) AS VARCHAR)[:64] AS BIT) AS UBIGINT)	@default: md5_number_lower(param:) -> null*/
-  md5_number_lower(param: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: CAST(CAST(CAST(CAST(md5_number(param) AS BIT) AS VARCHAR)[65:] AS BIT) AS UBIGINT)	@default: md5_number_upper(param:) -> null*/
-  md5_number_upper(param: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: (json_structure(json_group_array(x)) -> 0)	@default: json_group_structure(x:) -> null*/
-  json_group_structure(x: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: CASE  WHEN ((((abs(x) * power(10, (n + 1))) % 10) = 5)) THEN ((round((x / 2), n) * 2)) ELSE round(x, n) END	@default: round_even(x:, n:) -> null*/
-  round_even(x: DAnyable, n: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: unnest(generate_series(1, array_length(arr, dim)))	@default: generate_subscripts(arr:ANY[], dim:) -> null*/
-  generate_subscripts(arr: DArrayable, dim: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @example: contains(map_entries("map"), main.struct_pack("key" := "key", "value" := "value"))	@default: map_contains_entry(map:, key:, value:) -> null*/
-  map_contains_entry(map: DAnyable, key: DAnyable, value: DAnyable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
 }
 
 export interface DGlobal<DNum, DStr> {
-  /**                                                            @description: Construct a minute interval	@example: to_minutes(5)	@default: to_minutes(integer:BIGINT) -> INTERVAL*/
-  to_minutes(integer: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: h3_get_num_cells(col0:INTEGER) -> BIGINT*/
   h3_get_num_cells(col0: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: h3_get_pentagons(col0:INTEGER) -> UBIGINT[]*/
   h3_get_pentagons(col0: DNumericable): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Truncate to specified precision	@example: date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')	@default: date_trunc(part:VARCHAR, timestamp:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIMESTAMP*/
+  date_trunc(part: DVarcharable, timestamp: DDateable): DDateField;
+  /**                                                            @description: Truncate to specified precision	@example: date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')	@default: datetrunc(part:VARCHAR, timestamp:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIMESTAMP*/
+  datetrunc: this["date_trunc"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the head of the path similarly to Python's os.path.dirname. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirpath('path/to/file.csv', 'system')	@default: parse_dirpath(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
   parse_dirpath(string: DVarcharable, separator?: DAnyable | DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the first geometry \"properly\" is contained by the second geometry
+
+This function functions the same as `ST_ContainsProperly`, but the arguments are swapped.	@example: 	@default: ST_WithinProperly(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_WithinProperly(geom1: DAnyable, geom2: DAnyable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Number of grapheme clusters in `string`.	@example: length_grapheme('🤦🏼‍♂️🤦🏽‍♀️')	@default: length_grapheme(string:VARCHAR) -> BIGINT*/
   length_grapheme(string: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The timestamp for the given nanoseconds since epoch	@example: make_timestamp(1732117793000000000)	@default: make_timestamp_ns(nanos:BIGINT) -> TIMESTAMP_NS*/
   make_timestamp_ns(nanos: DNumericable): DDateField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the geometry with all vertices reduced to the given precision	@example: 	@default: ST_ReducePrecision(geom:GEOMETRY, precision:DOUBLE) -> GEOMETRY*/
+  ST_ReducePrecision(geom: DAnyable, precision: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the arctangent (y, x)	@example: atan2(1.0, 0.0)	@default: atan2(y:DOUBLE, x:DOUBLE) -> DOUBLE*/
   atan2(y: DNumericable, x: DNumericable): DNum;
@@ -2115,10 +1944,22 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Adds field(s)/value(s) to an existing STRUCT with the argument values. The entry name(s) will be the bound variable name(s)	@example: struct_insert({'a': 1}, b := 2)*/
   struct_insert(...vargs: DAnyable[]): DStructField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Deserialize a GEOMETRY from a HEX(E)WKB encoded string
+
+DuckDB spatial doesnt currently differentiate between `WKB` and `EWKB`, so `ST_GeomFromHEXWKB` and `ST_GeomFromHEXEWKB" are just aliases of eachother.	@example: 	@default: ST_GeomFromHEXEWKB(hexwkb:VARCHAR) -> GEOMETRY*/
+  ST_GeomFromHEXEWKB(hexwkb: DVarcharable): DAnyField;
+  /**                                                            @description: Deserialize a GEOMETRY from a HEX(E)WKB encoded string
+
+DuckDB spatial doesnt currently differentiate between `WKB` and `EWKB`, so `ST_GeomFromHEXWKB` and `ST_GeomFromHEXEWKB" are just aliases of eachother.	@example: 	@default: ST_GeomFromHEXWKB(hexwkb:VARCHAR) -> GEOMETRY*/
+  ST_GeomFromHEXWKB: this["ST_GeomFromHEXEWKB"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   today(): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: combine(col0:AGGREGATE_STATE<?>, col1:ANY) -> AGGREGATE_STATE<?>*/
   combine(col0: DAnyable, col1: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the "boundary" of a geometry	@example: 	@default: ST_Boundary(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Boundary(geom: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the name of the currently active database	@example: current_database()*/
   current_database(): DStr;
@@ -2129,20 +1970,20 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Return the current value of the sequence. Note that nextval must be called at least once prior to calling currval.	@example: currval('my_sequence_name')	@default: currval(sequenceName:VARCHAR) -> BIGINT*/
   currval(sequenceName: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the approximate bounding box of a geometry, if available.
+
+This function is only really used internally, and returns the cached bounding box of the geometry if it exists.
+This function may be removed or renamed in the future.	@example: 	@default: ST_Extent_Approx(geom:GEOMETRY) -> BOX_2DF*/
+  ST_Extent_Approx(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Strips accents from `string`.	@example: strip_accents('mühleisen')	@default: strip_accents(string:VARCHAR) -> VARCHAR*/
   strip_accents(string: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the right-most count characters	@example: right('Hello🦆', 3)	@default: right(string:VARCHAR, count:BIGINT) -> VARCHAR*/
   right(string: DVarcharable, count: DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a century interval	@example: to_centuries(5)	@default: to_centuries(integer:BIGINT) -> INTERVAL*/
-  to_centuries(integer: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the cosine similarity between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_cosine_similarity([1, 2, 3], [1, 2, 3])	@default: array_cosine_similarity(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_cosine_similarity(arr1: DArrayable, arr2: DArrayable): DNum;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a quarter interval	@example: to_quarters(5)	@default: to_quarters(integer:BIGINT) -> INTERVAL*/
-  to_quarters(integer: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extracts the left-most count characters	@example: left('Hello🦆', 2)	@default: left(string:VARCHAR, count:BIGINT) -> VARCHAR*/
   left(string: DVarcharable, count: DNumericable): DStr;
@@ -2154,6 +1995,16 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: json_deserialize_sql(col0:JSON) -> VARCHAR*/
   json_deserialize_sql(col0: DJsonable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the "topological dimension" of a geometry.
+
+- For POINT and MULTIPOINT geometries, returns `0`
+- For LINESTRING and MULTILINESTRING, returns `1`
+- For POLYGON and MULTIPOLYGON, returns `2`
+- For GEOMETRYCOLLECTION, returns the maximum dimension of the contained geometries, or 0 if the collection is empty	@example: select st_dimension('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::geometry);
+----
+2	@default: ST_Dimension(geom:GEOMETRY) -> INTEGER*/
+  ST_Dimension(geom: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   to_json(...vargs: DAnyable[]): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2227,14 +2078,77 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Computes the natural logarithm of x	@example: ln(2)	@default: ln(x:DOUBLE) -> DOUBLE*/
   ln(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geometries are "equal"	@example: 	@default: ST_Equals(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Equals(geom1: DAnyable, geom2: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Collects a list of geometries into a collection geometry.
+- If all geometries are `POINT`'s, a `MULTIPOINT` is returned.
+- If all geometries are `LINESTRING`'s, a `MULTILINESTRING` is returned.
+- If all geometries are `POLYGON`'s, a `MULTIPOLYGON` is returned.
+- Otherwise if the input collection contains a mix of geometry types, a `GEOMETRYCOLLECTION` is returned.
+
+Empty and `NULL` geometries are ignored. If all geometries are empty or `NULL`, a `GEOMETRYCOLLECTION EMPTY` is returned.	@example: -- With all POINT's, a MULTIPOINT is returned
+SELECT ST_Collect([ST_Point(1, 2), ST_Point(3, 4)]);
+----
+MULTIPOINT (1 2, 3 4)
+
+-- With mixed geometry types, a GEOMETRYCOLLECTION is returned
+SELECT ST_Collect([ST_Point(1, 2), ST_GeomFromText('LINESTRING(3 4, 5 6)')]);
+----
+GEOMETRYCOLLECTION (POINT (1 2), LINESTRING (3 4, 5 6))
+
+-- Note that the empty geometry is ignored, so the result is a MULTIPOINT
+SELECT ST_Collect([ST_Point(1, 2), NULL, ST_GeomFromText('GEOMETRYCOLLECTION EMPTY')]);
+----
+MULTIPOINT (1 2)
+
+-- If all geometries are empty or NULL, a GEOMETRYCOLLECTION EMPTY is returned
+SELECT ST_Collect([NULL, ST_GeomFromText('GEOMETRYCOLLECTION EMPTY')]);
+----
+GEOMETRYCOLLECTION EMPTY
+
+-- Tip: You can use the `ST_Collect` function together with the `list()` aggregate function to collect multiple rows of geometries into a single geometry collection:
+
+CREATE TABLE points (geom GEOMETRY);
+
+INSERT INTO points VALUES (ST_Point(1, 2)), (ST_Point(3, 4));
+
+SELECT ST_Collect(list(geom)) FROM points;
+----
+MULTIPOINT (1 2, 3 4)	@default: ST_Collect(geoms:GEOMETRY[]) -> GEOMETRY*/
+  ST_Collect(geoms: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the cos of x	@example: cos(90)	@default: cos(x:DOUBLE) -> DOUBLE*/
   cos(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the tan of x	@example: tan(90)	@default: tan(x:DOUBLE) -> DOUBLE*/
   tan(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a buffer around the input geometry at the target distance
+
+`geom` is the input geometry.
+
+`distance` is the target distance for the buffer, using the same units as the input geometry.
+
+`num_triangles` represents how many triangles that will be produced to approximate a quarter circle. The larger the number, the smoother the resulting geometry. The default value is 8.
+
+`cap_style` must be one of "CAP_ROUND", "CAP_FLAT", "CAP_SQUARE". This parameter is case-insensitive.
+
+`join_style` must be one of "JOIN_ROUND", "JOIN_MITRE", "JOIN_BEVEL". This parameter is case-insensitive.
+
+`mitre_limit` only applies when `join_style` is "JOIN_MITRE". It is the ratio of the distance from the corner to the mitre point to the corner radius. The default value is 1.0.
+
+This is a planar operation and will not take into account the curvature of the earth.	@example: 	@default: ST_Buffer(geom:GEOMETRY, distance:DOUBLE, numTriangles:INTEGER | , capStyle:VARCHAR | , joinStyle:VARCHAR | , mitreLimit:DOUBLE | ) -> GEOMETRY*/
+  ST_Buffer(geom: DAnyable, distance: DNumericable, numTriangles?: DAnyable | DNumericable, capStyle?: DAnyable | DVarcharable, joinStyle?: DAnyable | DVarcharable, mitreLimit?: DAnyable | DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the sin of x	@example: sin(90)	@default: sin(x:DOUBLE) -> DOUBLE*/
   sin(x: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the maximum inscribed circle of the input geometry, optionally with a tolerance.
+
+By default, the tolerance is computed as `max(width, height) / 1000`.
+The return value is a struct with the center of the circle, the nearest point to the center on the boundary of the geometry, and the radius of the circle.	@example: 	@default: ST_MaximumInscribedCircle(geom:GEOMETRY, tolerance:DOUBLE | ) -> STRUCT(center GEOMETRY, nearest GEOMETRY, radius DOUBLE)*/
+  ST_MaximumInscribedCircle(geom: DAnyable, tolerance?: DAnyable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   json_array(...vargs: DAnyable[]): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2251,14 +2165,34 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: h3_latlng_to_cell(col0:DOUBLE, col1:DOUBLE, col2:INTEGER) -> UBIGINT*/
   h3_latlng_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Creates a POINT_4D	@example: 	@default: ST_Point4D(x:DOUBLE, y:DOUBLE, z:DOUBLE, m:DOUBLE) -> POINT_4D*/
+  ST_Point4D(x: DNumericable, y: DNumericable, z: DNumericable, m: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Sets the nth bit in bitstring to newvalue; the first (leftmost) bit is indexed 0. Returns a new bitstring	@example: set_bit('0110010'::BIT, 2, 0)	@default: set_bit(bitstring:BIT, index:INTEGER, newValue:INTEGER) -> BIT*/
   set_bit(bitstring: DAnyable, index: DNumericable, newValue: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract a version for the given UUID.	@example: uuid_extract_version('019482e4-1441-7aad-8127-eec99573b0a0')	@default: uuid_extract_version(uuid:UUID) -> UINTEGER*/
   uuid_extract_version(uuid: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the minimum bounding rectangle of a geometry as a polygon geometry	@example: 	@default: ST_Envelope(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Envelope(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Convert the geometry into a SVG fragment or path
+
+The SVG fragment is returned as a string. The fragment is a path element that can be used in an SVG document.
+The second boolean argument specifies whether the path should be relative or absolute.
+The third argument specifies the maximum number of digits to use for the coordinates.
+
+Points are formatted as cx/cy using absolute coordinates or x/y using relative coordinates.	@example: SELECT ST_AsSVG('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::GEOMETRY, false, 15);
+----
+M 0 0 L 0 -1 1 -1 1 0 Z	@default: ST_AsSVG(geom:GEOMETRY, relative:BOOLEAN, precision:INTEGER) -> VARCHAR*/
+  ST_AsSVG(geom: DAnyable, relative: DBoolable, precision: DNumericable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: h3_polygon_wkt_to_cells_experimental(col0:VARCHAR, col1:INTEGER | VARCHAR, col2:INTEGER | VARCHAR) -> UBIGINT[]*/
   h3_polygon_wkt_to_cells_experimental(col0: DVarcharable, col1: DNumericable | DVarcharable, col2: DNumericable | DVarcharable): DArrayField<DNumericField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the intersection of two geometries	@example: 	@default: ST_Intersection(geom1:GEOMETRY, geom2:GEOMETRY) -> GEOMETRY*/
+  ST_Intersection(geom1: DAnyable, geom2: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Constructs a list from those elements of the input list for which the lambda function returns true	@example: list_filter([3, 4, 5], x -> x > 4)	@default: array_filter(list:ANY[], lambda:LAMBDA) -> ANY[]*/
   // array_filter(list: DArrayable, lambda: DAnyable): DArrayField<DAnyField>
@@ -2269,6 +2203,9 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   json_object(...vargs: DAnyable[]): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geometry is valid	@example: 	@default: ST_IsValid(geom:GEOMETRY) -> BOOLEAN*/
+  ST_IsValid(geom: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   row_to_json(...vargs: DAnyable[]): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the top-level directory name. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_dirname('path/to/file.csv', 'system')	@default: parse_dirname(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR*/
@@ -2277,11 +2214,34 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Casts the first argument to the type of the second argument	@example: cast_to_type('42', NULL::INTEGER)	@default: cast_to_type(param:ANY, type:ANY) -> ANY*/
   cast_to_type(param: DAnyable, type: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if geom1 is "covered by" geom2	@example: 	@default: ST_CoveredBy(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_CoveredBy(geom1: DAnyable, geom2: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the range between the two given enum values as an array. The values must be of the same enum type. When the first parameter is NULL, the result starts with the first value of the enum type. When the second parameter is NULL, the result ends with the last value of the enum type	@example: enum_range_boundary(NULL, 'happy'::mood)	@default: enum_range_boundary(start:ANY, end:ANY) -> VARCHAR[]*/
   enum_range_boundary(start: DAnyable, end: DAnyable): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns a map created from the entries of the array	@example: map_from_entries([{k: 5, v: 'val1'}, {k: 3, v: 'val2'}]);*/
   map_from_entries(...vargs: DAnyable[]): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the geometry as a GeoJSON fragment
+
+This does not return a complete GeoJSON document, only the geometry fragment.
+To construct a complete GeoJSON document or feature, look into using the DuckDB JSON extension in conjunction with this function.
+This function supports geometries with Z values, but not M values. M values are ignored.	@example: select ST_AsGeoJSON('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::geometry);
+----
+{"type":"Polygon","coordinates":[[[0.0,0.0],[0.0,1.0],[1.0,1.0],[1.0,0.0],[0.0,0.0]]]}
+
+-- Convert a geometry into a full GeoJSON feature (requires the JSON extension to be loaded)
+SELECT CAST({
+    type: 'Feature',
+    geometry: ST_AsGeoJSON(ST_Point(1,2)),
+    properties: {
+        name: 'my_point'
+    }
+} AS JSON);
+----
+{"type":"Feature","geometry":{"type":"Point","coordinates":[1.0,2.0]},"properties":{"name":"my_point"}}	@default: ST_AsGeoJSON(geom:GEOMETRY) -> JSON*/
+  ST_AsGeoJSON(geom: DAnyable): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Checks if a map contains a given key.	@example: map_contains(MAP {'key1': 10, 'key2': 20, 'key3': 30}, 'key2')	@default: map_contains(map:MAP(ANY, ANY), key:ANY) -> BOOLEAN*/
   map_contains(map: DAnyable, key: DAnyable): DBoolField;
@@ -2291,6 +2251,12 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Concatenates strings together separated by the specified separator.	@example: concat_ws(', ', 'Banana', 'Apple', 'Melon')	@default: concat_ws(separator:VARCHAR, string:ANY) -> VARCHAR*/
   concat_ws(separator: DVarcharable, string: DAnyable, ...vargs: DAnyable[]): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the first geometry \"properly\" contains the second geometry
+
+In contrast to `ST_Contains`, this function does not return true if `geom2` is contained strictly on the boundary of `geom1`.
+A geometry always `ST_Contains` itself, but does not `ST_ContainsProperly` itself.	@example: 	@default: ST_ContainsProperly(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_ContainsProperly(geom1: DAnyable, geom2: DAnyable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The Jaro similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaro_similarity('duck', 'duckdb', 0.5)	@default: jaro_similarity(str1:VARCHAR, str2:VARCHAR, scoreCutoff:DOUBLE | ) -> DOUBLE*/
   jaro_similarity(str1: DVarcharable, str2: DVarcharable, scoreCutoff?: DAnyable | DNumericable): DNum;
@@ -2326,17 +2292,28 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns an integer that represents the Unicode code point of the first character of the string	@example: ascii('Ω')	@default: ascii(string:VARCHAR) -> INTEGER*/
   ascii(string: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Collects all the vertices in the geometry into a MULTIPOINT	@example: select st_points('LINESTRING(1 1, 2 2)'::geometry);
+----
+MULTIPOINT (1 1, 2 2)
+
+select st_points('MULTIPOLYGON Z EMPTY'::geometry);
+----
+MULTIPOINT Z EMPTY	@default: ST_Points(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Points(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: If `string` contains the regexp `pattern`, returns the capturing group specified by optional parameter `group`. The group must be a constant value. If no group is given, it defaults to 0. A set of optional `options` can be set.	@example: regexp_extract('abc', '([a-z])(b)', 1)	@default: regexp_extract(string:VARCHAR, pattern:VARCHAR, group0:INTEGER | VARCHAR[] | , options:VARCHAR | ) -> VARCHAR*/
   regexp_extract(string: DVarcharable, pattern: DVarcharable | RegExp, group0?: DAnyable | DArrayable | DNumericable, options?: DAnyable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Get the current global transaction_id	@example: current_transaction_id()*/
   current_transaction_id(): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a millenium interval	@example: to_millennia(1)	@default: to_millennia(integer:BIGINT) -> INTERVAL*/
-  to_millennia(integer: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Concatenates many strings together.	@example: concat('Hello', ' ', 'World')	@default: concat(string:ANY) -> VARCHAR*/
   concat(string: DAnyable, ...vargs: DAnyable[]): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Simplify the edges in a polygonal coverage, preserving the coverange by ensuring that the there are no seams between the resulting simplified polygons.
+
+By default, the boundary of the coverage is also simplified, but this can be controlled with the optional third 'simplify_boundary' parameter.	@example: 	@default: ST_CoverageSimplify(geoms:GEOMETRY[], tolerance:DOUBLE, simplifyBoundary:BOOLEAN | ) -> GEOMETRY*/
+  ST_CoverageSimplify(geoms: DArrayable, tolerance: DNumericable, simplifyBoundary?: DAnyable | DBoolable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts `string` to lower case	@example: lower('Hello')	@default: lcase(string:VARCHAR) -> VARCHAR*/
   lcase(string: DVarcharable): DStr;
@@ -2346,11 +2323,20 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Computes the 2-log of x	@example: log2(8)	@default: log2(x:DOUBLE) -> DOUBLE*/
   log2(x: DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geometries are disjoint	@example: 	@default: ST_Disjoint(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Disjoint(geom1: DAnyable, geom2: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the name of a given expression	@example: alias(42 + 1)	@default: alias(expr:ANY) -> VARCHAR*/
   alias(expr: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: h3_uncompact_cells(col0:BIGINT[], col1:INTEGER) -> BIGINT[]*/
   h3_uncompact_cells(col0: DArrayable, col1: DNumericable): DArrayField<DNumericField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geometry is simple	@example: 	@default: ST_IsSimple(geom:GEOMETRY) -> BOOLEAN*/
+  ST_IsSimple(geom: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns if two geometries are within a target distance of each-other	@example: 	@default: ST_DWithin(geom1:GEOMETRY, geom2:GEOMETRY, distance:DOUBLE) -> BOOLEAN*/
+  ST_DWithin(geom1: DAnyable, geom2: DAnyable, distance: DNumericable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns true if string begins with search_string	@example: starts_with('abc','a')	@default: starts_with(string:VARCHAR, searchString:VARCHAR) -> BOOLEAN*/
   starts_with(string: DVarcharable, searchString: DVarcharable): DBoolField;
@@ -2393,8 +2379,10 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: host(col0:INET) -> VARCHAR*/
   host(col0: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a millisecond interval	@example: to_milliseconds(5.5)	@default: to_milliseconds(double:DOUBLE) -> INTERVAL*/
-  to_milliseconds(double: DNumericable): DAnyField;
+  /**                                                            @description: Returns the geometry as a HEXWKB string	@example: SELECT ST_AsHexWKB('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::geometry);
+----
+01030000000100000005000000000000000000000000000...	@default: ST_AsHEXWKB(geom:GEOMETRY) -> VARCHAR*/
+  ST_AsHEXWKB(geom: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   json_merge_patch(...vargs: DAnyable[]): DJsonField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2419,8 +2407,14 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Converts `string` to upper case.	@example: upper('Hello')	@default: upper(string:VARCHAR) -> VARCHAR*/
   upper: this["ucase"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the minimum rotated rectangle that bounds the input geometry, finding the surrounding box that has the lowest area by using a rotated rectangle, rather than taking the lowest and highest coordinate values as per ST_Envelope().	@example: 	@default: ST_MinimumRotatedRectangle(geom:GEOMETRY) -> GEOMETRY*/
+  ST_MinimumRotatedRectangle(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns list of schemas. Pass a parameter of True to include implicit schemas	@example: current_schemas(true)	@default: current_schemas(includeImplicit:BOOLEAN) -> VARCHAR[]*/
   current_schemas(includeImplicit: DBoolable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Deserialize a POLYGON_2D from a WKB encoded blob	@example: 	@default: ST_Polygon2DFromWKB(polygon:POLYGON_2D) -> GEOMETRY*/
+  ST_Polygon2DFromWKB(polygon: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The time for the given parts	@example: make_time(13, 34, 27.123456)	@default: make_time(hour:BIGINT, minute:BIGINT, seconds:DOUBLE) -> TIME*/
   make_time(hour: DNumericable, minute: DNumericable, seconds: DNumericable): DDateField;
@@ -2447,6 +2441,21 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Extract substring of `length` grapheme clusters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring_grapheme('🦆🤦🏼‍♂️🤦🏽‍♀️🦆', 3, 2)	@default: substring_grapheme(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
   substring_grapheme(string: DVarcharable, start: DNumericable, length?: DAnyable | DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Turns a single geometry into a multi geometry.
+
+If the geometry is already a multi geometry, it is returned as is.	@example: SELECT ST_Multi(ST_GeomFromText('POINT(1 2)'));
+----
+MULTIPOINT (1 2)
+
+SELECT ST_Multi(ST_GeomFromText('LINESTRING(1 1, 2 2)'));
+----
+MULTILINESTRING ((1 1, 2 2))
+
+SELECT ST_Multi(ST_GeomFromText('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'));
+----
+MULTIPOLYGON (((0 0, 0 1, 1 1, 1 0, 0 0)))	@default: ST_Multi(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Multi(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example: hamming('duck','luck')	@default: mismatches(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   mismatches(str1: DVarcharable, str2: DVarcharable): DNum;
   /**                                                            @description: The number of positions with different characters for 2 strings of equal length. Different case is considered different	@example: hamming('duck','luck')	@default: hamming(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
@@ -2461,11 +2470,30 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Formats a string using fmt syntax	@example: format('Benchmark "{}" took {} seconds', 'CSV', 42)	@default: format(format:VARCHAR) -> VARCHAR*/
   format(format: DVarcharable, ...vargs: DAnyable[]): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Creates a POINT_3D	@example: 	@default: ST_Point3D(x:DOUBLE, y:DOUBLE, z:DOUBLE) -> POINT_3D*/
+  ST_Point3D(x: DNumericable, y: DNumericable, z: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: family(col0:INET) -> UTINYINT*/
   family(col0: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: stem(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   stem(col0: DVarcharable, col1: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a simplified version of the geometry	@example: 	@default: ST_Simplify(geom:GEOMETRY, tolerance:DOUBLE) -> GEOMETRY*/
+  ST_Simplify(geom: DAnyable, tolerance: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the distance between two geometries in meters using an ellipsoidal model of the earths surface
+
+The input geometry is assumed to be in the [EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (WGS84), with [latitude, longitude] axis order and the distance limit is expected to be in meters. This function uses the [GeographicLib](https://geographiclib.sourceforge.io/) library to solve the [inverse geodesic problem](https://en.wikipedia.org/wiki/Geodesics_on_an_ellipsoid#Solution_of_the_direct_and_inverse_problems), calculating the distance between two points using an ellipsoidal model of the earth. This is a highly accurate method for calculating the distance between two arbitrary points taking the curvature of the earths surface into account, but is also the slowest.	@example: -- Note: the coordinates are in WGS84 and [latitude, longitude] axis order
+-- Whats the distance between New York and Amsterdam (JFK and AMS airport)?
+SELECT st_distance_spheroid(
+st_point(40.6446, -73.7797),
+st_point(52.3130, 4.7725)
+);
+----
+5863418.7459356235
+-- Roughly 5863km!	@default: ST_Distance_Spheroid(p1:POINT_2D, p2:POINT_2D) -> DOUBLE*/
+  ST_Distance_Spheroid(p1: DAnyable, p2: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: text(col0:DOUBLE, col1:VARCHAR) -> VARCHAR*/
   text(col0: DNumericable, col1: DVarcharable): DStr;
@@ -2478,8 +2506,8 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns true if all elements of l2 are in l1. NULLs are ignored.	@example: list_has_all([1, 2, 3], [2, 3])	@default: list_has_all(l1:ANY[], l2:ANY[]) -> BOOLEAN*/
   list_has_all: this["array_has_all"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a microsecond interval	@example: to_microseconds(5)	@default: to_microseconds(integer:BIGINT) -> INTERVAL*/
-  to_microseconds(integer: DNumericable): DAnyField;
+  /**                                                            @description: Returns the union of two geometries	@example: 	@default: ST_Union(geom1:GEOMETRY, geom2:GEOMETRY) -> GEOMETRY*/
+  ST_Union(geom1: DAnyable, geom2: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: netmask(col0:INET) -> INET*/
   netmask(col0: DAnyable): DAnyField;
@@ -2493,6 +2521,11 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Writes to the logger	@example: write_log('Hello')	@default: write_log(string:VARCHAR) -> ANY*/
   write_log(string: DVarcharable, ...vargs: DAnyable[]): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns if two POINT_2D's are within a target distance in meters, using an ellipsoidal model of the earths surface
+
+The input geometry is assumed to be in the [EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (WGS84), with [latitude, longitude] axis order and the distance is returned in meters. This function uses the [GeographicLib](https://geographiclib.sourceforge.io/) library to solve the [inverse geodesic problem](https://en.wikipedia.org/wiki/Geodesics_on_an_ellipsoid#Solution_of_the_direct_and_inverse_problems), calculating the distance between two points using an ellipsoidal model of the earth. This is a highly accurate method for calculating the distance between two arbitrary points taking the curvature of the earths surface into account, but is also the slowest.	@example: 	@default: ST_DWithin_Spheroid(p1:POINT_2D, p2:POINT_2D, distance:DOUBLE) -> BOOLEAN*/
+  ST_DWithin_Spheroid(p1: DAnyable, p2: DAnyable, distance: DNumericable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: make_timestamptz(col0:BIGINT, col1:BIGINT | , col2:BIGINT | , col3:BIGINT | , col4:BIGINT | , col5:DOUBLE | , col6:VARCHAR | ) -> TIMESTAMP WITH TIME ZONE*/
   make_timestamptz(col0: DNumericable, col1?: DAnyable | DNumericable, col2?: DAnyable | DNumericable, col3?: DAnyable | DNumericable, col4?: DAnyable | DNumericable, col5?: DAnyable | DNumericable, col6?: DAnyable | DVarcharable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2500,6 +2533,18 @@ export interface DGlobal<DNum, DStr> {
   array_distinct(list: DArrayable): DArrayField<DAnyField>;
   /**                                                            @description: Removes all duplicates and NULLs from a list. Does not preserve the original order	@example: list_distinct([1, 1, NULL, -3, 1, 5])	@default: list_distinct(list:ANY[]) -> ANY[]*/
   list_distinct: this["array_distinct"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the geometry with the order of its vertices reversed	@example: 	@default: ST_Reverse(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Reverse(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a multi-point interpolated along a line at a fraction of total 2D length.
+
+if repeat is false, the result is a single point, (and equivalent to ST_LineInterpolatePoint),
+otherwise, the result is a multi-point with points repeated at the fraction interval.	@example: 	@default: ST_LineInterpolatePoints(line:GEOMETRY, fraction:DOUBLE, repeat:BOOLEAN) -> GEOMETRY*/
+  ST_LineInterpolatePoints(line: DAnyable, fraction: DNumericable, repeat: DBoolable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Creates a GEOMETRY point	@example: 	@default: ST_Point(x:DOUBLE, y:DOUBLE) -> GEOMETRY*/
+  ST_Point(x: DNumericable, y: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns a random UUIDv4 similar to this: eeccb8c5-9943-b2bb-bb5e-222f4e14b687	@example: uuidv4()*/
   uuidv4(): DAnyField;
@@ -2568,14 +2613,18 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: h3_polygon_wkt_to_cells_experimental_string(col0:VARCHAR, col1:INTEGER | VARCHAR, col2:INTEGER | VARCHAR) -> VARCHAR[]*/
   h3_polygon_wkt_to_cells_experimental_string(col0: DVarcharable, col1: DNumericable | DVarcharable, col2: DNumericable | DVarcharable): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Normalizes an INTERVAL to an equivalent interval	@example: normalized_interval(INTERVAL '30 days')	@default: normalized_interval(interval:INTERVAL) -> INTERVAL*/
-  normalized_interval(interval: DAnyable): DAnyField;
+  /**                                                            @description: Union all geometries in a polygonal coverage into a single geometry.
+This may be faster than using `ST_Union`, but may use more memory.	@example: 	@default: ST_CoverageUnion(geoms:GEOMETRY[]) -> GEOMETRY*/
+  ST_CoverageUnion(geoms: DArrayable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Escapes the input string by encoding it so that it can be included in a URL query parameter.	@example: url_encode('this string has/ special+ characters>')	@default: url_encode(input:VARCHAR) -> VARCHAR*/
   url_encode(input: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns all values of the input enum type as an array	@example: enum_range(NULL::mood)	@default: enum_range(enm:ANY) -> VARCHAR[]*/
   enum_range(enm: DAnyable): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geometries touch	@example: 	@default: ST_Touches(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Touches(geom1: DAnyable, geom2: DAnyable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: prefix(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
   prefix(col0: DVarcharable, col1: DVarcharable): DBoolField;
@@ -2606,6 +2655,25 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the cotangent of x	@example: cot(0.5)	@default: cot(x:DOUBLE) -> DOUBLE*/
   cot(x: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Extracts geometries from a GeometryCollection into a typed multi geometry.
+
+If the input geometry is a GeometryCollection, the function will return a multi geometry, determined by the `type` parameter.
+- if `type` = 1, returns a MultiPoint containg all the Points in the collection
+- if `type` = 2, returns a MultiLineString containg all the LineStrings in the collection
+- if `type` = 3, returns a MultiPolygon containg all the Polygons in the collection
+
+If no `type` parameters is provided, the function will return a multi geometry matching the highest "surface dimension"
+of the contained geometries. E.g. if the collection contains only Points, a MultiPoint will be returned. But if the
+collection contains both Points and LineStrings, a MultiLineString will be returned. Similarly, if the collection
+contains Polygons, a MultiPolygon will be returned. Contained geometries of a lower surface dimension will be ignored.
+
+If the input geometry contains nested GeometryCollections, their geometries will be extracted recursively and included
+into the final multi geometry as well.
+
+If the input geometry is not a GeometryCollection, the function will return the input geometry as is.	@example: select st_collectionextract('MULTIPOINT(1 2,3 4)'::geometry, 1);
+-- MULTIPOINT (1 2, 3 4)	@default: ST_CollectionExtract(geom:GEOMETRY, type:INTEGER | ) -> GEOMETRY*/
+  ST_CollectionExtract(geom: DAnyable, type?: DAnyable | DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts degrees to radians	@example: radians(90)	@default: radians(x:DOUBLE) -> DOUBLE*/
   radians(x: DNumericable): DNum;
@@ -2659,11 +2727,17 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: h3_get_hexagon_edge_length_avg(col0:INTEGER, col1:VARCHAR) -> DOUBLE*/
   h3_get_hexagon_edge_length_avg(col0: DNumericable, col1: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a polygonized representation of the input geometries	@example: 	@default: ST_Polygonize(geometries:GEOMETRY[]) -> GEOMETRY*/
+  ST_Polygonize(geometries: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Get the current query_id	@example: current_transaction_id('Hello')*/
   current_query_id(): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes e to the power of x	@example: exp(1)	@default: exp(x:DOUBLE) -> DOUBLE*/
   exp(x: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if geom1 "crosses" geom2	@example: 	@default: ST_Crosses(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Crosses(geom1: DAnyable, geom2: DAnyable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Pads the string with the character from the left until it has count characters	@example: lpad('hello', 10, '>')	@default: lpad(string:VARCHAR, count:INTEGER, character:VARCHAR) -> VARCHAR*/
   lpad(string: DVarcharable, count: DNumericable, character: DVarcharable): DStr;
@@ -2685,6 +2759,12 @@ export interface DGlobal<DNum, DStr> {
   format_bytes: this["formatReadableSize"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   h3_get_res0_cells_string(): DArrayField<DVarcharField>;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Create a POLYGON from a LINESTRING shell and a list of LINESTRING holes	@example: SELECT ST_MakePolygon(ST_LineString([ST_Point(0, 0), ST_Point(1, 0), ST_Point(1, 1), ST_Point(0, 0)]), [ST_LineString([ST_Point(0.25, 0.25), ST_Point(0.75, 0.25), ST_Point(0.75, 0.75), ST_Point(0.25, 0.25)])]);	@default: ST_MakePolygon(shell:GEOMETRY, holes:GEOMETRY[] | ) -> GEOMETRY*/
+  ST_MakePolygon(shell: DAnyable, holes?: DAnyable | DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Create a rectangular polygon from min/max coordinates	@example: 	@default: ST_MakeEnvelope(minX:DOUBLE, minY:DOUBLE, maxX:DOUBLE, maxY:DOUBLE) -> GEOMETRY*/
+  ST_MakeEnvelope(minX: DNumericable, minY: DNumericable, maxX: DNumericable, maxY: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
   ilike_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
@@ -2724,6 +2804,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Converts a value to a string in the given base radix, optionally padding with leading zeros to the minimum length	@example: to_base(42, 16)	@default: to_base(number:BIGINT, radix:INTEGER, minLength:INTEGER | ) -> VARCHAR*/
   to_base(number: DNumericable, radix: DNumericable, minLength?: DAnyable | DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a "noded" MultiLinestring, produced by combining a collection of input linestrings and adding additional vertices where they intersect.	@example: 	@default: ST_Node(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Node(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the index of their sorted position.	@example: list_grade_up([3, 6, 1, 2])	@default: array_grade_up(list:ANY[], col1:VARCHAR | , col2:VARCHAR | ) -> ANY[]*/
   array_grade_up(list: DArrayable, col1?: DAnyable | DVarcharable, col2?: DAnyable | DVarcharable): DArrayField<DAnyField>;
   /**                                                            @description: Returns the index of their sorted position.	@example: list_grade_up([3, 6, 1, 2])	@default: list_grade_up(list:ANY[], col1:VARCHAR | , col2:VARCHAR | ) -> ANY[]*/
@@ -2733,6 +2816,11 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Formats a string using printf syntax	@example: printf('Benchmark "%s" took %d seconds', 'CSV', 42)	@default: printf(format:VARCHAR) -> VARCHAR*/
   printf(format: DVarcharable, ...vargs: DAnyable[]): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the geometry as a WKB (Well-Known-Binary) blob	@example: SELECT ST_AsWKB('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::GEOMETRY)::BLOB;
+----
+\x01\x03\x00\x00\x00\x01\x00\x00\x00\x05...	@default: ST_AsWKB(geom:GEOMETRY) -> WKB_BLOB*/
+  ST_AsWKB(geom: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the negative inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_negative_inner_product([1, 2, 3], [1, 2, 3])	@default: array_negative_inner_product(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_negative_inner_product(arr1: DArrayable, arr2: DArrayable): DNum;
@@ -2755,11 +2843,20 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns a list of the components (directories and filename) in the path similarly to Python's pathlib.PurePath::parts. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_path('path/to/file.csv', 'system')	@default: parse_path(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR[]*/
   parse_path(string: DVarcharable, separator?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Check if a geometry is 'closed'	@example: 	@default: ST_IsClosed(geom:GEOMETRY) -> BOOLEAN*/
+  ST_IsClosed(geom: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @default: multiply(col0:BIGINT, col1:BIGINT) -> BIGINT*/
+  multiply(col0: DNumericable, col1: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: The Jaccard similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaccard('duck','luck')	@default: jaccard(str1:VARCHAR, str2:VARCHAR) -> DOUBLE*/
   jaccard(str1: DVarcharable, str2: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extension of Levenshtein distance to also include transposition of adjacent characters as an allowed edit operation. In other words, the minimum number of edit operations (insertions, deletions, substitutions or transpositions) required to change one string to another. Different case is considered different	@example: damerau_levenshtein('hello', 'world')	@default: damerau_levenshtein(str1:VARCHAR, str2:VARCHAR) -> BIGINT*/
   damerau_levenshtein(str1: DVarcharable, str2: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the "difference" between two geometries	@example: 	@default: ST_Difference(geom1:GEOMETRY, geom2:GEOMETRY) -> GEOMETRY*/
+  ST_Difference(geom1: DAnyable, geom2: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts a TIME WITH TIME ZONE to an integer sort key	@example: timetz_byte_comparable('18:18:16.21-07:00'::TIMETZ)	@default: timetz_byte_comparable(timeTz:TIME WITH TIME ZONE) -> UBIGINT*/
   timetz_byte_comparable(timeTz: DDateable): DNum;
@@ -2772,6 +2869,12 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns a map created from merging the input maps, on key collision the value is taken from the last map with that key	@example: map_concat(map([1,2], ['a', 'b']), map([2,3], ['c', 'd']));*/
   map_concat(...vargs: DAnyable[]): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the first geometry is within the second	@example: 	@default: ST_Within(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Within(geom1: DAnyable, geom2: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the extent of two geometries intersects	@example: 	@default: ST_Intersects_Extent(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Intersects_Extent(geom1: DAnyable, geom2: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Replaces any occurrences of the source with target in string	@example: replace('hello', 'l', '-')	@default: replace(string:VARCHAR, source:VARCHAR, target:VARCHAR) -> VARCHAR*/
   replace(string: DVarcharable, source: DVarcharable, target: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2781,10 +2884,25 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: The (English) name of the weekday	@example: dayname(TIMESTAMP '1992-03-22')	@default: dayname(ts:DATE) -> VARCHAR*/
   dayname(ts: DDateable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Forces the vertices of a geometry to have X, Y and M components
+
+The following cases apply:
+- If the input geometry has a Z component but no M component, the Z component will be replaced with the new M value.
+- If the input geometry has a M component but no Z component, it will be returned as is.
+- If the input geometry has both a Z component and a M component, the Z component will be removed.
+- Otherwise, if the input geometry has neither a Z or M component, the new M value will be added to the vertices of the input geometry.	@example: 	@default: ST_Force3DM(geom:GEOMETRY, m:DOUBLE) -> GEOMETRY*/
+  ST_Force3DM(geom: DAnyable, m: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_inner_product([1, 2, 3], [1, 2, 3])	@default: array_inner_product(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_inner_product(arr1: DArrayable, arr2: DArrayable): DNum;
   /**                                                            @description: Compute the inner product between two arrays of the same size. The array elements can not be NULL. The arrays can have any size as long as the size is the same for both arguments.	@example: array_inner_product([1, 2, 3], [1, 2, 3])	@default: array_dot_product(arr1:DOUBLE[ANY], arr2:DOUBLE[ANY]) -> DOUBLE*/
   array_dot_product: this["array_inner_product"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geometries overlap	@example: 	@default: ST_Overlaps(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Overlaps(geom1: DAnyable, geom2: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a point interpolated along a line at a fraction of total 2D length.	@example: 	@default: ST_LineInterpolatePoint(line:GEOMETRY, fraction:DOUBLE) -> GEOMETRY*/
+  ST_LineInterpolatePoint(line: DAnyable, fraction: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: ends_with(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
   ends_with(col0: DVarcharable, col1: DVarcharable): DBoolField;
@@ -2812,14 +2930,28 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns a list with the BOOLEANs in mask_list applied as a mask to the value_list.	@example: list_where([10, 20, 30, 40], [true, false, false, true])	@default: list_where(valueList:ANY[], maskList:BOOLEAN[]) -> ANY[]*/
   list_where: this["array_where"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the M coordinate of a point geometry	@example: SELECT ST_M(ST_Point(1, 2, 3, 4))	@default: ST_M(geom:GEOMETRY) -> DOUBLE*/
+  ST_M(geom: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: "Merges" the input line geometry, optionally taking direction into account.	@example: 	@default: ST_LineMerge(geom:GEOMETRY, preserveDirection:BOOLEAN | ) -> GEOMETRY*/
+  ST_LineMerge(geom: DAnyable, preserveDirection?: DAnyable | DBoolable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the Z coordinate of a point geometry	@example: SELECT ST_Z(ST_Point(1, 2, 3))	@default: ST_Z(geom:GEOMETRY) -> DOUBLE*/
+  ST_Z(geom: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: getvariable(col0:VARCHAR) -> ANY*/
   getvariable(col0: DVarcharable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the last value of the input enum type	@example: enum_last(NULL::mood)	@default: enum_last(enm:ANY) -> VARCHAR*/
   enum_last(enm: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a day interval	@example: to_days(5)	@default: to_days(integer:BIGINT) -> INTERVAL*/
-  to_days(integer: DNumericable): DAnyField;
+  /**                                                            @description: Returns the Voronoi diagram of the supplied MultiPoint geometry	@example: 	@default: ST_VoronoiDiagram(geom:GEOMETRY) -> GEOMETRY*/
+  ST_VoronoiDiagram(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Forces the vertices of a geometry to have X and Y components
+
+This function will drop any Z and M values from the input geometry, if present. If the input geometry is already 2D, it will be returned as is.	@example: 	@default: ST_Force2D(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Force2D(geom: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-sensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: like_escape('a%c', 'a$%c', '$')	@default: like_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
   like_escape(string: DVarcharable, likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
@@ -2833,8 +2965,31 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the name of the data type of the result of the expression	@example: typeof('abc')	@default: typeof(expression:ANY) -> VARCHAR*/
   typeof(expression: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the 'concave' hull of the input geometry, containing all of the source input's points, and which can be used to create polygons from points. The ratio parameter dictates the level of concavity; 1.0 returns the convex hull; and 0 indicates to return the most concave hull possible. Set allowHoles to a non-zero value to allow output containing holes.	@example: 	@default: ST_ConcaveHull(geom:GEOMETRY, ratio:DOUBLE, allowHoles:BOOLEAN) -> GEOMETRY*/
+  ST_ConcaveHull(geom: DAnyable, ratio: DNumericable, allowHoles: DBoolable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the timestamp for the given UUID v7.	@example: uuid_extract_timestamp('019482e4-1441-7aad-8127-eec99573b0a0')	@default: uuid_extract_timestamp(uuid:UUID) -> TIMESTAMP WITH TIME ZONE*/
   uuid_extract_timestamp(uuid: DAnyable): DDateField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Applies an affine transformation to a geometry.
+
+For the 2D variant, the transformation matrix is defined as follows:
+```
+| a b xoff |
+| d e yoff |
+| 0 0 1    |
+```
+
+For the 3D variant, the transformation matrix is defined as follows:
+```
+| a b c xoff |
+| d e f yoff |
+| g h i zoff |
+| 0 0 0 1    |
+```
+
+The transformation is applied to all vertices of the geometry.	@example: 	@default: ST_Affine(geom:GEOMETRY, a:DOUBLE, b:DOUBLE, c:DOUBLE, d:DOUBLE, e:DOUBLE, f:DOUBLE, g:DOUBLE | , h:DOUBLE | , i:DOUBLE | , xoff:DOUBLE | , yoff:DOUBLE | , zoff:DOUBLE | ) -> GEOMETRY*/
+  ST_Affine(geom: DAnyable, a: DNumericable, b: DNumericable, c: DNumericable, d: DNumericable, e: DNumericable, f: DNumericable, g?: DAnyable | DNumericable, h?: DAnyable | DNumericable, i?: DAnyable | DNumericable, xoff?: DAnyable | DNumericable, yoff?: DAnyable | DNumericable, zoff?: DAnyable | DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the lowest value of the set of input parameters	@example: least(42, 84)	@default: least(arg1:ANY) -> ANY*/
   least(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField;
@@ -2865,10 +3020,16 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Rounds x to s decimal places	@example: round(42.4332, 2)	@default: round(x:BIGINT, precision:INTEGER | ) -> BIGINT*/
   round(x: DNumericable, precision?: DAnyable | DNumericable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a point guaranteed to lie on the surface of the geometry	@example: 	@default: ST_PointOnSurface(geom:GEOMETRY) -> GEOMETRY*/
+  ST_PointOnSurface(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes x to the power of y	@example: pow(2, 3)	@default: power(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   power(x: DNumericable, y: DNumericable): DNum;
   /**                                                            @description: Computes x to the power of y	@example: pow(2, 3)	@default: pow(x:DOUBLE, y:DOUBLE) -> DOUBLE*/
   pow: this["power"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Deserialize a GEOMETRY from a WKT encoded string	@example: 	@default: ST_GeomFromText(wkt:VARCHAR, ignoreInvalid:BOOLEAN | ) -> GEOMETRY*/
+  ST_GeomFromText(wkt: DVarcharable, ignoreInvalid?: DAnyable | DBoolable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the current timestamp	@example: get_current_timestamp()*/
   get_current_timestamp(): DDateField;
@@ -2877,23 +3038,25 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns the current timestamp	@example: get_current_timestamp()*/
   now: this["get_current_timestamp"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a week interval	@example: to_weeks(5)	@default: to_weeks(integer:BIGINT) -> INTERVAL*/
-  to_weeks(integer: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a year interval	@example: to_years(5)	@default: to_years(integer:BIGINT) -> INTERVAL*/
-  to_years(integer: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: If arg2 is NULL, return NULL. Otherwise, return arg1.	@example: constant_or_null(42, NULL)	@default: constant_or_null(arg1:ANY, arg2:ANY) -> ANY*/
   constant_or_null(arg1: DAnyable, arg2: DAnyable, ...vargs: DAnyable[]): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a hour interval	@example: to_hours(5)	@default: to_hours(integer:BIGINT) -> INTERVAL*/
-  to_hours(integer: DNumericable): DAnyField;
+  /**                                                            @description: Returns the invalid edges in a polygonal coverage, which are edges that are not shared by two polygons.
+Returns NULL if the input is not a polygonal coverage, or if the input is valid.
+Tolerance is 0 by default.	@example: 	@default: ST_CoverageInvalidEdges(geoms:GEOMETRY[], tolerance:DOUBLE | ) -> GEOMETRY*/
+  ST_CoverageInvalidEdges(geoms: DArrayable, tolerance?: DAnyable | DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a simplified version of the geometry that preserves topology	@example: 	@default: ST_SimplifyPreserveTopology(geom:GEOMETRY, tolerance:DOUBLE) -> GEOMETRY*/
+  ST_SimplifyPreserveTopology(geom: DAnyable, tolerance: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the first value of the input enum type	@example: enum_first(NULL::mood)	@default: enum_first(enm:ANY) -> VARCHAR*/
   enum_first(enm: DAnyable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: html_unescape(col0:VARCHAR) -> VARCHAR*/
   html_unescape(col0: DVarcharable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the shortest line between two geometries	@example: 	@default: ST_ShortestLine(geom1:GEOMETRY, geom2:GEOMETRY) -> GEOMETRY*/
+  ST_ShortestLine(geom1: DAnyable, geom2: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Computes the greatest common divisor of x and y	@example: greatest_common_divisor(42, 57)	@default: greatest_common_divisor(x:BIGINT, y:BIGINT) -> BIGINT*/
   greatest_common_divisor(x: DNumericable, y: DNumericable): DNum;
@@ -2907,6 +3070,9 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Splits the `string` along the `separator`	@example: string_split('hello-world', '-')	@default: str_split(string:VARCHAR, separator:VARCHAR) -> VARCHAR[]*/
   str_split: this["string_to_array"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the "normalized" representation of the geometry	@example: 	@default: ST_Normalize(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Normalize(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Create a STRUCT containing the argument values. The entry name will be the bound variable name.	@example: struct_pack(i := 4, s := 'string')*/
   struct_pack(...vargs: DAnyable[]): DStructField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -2916,8 +3082,17 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: h3_get_hexagon_area_avg(col0:INTEGER, col1:VARCHAR) -> DOUBLE*/
   h3_get_hexagon_area_avg(col0: DNumericable, col1: DVarcharable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the first geometry contains the second geometry
+
+In contrast to `ST_ContainsProperly`, this function will also return true if `geom2` is contained strictly on the boundary of `geom1`.
+A geometry always `ST_Contains` itself, but does not `ST_ContainsProperly` itself.	@example: 	@default: ST_Contains(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Contains(geom1: DAnyable, geom2: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Interpolation of (x-1) factorial (so decimal inputs are allowed)	@example: gamma(5.5)	@default: gamma(x:DOUBLE) -> DOUBLE*/
   gamma(x: DNumericable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geom1 "covers" geom2	@example: 	@default: ST_Covers(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Covers(geom1: DAnyable, geom2: DAnyable): DBoolField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns a list containing the value for a given key or an empty list if the key is not contained in the map. The type of the key provided in the second parameter must match the type of the map’s keys else an error is returned	@example: map_extract(map(['key'], ['val']), 'key')	@default: map_extract(map:MAP(ANY, ANY), key:ANY) -> ANY*/
   map_extract(map: DAnyable, key: DAnyable, ...vargs: DAnyable[]): DAnyField;
@@ -2926,6 +3101,15 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
   greatest(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Forces the vertices of a geometry to have X, Y and Z components
+
+The following cases apply:
+- If the input geometry has a M component but no Z component, the M component will be replaced with the new Z value.
+- If the input geometry has a Z component but no M component, it will be returned as is.
+- If the input geometry has both a Z component and a M component, the M component will be removed.
+- Otherwise, if the input geometry has neither a Z or M component, the new Z value will be added to the vertices of the input geometry.	@example: 	@default: ST_Force3DZ(geom:GEOMETRY, z:DOUBLE) -> GEOMETRY*/
+  ST_Force3DZ(geom: DAnyable, z: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: h3_polygon_wkt_to_cells(col0:VARCHAR, col1:INTEGER) -> UBIGINT[]*/
   h3_polygon_wkt_to_cells(col0: DVarcharable, col1: DNumericable): DArrayField<DNumericField>;
@@ -2948,17 +3132,28 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: h3_compact_cells(col0:BIGINT[]) -> BIGINT[]*/
   h3_compact_cells(col0: DArrayable): DArrayField<DNumericField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a second interval	@example: to_seconds(5.5)	@default: to_seconds(double:DOUBLE) -> INTERVAL*/
-  to_seconds(double: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns true if the entire `string` matches the `regex`. A set of optional `options` can be set.	@example: regexp_full_match('anabanana', '(an)*')	@default: regexp_full_match(string:VARCHAR, regex:VARCHAR, options:VARCHAR | ) -> BOOLEAN*/
   regexp_full_match(string: DVarcharable, regex: DVarcharable | RegExp, options?: DAnyable | DVarcharable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Forces the vertices of a geometry to have X, Y, Z and M components
+
+The following cases apply:
+- If the input geometry has a Z component but no M component, the new M value will be added to the vertices of the input geometry.
+- If the input geometry has a M component but no Z component, the new Z value will be added to the vertices of the input geometry.
+- If the input geometry has both a Z component and a M component, the geometry will be returned as is.
+- Otherwise, if the input geometry has neither a Z or M component, the new Z and M values will be added to the vertices of the input geometry.	@example: 	@default: ST_Force4D(geom:GEOMETRY, z:DOUBLE, m:DOUBLE) -> GEOMETRY*/
+  ST_Force4D(geom: DAnyable, z: DNumericable, m: DNumericable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Merge the multiple STRUCTs into a single STRUCT.	@example: struct_concat(struct_pack(i := 4), struct_pack(s := 'string'))*/
   struct_concat(...vargs: DAnyable[]): DStructField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a month interval	@example: to_months(5)	@default: to_months(integer:BIGINT) -> INTERVAL*/
-  to_months(integer: DNumericable): DAnyField;
+  /**                                                            @description: Creates a polygonal geometry by attemtping to "fill in" the input geometry.
+
+Unlike ST_Polygonize, this function does not fill in holes.	@example: 	@default: ST_BuildArea(geom:GEOMETRY) -> GEOMETRY*/
+  ST_BuildArea(geom: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Deserialize a POINT_2D from a WKB encoded blob	@example: 	@default: ST_Point2DFromWKB(point:POINT_2D) -> GEOMETRY*/
+  ST_Point2DFromWKB(point: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the entry from the STRUCT by position (starts at 1!).	@example: struct_extract_at({'i': 3, 'v2': 3, 'v3': 0}, 2)	@default: struct_extract_at(struct:STRUCT, entry:BIGINT) -> ANY*/
   struct_extract_at(struct: DStructable, entry: DNumericable): DAnyField;
@@ -2999,19 +3194,43 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: icu_sort_key(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   icu_sort_key(col0: DVarcharable, col1: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a substring of a line between two fractions of total 2D length.	@example: 	@default: ST_LineSubstring(line:GEOMETRY, startFraction:DOUBLE, endFraction:DOUBLE) -> GEOMETRY*/
+  ST_LineSubstring(line: DAnyable, startFraction: DNumericable, endFraction: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Converts a `blob` to a base64 encoded `string`.	@example: base64('A'::BLOB)	@default: to_base64(blob:BLOB) -> VARCHAR*/
   to_base64(blob: DAnyable): DStr;
   /**                                                            @description: Converts a `blob` to a base64 encoded `string`.	@example: base64('A'::BLOB)	@default: base64(blob:BLOB) -> VARCHAR*/
   base64: this["to_base64"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the minimum M coordinate of a geometry	@example: SELECT ST_MMin(ST_Point(1, 2, 3, 4))	@default: ST_MMin(geom:GEOMETRY) -> DOUBLE*/
+  ST_MMin(geom: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the maximum M coordinate of a geometry	@example: SELECT ST_MMax(ST_Point(1, 2, 3, 4))	@default: ST_MMax(geom:GEOMETRY) -> DOUBLE*/
+  ST_MMax(geom: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: h3_string_to_h3(col0:VARCHAR) -> UBIGINT*/
   h3_string_to_h3(col0: DVarcharable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Deserialize a LINESTRING_2D from a WKB encoded blob	@example: 	@default: ST_LineString2DFromWKB(linestring:LINESTRING_2D) -> GEOMETRY*/
+  ST_LineString2DFromWKB(linestring: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the minimum Z coordinate of a geometry	@example: SELECT ST_ZMin(ST_Point(1, 2, 3))	@default: ST_ZMin(geom:GEOMETRY) -> DOUBLE*/
+  ST_ZMin(geom: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the maximum Z coordinate of a geometry	@example: SELECT ST_ZMax(ST_Point(1, 2, 3))	@default: ST_ZMax(geom:GEOMETRY) -> DOUBLE*/
+  ST_ZMax(geom: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract substring of `length` characters starting from character `start`. Note that a start value of 1 refers to the first character of the `string`.	@example: substring('Hello', 2, 2)	@default: substring(string:VARCHAR, start:BIGINT, length:BIGINT | ) -> VARCHAR*/
   substring(string: DVarcharable, start: DNumericable, length?: DAnyable | DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Returns the map entries as a list of keys/values	@example: map_entries(map(['key'], ['val']))*/
   map_entries(...vargs: DAnyable[]): DArrayField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Creates a POINT_2D	@example: 	@default: ST_Point2D(x:DOUBLE, y:DOUBLE) -> POINT_2D*/
+  ST_Point2D(x: DNumericable, y: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a valid representation of the geometry	@example: 	@default: ST_MakeValid(geom:GEOMETRY) -> GEOMETRY*/
+  ST_MakeValid(geom: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: h3_latlng_to_cell_string(col0:DOUBLE, col1:DOUBLE, col2:INTEGER) -> VARCHAR*/
   h3_latlng_to_cell_string(col0: DNumericable, col1: DNumericable, col2: DNumericable): DStr;
@@ -3025,8 +3244,8 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Extracts the left-most count grapheme clusters	@example: left_grapheme('🤦🏼‍♂️🤦🏽‍♀️', 1)	@default: left_grapheme(string:VARCHAR, count:BIGINT) -> VARCHAR*/
   left_grapheme(string: DVarcharable, count: DNumericable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Subtract arguments, resulting in the time difference between the two timestamps	@example: age(TIMESTAMP '2001-04-10', TIMESTAMP '1992-09-20')	@default: age(timestamp:TIMESTAMP WITH TIME ZONE, timestamp__01:TIMESTAMP WITH TIME ZONE | ) -> INTERVAL*/
-  age(timestamp: DDateable, timestamp__01?: DAnyable | DDateable): DAnyField;
+  /**                                                            @description: Returns the convex hull enclosing the geometry	@example: 	@default: ST_ConvexHull(geom:GEOMETRY) -> GEOMETRY*/
+  ST_ConvexHull(geom: DAnyable): DAnyField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extracts the nth bit from bitstring; the first (leftmost) bit is indexed 0	@example: get_bit('0110010'::BIT, 2)	@default: get_bit(bitstring:BIT, index:INTEGER) -> INTEGER*/
   get_bit(bitstring: DAnyable, index: DNumericable): DNum;
@@ -3036,24 +3255,718 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Returns a list based on the elements selected by the index_list.	@example: list_select([10, 20, 30, 40], [1, 4])	@default: list_select(valueList:ANY[], indexList:BIGINT[]) -> ANY[]*/
   list_select: this["array_select"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Construct a decade interval	@example: to_decades(5)	@default: to_decades(integer:BIGINT) -> INTERVAL*/
-  to_decades(integer: DNumericable): DAnyField;
+  /**                                                            @description: Returns the number of component geometries in a collection geometry.
+If the input geometry is not a collection, this function returns 0 or 1 depending on if the geometry is empty or not.	@example: 	@default: ST_NumGeometries(geom:GEOMETRY) -> INTEGER*/
+  ST_NumGeometries(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the number of component geometries in a collection geometry.
+If the input geometry is not a collection, this function returns 0 or 1 depending on if the geometry is empty or not.	@example: 	@default: ST_NGeometries(geom:GEOMETRY) -> INTEGER*/
+  ST_NGeometries: this["ST_NumGeometries"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Dumps a geometry into a list of sub-geometries and their "path" in the original geometry.
+
+You can use the `UNNEST(res, recursive := true)` function to explode  resulting list of structs into multiple rows.	@example: select st_dump('MULTIPOINT(1 2,3 4)'::geometry);
+----
+[{'geom': 'POINT(1 2)', 'path': [0]}, {'geom': 'POINT(3 4)', 'path': [1]}]
+
+select unnest(st_dump('MULTIPOINT(1 2,3 4)'::geometry), recursive := true);
+-- ┌─────────────┬─────────┐
+-- │    geom     │  path   │
+-- │  geometry   │ int32[] │
+-- ├─────────────┼─────────┤
+-- │ POINT (1 2) │ [1]     │
+-- │ POINT (3 4) │ [2]     │
+-- └─────────────┴─────────┘	@default: ST_Dump(geom:GEOMETRY) -> STRUCT(geom GEOMETRY, path INTEGER[])[]*/
+  ST_Dump(geom: DAnyable): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Compute the cross product of two arrays of size 3. The array elements can not be NULL.	@example: array_cross_product([1, 2, 3], [1, 2, 3])	@default: array_cross_product(arr:DOUBLE[3], arr__01:DOUBLE[3]) -> DOUBLE[3]*/
   array_cross_product(arr: DArrayable, arr__01: DArrayable): DArrayField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geometry is a ring (both ST_IsClosed and ST_IsSimple).	@example: 	@default: ST_IsRing(geom:GEOMETRY) -> BOOLEAN*/
+  ST_IsRing(geom: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Compute the area of a geometry.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon
+geometries.
+
+The area is in the same units as the spatial reference system of the geometry.
+
+The `POINT_2D` and `LINESTRING_2D` overloads of this function always return `0.0` but are included for completeness.	@example: select ST_Area('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::geometry);
+-- 1.0	@default: ST_Area(box:BOX_2D) -> DOUBLE*/
+  ST_Area(box: DAnyable): DNum;
+  /**                                                            @description: Compute the area of a geometry.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon
+geometries.
+
+The area is in the same units as the spatial reference system of the geometry.
+
+The `POINT_2D` and `LINESTRING_2D` overloads of this function always return `0.0` but are included for completeness.	@example: select ST_Area('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::geometry);
+-- 1.0	@default: ST_Area(geom:GEOMETRY) -> DOUBLE*/
+  ST_Area(geom: DAnyable): DNum;
+  /**                                                            @description: Compute the area of a geometry.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon
+geometries.
+
+The area is in the same units as the spatial reference system of the geometry.
+
+The `POINT_2D` and `LINESTRING_2D` overloads of this function always return `0.0` but are included for completeness.	@example: select ST_Area('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::geometry);
+-- 1.0	@default: ST_Area(linestring:LINESTRING_2D) -> DOUBLE*/
+  ST_Area(linestring: DAnyable): DNum;
+  /**                                                            @description: Compute the area of a geometry.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon
+geometries.
+
+The area is in the same units as the spatial reference system of the geometry.
+
+The `POINT_2D` and `LINESTRING_2D` overloads of this function always return `0.0` but are included for completeness.	@example: select ST_Area('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::geometry);
+-- 1.0	@default: ST_Area(point:POINT_2D) -> DOUBLE*/
+  ST_Area(point: DAnyable): DNum;
+  /**                                                            @description: Compute the area of a geometry.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon
+geometries.
+
+The area is in the same units as the spatial reference system of the geometry.
+
+The `POINT_2D` and `LINESTRING_2D` overloads of this function always return `0.0` but are included for completeness.	@example: select ST_Area('POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))'::geometry);
+-- 1.0	@default: ST_Area(polygon:POLYGON_2D) -> DOUBLE*/
+  ST_Area(polygon: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the area of a geometry in meters, using an ellipsoidal model of the earth
+
+The input geometry is assumed to be in the [EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (WGS84), with [latitude, longitude] axis order and the area is returned in square meters. This function uses the [GeographicLib](https://geographiclib.sourceforge.io/) library, calculating the area using an ellipsoidal model of the earth. This is a highly accurate method for calculating the area of a polygon taking the curvature of the earth into account, but is also the slowest.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon geometries.	@example: 	@default: ST_Area_Spheroid(geom:GEOMETRY) -> DOUBLE*/
+  ST_Area_Spheroid(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the area of a geometry in meters, using an ellipsoidal model of the earth
+
+The input geometry is assumed to be in the [EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (WGS84), with [latitude, longitude] axis order and the area is returned in square meters. This function uses the [GeographicLib](https://geographiclib.sourceforge.io/) library, calculating the area using an ellipsoidal model of the earth. This is a highly accurate method for calculating the area of a polygon taking the curvature of the earth into account, but is also the slowest.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon geometries.	@example: 	@default: ST_Area_Spheroid(poly:POLYGON_2D) -> DOUBLE*/
+  ST_Area_Spheroid(poly: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the geometry as a WKT string	@example: SELECT ST_AsText(ST_MakeEnvelope(0,0,1,1));
+----
+POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))	@default: ST_AsText(box:BOX_2D) -> VARCHAR*/
+  ST_AsText(box: DAnyable): DStr;
+  /**                                                            @description: Returns the geometry as a WKT string	@example: SELECT ST_AsText(ST_MakeEnvelope(0,0,1,1));
+----
+POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))	@default: ST_AsText(geom:GEOMETRY) -> VARCHAR*/
+  ST_AsText(geom: DAnyable): DStr;
+  /**                                                            @description: Returns the geometry as a WKT string	@example: SELECT ST_AsText(ST_MakeEnvelope(0,0,1,1));
+----
+POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))	@default: ST_AsText(linestring:LINESTRING_2D) -> VARCHAR*/
+  ST_AsText(linestring: DAnyable): DStr;
+  /**                                                            @description: Returns the geometry as a WKT string	@example: SELECT ST_AsText(ST_MakeEnvelope(0,0,1,1));
+----
+POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))	@default: ST_AsText(point:POINT_2D) -> VARCHAR*/
+  ST_AsText(point: DAnyable): DStr;
+  /**                                                            @description: Returns the geometry as a WKT string	@example: SELECT ST_AsText(ST_MakeEnvelope(0,0,1,1));
+----
+POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))	@default: ST_AsText(polygon:POLYGON_2D) -> VARCHAR*/
+  ST_AsText(polygon: DAnyable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the centroid of a geometry	@example: 	@default: ST_Centroid(box:BOX_2D) -> POINT_2D*/
+  ST_Centroid(box: DAnyable): DAnyField;
+  /**                                                            @description: Returns the centroid of a geometry	@example: 	@default: ST_Centroid(geom:GEOMETRY) -> GEOMETRY*/
+  ST_Centroid(geom: DAnyable): DAnyField;
+  /**                                                            @description: Returns the centroid of a geometry	@example: 	@default: ST_Centroid(linestring:LINESTRING_2D) -> POINT_2D*/
+  ST_Centroid(linestring: DAnyable): DAnyField;
+  /**                                                            @description: Returns the centroid of a geometry	@example: 	@default: ST_Centroid(point:POINT_2D) -> POINT_2D*/
+  ST_Centroid(point: DAnyable): DAnyField;
+  /**                                                            @description: Returns the centroid of a geometry	@example: 	@default: ST_Centroid(polygon:POLYGON_2D) -> POINT_2D*/
+  ST_Centroid(polygon: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the planar distance between two geometries	@example: 	@default: ST_Distance(geom1:GEOMETRY, geom2:GEOMETRY) -> DOUBLE*/
+  ST_Distance(geom1: DAnyable, geom2: DAnyable): DNum;
+  /**                                                            @example: 	@default: ST_Distance(linestring:LINESTRING_2D, point:POINT_2D) -> DOUBLE*/
+  ST_Distance(linestring: DAnyable, point: DAnyable): DNum;
+  /**                                                            @example: 	@default: ST_Distance(point1:POINT_2D, point2:LINESTRING_2D | POINT_2D) -> DOUBLE*/
+  ST_Distance(point1: DAnyable, point2: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the haversine (great circle) distance between two geometries.
+
+- Only supports POINT geometries.
+- Returns the distance in meters.
+- The input is expected to be in WGS84 (EPSG:4326) coordinates, using a [latitude, longitude] axis order.	@example: 	@default: ST_Distance_Sphere(geom1:GEOMETRY, geom2:GEOMETRY) -> DOUBLE*/
+  ST_Distance_Sphere(geom1: DAnyable, geom2: DAnyable): DNum;
+  /**                                                            @description: Returns the haversine (great circle) distance between two geometries.
+
+- Only supports POINT geometries.
+- Returns the distance in meters.
+- The input is expected to be in WGS84 (EPSG:4326) coordinates, using a [latitude, longitude] axis order.	@example: 	@default: ST_Distance_Sphere(point1:POINT_2D, point2:POINT_2D) -> DOUBLE*/
+  ST_Distance_Sphere(point1: DAnyable, point2: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the end point of a LINESTRING.	@example: 	@default: ST_EndPoint(geom:GEOMETRY) -> GEOMETRY*/
+  ST_EndPoint(geom: DAnyable): DAnyField;
+  /**                                                            @description: Returns the end point of a LINESTRING.	@example: 	@default: ST_EndPoint(line:LINESTRING_2D) -> POINT_2D*/
+  ST_EndPoint(line: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the minimal bounding box enclosing the input geometry	@example: 	@default: ST_Extent(geom:GEOMETRY) -> BOX_2D*/
+  ST_Extent(geom: DAnyable): DAnyField;
+  /**                                                            @description: Returns the minimal bounding box enclosing the input geometry	@example: 	@default: ST_Extent(wkb:WKB_BLOB) -> BOX_2D*/
+  ST_Extent(wkb: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the exterior ring (shell) of a polygon geometry.	@example: 	@default: ST_ExteriorRing(geom:GEOMETRY) -> GEOMETRY*/
+  ST_ExteriorRing(geom: DAnyable): DAnyField;
+  /**                                                            @description: Returns the exterior ring (shell) of a polygon geometry.	@example: 	@default: ST_ExteriorRing(polygon:POLYGON_2D) -> LINESTRING_2D*/
+  ST_ExteriorRing(polygon: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a new geometry with the coordinates of the input geometry "flipped" so that x = y and y = x	@example: 	@default: ST_FlipCoordinates(box:BOX_2D) -> BOX_2D*/
+  ST_FlipCoordinates(box: DAnyable): DAnyField;
+  /**                                                            @description: Returns a new geometry with the coordinates of the input geometry "flipped" so that x = y and y = x	@example: 	@default: ST_FlipCoordinates(geom:GEOMETRY) -> GEOMETRY*/
+  ST_FlipCoordinates(geom: DAnyable): DAnyField;
+  /**                                                            @description: Returns a new geometry with the coordinates of the input geometry "flipped" so that x = y and y = x	@example: 	@default: ST_FlipCoordinates(linestring:LINESTRING_2D) -> LINESTRING_2D*/
+  ST_FlipCoordinates(linestring: DAnyable): DAnyField;
+  /**                                                            @description: Returns a new geometry with the coordinates of the input geometry "flipped" so that x = y and y = x	@example: 	@default: ST_FlipCoordinates(point:POINT_2D) -> POINT_2D*/
+  ST_FlipCoordinates(point: DAnyable): DAnyField;
+  /**                                                            @description: Returns a new geometry with the coordinates of the input geometry "flipped" so that x = y and y = x	@example: 	@default: ST_FlipCoordinates(polygon:POLYGON_2D) -> POLYGON_2D*/
+  ST_FlipCoordinates(polygon: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Deserializes a GEOMETRY from a GeoJSON fragment.	@example: SELECT ST_GeomFromGeoJSON('{"type":"Point","coordinates":[1.0,2.0]}');
+----
+POINT (1 2)	@default: ST_GeomFromGeoJSON(geojson:JSON) -> GEOMETRY*/
+  ST_GeomFromGeoJSON(geojson: DJsonable): DAnyField;
+  /**                                                            @description: Deserializes a GEOMETRY from a GeoJSON fragment.	@example: SELECT ST_GeomFromGeoJSON('{"type":"Point","coordinates":[1.0,2.0]}');
+----
+POINT (1 2)	@default: ST_GeomFromGeoJSON(geojson:VARCHAR) -> GEOMETRY*/
+  ST_GeomFromGeoJSON(geojson: DVarcharable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Deserializes a GEOMETRY from a WKB encoded blob	@example: 	@default: ST_GeomFromWKB(blob:BLOB) -> GEOMETRY*/
+  ST_GeomFromWKB(blob: DAnyable): DAnyField;
+  /**                                                            @description: Deserializes a GEOMETRY from a WKB encoded blob	@example: 	@default: ST_GeomFromWKB(wkb:WKB_BLOB) -> GEOMETRY*/
+  ST_GeomFromWKB(wkb: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a 'GEOMETRY_TYPE' enum identifying the input geometry type. Possible enum return types are: `POINT`, `LINESTRING`, `POLYGON`, `MULTIPOINT`, `MULTILINESTRING`, `MULTIPOLYGON`, and `GEOMETRYCOLLECTION`.	@example: SELECT DISTINCT ST_GeometryType(ST_GeomFromText('POINT(1 1)'));
+----
+POINT	@default: ST_GeometryType(geom:GEOMETRY) -> ANY*/
+  ST_GeometryType(geom: DAnyable): DAnyField;
+  /**                                                            @description: Returns a 'GEOMETRY_TYPE' enum identifying the input geometry type. Possible enum return types are: `POINT`, `LINESTRING`, `POLYGON`, `MULTIPOINT`, `MULTILINESTRING`, `MULTIPOLYGON`, and `GEOMETRYCOLLECTION`.	@example: SELECT DISTINCT ST_GeometryType(ST_GeomFromText('POINT(1 1)'));
+----
+POINT	@default: ST_GeometryType(linestring:LINESTRING_2D) -> ANY*/
+  ST_GeometryType(linestring: DAnyable): DAnyField;
+  /**                                                            @description: Returns a 'GEOMETRY_TYPE' enum identifying the input geometry type. Possible enum return types are: `POINT`, `LINESTRING`, `POLYGON`, `MULTIPOINT`, `MULTILINESTRING`, `MULTIPOLYGON`, and `GEOMETRYCOLLECTION`.	@example: SELECT DISTINCT ST_GeometryType(ST_GeomFromText('POINT(1 1)'));
+----
+POINT	@default: ST_GeometryType(point:POINT_2D) -> ANY*/
+  ST_GeometryType(point: DAnyable): DAnyField;
+  /**                                                            @description: Returns a 'GEOMETRY_TYPE' enum identifying the input geometry type. Possible enum return types are: `POINT`, `LINESTRING`, `POLYGON`, `MULTIPOINT`, `MULTILINESTRING`, `MULTIPOLYGON`, and `GEOMETRYCOLLECTION`.	@example: SELECT DISTINCT ST_GeometryType(ST_GeomFromText('POINT(1 1)'));
+----
+POINT	@default: ST_GeometryType(polygon:POLYGON_2D) -> ANY*/
+  ST_GeometryType(polygon: DAnyable): DAnyField;
+  /**                                                            @description: Returns a 'GEOMETRY_TYPE' enum identifying the input geometry type. Possible enum return types are: `POINT`, `LINESTRING`, `POLYGON`, `MULTIPOINT`, `MULTILINESTRING`, `MULTIPOLYGON`, and `GEOMETRYCOLLECTION`.	@example: SELECT DISTINCT ST_GeometryType(ST_GeomFromText('POINT(1 1)'));
+----
+POINT	@default: ST_GeometryType(wkb:WKB_BLOB) -> ANY*/
+  ST_GeometryType(wkb: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Check if the input geometry has M values.	@example: -- HasM for a 2D geometry
+SELECT ST_HasM(ST_GeomFromText('POINT(1 1)'));
+----
+false
+
+-- HasM for a 3DZ geometry
+SELECT ST_HasM(ST_GeomFromText('POINT Z(1 1 1)'));
+----
+false
+
+-- HasM for a 3DM geometry
+SELECT ST_HasM(ST_GeomFromText('POINT M(1 1 1)'));
+----
+true
+
+-- HasM for a 4D geometry
+SELECT ST_HasM(ST_GeomFromText('POINT ZM(1 1 1 1)'));
+----
+true	@default: ST_HasM(geom:GEOMETRY) -> BOOLEAN*/
+  ST_HasM(geom: DAnyable): DBoolField;
+  /**                                                            @description: Check if the input geometry has M values.	@example: -- HasM for a 2D geometry
+SELECT ST_HasM(ST_GeomFromText('POINT(1 1)'));
+----
+false
+
+-- HasM for a 3DZ geometry
+SELECT ST_HasM(ST_GeomFromText('POINT Z(1 1 1)'));
+----
+false
+
+-- HasM for a 3DM geometry
+SELECT ST_HasM(ST_GeomFromText('POINT M(1 1 1)'));
+----
+true
+
+-- HasM for a 4D geometry
+SELECT ST_HasM(ST_GeomFromText('POINT ZM(1 1 1 1)'));
+----
+true	@default: ST_HasM(wkb:WKB_BLOB) -> BOOLEAN*/
+  ST_HasM(wkb: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Check if the input geometry has Z values.	@example: -- HasZ for a 2D geometry
+SELECT ST_HasZ(ST_GeomFromText('POINT(1 1)'));
+----
+false
+
+-- HasZ for a 3DZ geometry
+SELECT ST_HasZ(ST_GeomFromText('POINT Z(1 1 1)'));
+----
+true
+
+-- HasZ for a 3DM geometry
+SELECT ST_HasZ(ST_GeomFromText('POINT M(1 1 1)'));
+----
+false
+
+-- HasZ for a 4D geometry
+SELECT ST_HasZ(ST_GeomFromText('POINT ZM(1 1 1 1)'));
+----
+true	@default: ST_HasZ(geom:GEOMETRY) -> BOOLEAN*/
+  ST_HasZ(geom: DAnyable): DBoolField;
+  /**                                                            @description: Check if the input geometry has Z values.	@example: -- HasZ for a 2D geometry
+SELECT ST_HasZ(ST_GeomFromText('POINT(1 1)'));
+----
+false
+
+-- HasZ for a 3DZ geometry
+SELECT ST_HasZ(ST_GeomFromText('POINT Z(1 1 1)'));
+----
+true
+
+-- HasZ for a 3DM geometry
+SELECT ST_HasZ(ST_GeomFromText('POINT M(1 1 1)'));
+----
+false
+
+-- HasZ for a 4D geometry
+SELECT ST_HasZ(ST_GeomFromText('POINT ZM(1 1 1 1)'));
+----
+true	@default: ST_HasZ(wkb:WKB_BLOB) -> BOOLEAN*/
+  ST_HasZ(wkb: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Encodes the X and Y values as the hilbert curve index for a curve covering the given bounding box.
+If a geometry is provided, the center of the approximate bounding box is used as the point to encode.
+If no bounding box is provided, the hilbert curve index is mapped to the full range of a single-presicion float.
+For the BOX_2D and BOX_2DF variants, the center of the box is used as the point to encode.	@example: 	@default: ST_Hilbert(box:BOX_2D, bounds:BOX_2D) -> UINTEGER*/
+  ST_Hilbert(box: DAnyable, bounds: DAnyable): DNum;
+  /**                                                            @description: Encodes the X and Y values as the hilbert curve index for a curve covering the given bounding box.
+If a geometry is provided, the center of the approximate bounding box is used as the point to encode.
+If no bounding box is provided, the hilbert curve index is mapped to the full range of a single-presicion float.
+For the BOX_2D and BOX_2DF variants, the center of the box is used as the point to encode.	@example: 	@default: ST_Hilbert(x:DOUBLE, y:DOUBLE, bounds:BOX_2D) -> UINTEGER*/
+  ST_Hilbert(x: DNumericable, y: DNumericable, bounds: DAnyable): DNum;
+  /**                                                            @description: Encodes the X and Y values as the hilbert curve index for a curve covering the given bounding box.
+If a geometry is provided, the center of the approximate bounding box is used as the point to encode.
+If no bounding box is provided, the hilbert curve index is mapped to the full range of a single-presicion float.
+For the BOX_2D and BOX_2DF variants, the center of the box is used as the point to encode.	@example: 	@default: ST_Hilbert(geom:GEOMETRY, bounds:BOX_2D | ) -> UINTEGER*/
+  ST_Hilbert(geom: DAnyable, bounds?: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @example: 	@default: ST_Intersects(box1:BOX_2D, box2:BOX_2D) -> BOOLEAN*/
+  ST_Intersects(box1: DAnyable, box2: DAnyable): DBoolField;
+  /**                                                            @description: Returns true if the geometries intersect	@example: 	@default: ST_Intersects(geom1:GEOMETRY, geom2:GEOMETRY) -> BOOLEAN*/
+  ST_Intersects(geom1: DAnyable, geom2: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns true if the geometry is "empty".	@example: 	@default: ST_IsEmpty(geom:GEOMETRY) -> BOOLEAN*/
+  ST_IsEmpty(geom: DAnyable): DBoolField;
+  /**                                                            @description: Returns true if the geometry is "empty".	@example: 	@default: ST_IsEmpty(linestring:LINESTRING_2D) -> BOOLEAN*/
+  ST_IsEmpty(linestring: DAnyable): DBoolField;
+  /**                                                            @description: Returns true if the geometry is "empty".	@example: 	@default: ST_IsEmpty(polygon:POLYGON_2D) -> BOOLEAN*/
+  ST_IsEmpty(polygon: DAnyable): DBoolField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the length of the input line geometry	@example: 	@default: ST_Length(geom:GEOMETRY) -> DOUBLE*/
+  ST_Length(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the length of the input line geometry	@example: 	@default: ST_Length(linestring:LINESTRING_2D) -> DOUBLE*/
+  ST_Length(linestring: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the length of the input geometry in meters, using an ellipsoidal model of the earth
+
+The input geometry is assumed to be in the [EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (WGS84), with [latitude, longitude] axis order and the length is returned in meters. This function uses the [GeographicLib](https://geographiclib.sourceforge.io/) library, calculating the length using an ellipsoidal model of the earth. This is a highly accurate method for calculating the length of a line geometry taking the curvature of the earth into account, but is also the slowest.
+
+Returns `0.0` for any geometry that is not a `LINESTRING`, `MULTILINESTRING` or `GEOMETRYCOLLECTION` containing line geometries.	@example: 	@default: ST_Length_Spheroid(geom:GEOMETRY) -> DOUBLE*/
+  ST_Length_Spheroid(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the length of the input geometry in meters, using an ellipsoidal model of the earth
+
+The input geometry is assumed to be in the [EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (WGS84), with [latitude, longitude] axis order and the length is returned in meters. This function uses the [GeographicLib](https://geographiclib.sourceforge.io/) library, calculating the length using an ellipsoidal model of the earth. This is a highly accurate method for calculating the length of a line geometry taking the curvature of the earth into account, but is also the slowest.
+
+Returns `0.0` for any geometry that is not a `LINESTRING`, `MULTILINESTRING` or `GEOMETRYCOLLECTION` containing line geometries.	@example: 	@default: ST_Length_Spheroid(line:LINESTRING_2D) -> DOUBLE*/
+  ST_Length_Spheroid(line: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Create a LINESTRING from two POINT geometries	@example: SELECT ST_MakeLine(ST_Point(0, 0), ST_Point(1, 1));
+----
+LINESTRING(0 0, 1 1)	@default: ST_MakeLine(start:GEOMETRY, end:GEOMETRY) -> GEOMETRY*/
+  ST_MakeLine(start: DAnyable, end: DAnyable): DAnyField;
+  /**                                                            @description: Create a LINESTRING from a list of POINT geometries	@example: SELECT ST_MakeLine([ST_Point(0, 0), ST_Point(1, 1)]);
+----
+LINESTRING(0 0, 1 1)	@default: ST_MakeLine(geoms:GEOMETRY[]) -> GEOMETRY*/
+  ST_MakeLine(geoms: DArrayable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the number if interior rings of a polygon	@example: 	@default: ST_NumInteriorRings(geom:GEOMETRY) -> INTEGER*/
+  ST_NumInteriorRings(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the number if interior rings of a polygon	@example: 	@default: ST_NumInteriorRings(polygon:POLYGON_2D) -> INTEGER*/
+  ST_NumInteriorRings(polygon: DAnyable): DNum;
+  /**                                                            @description: Returns the number if interior rings of a polygon	@example: 	@default: ST_NInteriorRings(geom:GEOMETRY) -> INTEGER*/
+  ST_NInteriorRings: this["ST_NumInteriorRings"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the number of vertices within a geometry	@example: 	@default: ST_NumPoints(box:BOX_2D) -> UBIGINT*/
+  ST_NumPoints(box: DAnyable): DNum;
+  /**                                                            @description: Returns the number of vertices within a geometry	@example: 	@default: ST_NumPoints(geom:GEOMETRY) -> UINTEGER*/
+  ST_NumPoints(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the number of vertices within a geometry	@example: 	@default: ST_NumPoints(linestring:LINESTRING_2D) -> UBIGINT*/
+  ST_NumPoints(linestring: DAnyable): DNum;
+  /**                                                            @description: Returns the number of vertices within a geometry	@example: 	@default: ST_NumPoints(point:POINT_2D) -> UBIGINT*/
+  ST_NumPoints(point: DAnyable): DNum;
+  /**                                                            @description: Returns the number of vertices within a geometry	@example: 	@default: ST_NumPoints(polygon:POLYGON_2D) -> UBIGINT*/
+  ST_NumPoints(polygon: DAnyable): DNum;
+  /**                                                            @description: Returns the number of vertices within a geometry	@example: 	@default: ST_NPoints(box:BOX_2D) -> UBIGINT*/
+  ST_NPoints: this["ST_NumPoints"];
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the length of the perimeter of the geometry	@example: 	@default: ST_Perimeter(box:BOX_2D) -> DOUBLE*/
+  ST_Perimeter(box: DAnyable): DNum;
+  /**                                                            @description: Returns the length of the perimeter of the geometry	@example: 	@default: ST_Perimeter(geom:GEOMETRY) -> DOUBLE*/
+  ST_Perimeter(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the length of the perimeter of the geometry	@example: 	@default: ST_Perimeter(polygon:POLYGON_2D) -> DOUBLE*/
+  ST_Perimeter(polygon: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the length of the perimeter in meters using an ellipsoidal model of the earths surface
+
+The input geometry is assumed to be in the [EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (WGS84), with [latitude, longitude] axis order and the length is returned in meters. This function uses the [GeographicLib](https://geographiclib.sourceforge.io/) library, calculating the perimeter using an ellipsoidal model of the earth. This is a highly accurate method for calculating the perimeter of a polygon taking the curvature of the earth into account, but is also the slowest.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon geometries.	@example: 	@default: ST_Perimeter_Spheroid(geom:GEOMETRY) -> DOUBLE*/
+  ST_Perimeter_Spheroid(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the length of the perimeter in meters using an ellipsoidal model of the earths surface
+
+The input geometry is assumed to be in the [EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (WGS84), with [latitude, longitude] axis order and the length is returned in meters. This function uses the [GeographicLib](https://geographiclib.sourceforge.io/) library, calculating the perimeter using an ellipsoidal model of the earth. This is a highly accurate method for calculating the perimeter of a polygon taking the curvature of the earth into account, but is also the slowest.
+
+Returns `0.0` for any geometry that is not a `POLYGON`, `MULTIPOLYGON` or `GEOMETRYCOLLECTION` containing polygon geometries.	@example: 	@default: ST_Perimeter_Spheroid(poly:POLYGON_2D) -> DOUBLE*/
+  ST_Perimeter_Spheroid(poly: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the n'th vertex from the input geometry as a point geometry	@example: 	@default: ST_PointN(geom:GEOMETRY, index:INTEGER) -> GEOMETRY*/
+  ST_PointN(geom: DAnyable, index: DNumericable): DAnyField;
+  /**                                                            @description: Returns the n'th vertex from the input geometry as a point geometry	@example: 	@default: ST_PointN(linestring:LINESTRING_2D, index:INTEGER) -> POINT_2D*/
+  ST_PointN(linestring: DAnyable, index: DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Compute the [quadkey](https://learn.microsoft.com/en-us/bingmaps/articles/bing-maps-tile-system) for a given lon/lat point at a given level.
+Note that the parameter order is __longitude__, __latitude__.
+
+`level` has to be between 1 and 23, inclusive.
+
+The input coordinates will be clamped to the lon/lat bounds of the earth (longitude between -180 and 180, latitude between -85.05112878 and 85.05112878).
+
+The geometry overload throws an error if the input geometry is not a `POINT`	@example: SELECT ST_QuadKey(st_point(11.08, 49.45), 10);
+----
+1333203202	@default: ST_QuadKey(longitude:DOUBLE, latitude:DOUBLE, level:INTEGER) -> VARCHAR*/
+  ST_QuadKey(longitude: DNumericable, latitude: DNumericable, level: DNumericable): DStr;
+  /**                                                            @description: Compute the [quadkey](https://learn.microsoft.com/en-us/bingmaps/articles/bing-maps-tile-system) for a given lon/lat point at a given level.
+Note that the parameter order is __longitude__, __latitude__.
+
+`level` has to be between 1 and 23, inclusive.
+
+The input coordinates will be clamped to the lon/lat bounds of the earth (longitude between -180 and 180, latitude between -85.05112878 and 85.05112878).
+
+The geometry overload throws an error if the input geometry is not a `POINT`	@example: SELECT ST_QuadKey(st_point(11.08, 49.45), 10);
+----
+1333203202	@default: ST_QuadKey(point:GEOMETRY, level:INTEGER) -> VARCHAR*/
+  ST_QuadKey(point: DAnyable, level: DNumericable): DStr;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the geometry with repeated points removed	@example: 	@default: ST_RemoveRepeatedPoints(geom:GEOMETRY, tolerance:DOUBLE | ) -> GEOMETRY*/
+  ST_RemoveRepeatedPoints(geom: DAnyable, tolerance?: DAnyable | DNumericable): DAnyField;
+  /**                                                            @description: Remove repeated points from a LINESTRING.	@example: 	@default: ST_RemoveRepeatedPoints(line:LINESTRING_2D, tolerance:DOUBLE | ) -> LINESTRING_2D*/
+  ST_RemoveRepeatedPoints(line: DAnyable, tolerance?: DAnyable | DNumericable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the start point of a LINESTRING.	@example: 	@default: ST_StartPoint(geom:GEOMETRY) -> GEOMETRY*/
+  ST_StartPoint(geom: DAnyable): DAnyField;
+  /**                                                            @description: Returns the start point of a LINESTRING.	@example: 	@default: ST_StartPoint(line:LINESTRING_2D) -> POINT_2D*/
+  ST_StartPoint(line: DAnyable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Transforms a geometry between two coordinate systems
+
+The source and target coordinate systems can be specified using any format that the [PROJ library](https://proj.org) supports.
+
+The third optional `always_xy` parameter can be used to force the input and output geometries to be interpreted as having a [easting, northing] coordinate axis order regardless of what the source and target coordinate system definition says. This is particularly useful when transforming to/from the [WGS84/EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (what most people think of when they hear "longitude"/"latitude" or "GPS coordinates"), which is defined as having a [latitude, longitude] axis order even though [longitude, latitude] is commonly used in practice (e.g. in [GeoJSON](https://tools.ietf.org/html/rfc7946)). More details available in the [PROJ documentation](https://proj.org/en/9.3/faq.html#why-is-the-axis-ordering-in-proj-not-consistent).
+
+DuckDB spatial vendors its own static copy of the PROJ database of coordinate systems, so if you have your own installation of PROJ on your system the available coordinate systems may differ to what's available in other GIS software.	@example: -- Transform a geometry from EPSG:4326 to EPSG:3857 (WGS84 to WebMercator)
+-- Note that since WGS84 is defined as having a [latitude, longitude] axis order
+-- we follow the standard and provide the input geometry using that axis order,
+-- but the output will be [easting, northing] because that is what's defined by
+-- WebMercator.
+
+SELECT ST_AsText(
+    ST_Transform(
+        st_point(52.373123, 4.892360),
+        'EPSG:4326',
+        'EPSG:3857'
+    )
+);
+----
+POINT (544615.0239773799 6867874.103539125)
+
+-- Alternatively, let's say we got our input point from e.g. a GeoJSON file,
+-- which uses WGS84 but with [longitude, latitude] axis order. We can use the
+-- `always_xy` parameter to force the input geometry to be interpreted as having
+-- a [northing, easting] axis order instead, even though the source coordinate
+-- reference system definition (WGS84) says otherwise.
+
+SELECT ST_AsText(
+    ST_Transform(
+        -- note the axis order is reversed here
+        st_point(4.892360, 52.373123),
+        'EPSG:4326',
+        'EPSG:3857',
+        always_xy := true
+    )
+);
+----
+POINT (544615.0239773799 6867874.103539125)
+
+-- Transform a geometry from OSG36 British National Grid EPSG:27700 to EPSG:4326 WGS84
+-- Standard transform is often fine for the first few decimal places before being wrong
+-- which could result in an error starting at about 10m and possibly much more
+SELECT ST_Transform(bng, 'EPSG:27700', 'EPSG:4326', xy := true) AS without_grid_file
+FROM (SELECT ST_GeomFromText('POINT( 170370.718 11572.405 )') AS bng);
+----
+POINT (-5.202992651563592 49.96007490162923)
+
+-- By using an official NTv2 grid file, we can reduce the error down around the 9th decimal place
+-- which in theory is below a millimetre, and in practise unlikely that your coordinates are that precise
+-- British National Grid "NTv2 format files" download available here:
+-- https://www.ordnancesurvey.co.uk/products/os-net/for-developers
+SELECT ST_Transform(bng
+    , '+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +units=m +no_defs +nadgrids=/full/path/to/OSTN15-NTv2/OSTN15_NTv2_OSGBtoETRS.gsb +type=crs'
+    , 'EPSG:4326', xy := true) AS with_grid_file
+FROM (SELECT ST_GeomFromText('POINT( 170370.718 11572.405 )') AS bng) t;
+----
+POINT (-5.203046090608746 49.96006137018598)	@default: ST_Transform(box:BOX_2D, sourceCrs:VARCHAR, targetCrs:VARCHAR, alwaysXy:BOOLEAN | ) -> BOX_2D*/
+  ST_Transform(box: DAnyable, sourceCrs: DVarcharable, targetCrs: DVarcharable, alwaysXy?: DAnyable | DBoolable): DAnyField;
+  /**                                                            @description: Transforms a geometry between two coordinate systems
+
+The source and target coordinate systems can be specified using any format that the [PROJ library](https://proj.org) supports.
+
+The third optional `always_xy` parameter can be used to force the input and output geometries to be interpreted as having a [easting, northing] coordinate axis order regardless of what the source and target coordinate system definition says. This is particularly useful when transforming to/from the [WGS84/EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (what most people think of when they hear "longitude"/"latitude" or "GPS coordinates"), which is defined as having a [latitude, longitude] axis order even though [longitude, latitude] is commonly used in practice (e.g. in [GeoJSON](https://tools.ietf.org/html/rfc7946)). More details available in the [PROJ documentation](https://proj.org/en/9.3/faq.html#why-is-the-axis-ordering-in-proj-not-consistent).
+
+DuckDB spatial vendors its own static copy of the PROJ database of coordinate systems, so if you have your own installation of PROJ on your system the available coordinate systems may differ to what's available in other GIS software.	@example: -- Transform a geometry from EPSG:4326 to EPSG:3857 (WGS84 to WebMercator)
+-- Note that since WGS84 is defined as having a [latitude, longitude] axis order
+-- we follow the standard and provide the input geometry using that axis order,
+-- but the output will be [easting, northing] because that is what's defined by
+-- WebMercator.
+
+SELECT ST_AsText(
+    ST_Transform(
+        st_point(52.373123, 4.892360),
+        'EPSG:4326',
+        'EPSG:3857'
+    )
+);
+----
+POINT (544615.0239773799 6867874.103539125)
+
+-- Alternatively, let's say we got our input point from e.g. a GeoJSON file,
+-- which uses WGS84 but with [longitude, latitude] axis order. We can use the
+-- `always_xy` parameter to force the input geometry to be interpreted as having
+-- a [northing, easting] axis order instead, even though the source coordinate
+-- reference system definition (WGS84) says otherwise.
+
+SELECT ST_AsText(
+    ST_Transform(
+        -- note the axis order is reversed here
+        st_point(4.892360, 52.373123),
+        'EPSG:4326',
+        'EPSG:3857',
+        always_xy := true
+    )
+);
+----
+POINT (544615.0239773799 6867874.103539125)
+
+-- Transform a geometry from OSG36 British National Grid EPSG:27700 to EPSG:4326 WGS84
+-- Standard transform is often fine for the first few decimal places before being wrong
+-- which could result in an error starting at about 10m and possibly much more
+SELECT ST_Transform(bng, 'EPSG:27700', 'EPSG:4326', xy := true) AS without_grid_file
+FROM (SELECT ST_GeomFromText('POINT( 170370.718 11572.405 )') AS bng);
+----
+POINT (-5.202992651563592 49.96007490162923)
+
+-- By using an official NTv2 grid file, we can reduce the error down around the 9th decimal place
+-- which in theory is below a millimetre, and in practise unlikely that your coordinates are that precise
+-- British National Grid "NTv2 format files" download available here:
+-- https://www.ordnancesurvey.co.uk/products/os-net/for-developers
+SELECT ST_Transform(bng
+    , '+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +units=m +no_defs +nadgrids=/full/path/to/OSTN15-NTv2/OSTN15_NTv2_OSGBtoETRS.gsb +type=crs'
+    , 'EPSG:4326', xy := true) AS with_grid_file
+FROM (SELECT ST_GeomFromText('POINT( 170370.718 11572.405 )') AS bng) t;
+----
+POINT (-5.203046090608746 49.96006137018598)	@default: ST_Transform(geom:GEOMETRY, sourceCrs:VARCHAR, targetCrs:VARCHAR, alwaysXy:BOOLEAN | ) -> GEOMETRY*/
+  ST_Transform(geom: DAnyable, sourceCrs: DVarcharable, targetCrs: DVarcharable, alwaysXy?: DAnyable | DBoolable): DAnyField;
+  /**                                                            @description: Transforms a geometry between two coordinate systems
+
+The source and target coordinate systems can be specified using any format that the [PROJ library](https://proj.org) supports.
+
+The third optional `always_xy` parameter can be used to force the input and output geometries to be interpreted as having a [easting, northing] coordinate axis order regardless of what the source and target coordinate system definition says. This is particularly useful when transforming to/from the [WGS84/EPSG:4326](https://en.wikipedia.org/wiki/World_Geodetic_System) coordinate system (what most people think of when they hear "longitude"/"latitude" or "GPS coordinates"), which is defined as having a [latitude, longitude] axis order even though [longitude, latitude] is commonly used in practice (e.g. in [GeoJSON](https://tools.ietf.org/html/rfc7946)). More details available in the [PROJ documentation](https://proj.org/en/9.3/faq.html#why-is-the-axis-ordering-in-proj-not-consistent).
+
+DuckDB spatial vendors its own static copy of the PROJ database of coordinate systems, so if you have your own installation of PROJ on your system the available coordinate systems may differ to what's available in other GIS software.	@example: -- Transform a geometry from EPSG:4326 to EPSG:3857 (WGS84 to WebMercator)
+-- Note that since WGS84 is defined as having a [latitude, longitude] axis order
+-- we follow the standard and provide the input geometry using that axis order,
+-- but the output will be [easting, northing] because that is what's defined by
+-- WebMercator.
+
+SELECT ST_AsText(
+    ST_Transform(
+        st_point(52.373123, 4.892360),
+        'EPSG:4326',
+        'EPSG:3857'
+    )
+);
+----
+POINT (544615.0239773799 6867874.103539125)
+
+-- Alternatively, let's say we got our input point from e.g. a GeoJSON file,
+-- which uses WGS84 but with [longitude, latitude] axis order. We can use the
+-- `always_xy` parameter to force the input geometry to be interpreted as having
+-- a [northing, easting] axis order instead, even though the source coordinate
+-- reference system definition (WGS84) says otherwise.
+
+SELECT ST_AsText(
+    ST_Transform(
+        -- note the axis order is reversed here
+        st_point(4.892360, 52.373123),
+        'EPSG:4326',
+        'EPSG:3857',
+        always_xy := true
+    )
+);
+----
+POINT (544615.0239773799 6867874.103539125)
+
+-- Transform a geometry from OSG36 British National Grid EPSG:27700 to EPSG:4326 WGS84
+-- Standard transform is often fine for the first few decimal places before being wrong
+-- which could result in an error starting at about 10m and possibly much more
+SELECT ST_Transform(bng, 'EPSG:27700', 'EPSG:4326', xy := true) AS without_grid_file
+FROM (SELECT ST_GeomFromText('POINT( 170370.718 11572.405 )') AS bng);
+----
+POINT (-5.202992651563592 49.96007490162923)
+
+-- By using an official NTv2 grid file, we can reduce the error down around the 9th decimal place
+-- which in theory is below a millimetre, and in practise unlikely that your coordinates are that precise
+-- British National Grid "NTv2 format files" download available here:
+-- https://www.ordnancesurvey.co.uk/products/os-net/for-developers
+SELECT ST_Transform(bng
+    , '+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +units=m +no_defs +nadgrids=/full/path/to/OSTN15-NTv2/OSTN15_NTv2_OSGBtoETRS.gsb +type=crs'
+    , 'EPSG:4326', xy := true) AS with_grid_file
+FROM (SELECT ST_GeomFromText('POINT( 170370.718 11572.405 )') AS bng) t;
+----
+POINT (-5.203046090608746 49.96006137018598)	@default: ST_Transform(point:POINT_2D, sourceCrs:VARCHAR, targetCrs:VARCHAR, alwaysXy:BOOLEAN | ) -> POINT_2D*/
+  ST_Transform(point: DAnyable, sourceCrs: DVarcharable, targetCrs: DVarcharable, alwaysXy?: DAnyable | DBoolable): DAnyField;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the X coordinate of a point geometry	@example: SELECT ST_X(ST_Point(1, 2))	@default: ST_X(geom:GEOMETRY) -> DOUBLE*/
+  ST_X(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the X coordinate of a point geometry	@example: SELECT ST_X(ST_Point(1, 2))	@default: ST_X(point:POINT_2D) -> DOUBLE*/
+  ST_X(point: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the maximum X coordinate of a geometry	@example: SELECT ST_XMax(ST_Point(1, 2))	@default: ST_XMax(box:BOX_2D) -> DOUBLE*/
+  ST_XMax(box: DAnyable): DNum;
+  /**                                                            @description: Returns the maximum X coordinate of a geometry	@example: SELECT ST_XMax(ST_Point(1, 2))	@default: ST_XMax(geom:GEOMETRY) -> DOUBLE*/
+  ST_XMax(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the maximum X coordinate of a geometry	@example: SELECT ST_XMax(ST_Point(1, 2))	@default: ST_XMax(line:LINESTRING_2D) -> DOUBLE*/
+  ST_XMax(line: DAnyable): DNum;
+  /**                                                            @description: Returns the maximum X coordinate of a geometry	@example: SELECT ST_XMax(ST_Point(1, 2))	@default: ST_XMax(point:POINT_2D) -> DOUBLE*/
+  ST_XMax(point: DAnyable): DNum;
+  /**                                                            @description: Returns the maximum X coordinate of a geometry	@example: SELECT ST_XMax(ST_Point(1, 2))	@default: ST_XMax(polygon:POLYGON_2D) -> DOUBLE*/
+  ST_XMax(polygon: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the minimum X coordinate of a geometry	@example: SELECT ST_XMin(ST_Point(1, 2))	@default: ST_XMin(box:BOX_2D) -> DOUBLE*/
+  ST_XMin(box: DAnyable): DNum;
+  /**                                                            @description: Returns the minimum X coordinate of a geometry	@example: SELECT ST_XMin(ST_Point(1, 2))	@default: ST_XMin(geom:GEOMETRY) -> DOUBLE*/
+  ST_XMin(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the minimum X coordinate of a geometry	@example: SELECT ST_XMin(ST_Point(1, 2))	@default: ST_XMin(line:LINESTRING_2D) -> DOUBLE*/
+  ST_XMin(line: DAnyable): DNum;
+  /**                                                            @description: Returns the minimum X coordinate of a geometry	@example: SELECT ST_XMin(ST_Point(1, 2))	@default: ST_XMin(point:POINT_2D) -> DOUBLE*/
+  ST_XMin(point: DAnyable): DNum;
+  /**                                                            @description: Returns the minimum X coordinate of a geometry	@example: SELECT ST_XMin(ST_Point(1, 2))	@default: ST_XMin(polygon:POLYGON_2D) -> DOUBLE*/
+  ST_XMin(polygon: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the Y coordinate of a point geometry	@example: SELECT ST_Y(ST_Point(1, 2))	@default: ST_Y(geom:GEOMETRY) -> DOUBLE*/
+  ST_Y(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the Y coordinate of a point geometry	@example: SELECT ST_Y(ST_Point(1, 2))	@default: ST_Y(point:POINT_2D) -> DOUBLE*/
+  ST_Y(point: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the maximum Y coordinate of a geometry	@example: SELECT ST_YMax(ST_Point(1, 2))	@default: ST_YMax(box:BOX_2D) -> DOUBLE*/
+  ST_YMax(box: DAnyable): DNum;
+  /**                                                            @description: Returns the maximum Y coordinate of a geometry	@example: SELECT ST_YMax(ST_Point(1, 2))	@default: ST_YMax(geom:GEOMETRY) -> DOUBLE*/
+  ST_YMax(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the maximum Y coordinate of a geometry	@example: SELECT ST_YMax(ST_Point(1, 2))	@default: ST_YMax(line:LINESTRING_2D) -> DOUBLE*/
+  ST_YMax(line: DAnyable): DNum;
+  /**                                                            @description: Returns the maximum Y coordinate of a geometry	@example: SELECT ST_YMax(ST_Point(1, 2))	@default: ST_YMax(point:POINT_2D) -> DOUBLE*/
+  ST_YMax(point: DAnyable): DNum;
+  /**                                                            @description: Returns the maximum Y coordinate of a geometry	@example: SELECT ST_YMax(ST_Point(1, 2))	@default: ST_YMax(polygon:POLYGON_2D) -> DOUBLE*/
+  ST_YMax(polygon: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns the minimum Y coordinate of a geometry	@example: SELECT ST_YMin(ST_Point(1, 2))	@default: ST_YMin(box:BOX_2D) -> DOUBLE*/
+  ST_YMin(box: DAnyable): DNum;
+  /**                                                            @description: Returns the minimum Y coordinate of a geometry	@example: SELECT ST_YMin(ST_Point(1, 2))	@default: ST_YMin(geom:GEOMETRY) -> DOUBLE*/
+  ST_YMin(geom: DAnyable): DNum;
+  /**                                                            @description: Returns the minimum Y coordinate of a geometry	@example: SELECT ST_YMin(ST_Point(1, 2))	@default: ST_YMin(line:LINESTRING_2D) -> DOUBLE*/
+  ST_YMin(line: DAnyable): DNum;
+  /**                                                            @description: Returns the minimum Y coordinate of a geometry	@example: SELECT ST_YMin(ST_Point(1, 2))	@default: ST_YMin(point:POINT_2D) -> DOUBLE*/
+  ST_YMin(point: DAnyable): DNum;
+  /**                                                            @description: Returns the minimum Y coordinate of a geometry	@example: SELECT ST_YMin(ST_Point(1, 2))	@default: ST_YMin(polygon:POLYGON_2D) -> DOUBLE*/
+  ST_YMin(polygon: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
+  /**                                                            @description: Returns a flag indicating the presence of Z and M values in the input geometry.
+0 = No Z or M values
+1 = M values only
+2 = Z values only
+3 = Z and M values	@example: -- ZMFlag for a 2D geometry
+SELECT ST_ZMFlag(ST_GeomFromText('POINT(1 1)'));
+----
+0
+
+-- ZMFlag for a 3DZ geometry
+SELECT ST_ZMFlag(ST_GeomFromText('POINT Z(1 1 1)'));
+----
+2
+
+-- ZMFlag for a 3DM geometry
+SELECT ST_ZMFlag(ST_GeomFromText('POINT M(1 1 1)'));
+----
+1
+
+-- ZMFlag for a 4D geometry
+SELECT ST_ZMFlag(ST_GeomFromText('POINT ZM(1 1 1 1)'));
+----
+3	@default: ST_ZMFlag(geom:GEOMETRY) -> UTINYINT*/
+  ST_ZMFlag(geom: DAnyable): DNum;
+  /**                                                            @description: Returns a flag indicating the presence of Z and M values in the input geometry.
+0 = No Z or M values
+1 = M values only
+2 = Z values only
+3 = Z and M values	@example: -- ZMFlag for a 2D geometry
+SELECT ST_ZMFlag(ST_GeomFromText('POINT(1 1)'));
+----
+0
+
+-- ZMFlag for a 3DZ geometry
+SELECT ST_ZMFlag(ST_GeomFromText('POINT Z(1 1 1)'));
+----
+2
+
+-- ZMFlag for a 3DM geometry
+SELECT ST_ZMFlag(ST_GeomFromText('POINT M(1 1 1)'));
+----
+1
+
+-- ZMFlag for a 4D geometry
+SELECT ST_ZMFlag(ST_GeomFromText('POINT ZM(1 1 1 1)'));
+----
+3	@default: ST_ZMFlag(wkb:WKB_BLOB) -> UTINYINT*/
+  ST_ZMFlag(wkb: DAnyable): DNum;
+  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   add(...vargs: DArrayable[]): DArrayField<DAnyField>;
   /**                                                            @default: add(col0:BIGINT, col1:BIGINT | ) -> BIGINT*/
   add(col0: DNumericable, col1?: DAnyable | DNumericable): DNum;
-  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @default: add(col0:DATE, col1:INTEGER | INTERVAL | TIME | TIME WITH TIME ZONE) -> DATE*/
   add(col0: DDateable, col1: DAnyable | DDateable | DNumericable): DDateField;
   /**                                                            @default: add(col0:INTEGER, col1:DATE) -> DATE*/
   add(col0: DNumericable, col1: DDateable): DDateField;
-  /**                                                            @default: add(col0:INTERVAL, col1:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP) -> TIME WITH TIME ZONE*/
+  /**                                                            @default: add(col0:INTERVAL, col1:DATE | TIME | TIME WITH TIME ZONE | TIMESTAMP) -> TIME*/
   add(col0: DAnyable, col1: DDateable): DDateField;
-  /**                                                            @default: add(col0:INTERVAL, col1:INTERVAL) -> INTERVAL*/
-  add(col0: DAnyable, col1: DAnyable): DAnyField;
-  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIMESTAMP WITH TIME ZONE*/
+  /**                                                            @default: add(col0:TIME WITH TIME ZONE, col1:DATE | INTERVAL) -> TIME WITH TIME ZONE*/
   add(col0: DDateable, col1: DAnyable | DDateable): DDateField;
   /**                                                            @default: add(col0:TIMESTAMP, col1:INTERVAL) -> TIMESTAMP*/
   add(col0: DDateable, col1: DAnyable): DDateField;
@@ -3118,13 +4031,6 @@ export interface DGlobal<DNum, DStr> {
   date_part(ts: DArrayable, col1: DAnyable | DDateable): DStructField;
   /**                                                            @description: Get subfield (equivalent to extract)	@example: date_part('minute', TIMESTAMP '1992-09-20 20:38:40')	@default: datepart(ts:VARCHAR, col1:DATE | INTERVAL | TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> BIGINT*/
   datepart: this["date_part"];
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @description: Truncate to specified precision	@example: date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')	@default: date_trunc(part:VARCHAR, timestamp:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIMESTAMP*/
-  date_trunc(part: DVarcharable, timestamp: DDateable): DDateField;
-  /**                                                            @description: Truncate to specified precision	@example: date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')	@default: date_trunc(part:VARCHAR, timestamp:INTERVAL) -> INTERVAL*/
-  date_trunc(part: DVarcharable, timestamp: DAnyable): DAnyField;
-  /**                                                            @description: Truncate to specified precision	@example: date_trunc('hour', TIMESTAMPTZ '1992-09-20 20:38:40')	@default: datetrunc(part:VARCHAR, timestamp:DATE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIMESTAMP*/
-  datetrunc: this["date_trunc"];
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the day component from a date or timestamp	@example: day(timestamp '2021-08-03 11:59:44.123456')	@default: day(ts:DATE) -> BIGINT*/
   day(ts: DDateable): DNum;
@@ -3270,7 +4176,7 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: h3_cells_to_directed_edge(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
   h3_cells_to_directed_edge(col0: DVarcharable, col1: DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: h3_child_pos_to_cell(col0:BIGINT, col1:BIGINT | UBIGINT, col2:INTEGER) -> UBIGINT*/
+  /**                                                            @default: h3_child_pos_to_cell(col0:BIGINT, col1:BIGINT | UBIGINT, col2:INTEGER) -> BIGINT*/
   h3_child_pos_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
   /**                                                            @default: h3_child_pos_to_cell(col0:BIGINT, col1:VARCHAR, col2:INTEGER) -> VARCHAR*/
   h3_child_pos_to_cell(col0: DNumericable, col1: DVarcharable, col2: DNumericable): DStr;
@@ -3500,10 +4406,10 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @default: json_extract_string(col0:VARCHAR, col1:BIGINT | VARCHAR) -> VARCHAR*/
   json_extract_string(col0: DVarcharable, col1: DNumericable | DVarcharable): DStr;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[][]*/
-  json_keys(col0: DJsonable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField;
-  /**                                                            @default: json_keys(col0:VARCHAR, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[][]*/
-  json_keys(col0: DVarcharable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField;
+  /**                                                            @default: json_keys(col0:JSON, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[]*/
+  json_keys(col0: DJsonable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField<DVarcharField>;
+  /**                                                            @default: json_keys(col0:VARCHAR, col1:VARCHAR | VARCHAR[] | ) -> VARCHAR[]*/
+  json_keys(col0: DVarcharable, col1?: DAnyable | DArrayable | DVarcharable): DArrayField<DVarcharField>;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: json_structure(col0:JSON) -> JSON*/
   json_structure(col0: DJsonable): DJsonField;
@@ -3592,13 +4498,6 @@ export interface DGlobal<DNum, DStr> {
   /**                                                            @description: Extract the month component from a date or timestamp	@example: month(timestamp '2021-08-03 11:59:44.123456')	@default: month(ts:INTERVAL) -> BIGINT*/
   month(ts: DAnyable): DNum;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
-  /**                                                            @default: multiply(col0:BIGINT, col1:INTERVAL) -> INTERVAL*/
-  multiply(col0: DNumericable, col1: DAnyable): DAnyField;
-  /**                                                            @default: multiply(col0:BIGINT, col1:BIGINT) -> BIGINT*/
-  multiply(col0: DNumericable, col1: DNumericable): DNum;
-  /**                                                            @default: multiply(col0:INTERVAL, col1:DOUBLE) -> INTERVAL*/
-  multiply(col0: DAnyable, col1: DNumericable): DAnyField;
-  /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789')	@default: nanosecond(tsns:DATE) -> BIGINT*/
   nanosecond(tsns: DDateable): DNum;
   /**                                                            @description: Extract the nanosecond component from a date or timestamp	@example: nanosecond(timestamp_ns '2021-08-03 11:59:44.123456789')	@default: nanosecond(tsns:INTERVAL) -> BIGINT*/
@@ -3648,12 +4547,10 @@ export interface DGlobal<DNum, DStr> {
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
   /**                                                            @default: subtract(col0:BIGINT, col1:BIGINT | ) -> BIGINT*/
   subtract(col0: DNumericable, col1?: DAnyable | DNumericable): DNum;
-  /**                                                            @default: subtract(col0:DATE, col1:INTEGER | INTERVAL) -> TIMESTAMP*/
+  /**                                                            @default: subtract(col0:DATE, col1:INTEGER | INTERVAL) -> DATE*/
   subtract(col0: DDateable, col1: DAnyable | DNumericable): DDateField;
   /**                                                            @default: subtract(col0:DATE, col1:DATE) -> BIGINT*/
   subtract(col0: DDateable, col1: DDateable): DNum;
-  /**                                                            @default: subtract(col0:INTERVAL, col1:INTERVAL | ) -> INTERVAL*/
-  subtract(col0: DAnyable, col1?: DAnyable): DAnyField;
   /**                                                            @default: subtract(col0:TIME WITH TIME ZONE, col1:INTERVAL) -> TIME WITH TIME ZONE*/
   subtract(col0: DDateable, col1: DAnyable): DDateField;
   /* … … … … … … … … … … … … … … … … … … … … … … … … … … … … … … [Global] … … … … … … …  */
@@ -3711,10 +4608,12 @@ export interface DGlobal<DNum, DStr> {
   array_reduce<T, U>(list: DArrayField<T> | T[], lambda: (accumulator: U, currentValue: FromPlain<T>) => U, initialValue: U): FromPlain<U>;
   array_filter<T>(list: DArrayField<T> | T[], lambda: (x: T) => any): DArrayField<T>;
   array_slice<T>(list: DArrayField<T> | T[], begin: number, end: number, step?: number): DArrayField<FromPlain<T>>;
+  array_to_string(arr: DArrayable, sep: DVarcharable): DVarcharField;
 }
 
 export interface DKeywords<DNum, DStr> {
   Distinct<X>(val: X): X;
+  Raw: (val: string) => DAnyField;
 }
 
 export type DKeywordsField = DKeywords<DNumericField, DVarcharField>;

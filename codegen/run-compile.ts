@@ -24,8 +24,9 @@ const entriesSorted = <T>(items: Record<string, T>) => {
 async function getMergedResults() {
     const query = instance.from('duckdb_functions()')
         .select('function_name', 'function_type', 'parameter_types', 'return_type', 'description', 'examples', 'varargs', 'parameters', 'schema_name', 'macro_definition')
-        .where(e => e.function_name.SimilarTo(/[a-z]\w+/) && !e.function_name.Like('icu_collate%'))
+        .where(e => e.return_type !== 'INTERVAL' && e.function_name.SimilarTo(/[A-z]\w+/) && !e.function_name.Like('icu_collate%') && !e.function_name.Like('__internal%'))
         .orderBy('function_name')
+        .orderBy('return_type')
     let results = (await query.execute())
         .map(res => {
             if (res.parameter_types[0] === 'ANY' && res.parameters[0] === 'list') {
@@ -118,6 +119,8 @@ global.renderMethod = (e: IFns, typeMap = {}, slice = 1, hidden = false) => {
 
 const banMethods = (e: IFns, type: string) => {
     return e.function_name.startsWith('h3')
+        || e.function_name.startsWith('ST_')
+        || e.function_name.startsWith('__internal')
         || e.return_type?.startsWith('INTERVAL')
         || (type !== 'DDate' && e.return_type?.match(/^(DATE|TIME)/))
         || (type !== 'DJson' && e.function_name.startsWith('json'))
@@ -133,7 +136,7 @@ const getFuncId = (z: IFns) => {
 global.duckdb_settings = await instance.from('duckdb_settings()').execute()
 
 global.generateSettings = (xmap: Record<string, string[]> = {}) => {
-    console.log({xmap})
+    console.log({ xmap })
     return global.duckdb_settings.map(e => buildJSDoc(e) + `  ${e.name}: ${xmap[e.name] || mapTypesProps(e.input_type).rawType},`).join('\n')
 }
 

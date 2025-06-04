@@ -79,8 +79,8 @@ const stringOpsResult = await MemoryDB.from('duckdb_functions()')
         original: e.function_name,
         upper_name: e.function_name.upper(),
         name_length: e.function_name.len(),
-        prefix_3: e.function_name.substr(0, 3),
-        suffix_3: e.function_name.substr(-3),
+        prefix_3: e.function_name[0.3],
+        suffix_3: e.function_name[-3],
         starts_with_a: e.function_name.starts_with('a'),
     }))
     .where(e => e.function_name.len() < 10)
@@ -219,7 +219,7 @@ const nestedResult = await MemoryDB.from('duckdb_functions()')
             analysis: {
                 length: e.function_name.len(),
                 category: e.function_name.len() > 10 ? 'long' : 'short',
-                first_char: e.function_name.substr(0, 1),
+                first_char: e.function_name[0.1],
             },
         },
     }))

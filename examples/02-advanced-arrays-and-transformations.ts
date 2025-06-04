@@ -11,25 +11,25 @@ import { Buck, MemoryDB } from '../buckdb'
 const arrayOperationsResult = await MemoryDB.from('duckdb_functions()')
     .select((e, D) => ({
         function_name: e.function_name,
-        
+
         // 🔥 String split into arrays - real BuckDB syntax!
         name_parts: e.function_name.str_split('_'),
-        
+
         // 🔥 Array transformations using D.array_transform
         uppercase_parts: D.array_transform(e.function_name.str_split('_'), part => part.upper()),
-        
+
         // 🔥 Array filtering using array_filter
         filtered_parts: e.function_name.str_split('_').array_filter(part => part.len() > 3),
-        
+
         // 🔥 Complex array operations with map and filter chaining
         processed_name: e.function_name.str_split('_')
             .map(part => part.upper())
             .filter(part => part.len() > 2),
-        
+
         // 🔥 Array creation and manipulation
         sample_array: D.Array(['prefix', 'main', 'suffix'])
             .map(item => item + '_' + e.function_name),
-        
+
         // 🔥 Array contains checks
         has_underscore: e.function_name.str_split('').array_contains('_'),
     }))
@@ -54,16 +54,16 @@ console.log('Array operations:', arrayOperationsResult)
 // WITH clauses for complex multi-step transformations
 const withClauseResult = await Buck().with(
     // Step 1: Create a filtered dataset
-    (accDB) => ({ 
+    (accDB) => ({
         filtered_functions: accDB.from('duckdb_functions()')
             .select('function_name', 'function_oid', 'function_type', 'description')
             .where(f => f.function_name.len() > 5)
     }),
-    
+
     // Step 2: Add computed columns
-    accDB => ({ 
+    accDB => ({
         enhanced_functions: accDB.from('filtered_functions')
-            .select(e => ({ 
+            .select(e => ({
                 original_name: e.function_name,
                 name_length: e.function_name.len(),
                 type_category: e.function_type === 'scalar' ? 'SCALAR' : 'OTHER',
@@ -71,13 +71,13 @@ const withClauseResult = await Buck().with(
             }))
     })
 ).from('enhanced_functions')
-.select()
-.execute() satisfies {
-    original_name: string
-    name_length: number
-    type_category: string
-    has_description: boolean
-}[]
+    .select()
+    .execute() satisfies {
+        original_name: string
+        name_length: number
+        type_category: string
+        has_description: boolean
+    }[]
 
 console.log('WITH clause result:', withClauseResult.slice(0, 3))
 
@@ -87,14 +87,14 @@ console.log('WITH clause result:', withClauseResult.slice(0, 3))
 
 // Union different datasets with compatible schemas
 const unionResult = await MemoryDB.from('duckdb_functions()')
-    .select(f => ({ name: f.function_name, category: 'function' as const }))
+    .select(f => ({ name: f.function_name, category: 'function' }))
     .where(f => f.function_type === 'scalar')
     .limit(3)
     .union(
         MemoryDB.from('duckdb_types()')
-            .select(t => ({ 
-                name: t.logical_type, 
-                category: 'type' as const
+            .select(t => ({
+                name: t.logical_type,
+                category: 'type'
             }))
             .limit(3)
     )
@@ -129,33 +129,31 @@ console.log('Except result:', exceptResult)
 const conditionalTypesResult = await MemoryDB.from('duckdb_functions()')
     .select((e, D) => ({
         function_name: e.function_name,
-        
+
         // 🔥 Mixed type conditionals - string | number
         flexible_result: e.function_name === 'sum' ? 42 : e.function_name,
-        
+
         // 🔥 Number conditionals with explicit typing
         id_category: e.function_oid > 100 ? 'HIGH_ID' : 'LOW_ID',
-        
+
         // 🔥 Complex nested conditionals
         complexity_score: e.function_name.len() > 15 ? 'VERY_COMPLEX' :
-                         e.function_name.len() > 10 ? 'COMPLEX' :
-                         e.function_name.len() > 5 ? 'MEDIUM' : 'SIMPLE',
-        
-        // 🔥 Boolean expressions
-        is_aggregate_like: e.function_name.Like('%agg%') || e.function_name.Like('%sum%'),
-        
+            e.function_name.len() > 10 ? 'COMPLEX' :
+                e.function_name.len() > 5 ? 'MEDIUM' : 'SIMPLE',
         // 🔥 Template literals in conditionals
-        status_message: e.function_name.len() > 10 
-            ? `Long function: ${e.function_name}` 
+        status_message: e.function_name.len() > 10
+            ? `Long function: ${e.function_name}`
             : `Short: ${e.function_name}`,
     }))
+    .where(e => (
+        e.function_name.Like('%agg%') || e.function_name.Like('%sum%')
+    ))
     .limit(5)
     .execute() satisfies {
         function_name: string
         flexible_result: string | number
         id_category: string
         complexity_score: string
-        is_aggregate_like: boolean
         status_message: string
     }[]
 
@@ -169,7 +167,7 @@ console.log('Conditional types:', conditionalTypesResult)
 const structOperationsResult = await MemoryDB.from('duckdb_functions()')
     .select((e, D) => ({
         function_name: e.function_name,
-        
+
         // 🔥 Create complex nested structures
         metadata: D.Struct({
             name: e.function_name,
@@ -180,14 +178,14 @@ const structOperationsResult = await MemoryDB.from('duckdb_functions()')
             },
             tags: ['function', 'database', 'operation']
         }),
-        
+
         // 🔥 Dynamic struct creation
         analysis: D.Struct({
             complexity: e.function_name.len() > 10 ? 'HIGH' : 'LOW',
             score: e.function_name.len() * 2,
             categories: [e.function_type, 'utility']
         }),
-        
+
         // 🔥 Simple property access
         name_length: e.function_name.len(),
     }))
@@ -221,26 +219,26 @@ console.log('Struct operations:', structOperationsResult)
 const arrayTransformationsResult = await MemoryDB.from('duckdb_functions()')
     .select((e, D) => ({
         function_name: e.function_name,
-        
+
         // 🔥 Array transformations with D.array_transform
         char_analysis: D.array_transform(
-            e.function_name.str_split(''), 
+            e.function_name.str_split(''),
             char => ({
                 character: char,
                 is_vowel: D.Array(['a', 'e', 'i', 'o', 'u']).array_contains(char.lower()),
                 length: char.len()
             })
         ),
-        
+
         // 🔥 Array filtering with conditions
         vowels_only: e.function_name.str_split('')
             .array_filter(char => D.Array(['a', 'e', 'i', 'o', 'u']).array_contains(char.lower())),
-        
+
         // 🔥 Array reductions using reduce
         total_char_count: e.function_name.str_split('')
             .map(char => char.len())
             .reduce((acc, curr) => acc + curr, 0),
-        
+
         // 🔥 Complex array operations
         processed_segments: D.Array(['prefix', 'main', 'suffix'])
             .map(segment => segment + '_processed')
@@ -271,16 +269,15 @@ Type: ${e.function_type}
 Length: ${e.function_name.len()} characters
 Category: ${e.function_name.len() > 10 ? 'Complex' : 'Simple'}
 Status: ${e.description.IsNull() ? 'No docs' : 'Documented'}`,
-        
+
         // 🔥 Conditional template literals
-        summary: e.function_type === 'scalar' 
+        summary: e.function_type === 'scalar'
             ? `⚡ SCALAR: ${e.function_name} (${e.function_name.len()})`
             : `📊 ${e.function_type.upper()}: ${e.function_name}`,
-        
+
         // 🔥 Complex expressions in templates
-        analysis_report: `${e.function_name} | Score: ${e.function_name.len() * 2} | ${
-            e.function_name.Like('%_%') ? 'Multi-word' : 'Single-word'
-        } | ${e.function_type}`,
+        analysis_report: `${e.function_name} | Score: ${e.function_name.len() * 2} | ${e.function_name.Like('%_%') ? 'Multi-word' : 'Single-word'
+            } | ${e.function_type}`,
     }))
     .limit(3)
     .execute() satisfies {
@@ -327,6 +324,7 @@ const advancedGrouping = await MemoryDB.from('duckdb_functions()')
         samples: D.array_agg(e.function_name).slice(0, 3)
     }))
     .groupBy('function_type')
+    .having(e => e.avg_length > 5)
     .execute() satisfies Record<string, {
         function_type: string
         function_names: string[]

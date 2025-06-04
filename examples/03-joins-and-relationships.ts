@@ -11,7 +11,7 @@ const db = MemoryDB
 // ================================
 
 // Join DuckDB functions with their types - real system data!
-const functionTypes = await db.from('duckdb_functions()')
+const functionTypes = await MemoryDB.from('duckdb_functions()')
     .join('duckdb_types()', 'types', ({ duckdb_functions, types }) => 
         duckdb_functions.return_type === types.logical_type
     )
@@ -44,10 +44,10 @@ console.log('Function-Type Relationships:', functionTypes)
 // ================================
 
 // Join functions, types, and settings for comprehensive analysis
-const systemAnalysis = await db.from('duckdb_functions()', 'f')
+const systemAnalysis = await MemoryMemoryDB.from('duckdb_functions()', 'f')
     .join('duckdb_types()', 't', ({ f, t }) => f.return_type === t.logical_type)
     .join('duckdb_settings()', 's', ({ f, s }) => 
-        f.function_name.upper().includes(s.name.upper().substr(0, 3))
+        f.function_name.upper().includes(s.name.upper())
     )
     .select(({ f, t, s }, D) => ({
         // 🔥 Complex field access
@@ -56,8 +56,8 @@ const systemAnalysis = await db.from('duckdb_functions()', 'f')
         settingName: s.name,
         
         // 🔥 Advanced string operations
-        namePattern: f.function_name.regexp_extract('[a-z]+', 0),
-        settingPattern: s.name.regexp_replace('_', '-', 'g'),
+        namePattern: f.function_name.regexp_extract(/[a-z]+/, 0),
+        settingPattern: s.name.regexp_replace(/_/g, '-'),
         
         // 🔥 Mathematical calculations
         nameLength: f.function_name.len(),
@@ -91,7 +91,7 @@ console.log('System Analysis:', systemAnalysis)
 // ================================
 
 // Find functions that share similar characteristics
-const functionSimilarity = await db.from('duckdb_functions()', 'f1')
+const functionSimilarity = await MemoryDB.from('duckdb_functions()', 'f1')
     .join('duckdb_functions()', 'f2', ({ f1, f2 }) => 
         f1.function_name !== f2.function_name &&
         f1.function_type === f2.function_type &&
@@ -108,10 +108,10 @@ const functionSimilarity = await db.from('duckdb_functions()', 'f1')
         nameSimilarity: f1.function_name.levenshtein(f2.function_name),
         
         // 🔥 Advanced string analysis
-        commonPrefix: f1.function_name.substr(0, 3) === f2.function_name.substr(0, 3) ? 'Similar Start' : 'Different',
+        commonPrefix: f1.function_name[1.3] === f2.function_name[1.3] ? 'Similar Start' : 'Different',
         
         // 🔥 Complex similarity scoring
-        similarityScore: D.cast(f1.function_name.levenshtein(f2.function_name), 'FLOAT') / 
+        similarityScore: f1.function_name.levenshtein(f2.function_name) / 
                         D.greatest(f1.function_name.len(), f2.function_name.len()),
         
         // 🔥 Pattern analysis
@@ -137,7 +137,7 @@ console.log('Function Similarities:', functionSimilarity)
 // ================================
 
 // Analyze function distribution by type and return type
-const functionDistribution = await db.from('duckdb_functions()', 'f')
+const functionDistribution = await MemoryDB.from('duckdb_functions()', 'f')
     .join('duckdb_types()', 't', ({ f, t }) => f.return_type === t.logical_type)
     .select(({ f, t }, D) => ({
         functionType: f.function_type,
@@ -164,7 +164,7 @@ const functionDistribution = await db.from('duckdb_functions()', 'f')
         // 🔥 Conditional aggregations
         longNameCount: D.count().filter(f.function_name.len() > 10)
     }))
-    .groupBy('function_type', 'return_type', 'type_category')
+    .groupBy('ALL')
     .having(({ f }, D) => D.count() > 2)  // Only groups with multiple functions
     .orderBy(({ f }, D) => D.count(), 'DESC')
     .limit(15)
@@ -177,27 +177,26 @@ console.log('Function Distribution Analysis:', functionDistribution)
 // ================================
 
 // Left join to find functions without matching types (edge cases)
-const functionsWithoutTypes = await db.from('duckdb_functions()', 'f')
+const functionsWithoutTypes = await MemoryDB.from('duckdb_functions()', 'f')
     .leftJoin('duckdb_types()', 't', ({ f, t }) => f.return_type === t.logical_type)
     .select(({ f, t }, D) => ({
         functionName: f.function_name,
         declaredReturnType: f.return_type,
         
         // 🔥 Handle nullable data from LEFT JOIN
-        actualType: t?.logical_type || 'UNMAPPED',
-        typeExists: !!t?.logical_type,
+        actualType: t.logical_type ?? 'UNMAPPED',
+        typeExists: !!t?.logical_type ? 'EXIST' : 'NOPE',
         
         // 🔥 Conditional expressions with nulls
-        typeStatus: t?.logical_type ? `Mapped to ${t.logical_type}` : 'No type mapping found',
+        typeStatus: t.logical_type ? `Mapped to ${t.logical_type}` : 'No type mapping found',
         
         // 🔥 Complex null handling
-        category: !t?.logical_type ? 'Orphaned Function' :
+        category: !t.logical_type ? 'Orphaned Function' :
                  t.type_category === 'NUMERIC' ? 'Number Function' :
                  t.type_category === 'STRING' ? 'Text Function' : 'Other Function',
         
         // 🔥 Null-safe operations
-        typeLength: t?.logical_type?.len() || 0,
-        isSpecialCase: !t?.logical_type && f.function_name.Like('%special%')
+        typeLength: t?.logical_type?.len() ?? 0,
     }))
     .where(({ f, t }) => 
         f.function_name.len() > 3 &&
@@ -214,7 +213,7 @@ console.log('Functions Without Type Mappings:', functionsWithoutTypes)
 // ================================
 
 // Join based on complex conditions and pattern matching
-const dynamicRelationships = await db.from('duckdb_functions()', 'f')
+const dynamicRelationships = await MemoryDB.from('duckdb_functions()', 'f')
     .join('duckdb_settings()', 's', ({ f, s }) => 
         // 🔥 Complex join conditions with multiple criteria
         f.function_name.regexp_matches('[a-z]+_[a-z]+') &&

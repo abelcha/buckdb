@@ -1,13 +1,19 @@
-import { version } from './.buck/types'
-import { Buck, from } from './buckdb'
-const v = version
+import { Buck, from } from '../buckdb'
 
-const resp = await from('duckdb_functions()')
-    .select(e => `__${e.function_name}_${e.return_type}__`)
-    .where(e => !!e.function_name && !!e.return_type)
-    .limit(3)
-    .dump()
-    .execute()
+
+const SC = Buck('/me/dev/buckdb/data/european_soccer_database.sqlite')
+
+
+
+
+
+
+// const resp = await from('duckdb_functions()')
+//     .select(e => `__${e.function_name}_${e.return_type}__`)
+//     .where(e => !!e.function_name && !!e.return_type)
+//     .limit(3)
+//     .dump()
+//     .execute()
 // console.log({ resp })
 
 // const r = await from('s3://a1738/testxs2.jsonl')

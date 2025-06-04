@@ -1,7 +1,7 @@
 import { Buck, from } from "../buckdb";
 import { copy } from "../src/copy";
 
-const BS = Buck('s3://a1738/stations.duckdb')
+const BS = Buck('s3://a1738/files')
 
 BS.from('Stations')
 

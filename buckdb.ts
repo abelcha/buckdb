@@ -1,4 +1,6 @@
 import { DuckDBDecimalValue, DuckDBListValue, DuckDBMapValue, DuckDBStructValue, DuckDBValue, type DuckDBConnection, type DuckDBInstance } from '@duckdb/node-api'
+import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './src/readers'
+export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx }
 import { DSettings } from './.buck/types'
 import { builder } from './src/build'
 import { generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
@@ -74,7 +76,7 @@ class BuckDBNode extends BuckDBBase {
     private _connection: DuckDBConnection
     private _initPromise: Promise<void> | null = null
     public isBucket: boolean = false
-    
+
     constructor(
         handle?: string,
         settings?: Partial<DSettings>,

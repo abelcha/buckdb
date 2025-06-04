@@ -1,5 +1,6 @@
 import { DSettings } from './.buck/types'
 import { formatSource } from './src/formalise'
+import { parse, parseObject } from './src/parser'
 import { deriveName } from './src/utils'
 
 export type DuckdbCon = {
@@ -13,6 +14,7 @@ export type DuckdbCon = {
     describe: (uri: string) => Promise<Record<string, any>>
     query: (sql: string, opts?: Record<string, any>) => Promise<any[]>
     lazySettings: (s: Partial<DSettings>) => DuckdbCon
+    lazyMacros: (s: Record<string, (...args: any[]) => any>) => DuckdbCon
     lazyExtensions: (...extensions: string[]) => DuckdbCon
 }
 
@@ -27,6 +29,11 @@ export abstract class BuckDBBase implements DuckdbCon {
         public handle?: string,
         public settings?: Record<string, any>,
     ) { }
+
+    lazyMacros(s: any) {
+        this.queue.pushMacros(s)
+        return this
+    }
 
     lazySettings(s: Partial<DSettings>) {
         this.queue.pushSettings(s)
@@ -60,6 +67,13 @@ export class CommandQueue {
             return ''
         }
         return `USE ${this.usedDB};`
+    }
+
+    pushMacros(macros: () => Record<string, (args: any) => any>) {
+        const rrr = parseObject(macros)
+            .map(([name, fn]) => `CREATE OR REPLACE MACRO ${name}${fn.replace('->', 'AS')};`)
+        this.queue.push(...rrr)
+        return this
     }
     pushSettings(settings: Partial<DSettings> = {}) {
         const sts = Object.entries(settings).map(([key, value]) => `SET ${key} = '${value}'`)

@@ -3,7 +3,7 @@ import * as t from '../.buck/types'
 import { DuckdbCon } from '../buckdb.core'
 import { DDirection } from './build'
 import { CopyToInterface } from './copy'
-import { ToPlain } from './deep-map'
+import { FromPlain, ToPlain } from './deep-map'
 import { Flatten, KeyIntersection, Merge, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge } from './generic-utils'
 import type { DeriveName } from './utils'
 
@@ -211,7 +211,7 @@ export interface Selectors<P extends MetaModel, M extends t.DMetaField> {
     // F: select(e => `${e.name}__${e.total}`)
     select<U extends Primitive>(fn: (p: P, D: M) => U): MSF<P, M, {}, [PrimitiveField<U>]>
     // E: select(e => ({ name: e.name, age: e.age }))
-    select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: M) => U): MSR<P, M, ShallowModel<U>>
+    select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: M) => U): MSR<P, M, ShallowModel<FromPlain<U>>>
 
 }
 

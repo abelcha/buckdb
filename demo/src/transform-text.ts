@@ -28,7 +28,8 @@ function transformCode(parts: FromStatementParts[]): string {
         try {
             res = execToSql((st.chain ? st.chain + '.' : '') + st.cleanFromChain).split('\n')
         } catch (err) {
-            res = ['Error: ', String(st), String(err)]
+            console.log(err, st)
+            res = ['Error: ', String(err), ...('-- xx\n'.repeat(st.lineEnd - st.lineStart - 3).split('\n'))]
         }
         let offset = 0
         while (arr[st.lineStart + offset]) offset++

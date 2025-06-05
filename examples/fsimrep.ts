@@ -17,7 +17,7 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
                 repo_a_stars: r1.c,
                 repo_b_stars: r2.c
             }))
-            .where(({ a }) => a.repo === 'duckdb/duckdb')
+            .where(({ a }) => a.repo === 'uwdata/mosaic')
     }),
     db => ({
         similarity_metrics: db.from('repo_pairs')
@@ -28,7 +28,7 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
                 total_stars: e.repo_b_stars,
                 earliest_common_star: D.min(e.date),
                 latest_common_star: D.max(e.date),
-                jaccard_similarity: D.cast(D.count(D.Distinct(e.login)), 'Float').divide(D.nullif(e.repo_b_stars, 0).as('Bigint'))
+                jaccard_similarity: D.count(D.Distinct(e.login)) / (e.repo_b_stars ?? null)
             }))
             .groupBy('repo_a', 'repo_b', 'repo_b_stars')
             .having((e, D) => D.count(D.Distinct(e.login)) >= 10)
@@ -38,11 +38,10 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
             .select((e, D) => ({
                 ...e,
                 full_name: e.repo_b,
-                similarity_score: e.jaccard_similarity,
+                similarity_score: e.jaccard_similarity.round(3),
             }))
             .where(e => e.jaccard_similarity > 0)
             .orderBy('jaccard_similarity', 'DESC')
-            .limit(100)
     })
 
 )
@@ -50,11 +49,11 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
     .leftJoin('repos.parquet', 'x', 'full_name')
     .select((e, D) => ({
         full_name: e.full_name,
-        similarity_score:  e.results.similarity_score.round(3),
+        similarity_score: e.results.similarity_score.round(3),
         common_users: e.common_users,
-        total_stars:e.total_stars,
-        topics: e.topics ?? [],
+        total_stars: e.stargazers_count,
         desc: e.description ?? '',
+        topics: e.topics ?? [],
     }))
     .orderBy('similarity_score', 'DESC')
     .limit(100)

@@ -115,8 +115,12 @@ registerCustomView({
                     const schemaEntry = schema?.[i] // Get schema entry by index
                     const headerName = schemaEntry?.column_name ?? (keys ? key : `Column ${i + 1}`) // Use schema name or fallback
                     const columnType = schemaEntry?.column_type ?? '_' // Use schema type or fallback
+                    
+                    // Check if column contains numeric data
+                    const sampleValue = isArrayData ? globalData[0]?.[i] : globalData[0]?.[key]
+                    const isNumeric = Number.isFinite(sampleValue)
 
-                    columnDefs.push({
+                    const colDef: ColDef = {
                         field: key, // Use key (string) for field access
                         headerName: headerName, // Display schema column name or fallback
                         headerComponentParams: {
@@ -132,7 +136,16 @@ registerCustomView({
                         headerTooltip: columnType, // Show type as tooltip
                         sortable: true,
                         filter: true,
-                    })
+                    }
+                    
+                    // For numeric columns, use smaller fixed width instead of flex
+                    if (isNumeric) {
+                        colDef.width = 80
+                        colDef.minWidth = 60
+                        colDef.flex = 0  // Disable flex for numeric columns to use fixed width
+                    }
+                    
+                    columnDefs.push(colDef)
                 }
             }
 
@@ -147,6 +160,7 @@ registerCustomView({
                     return params.node?.rowIndex !== undefined ? params.node.rowIndex + 1 : ''
                 },
                 width: 70,
+                flex: 0,  // Disable flex for fixed width
                 pinned: 'left',
             })
 
@@ -182,6 +196,7 @@ registerCustomView({
                     resizable: true,
                     sortable: true,
                 },
+                enableCellTextSelection: true,
                 suppressScrollOnNewData: true,
                 animateRows: true,
                 headerHeight: 38, // accommodate multi-line headers

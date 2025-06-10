@@ -1,9 +1,9 @@
-import { Models } from '../.buck/table3'
-import * as t from '../.buck/types'
-import { DuckdbCon } from '../buckdb.core'
+import { Models } from '@buckdb/.buck/table3'
+import * as t from '.buck/types'
+import { DuckdbCon } from '@buckdb/core'
 import { DDirection } from './typedef'
 import { CopyToInterface } from './copy'
-import { FromPlain, ToPlain } from './deep-map'
+import { FromPlainDict, ToPlain } from './deep-map'
 import { Flatten, KeyIntersection, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge } from './generic-utils'
 import type { DeriveName } from './utils'
 
@@ -61,12 +61,6 @@ type FnMap<A extends MetaModel, GF extends t.DMetaField, S extends SelectModel =
     keyed: () => PRecord<ToPlain<S>>
     frame: () => PArray<ToPlain<SV extends [infer F] ? F : any>>
 }
-type ReturnModel<V extends VTypes, S extends SelectModel = {}, SV = []> = V extends 'row' ?
-    (SV extends [] ? S : SV)
-    : V extends 'values' ? SV
-    : V extends 'frame' ? (SV extends [infer F] ? F : any)
-    : S
-
 
 type MSR<A extends MetaModel, GF extends t.DMetaField, S extends SelectModel = {}, SV = []> = MS<'records', GF, A, S, SV>
 type MSV<A extends MetaModel, GF extends t.DMetaField, S extends SelectModel = {}, SV = []> = MS<'values', GF, A, S, SV>
@@ -80,7 +74,6 @@ type Awaited<T> = T extends PRecord<infer Z> ? (Z extends [infer D] ? D : Z) : T
 
 export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaModel, S extends SelectModel = ShallowModel<A>, SV = []> extends Selectors<S, GF> {
     returnType: Awaited<ReturnType<this['execute']>>
-    // returnType: ReturnModel<V, S, SV>
     compType: A & S
 
     execute: FnMap<A, GF, S, SV>[V]
@@ -179,32 +172,6 @@ export type NestedKey42<ObjectType extends Record<string, any>> = {
     : `${Key}`
 }[keyof ObjectType & (string | number)]
 
-
-// type Pick
-// type DeepPick<Obj, PathsArr extends string[]> = {
-//     [K in PathsArr[number]]: K extends `${infer Key}.${infer Rest}`
-//     ? Key extends keyof Obj
-//     ? { [K2 in Key]: DeepPick<Obj[K2], [Rest]> }
-//     : never
-//     : K extends keyof Obj
-//     ? Obj[K]
-//     : never
-// }[PathsArr[number]];
-
-
-
-
-// // const FPick
-// // // { [K in U[number] & keyof A]: A[K] }
-// type MapStringArrayKeepAfterDot<T extends string[]> = {
-//     [K in keyof T]: T[K] extends `${string}.${infer AfterDot}` ? AfterDot : T[K];
-// }
-
-// type PickRecursive<Obj, PathsArr extends string[]> = DeepPick<Obj, MapStringArrayKeepAfterDot<PathsArr>>
-
-
-type CustomPick<Obj, PathsArr extends string[]> = 42
-
 type Split<S extends string, D extends string = "."> =
     S extends `${infer Head}${D}${infer Tail}`
     ? [Head, ...Split<Tail, D>]
@@ -220,14 +187,6 @@ type Project<T, Keys extends readonly string[]> = Flatten<{
     Get<T, Split<K>>
 }>;
 
-
-const xr =
-    ((x?: Project<{ zz: 12, lol: 'toto', b: number, a: TFlag & { b: string } },
-        ['zz', 'a.b']>) => x)() satisfies { zz: 12, b: string }
-
-type HasAnyMuddy<T> =
-    { [K in keyof T]: T[K] extends { [v__]: any } ? true : false }[keyof T] extends true ? true : false;
-
 export interface Selectors<AV extends MetaModel, GF extends t.DMetaField> {
 
     // A: select()
@@ -235,7 +194,6 @@ export interface Selectors<AV extends MetaModel, GF extends t.DMetaField> {
     // B: select('name', 'age')
     select<U extends readonly (NestedKey42<AV>)[]>(...keys: U):
         MSR<AV, GF, Project<AV, U>>
-    //MapStringArrayKeepAfterDot<U>
     // { [K in U[number] & keyof P]: P[K] } //MSR<P, GF, { [K in U[number] & keyof P]: P[K] }>
     // select<U extends (NestedKey42<A> & string)[]>(...keys: U & (NestedKey42<A>)[]): DeepPick<A, MapStringArrayKeepBeforeDot<U>> //MSR<P, GF, { [K in U[number] & keyof P]: P[K] }>
     // C select(e => [e.name, e.age])
@@ -260,7 +218,7 @@ export interface Selectors<AV extends MetaModel, GF extends t.DMetaField> {
     // select<U extends TFlag>(fn: (p: AV & Record<string, any>, D: GF) => U): 42 //''
     select<U extends SelectModel>(fn: (p: AV & Record<string, any>, D: GF) => U):
         // U extends Record<string, infer FF extends TFlag> ? MSR<AV, GF, Omit<FF, keyof TFlag>> :
-        MSR<AV, GF, ShallowModel<U>>
+        MSR<AV, GF, FromPlainDict<ShallowModel<U>>>
 
 }
 
@@ -275,23 +233,22 @@ type PushCollection<C extends StrictCollection[], Ressource extends string, Uri 
 
 
 type ModKeys<Mods extends Models, Ressource extends keyof Mods & string> = Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>
-export interface FromResult<Mods extends Models, Ressource extends keyof Mods & string, C extends StrictCollection[] = [], GF extends t.DMetaField = t.DMetaField, P extends MetaModel = MergedModel<Mods, C>> extends Selectors<P, GF> {
 
-    // join<K extends ModKeys<Mods, Ressource>>/*              */(
-    //     table: K,
-    //     callb:
-    //         | KeyIntersection<P, ToModel<Mods, Ressource, K, DeriveName<K>>>
-    //         | (((p: MergedModel<Mods, PushCollection<C, Ressource, K>>, D: GF) => any))
-    // ): FromResult<Mods, Ressource, PushCollection<C, Ressource, K>, GF>
-    join<K extends ModKeys<Mods, Ressource> | (string | {}), A extends string = DeriveName<K>>(
+
+export interface FromResult<Mods extends Models, Ressource extends keyof Mods & string, C extends StrictCollection[] = [], GF extends t.DMetaField = t.DMetaField, P extends MetaModel = MergedModel<Mods, C>> extends Selectors<P, GF> {
+    join<K extends ModKeys<Mods, Ressource> /*| (string & {})*/, A extends string = DeriveName<K>>(
         table: K,
-        fn: K extends ModKeys<Mods, Ressource> ?
-            (((KeyIntersection<P, ToModel<Mods, Ressource, K, A>>)) | (((p: MergedModel<Mods, PushCollection<C, Ressource, K, A>>, D: GF) => any)))
-            : (((KeyIntersection<P, ToModel<Mods, '', '', A>>)) | (((p: MergedModel<Mods, PushCollection<C, '', '', A>>, D: GF) => any)))
-        , alias?: A,
-    ): K extends ModKeys<Mods, Ressource> ?
-        FromResult<Mods, Ressource, PushCollection<C, Ressource, K, A>, GF>
-        : FromResult<Mods, Ressource, PushCollection<C, '', '', A>, GF>
+        alias?: A,
+    ): {
+        using: (o: KeyIntersection<P, ToModel<Mods, Ressource, K, A>>) =>
+            K extends ModKeys<Mods, Ressource> ?
+            FromResult<Mods, Ressource, PushCollection<C, Ressource, K, A>, GF>
+            : FromResult<Mods, Ressource, PushCollection<C, '', '', A>, GF>
+        on: (fn: (p: MergedModel<Mods, PushCollection<C, Ressource, K, A>>, D: GF) => any) =>
+            K extends ModKeys<Mods, Ressource> ?
+            FromResult<Mods, Ressource, PushCollection<C, Ressource, K, A>, GF>
+            : FromResult<Mods, Ressource, PushCollection<C, '', '', A>, GF>
+    },
 
     leftJoin: this['join']
     rightJoin: this['join']
@@ -308,32 +265,6 @@ export interface FromResult<Mods extends Models, Ressource extends keyof Mods & 
 
 
 export declare function Buck<T extends keyof Models>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>
-
-const r =
-    Buck('')
-        .from('data/people.parquet')
-        .join('data/final.csv', 'name')
-        .select()
-        .returnType
-// .select('sssssss.str')
-// //     // .from('duckdb_functions()')
-//         .from('data/people.parquet')
-//         .crossJoin('data/str-test.jsonl')
-//         // .select(e => e.)
-//         // .select(e => e.)
-//         // .select('')
-//         // .select('people')
-//         // .crossJoin('/datasets/communes.parquet', 'XX')
-//         // .select('')
-// const r =
-//     Buck('')
-//         .from('data/people.parquet', 'P')
-//         .select(e => e.P.total)
-//         .exec()
-// .from('data/str-test.jsonl')
-// .select('')
-// .select(e => ({ xxx: e.database_name, yyy: 'e.database_size' }))
-// .where(e => e.str === 123)
 
 // Define the return type for DBuilder
 export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mods & string, GF extends t.DMetaField = t.DMetaField> extends Withor<Mods, Ressource, GF> {
@@ -365,34 +296,6 @@ export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mod
     // fetchSchema(id: string): Promise<Mods>
     describe(id: string): Promise<any>
     run(sql: string): Promise<any>
-}
-
-
-() => {
-    const hh =
-        Buck('').from('data/people.parquet').select(e => e).returnType
-
-    const r =
-        Buck('').from('tusr').select(e => ({ gg: e.tusr })).returnType
-    const xr =
-        Buck('').from('tusr').select(e => ({ gg: e.tusr, xx: e.name.str_split('') })).returnType
-
-    const zzz
-        = Buck('').from('tusr').select(e => e)
-
-    const zzzZ
-        = Buck('').from('tusr').select(e => ({ ...e, gg: 12 })).returnType
-    const zzzZs
-        = Buck('').from('tusr').select(e => ({ ...e.tusr, gg: 12 })).returnType
-    // const zzzm
-    //     = Buck('').from('tusr').select(e => ({ zzz: { ttt: {df:e} }, gg: 12 })).returnType
-
-    const r2 =
-        Buck('').from('tusr').select(e => ({ lll: e.age, ppp: { lol: [{ zz: { f: e.age.to_hex() } }] } })).returnType
-    // r2
-    // const r4 =
-    //     Buck('').from('tusr').select()
-
 }
 
 // Overload for settings only

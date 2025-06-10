@@ -1,11 +1,11 @@
 import { builder } from './src/build'
-import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './src/readers'
+import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './io'
 export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx }
 // @ts-ignore
 import type * as DuckdbTyped from '@duckdb/duckdb-wasm/dist/types/src/index'
 // @ts-ignore
 import * as _Duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.28.1-dev106.0/+esm'
-import { BuckDBBase } from './buckdb.core'
+import { BuckDBBase } from './core'
 import { isBucket } from './src/utils'
 const Duckdb = _Duckdb as typeof DuckdbTyped
 

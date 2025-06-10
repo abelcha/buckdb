@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { from } from '../buckdb'
+import { from } from '@buckdb/isomorphic'
 const xx = from('duckdb_functions()')
 const xz = from('duckdb_types()')
 const clean = (a: string) => a.replaceAll(/\n/g, '').replaceAll(/\s+/g, ' ')
@@ -34,6 +34,6 @@ test.only('setop', () => {
         xz.select('type_name')
             .unionAll(
                 xx.select(`database_name`),
-            ).toSql(),
-    ).toEqual(`FROM duckdb_types() \n SELECT type_name \n \n \nUNION ALL\nFROM duckdb_functions() \n SELECT database_name`)
+            ).toSql({trim:true}),
+    ).toEqual(`( FROM duckdb_types() SELECT type_name ) UNION ALL (FROM duckdb_functions() SELECT database_name)`)
 })

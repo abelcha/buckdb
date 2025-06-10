@@ -1,4 +1,5 @@
-import { Buck } from '../buckdb'
+import { Buck } from '@buckdb/isomorphic'
+import { array_contains, round, ST_Distance_Spheroid, ST_Point } from '../fn'
 
 const SP = Buck('file:///me/dev/buckdb/data/spatial_lite.db', {
     access_mode: 'READ_WRITE'
@@ -22,7 +23,7 @@ const swissChocolateStores =
             city_centers: db.from('swiss_cities')
                 .select((e, D) => ({
                     city_name: e.city_name,
-                    center: D.ST_Point(e.center_lon, e.center_lat),
+                    center: ST_Point(e.center_lon, e.center_lat),
                     lon_min: e.center_lon - 0.05,
                     lon_max: e.center_lon + 0.05,
                     lat_min: e.center_lat - 0.05,
@@ -35,20 +36,20 @@ const swissChocolateStores =
                 .select(({ p, c }, D) => ({
                     city_name: c.city_name,
                     store_name: p.name,
-                    distance_from_center: D.round(
-                        D.ST_Distance_Spheroid(
-                            D.ST_Point(p.longitude, p.latitude),
+                    distance_from_center: round(
+                        ST_Distance_Spheroid(
+                            ST_Point(p.longitude, p.latitude),
                             c.center
                         ),
                         2
                     )
                 }))
                 .where(({ p, c }, D) =>
-                    D.array_contains(p.fsq_category_ids, '52f2ab2ebcbc57f1066b8b31')
+                    array_contains(p.fsq_category_ids, '52f2ab2ebcbc57f1066b8b31')
                     && p.country === 'CH'
                     && p.longitude >= c.lon_min && p.longitude <= c.lon_max
                     && p.latitude >= c.lat_min && p.latitude <= c.lat_max
-                    && D.ST_Distance_Spheroid(D.ST_Point(p.longitude, p.latitude), c.center) <= 5000
+                    && ST_Distance_Spheroid(ST_Point(p.longitude, p.latitude), c.center) <= 5000
                 )
         })
     )
@@ -56,7 +57,7 @@ const swissChocolateStores =
         .select(({ s }, D) => ({
             city_name: s.city_name,
             total_stores: D.count(),
-            stores_per_km2: D.round(D.count() / 78.54, 2),
+            stores_per_km2: round(D.count() / 78.54, 2),
             closest_stores: D.Raw(`(SELECT string_agg(store_name) FROM (
                 SELECT store_name FROM stores_by_city s2 
                 WHERE s2.city_name = s.city_name 

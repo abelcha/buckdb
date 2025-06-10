@@ -1,4 +1,4 @@
-import { DMetaField } from '../.buck/types'
+import { DMetaField } from '.buck/types'
 import jsep, { ArrayExpression, ArrowFunctionExpression, BinaryExpression, CallExpression, ConditionalExpression, Expression, Identifier, Literal, MemberExpression, ObjectExpression, Property, SequenceExpression, SpreadElement, TemplateElement, TemplateLiteral, UnaryExpression } from './jsep'
 import { AggregateFunctions, LitteralTypesMap, PatternMatchers, PolyfillMapping, UnmethodMapping } from './typedef'
 import { wrap, Σ } from './utils'
@@ -30,7 +30,7 @@ const OperatorMap = new Map([
   ['==', '='],
   ['!=', '!='],
   ['===', '='],
-  ['!==', '!='],
+  ['!==', 'IS DISTINCT FROM'],
   ['??', 'COALESCE'],
   ['+', '+'],
   ['-', '-'],
@@ -152,8 +152,6 @@ type Topts = {
   closureVars?: string[]
 }
 
-
-
 // type oProps = { subMemberExpression?: boolean, isProperty?: boolean }
 export function transformDuckdb(node: Expression, params = new Map<string, { depth: number; position: number }>(), context: Record<string, any> = {}) {
   function transformTree(node: Expression, opts: Topts = { isFuncArg: false }): any {
@@ -163,6 +161,18 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
       return node.callee.type === 'MemberExpression' && node.callee.object.type === 'Identifier' && params.get(node.callee.object.name)?.position === 1
     }
     const MapFunc = {
+      TaggedTemplateExpression: (node: any) => {
+        const { quasis, expressions } = node.quasi;
+        let result = "";
+        for (let i = 0; i < quasis.length; i++) {
+          result += quasis[i].value.cooked;
+          if (i < expressions.length) {
+            result += `\${...}`; // or inject placeholder, or evaluate if needed
+          }
+        }
+
+        return result;
+      },
       ObjectExpression(node: ObjectExpression) {
         return `{${node.properties.map(transformNode).join(', ')}}`
       },
@@ -287,7 +297,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         }
         if (lastCallee === 'as') {
           const gargs = node.arguments.slice(1).map(transformNode)
-          return `${joinMembers(calleeArr.slice(0, -1))}::${firstValue}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : '')
+          return wrap(`${joinMembers(calleeArr.slice(0, -1))}::${firstValue}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : ''), '(', ')')
         }
 
         if (typeof calleeArr[0] === 'string' && calleeArr[0].toLowerCase() === 'cast' && node.arguments.length >= 2) {
@@ -334,7 +344,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         if (node.operator === '+' && hasStringLiteral(node)) {
           return transformStringConcat(node, transformNode)
         }
-        if (node.operator === '==' || node.operator === '===' && node.right.type === 'Literal' && node.right?.raw === 'null') {
+        if (node.operator in Σ('==', '===') && node.right.type === 'Literal' && node.right?.raw === 'null') {
           return `${transformNode(node.left)} IS NULL`
         }
 

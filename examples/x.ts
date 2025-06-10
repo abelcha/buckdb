@@ -1,8 +1,32 @@
-import { DuckDBInstance } from '@duckdb/node-api'
+import { Buck, from, MemoryDB } from "@buckdb/isomorphic";
+import { read_parquet } from '@buckdb/io'
+
+
+const db = 
+Buck('s3://a1738/sakila.duckdb')
+
+
+const resp = 
+await db.from(read_parquet('s3://a1738/files/macif.parquet')).show()
+
+
+db.from('Actor')
+.join('Film_actor').using('actor_id')
+.join('Film_category').on(e => e.Actor.actor_id === e.Film_actor.actor_id)
+.select('category_id', 'Actor.first_name')
+
+
+// from('s3://us-prd-motherduck-open-datasets/misc/csv/popular_currency_rate_dollar.csv')
+
+
+// db.loadExtensions('fts').from(duckdb_functions()).where(e => e.function_name.starts_with('fts'))
+
+
+
 // DuckDBInstance
 // import { Buck } from './buckdb'
 
-const db = await DuckDBInstance.create('local.duckdb', { access_mode: 'READ_ONLY' })
+// const db = await DuckDBInstance.create('local.duckdb', { access_mode: 'READ_ONLY' })
 // const con = await db.connect()
 
 // const resp = await con.runAndReadAll(`select * FROM vjson `)

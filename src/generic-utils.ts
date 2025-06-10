@@ -1,4 +1,4 @@
-import * as t from '../.buck/types'
+import * as t from '.buck/types'
 export type ObjectToValuesTuple<T> = T extends Record<string, any> ? Array<T[keyof T]> : never
 
 export type TypeEq<A, B> = (<T>() => T extends A ? 1 : 2) extends (<T>() => T extends B ? 1 : 2) ? true : false

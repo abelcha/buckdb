@@ -1,7 +1,7 @@
 import * as _ from './template.ts'
-// import _fns from '../.buck/duckdb_functions.json'
+// import _fns from '@buckdb/.buck/duckdb_functions.json'
 import { camelCase, groupBy, maxBy, range, sortBy, uniq, uniqBy } from 'es-toolkit'
-import { Buck } from '../buckdb.ts'
+import { Buck } from '@buckdb/node'
 import { mapTypes, mapTypesProps } from '../src/typedef.ts'
 import { wrap, Σ } from '../src/utils.ts'
 
@@ -93,7 +93,7 @@ const buildJSDoc = (row: IFns) => {
         items.push('@default: ' + `${row.function_name}(${row.args.map(x => x.pname + ':' + x.ptypes.toSorted().join(' | ')).join(', ')}) -> ${row.return_type}`)
     }
     if (items.length) {
-        return wrap(items.join('\t'), '  /**' + ' '.repeat(60), '*/\n')
+        return wrap(items.join('\t').replaceAll('\n', '\\n'), '\n  /**', '*/\n')
     }
     return ''
 }
@@ -113,7 +113,7 @@ const genArgs = (args: IFns['args'], varargs: string) => {
 global.fns = _fns
 global.renderMethod = (e: IFns, typeMap = {}, slice = 1, hidden = false) => {
     const r = mapTypesProps(e.return_type, true)
-    const rtn = `${buildJSDoc(e)} ${hidden ? '//' : ''} ${e.function_name}(${genArgs(e.args.slice(slice), e.varargs)}): ${typeMap[r.id] || r.field}`
+    const rtn = `${hidden ? '//' : ''} ${e.function_name}(${genArgs(e.args.slice(slice), e.varargs)}): ${typeMap[r.id] || r.field}`
     return rtn
 }
 
@@ -159,19 +159,20 @@ const getFunctions = (xfns: IFns[], opts: Opts) => {
 
 const formatFunctions = (p: ReturnType<typeof getFunctions>, opts: Opts) => {
     const override = opts.override || []
-    const gpx = p
+    const gpx = p//sortBy(p, ['function_name'])
         .flatMap(([key, values]) => {
             const [fst, ...rest] = sortBy(values, [e => -e.signatures[0].function_name.length])
             const fsig = fst.signatures[0]
             const char = opts.type ? '- ' : '… '
 
-            return fst.signatures.map(e => global.renderMethod(e, opts.typeMap || {}, opts.slice ?? 1, override.includes(fsig.function_name)))
-                .concat(
-                    rest.map(e => e.signatures[0]).map(e => `${buildJSDoc(e)} ${e.function_name}: this['${fsig.function_name}'];`),
-                )
-                .concat(`  /* ${char.repeat(60 / char.length)}[${opts.type || 'Global'}] ${char.repeat(15 / char.length)} */`)
+            return fst.signatures.map((e, i) => [
+                buildJSDoc(e),
+                global.renderMethod(e, opts.typeMap || {}, opts.slice ?? 1, override.includes(fsig.function_name)),
+                ...(i ? [] :  rest.map(e => e.signatures[0]).map(e => `${buildJSDoc(e)} ${e.function_name}: this['${fsig.function_name}'];`))
+            ])
         })
-    return gpx.join('\n')
+    return sortBy(gpx, [e => e[1].toLowerCase()]).map(e => e.join('') + '\n').join('\n')
+    // return gpx.map(e => e.join('') + '\n').join('\n')
 }
 
 global.renderMethods = (opts: Opts) => {
@@ -179,9 +180,10 @@ global.renderMethods = (opts: Opts) => {
 }
 
 global.renderMacros = (opts: Opts) => {
-    const macros = _fns.filter(e => e.function_type === 'macro' && e.schema_name === 'main')
+    const macros = _fns.filter(e => e.function_type === 'macro' && e.schema_name !== 'main')
         .map(fn => {
             // for (const i)
+            console.log(fn.schema_name, fn.function_name, fn.parameters)
             for (const i in fn.parameters) {
                 const item = fn.parameters[i]
                 if (item.match(/^(l|l\d|arr)$/)) {
@@ -198,6 +200,7 @@ global.renderMacros = (opts: Opts) => {
             }
             return fn
         })
+    // console.log(macros)
     return formatFunctions(getFunctions(macros, opts), opts)
 }
 
@@ -213,7 +216,7 @@ async function main() {
     const oldContent = await Bun.file('.buck/types.ts').text()
 
     if (oldContent !== nwContentFmt || !init) {
-        init = true
+        // init = true
         console.log('Generating .buck/types.ts')
         await Bun.write('.buck/types.ts', nwContentFmt)
         console.log(_ && new Date().toISOString(), 'Generated .buck/types.ts')

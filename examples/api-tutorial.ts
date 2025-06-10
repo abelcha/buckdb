@@ -1,4 +1,4 @@
-import { Buck, from } from "../buckdb";
+import { Buck, from } from "@buckdb/isomorphic";
 import { copy } from "../src/copy";
 
 const BS = Buck('s3://a1738/files')
@@ -36,9 +36,9 @@ from('duckdb_functions()')
     .execute()
 
 const r = Akira.from('Rental')
-    .innerJoin('Customer', 'customer_id')
-    .innerJoin('Address', 'address_id')
-    .innerJoin('Film', e => e.Rental.customer_id === e.Customer.customer_id)
+    .join('Customer').using('customer_id')
+    .join('Address').using('address_id')
+    .join('Film').on(e => e.Rental.customer_id === e.Customer.customer_id)
     .select(e => `${e.Customer.last_name}, ${e.Customer.first_name}`)
     .where(e => (
         e.Rental.rental_date === null
@@ -61,7 +61,7 @@ const r = Akira.from('Rental')
 // Actor with most films (ignoring ties)
 const mostFilmActor =
     await Akira.from('Actor')
-        .join('Film_actor', 'actor_id')
+        .join('Film_actor').using('actor_id')
         .select(({ first_name, last_name }, D) => ({
             first_name,
             last_name,
@@ -74,7 +74,7 @@ const mostFilmActor =
 
 const mostFilmActor2 =
     await Akira.from('Actor')
-        .join('Film_actor', 'actor_id')
+        .join('Film_actor').using('actor_id')
         .select(({ first_name, last_name }, D) => [first_name, last_name, D.count()])
         .groupBy('ALL')
         .orderBy([(e, D) => D.count('*'), 'DESC'])
@@ -137,4 +137,3 @@ const c3 =
             pos: e.elevation.as('Int') > 1000 ? 'hi' : 'low',
         }))
         .exec()
-

@@ -1,45 +1,11 @@
-import * as t from '../.buck/types'
-import { DuckdbCon } from '../buckdb.core'
+import * as t from '.buck/types'
+import { DuckdbCon } from '@buckdb/core'
 import { DBuilder } from './build.types'
 import { dump, formalize, serializeCreate, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
+import { DCte, DDatasource, DOrder, DSelectee, dstate, DState, Parseable } from './typedef'
 import { deriveName, isBucket, keyBy, last, upperFirst, wrap, Σ } from './utils'
-
-export type DAction = 'select' | 'update' | 'upsert' | 'create'
-export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
-export type DSelectee = { field: string; as?: string | number; raw?: string }
-export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST' | 'ASC NULLS LAST' | 'DESC NULLS LAST'
-export type DSetOpType = 'UNION' | 'UNION ALL' | 'UNION BY NAME' | 'UNION ALL BY NAME' | 'EXCEPT' | 'EXCEPT ALL' | 'INTERSECT' | 'INTERSECT ALL'
-export type DSetOp = { type: DSetOpType, value: string }
-export type DOrder = { field: string; direction?: DDirection }
-export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' | 'INNER JOIN' }
-export type DCopyTo = { uri: string; options?: Record<string, any> }
-export type DCte = { query: string; name?: string }
-export type Parseable = string | Function
-export const dstate = {
-    copyTo: [] as DCopyTo[],
-    context: {} as Record<string, any>,
-    datasources: [] as DDatasource[],
-    selected: [] as DSelectee[],
-    conditions: [] as DCondition[],
-    having: [] as DCondition[],
-    groupBy: [] as string[],
-    distinctOn: [] as string[],
-    limit: null as number | null,
-    sample: null as number | `${number}%` | null,
-    offset: null as number | null,
-    orderBy: [] as DOrder[],
-    keyBy: null as string | null,
-    countBy: null as string | null,
-    agg: null as string | null,
-    action: 'select' as DAction,
-    updated: [] as DSelectee[],
-    ctes: [] as DCte[],
-    setops: [] as DSetOp[],
-}
-
-export type DState = typeof dstate
 
 export const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>, format = (e: any) => e) => {
     return Object.entries(kmap).reduce((acc, [key, values]) => {
@@ -68,16 +34,14 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
         if (handle && handle !== ':memory:' && ddb.type in Σ('remote', 'wasm') && !isBucket(handle)) {
             ddb.lazyAttach(handle, deriveName(handle), { readonly: ddb.type === 'wasm' })
         }
-        const fromRes = (state = dstate) => {
+        const fromRes = (state: DState) => {
             const _join = (joinType: DDatasource['join'] = 'JOIN') =>
-                function (table: any, alias: any, fn = undefined) {
-                    if (typeof fn === 'undefined') {
-                        fn = alias
-                        alias = undefined
+                function (table: any, alias: any) {
+                    const rep = ({ joinOn, using }: Record<string, any>) => fromRes(deriveState(state, { datasources: [{ catalog: handle, uri: table, alias, join: joinType, joinOn, using }] }))
+                    return {
+                        using: (using: string) => rep({ using }),
+                        on: (on: Function) => rep({ joinOn: parse(on) }),
                     }
-                    const using = typeof fn === 'string' ? fn : undefined
-                    const joinOn = typeof fn === 'function' ? parse(fn) : undefined
-                    return fromRes(deriveState(state, { datasources: [{ catalog: handle, uri: table, alias, join: joinType, joinOn, using }] }))
                 }
             const _where = (operator = 'AND') =>
                 function (...conditions: Parseable[]) {
@@ -87,9 +51,18 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 // console.log(state)
                 const formatAGG = (e: Promise<any>) => state.agg ? e.then(resp => resp[0]) : e
                 const str = toSql(Object.assign(state, props))
-                if (!state.ctes.length)
-                    for await (const dt of state.datasources)
+                if (state.ctes.length) {
+                    const ctEntries = state.ctes.map(e => [e.name, e.query.toState().datasources])
+                    const fnamed = ctEntries.map(x => x[0])
+                    const cteDS = ctEntries.flatMap(z => (z[1] as any).concat(...state.datasources).filter(e => !fnamed.includes(e.uri)))
+                    for await (const dt of cteDS) {
                         await ddb.ensureSchema(dt.uri)
+                    }
+                } else {
+                    for await (const dt of state.datasources) {
+                        await ddb.ensureSchema(dt.uri)
+                    }
+                }
                 if (state.selected.length === 1) {
                     const [{ as, raw, field }] = state.selected
                     if ((as === null && !raw && field) || raw) {
@@ -109,7 +82,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 join: _join('JOIN'),
                 leftJoin: _join('LEFT JOIN'),
                 rightJoin: _join('RIGHT JOIN'),
-                crossJoin: _join('CROSS JOIN'),
+                crossJoin: (a, b) => _join('CROSS JOIN')(a, b).using(undefined),
                 naturalJoin: _join('NATURAL JOIN'),
                 innerJoin: _join('INNER JOIN'),
                 set: function (...keys: Parseable[]) {
@@ -208,7 +181,15 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 toState: () => state,
                 dump: (opts: any) => { dump(state, opts); return fromRes(state) },
                 show: async function (opts: any) {
-                    return this.dump(opts).execute().then(e => { console.table(e); return e })
+                    return this.dump(opts).execute().then(e => {
+                        // @ts-ignore
+                        BigInt.prototype.toJSON = function () { return this.toString() }
+                        if (opts?.json) console.log(JSON.stringify(e, null, 2))
+                        if (opts?.js) console.log(e[0])
+                        else console.table(e.slice(0, 10))
+                        // console[opts?.table === false ? 'log' : 'table'](e);
+                        return e
+                    })
                 },
                 toSql: function (props = { pretty: false }) {
                     return toSql(Object.assign(state, props))
@@ -217,7 +198,11 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
         }
         return {
             ddb,
-            settings: (s: Partial<t.DSettings>) => ddb.lazySettings(s),
+            run: (sql: string) => ddb.run(sql),
+            settings: function (s: Partial<t.DSettings>) {
+                ddb.lazySettings(s)
+                return this
+            },
             fetchTables: async function (id: string) {
                 const resp = await ddb.query(`SELECT * FROM duckdb_tables()`)
                 return Object.fromEntries(resp.map(e => [upperFirst(e.table_name), serializeSchema(e.sql)]))
@@ -231,8 +216,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 return this
             },
             with: function (...arr: (() => any)[]) {
-                // @ts-ignore
-                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query: v?.toSql({ false: true, minTrim: 50 }) }))
+                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query:v }) as DCte)
                 return {
                     from: (table: string, alias?: string) =>
                         fromRes({ ...dstate, ctes, action: 'select', datasources: [{ catalog: handle, uri: table, alias: alias }] }),

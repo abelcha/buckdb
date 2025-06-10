@@ -1,5 +1,5 @@
-import { Buck } from '../buckdb'
-import { from } from '../buckdb'
+import { Buck } from '@buckdb/isomorphic'
+import { from } from '@buckdb/isomorphic'
 
 const SP = Buck('file:///me/dev/buckdb/data/spatial_lite.db', {
     access_mode: 'READ_ONLY'
@@ -58,7 +58,7 @@ const nearbyStorePairs = SP.with(
     })
 )
     .from('nearby_stores', 'a')
-    .join('nearby_stores', 'b', ({ a, b }, D) =>
+    .join('nearby_stores', 'b').on(({ a, b }, D) =>
         a.fsq_place_id < b.fsq_place_id &&
         D.ST_DWithin(a.location, b.location, 2)
     )

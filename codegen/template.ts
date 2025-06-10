@@ -64,13 +64,13 @@ export interface DArrayField<T = DAnyField> extends Omit<Array<T>, 'map' | 'filt
 }
 
 export interface DBoolField extends DAnyField {
-    [sInferred]: boolean
-    [sComptype]: boolean
+    // [sInferred]: boolean
+    // [sComptype]: boolean
     /*{renderMethods({type:'DBool'})}*/
 }
 export interface _DStructField<T = {}> {
-    [sInferred]: T
-    [sComptype]: T
+    // [sInferred]: T
+    // [sComptype]: T
     /*{renderMethods({type:'DStruct'})}*/
 }
 export type DStructField<T = {}> = T & _DStructField<T>
@@ -89,14 +89,14 @@ export interface _DJsonField {
 export type DJsonField = _DJsonField & Record<string, any>
 
 export interface _DVarcharField extends DAnyField {
-    [sInferred]: string
-    [sComptype]: DVarcharComp
+    // [sInferred]: string
+    // [sComptype]: DVarcharComp
     /*{renderMethods({type:'DVarchar'})}*/
 }
 export type DVarcharField = _DVarcharField & string
 export interface _DNumericField extends DAnyField {
-    [sInferred]: number
-    [sComptype]: DNumericComp
+    // [sInferred]: number
+    // [sComptype]: DNumericComp
     /*{renderMethods({type:'DNumeric'})}*/
 }
 export type DNumericField = _DNumericField & number
@@ -116,21 +116,20 @@ export interface DAggregate<DNum, DStr> {
         match: (e) => e.function_type === 'aggregate',
         typeMap: { numeric: 'DNum & { filter: (x: DAnyable) => DNum }', varchar: 'DStr & { filter: (x: DStr) => boolean }' },
         slice: 0,
-        override: ['greatest', 'max','min', 'last', 'first', 'median', 'quantile_disc']
+        override: ['greatest', 'max','min', 'last', 'arbitrary', 'median', 'quantile_disc']
     })}*/
     greatest<X>(...vargs: X[]): FromPlain<X>;
     max<X>(...vargs: X[]): FromPlain<X>;
     median<X>(...vargs: X[]): FromPlain<X>;
     min<X>(...vargs: X[]): FromPlain<X>;
     last<X>(...vargs: X[]): FromPlain<X>;
-    first<X>(...vargs: X[]): FromPlain<X>;
+    arbitrary<X>(...vargs: X[]): FromPlain<X>; // first
     quantile_disc(...vargs: DAnyable): DNumericField;
 }
 
-export interface DMacroAG<DNum, DStr> {
+export interface DMacroAG {
     /*{renderMacros({
         match: (e) => e.macro_definition.startsWith('list_aggr'),
-        typeMap: { numeric: 'DNum', varchar: 'DStr' },
         slice: 0,
     })}*/
 }
@@ -142,6 +141,7 @@ export interface DMacro<DNum, DStr> {
         slice: 0,
     })}*/
 }
+
 
 export interface DGlobal<DNum, DStr> {
     /*{renderMethods({
@@ -156,9 +156,22 @@ export interface DGlobal<DNum, DStr> {
     array_filter<T>(list: DArrayField<T> | T[], lambda: (x: T) => any): DArrayField<T>
     array_slice<T>(list: DArrayField<T> | T[], begin: number, end: number, step?: number): DArrayField<FromPlain<T>>
     array_to_string(arr: DArrayable, sep: DVarcharable): DVarcharField
-    
+
 
 }
+
+export interface DTable {
+    /*{renderMethods({
+        match: (e) => e.function_type === 'table' && !e.function_name.startsWith('read'),
+        slice: 0,
+    })}*/
+}
+
+
+interface DTaggedTemplate {
+    raw(strings: TemplateStringsArray, ...exprs: any[]): string;
+}
+
 
 export interface DKeywords<DNum, DStr> {
     Distinct<X>(val: X): X
@@ -178,10 +191,10 @@ export type DCastorsField = DCastors<DNumericField, DVarcharField>
 export type DConstructorsField = DConstructors<DNumericField, DVarcharField>
 // export type DConstructorsComp = DConstructors<DNumericComp, DVarcharComp>
 
-export type DMacroAGField = DMacroAG<DNumericField, DVarcharField>
+export type DMacroAGField = DMacroAG
 export type DMacroField = DMacro<DNumericField, DVarcharField>
 
-export type DMetaField = DGlobalField & DAggregateField & DConstructorsField & DGlobalPatternMatchers & DCastorsField & DMacroField & DMacroAGField & DKeywordsField
+export type DMetaField = DGlobalField & DAggregateField & DConstructorsField & DGlobalPatternMatchers & DCastorsField & DMacroField & DMacroAGField & DKeywordsField & DTaggedTemplate
 // export type DMetaComp = DGlobalComp & DAggregateComp & DConstructorsComp & DGlobalPatternMatchers & DCastorsComp
 
 
@@ -321,5 +334,7 @@ export interface DSettings {
     }*/
 
 }
+
+
 
 export type DExtensions = /*{duckdb_extensions.map(e => `'${e}'`).join(' | ')}*/ | string | {}

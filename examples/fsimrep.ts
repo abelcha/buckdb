@@ -1,14 +1,44 @@
-import { Buck, from } from '../buckdb'
+import { Buck, from } from '@buckdb/isomorphic'
 
 const db = Buck('file:///Volumes/dev/fsimrep')
+
+
+
+// const q2 =
+//     Buck('file:///Volumes/dev/fsimrep').with(
+//         db => ({
+//             target: db.from('data/watchev.parquet').select(e => ({
+//                 stargazer_login: e.login,
+//                 repo: e.repo,
+//                 date: (e.ts.as('Varchar'))[0.10]
+//             }))
+//                 .where(e => e.repo === 'duckdb/duckdb')
+//         }),
+//         db => ({
+//             same_day_stars: db.from('data/watchev.parquet', 's')
+//             .join('target', 't').using('repo')
+//             // .select(e => e.)
+//         }),
+
+//     ).from('co_stars')
+//         .limit(10)
+
+
+
+
+
+
+
+
+
 
 // db.from('starlite.parquet')
 const q = Buck('file:///Volumes/dev/fsimrep').with(
     db => ({
         repo_pairs: db.from('starbase/*.parquet', 'a')
-            .join('starlite.parquet', 'r1', 'repo')
-            .join('starbase/*.parquet', 'b', ({ a, b }) => a.login === b.login && a.repo !== b.repo)
-            .join('starlite.parquet', 'r2', 'repo')
+            .join('starlite.parquet', 'r1').using('repo')
+            .join('starbase/*.parquet', 'b').on(({ a, b }) => a.login === b.login && a.repo !== b.repo)
+            .join('starlite.parquet', 'r2').on(e => e.b.repo === e.r2.repo)
             .select(({ r2, a, b, r1 }) => ({
                 login: a.login,
                 date: a.date,
@@ -31,7 +61,7 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
                 jaccard_similarity: D.count(D.Distinct(e.login)) / (e.repo_b_stars ?? null)
             }))
             .groupBy('repo_a', 'repo_b', 'repo_b_stars')
-            .having((e, D) => D.count(D.Distinct(e.login)) >= 10)
+            .having((e, D) => D.count(D.Distinct(e.login)) >= 5)
     }),
     db => ({
         results: db.from('similarity_metrics')
@@ -46,9 +76,9 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
 
 )
     .from('results')
-    .leftJoin('repos.parquet', 'x', 'full_name')
+    .leftJoin('repos.parquet', 'x').using('full_name')
     .select((e, D) => ({
-        full_name: e.full_name,
+        full_name: 'https://github.com/' + e.full_name,
         similarity_score: e.results.similarity_score.round(3),
         common_users: e.common_users,
         total_stars: e.stargazers_count,
@@ -57,3 +87,5 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
     }))
     .orderBy('similarity_score', 'DESC')
     .limit(100)
+
+await q.show()

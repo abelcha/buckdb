@@ -1,4 +1,4 @@
-import { Buck, from } from './buckdb' // Assuming buckdb is in the same directory or adjust path
+import { Buck, from } from '@buckdb/isomorphic' // Assuming buckdb is in the same directory or adjust path
 
 // Optional: Configure connection if needed, otherwise uses default
 // const buckCon = Buck({ /* credentials */ });

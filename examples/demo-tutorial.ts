@@ -2,7 +2,7 @@
 // Each section matches a category/subcategory in demo.txt.
 // For every missing example, a // TODO is left as a placeholder.
 
-import { Buck, MemoryDB } from '../buckdb'
+import { Buck, MemoryDB } from '@buckdb/isomorphic'
 
 // # Select typexxzz
 // - .select()
@@ -129,7 +129,7 @@ await MemoryDB.from('duckdb_functions()')
 // # Joins
 // - ON as a callback
 await MemoryDB.from('duckdb_functions()', 'a')
-    .join('duckdb_types()', 't', ({ t, a }) => a.function_type === t.logical_type)
+    .join('duckdb_types()', 't').on(({ t, a }) => a.function_type === t.logical_type)
     .select(e => ({
         fn: e.a.function_name,
         type: e.t.logical_type,

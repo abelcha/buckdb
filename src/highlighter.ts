@@ -150,7 +150,7 @@ function tokenizeSql(sql: string): Token[] {
         }
 
         // 5. Punctuation: ( ) , ; . *
-        if (/[(),;.*]/.test(char)) {
+        if (/[\(\)\[\],;.*]/.test(char)) {
             tokens.push({ type: TokenType.PUNCTUATION, value: char });
             i++;
             continue;
@@ -180,8 +180,7 @@ function tokenizeSql(sql: string): Token[] {
             const upperValue = value.toUpperCase();
             if (SQL_KEYWORDS.includes(upperValue)) {
                 tokens.push({ type: TokenType.KEYWORD, value });
-            } else if (SQL_FUNCTIONS.includes(upperValue) && i < sql.length && sql[i] === '(') {
-                // Check if it's followed by '(' to confirm it's a function call
+            } else if (i < sql.length && sql[i] === '(') {
                 tokens.push({ type: TokenType.FUNCTION, value });
             } else {
                 tokens.push({ type: TokenType.IDENTIFIER, value });

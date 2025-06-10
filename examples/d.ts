@@ -1,7 +1,7 @@
-import { DArrayField, DBoolField, DMetaField, DNumericComp, DNumericField, DVarcharComp, DVarcharField } from './.buck/types'
-import * as t from './.buck/types'
-import { Buck, from } from './buckdb'
-import { FromPlain, ToPlain } from './src/deep-map'
+import { DArrayField, DBoolField, DMetaField, DNumericComp, DNumericField, DVarcharComp, DVarcharField } from '.buck/types'
+import * as t from '.buck/types'
+import { Buck, from } from '@buckdb/isomorphic'
+import { FromPlain, ToPlain } from '../src/deep-map'
 
 const staff = {
     _id: '5830bf4042bcf30004f4e27b',
@@ -13,6 +13,7 @@ const pack = {
     title: 'Mariage',
     category: 'Mariage',
     type: 'technic',
+
     tags: ['Wedding', 'Bridal'],
     tagIds: [12, 42],
     itemType: 'package',
@@ -93,31 +94,32 @@ const pack = {
 }
 
 console.log(new Date())
-const db = Buck('local.duckdb', { access_mode: 'READ_ONLY' })
-// const q = db.create('items', { replace: true }).as(pack)
-
+const db = Buck('../local.duckdb')
+const q = await db.create('items', { replace: true }).as(pack).execute()
+await db.from('items').select((e, D) => ({ ...e, version: D.Json({ version: 42 }), tagmap: D.map_from_entries([{ k: 12, v: 'Wedding' }, { k: 42, v: 'Bridal' }]) }))
+    .copyTo('demo.parquet').execute()
 // console.log(q.toSql())
 // const resp = await q.execute()
-const rz
-    = await db.from('items')
-        .select(e => ({ name: `___${e._id}___${e.title}__` }))
-        .execute()
-// console.log(rz)
-
-// const resp =
-//     await db
-//         .from('duckdb_extensions()')
+// const rz
+//     = await db.from('items')
+//         .select(e => ({ name: `___${e._id}___${e.title}__` }))
 //         .execute()
-// const q = db.create('testjson', { replace: true }).as()
+// // console.log(rz)
 
-const resp2 = await db.from('tjson').select(e => e.id === 'ol').execute()
-console.log({ resp2 })
+// // const resp =
+// //     await db
+// //         .from('duckdb_extensions()')
+// //         .execute()
+// // const q = db.create('testjson', { replace: true }).as()
 
-// console.log({ resp })
+// const resp2 = await db.from('tjson').select(e => e.id === 'ol').execute()
+// console.log({ resp2 })
+
+// // console.log({ resp })
 
 
-const og =
-    [
-        { name: 'contains', args: ['varchar', 'array'] },
-        { name: 'array_contains', args: ['varchar', 'array'] },
-    ]
+// const og =
+//     [
+//         { name: 'contains', args: ['varchar', 'array'] },
+//         { name: 'array_contains', args: ['varchar', 'array'] },
+//     ]

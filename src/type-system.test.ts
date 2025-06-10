@@ -1,11 +1,11 @@
 import { expect, test } from 'bun:test'
 import { sortBy } from 'es-toolkit'
-import * as t from '../.buck/types'
-import { Buck, MemoryDB } from '../buckdb'
+import * as t from '.buck/types'
+import { Buck, MemoryDB } from '@buckdb/isomorphic'
 import { builder } from './build'
 import { DBuilderResult, FromResultModel, Withor } from './build.types'
 import { FromPlain } from './deep-map'
-import { Models } from '../.buck/table3'
+import { Models } from '@buckdb/.buck/table3'
 
 const fns = await MemoryDB.from('duckdb_functions()').select().execute()
 type E<T> = T
@@ -41,7 +41,7 @@ test('basic tests', async () => {
 
 test('full tests', async () => {
     const result = await MemoryDB.from('duckdb_functions()')
-        .join('duckdb_types()', 'ttt', (a, b) => a.duckdb_functions.description === a.ttt.comment)
+        .join('duckdb_types()', 'ttt').on((a) => a.duckdb_functions.description === a.ttt.comment)
         .select(e => ({
             a: e.ttt.logical_type,
             b: e.duckdb_functions.function_name.levenshtein(e.function_type),
@@ -360,8 +360,8 @@ test('context method type checking', async () => {
 
 test('multiple joins type checking', async () => {
     const r = await MemoryDB.from('duckdb_functions()')
-        .join('duckdb_types()', 'types1', (a, b) => a.duckdb_functions.function_name === a.types1.logical_type)
-        .join('duckdb_types()', 'types2', (a, b) => a.duckdb_functions.function_type === a.types2.logical_type)
+        .join('duckdb_types()', 'types1').on((a) => a.duckdb_functions.function_name === a.types1.logical_type)
+        .join('duckdb_types()', 'types2').on((a) => a.duckdb_functions.function_type === a.types2.logical_type)
         .select(e => ({
             function_name: e.duckdb_functions.function_name,
             type1: e.types1.logical_type,
@@ -386,7 +386,7 @@ test('multiple joins type checking', async () => {
 
 test('complex query type checking', async () => {
     const result = await MemoryDB.from('duckdb_functions()')
-        .join('duckdb_types()', 'types', (a, b) => a.duckdb_functions.function_name === a.types.logical_type)
+        .join('duckdb_types()', 'types').on((a) => a.duckdb_functions.function_name === a.types.logical_type)
         .select(e => ({
             function_name: e.duckdb_functions.function_name,
             type_name: e.types.logical_type,
@@ -428,10 +428,10 @@ test('kitchen_sink', async () => {
     async function checkSelect(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
         db.select(e => e satisfies RecPeople)
 
-        db.join('duckdb_settings()', 'oo', 'name').select(e => e satisfies RecPeople & { oo: Setting })
+        db.join('duckdb_settings()', 'oo').using('name').select(e => e satisfies RecPeople & { oo: Setting })
 
-        db.join('duckdb_settings()', (a) => a.people.name === a.duckdb_settings.name)
-            .join('duckdb_types()', 'xxx', (p) => p.input_type.Like('%%'))
+        db.join('duckdb_settings()').on((a) => a.people.name === a.duckdb_settings.name)
+            .join('duckdb_types()', 'xxx').on((p) => p.input_type.Like('%%'))
             .select(e => e satisfies RecPeople & { duckdb_settings: Setting } & { xxx: any })
 
         db.select(e => ({ zz: e.name })).where(e => e satisfies RecPeople & { zz: t.DVarcharField })
@@ -635,7 +635,7 @@ test('build-tests', () => {
         const resp5 = await db.select((e, D) => `${e.name}__${e.total}`).execute() satisfies string[]
 
         const resp = await db.select('age', 'name')
-            .union(db2.select(e => ({ name: e.function_name, toto: 12 })))
+            .union(db2.select(e => ({ name: e.function_name, age: 42, toto: 12 })))
             .execute() satisfies { age: number; name: string, toto: number }[]
 
 
@@ -728,8 +728,8 @@ test('d.test.ts', async () => {
 
 test('unshallowing', async () => {
     const xxx = async function xx(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
-        const resp = await db.select(e => e).execute() satisfies { name: string; age: number; total: number, people?: never }[]
-        const respX = await db.select().execute() satisfies { name: string; age: number; total: number, people?: never }[]
+        const resp = await db.select(e => e).execute() satisfies { name: string; age: number; total: number }[]
+        const respX = await db.select().execute() satisfies { name: string; age: number; total: number }[]
     }
 })
 
@@ -747,13 +747,11 @@ test('with', async () => {
             await db.with(
                 (accDB) => ({ titi: accDB.from('duckdb_functions()').select() }),
                 accDB => ({ tata: accDB.from('titi').select(e => ({ last_name: e.function_name, first_name: e.database_name.split('') })) }),
-                accDB => ({ tutu: accDB.from('tata').select(e => ({ ...e, last_name_len: e.last_name.len() })) }),
+                accDB => ({ tutu: accDB.from('tata').select(({ last_name, first_name }) => ({last_name, first_name,  last_name_len: last_name.len() })).where(e => e.last_name.SimilarTo(/\W+/)) }),
             )
                 .from('tutu')
                 .select()
-                // .dump()
-                // .execute()
-                .orderBy('last_name', 'DESC')
+                .orderBy('last_name_len', 'DESC')
                 .limit(1)
                 .exec() satisfies {
                     last_name: string;
@@ -762,15 +760,15 @@ test('with', async () => {
                 }[]
         expect(i4).toEqual([
             {
-                last_name: "~~~",
+                last_name: "!~~*",
                 first_name: ["s", "y", "s", "t", "e", "m"],
-                last_name_len: 3,
+                last_name_len: 4,
             }
         ])
     }
-    async function __(www: Withor<Models, 's3://a1738/akira09.db'>, xdb:DBuilderResult<Models, 's3://a1738/akira09.db'>) {
+    async function __(www: Withor<Models, 's3://a1738/akira09.db'>, xdb: DBuilderResult<Models, 's3://a1738/akira09.db'>) {
         const z = xdb.from('Actor', 'qd')
-        
+
         const r =
             await www.with(
                 accDB => ({ titi: accDB.from('Actor').select('first_name', 'last_name') }),
@@ -800,10 +798,10 @@ test('with', async () => {
             await www.with(
                 accDB => ({
                     films: accDB.from('Film').select().where(e => e.rental_rate > 10),
-                    cat: accDB.from('Film_category').select('category_id', 'Film_category')
+                    cat: accDB.from('Film_category').select('category_id', 'film_id')
                 }),
                 // accDB => ({ tata: accDB.from('titi').select(e => ({ xfname: e.first_name })) })
-            ).from('films').join('cat', e => e.cat.category_id === e.films.film_id).select('cat.category_id', 'category_id', 'film_id', 'rental_rate').exec()
+            ).from('films').join('cat').on(e => e.cat.category_id === e.films.film_id).select('cat.category_id', 'category_id', 'film_id', 'rental_rate').exec()
         // .from('titi').select().execute() satisfies { first_name: string; last_name: string }[]
     }
 

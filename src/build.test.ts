@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { MemoryDB } from '../buckdb'
+import { MemoryDB } from '@buckdb/isomorphic'
 import { deriveState } from './build'
 
 // Utility function to normalize SQL for comparison
@@ -7,7 +7,7 @@ const normalizeSQL = (sql: string): string =>
     sql.replace(/\s+/g, ' ').replace(/\n/g, ' ').trim()
 
 const expectSQL = (actual: string, expected: string) =>
-    expect(normalizeSQL(actual)).toBe(normalizeSQL(expected))
+    expect(normalizeSQL(actual)).toEqual(normalizeSQL(expected))
 
 describe('build.ts - Query Building with Bug Documentation', () => {
     describe('basic select operations', () => {
@@ -81,7 +81,7 @@ describe('build.ts - Query Building with Bug Documentation', () => {
 describe('joins - BUG: Excessive parentheses in ON clauses', () => {
     it('should FAIL: JOIN conditions should not have extra parentheses', () => {
         const query = MemoryDB.from('duckdb_functions()')
-            .join('duckdb_types()', 'types', (a, b) => a.duckdb_functions.function_name === a.types.logical_type)
+            .join('duckdb_types()', 'types').on((a) => a.duckdb_functions.function_name === a.types.logical_type)
             .select('function_name')
         const sql = query.toSql() satisfies string
         expectSQL(sql, 'FROM duckdb_functions() JOIN duckdb_types() AS types ON (duckdb_functions.function_name = types.logical_type) SELECT function_name')
@@ -89,7 +89,7 @@ describe('joins - BUG: Excessive parentheses in ON clauses', () => {
 
     it('should FAIL: JOIN without alias should not wrap conditions', () => {
         const query = MemoryDB.from('duckdb_functions()')
-            .join('duckdb_types()', (a, b) => a.duckdb_functions.function_name === a.duckdb_types.logical_type)
+            .join('duckdb_types()').on((a, b) => a.duckdb_functions.function_name === a.duckdb_types.logical_type)
             .select()
         const sql = query.toSql() satisfies string
         // This will FAIL - expecting clean syntax but getting wrapped conditions
@@ -98,7 +98,7 @@ describe('joins - BUG: Excessive parentheses in ON clauses', () => {
 
     it('should FAIL: LEFT JOIN conditions should not be wrapped', () => {
         const query = MemoryDB.from('duckdb_functions()')
-            .leftJoin('duckdb_types()', 'types', (a, b) => a.duckdb_functions.function_type === a.types.logical_type)
+            .leftJoin('duckdb_types()', 'types').on((a, b) => a.duckdb_functions.function_type === a.types.logical_type)
             .select()
         const sql = query.toSql() satisfies string
         // This will FAIL - expecting clean syntax but getting parentheses
@@ -217,7 +217,7 @@ describe('aggregation methods', () => {
             .distinctOn('function_type')
         const sql = query.toSql() satisfies string
         // BUG: Missing parentheses around DISTINCT ON field
-        expectSQL(sql, 'FROM duckdb_functions() SELECT DISTINCT ON function_type function_name, function_type')
+        expectSQL(sql, 'FROM duckdb_functions() SELECT DISTINCT ON (function_type) function_name, function_type')
     })
 })
 
@@ -226,32 +226,32 @@ describe('set operations', () => {
         const query1 = MemoryDB.from('duckdb_functions()').select('function_name')
         const query2 = MemoryDB.from('duckdb_types()').select('logical_type')
         const unionQuery = query1.union(query2)
-        const sql = unionQuery.toSql() satisfies string
-        expectSQL(sql, 'FROM duckdb_functions() SELECT function_name UNION FROM duckdb_types() SELECT logical_type')
+        const sql = unionQuery.toSql({ trim: true }) satisfies string
+        expectSQL(sql, '( FROM duckdb_functions() SELECT function_name ) UNION (FROM duckdb_types() SELECT logical_type)')
     })
 
     it('should handle union all', () => {
         const query1 = MemoryDB.from('duckdb_functions()').select('function_name')
         const query2 = MemoryDB.from('duckdb_types()').select('logical_type')
         const unionQuery = query1.unionAll(query2)
-        const sql = unionQuery.toSql() satisfies string
-        expectSQL(sql, 'FROM duckdb_functions() SELECT function_name UNION ALL FROM duckdb_types() SELECT logical_type')
+        const sql = unionQuery.toSql({ trim: true }) satisfies string
+        expectSQL(sql, '( FROM duckdb_functions() SELECT function_name ) UNION ALL (FROM duckdb_types() SELECT logical_type)')
     })
 
     it('should handle except', () => {
         const query1 = MemoryDB.from('duckdb_functions()').select('function_name')
         const query2 = MemoryDB.from('duckdb_types()').select('logical_type')
         const exceptQuery = query1.except(query2)
-        const sql = exceptQuery.toSql() satisfies string
-        expectSQL(sql, 'FROM duckdb_functions() SELECT function_name EXCEPT FROM duckdb_types() SELECT logical_type')
+        const sql = exceptQuery.toSql({ trim: true }) satisfies string
+        expectSQL(sql, '( FROM duckdb_functions() SELECT function_name ) EXCEPT (FROM duckdb_types() SELECT logical_type)')
     })
 
     it('should handle intersect', () => {
         const query1 = MemoryDB.from('duckdb_functions()').select('function_name')
         const query2 = MemoryDB.from('duckdb_types()').select('logical_type')
         const intersectQuery = query1.intersect(query2)
-        const sql = intersectQuery.toSql() satisfies string
-        expectSQL(sql, 'FROM duckdb_functions() SELECT function_name INTERSECT FROM duckdb_types() SELECT logical_type')
+        const sql = intersectQuery.toSql({ trim: true }) satisfies string
+        expectSQL(sql, '( FROM duckdb_functions() SELECT function_name ) INTERSECT (FROM duckdb_types() SELECT logical_type)')
     })
 })
 
@@ -425,7 +425,7 @@ describe('execution and results', () => {
     it('should handle settings on builder - BUG: returns undefined', () => {
         const db = MemoryDB.settings({ memory_limit: '1GB' })
         // BUG: settings() should return builder but returns undefined
-        expect(db).toHaveProperty('query')
+        expect(db).toHaveProperty('from')
     })
 
     it('should handle loadExtensions', () => {

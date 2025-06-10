@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-
-import { omit, omitBy } from 'es-toolkit'
-import { from } from '../buckdb'
+import { from } from '@buckdb/isomorphic'
 
 const str = 'hello world'
 

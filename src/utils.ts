@@ -19,6 +19,7 @@ export const wrap = (value: string, charA: string, charB = charA): string => {
 }
 
 
+
 export const upperFirst = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1)
 }
@@ -48,7 +49,7 @@ export const keyBy = <T extends object, K extends keyof T>(array: T[], key: K): 
 }
 
 
-export const isBucket = e => e?.match(/^\w+\:\/\//) && !e.match(/\.\w+$/)
+export const isBucket = e => e?.match(/^(\/\w+|\w+\:\/\/)/) && !e.match(/\.\w+$/)
 
 export const isFile = (str: string) => str.match(/\.\w{2,16}$/)
 

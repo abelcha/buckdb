@@ -1,7 +1,7 @@
 // 📊 BuckDB: Aggregations & Analytics Powerhouse
 // Transform data into insights with JavaScript-native syntax
 
-import { MemoryDB } from '../buckdb'
+import { MemoryDB } from '@buckdb/isomorphic'
 
 // ================================
 // 🎯 BASIC AGGREGATIONS - Statistical insights made simple
@@ -326,7 +326,7 @@ const groupingSetsAnalysis = await MemoryDB.from('duckdb_functions()')
         ['return_type'],                   // By return type only
         []                                 // Grand total
     ])
-    .orderBy(['function_type', 'return_type'])
+    .orderBy(['function_type'], ['return_type'])
     .execute()
 
 console.log('Grouping Sets Analysis:', groupingSetsAnalysis)

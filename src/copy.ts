@@ -1,7 +1,8 @@
-import * as t from '../.buck/types'
-import { DuckdbCon } from '../buckdb.core'
-import { GField, MetaModel, MS, NestedKeyOf, SelectModel, VTypes } from './build.types'
+import * as t from '.buck/types'
+import { DuckdbCon } from '@buckdb/core'
+import { GField, MetaModel, MS, SelectModel, VTypes } from './build.types'
 import { formalize } from './formalise'
+import { NestedKeyOf } from './generic-utils'
 
 type FileFormats = 'parquet' | 'csv' | 'json' | 'arrow' | 'jsonl'
 type CompressionType = 'auto' | 'none' | 'gzip' | 'zstd' | 'snappy' | 'brotli' | 'lz4'
@@ -104,7 +105,7 @@ export interface CopyToInterface<A extends MetaModel, S extends SelectModel = {}
 
 
 declare function _copy<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField>(
-    source: MS<V, A, S, SV> | string
+    source: MS<V, t.DMetaField, A, S, SV> | string
 ): CopyToInterface<A, S>; // Changed to use the renamed interface
 
 function xcopy(
@@ -113,7 +114,7 @@ function xcopy(
     return {
         to: (destination: string, options: Record<string, any> = {}) => {
             // Get the SQL from the source
-            const sourceSql = typeof source === 'string' ? source :  source.toSql()
+            const sourceSql = typeof source === 'string' ? source : source.toSql()
 
             // Build options string
             const optionsArray: string[] = []
@@ -133,7 +134,7 @@ function xcopy(
                 // Skip options already handled
                 if (key === 'partition_by') {
                     optionsArray.push(`PARTITION_BY ${formalize(value)}`)
-                    return 
+                    return
                 }
                 if (key === 'format' || key === 'compression') {
                     return

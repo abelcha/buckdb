@@ -1,7 +1,7 @@
 // ⚡ BuckDB: JavaScript Superpowers Unleashed!
 // Advanced JavaScript features that compile to perfect SQL
 
-import { Buck } from '../buckdb'
+import { Buck } from '@buckdb/isomorphic'
 
 // Create an in-memory database for our examples
 const db = Buck(':memory:', { access_mode: 'AUTOMATIC' })
@@ -218,7 +218,7 @@ const advancedExpressions = await db.from('employees')
                       emp.email.Like('%@outlook.%') ? 'Outlook' : 'Other',
         
         // 🔥 Date-based calculations
-        tenureYears: D.extract('year', D.current_date()) - D.extract('year', emp.hire_date),
+        tenureYears: D.current_date().year() - D.year(emp),
         
         // 🔥 Performance tier with multiple criteria
         performanceTier: emp.performance_score > 4.5 && emp.years_experience > 5 ? 'Elite' :

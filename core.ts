@@ -9,6 +9,7 @@ export type DuckdbCon = {
     handle?: string | null
     queue: CommandQueue
     run: (sql: string) => Promise<any>
+    getSchemaUri: (model: string) => string
     lazyAttach: (path: string, alias: string, options?: { readonly: boolean }) => any
     ensureSchema: (uri: string) => Promise<any>
     describe: (uri: string) => Promise<Record<string, any>>
@@ -29,7 +30,14 @@ export abstract class BuckDBBase implements DuckdbCon {
         public handle?: string,
         public settings?: Record<string, any>,
     ) { }
-
+    getSchemaUri(s: string) {
+        const [_, fnname, params] = s.match(/(\w+)\((.+)\)/) || []
+        if (fnname) {
+            return `${fnname}()`
+        }
+        return s
+        // console.log({ s, match })
+    }
     lazyMacros(s: any) {
         this.queue.pushMacros(s)
         return this

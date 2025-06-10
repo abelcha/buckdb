@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { __serialize, serialize } from './serializer'
-import { read_csv } from './readers'
+import { read_csv } from '../io'
 
 describe('__serialize', () => {
     it('should serialize null and undefined', () => {

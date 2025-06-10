@@ -35,6 +35,30 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
   ];
 }
 
+/**
+ * Display data vertically like DuckDB .columns mode
+ * Each field becomes a row with values separated by pipes
+ */
+export function vtable(data: Record<string, any>[], maxWidth = 80): void {
+  if (!data || data.length === 0) return;
+  
+  const keys = Object.keys(data[0]);
+  const maxKeyLen = Math.max(...keys.map(k => k.length));
+  const valueWidth = Math.floor((maxWidth - maxKeyLen - 3) / data.length) - 3;
+  
+  keys.forEach(key => {
+    const values = data.map(row => {
+      const val = row[key];
+      const str = val === null || val === undefined ? '' : String(val);
+      return str.length > valueWidth ? str.slice(0, valueWidth - 1) + '…' : str;
+    });
+    
+    const keyPart = key.padEnd(maxKeyLen) + ': ';
+    const valuePart = values.join(' | ');
+    console.log(keyPart + valuePart);
+  });
+}
+
 if (import.meta.main) {
   for (let h = 0; h < 24; ++h) {
     for (let m = 0; m < 60; m += 5) {

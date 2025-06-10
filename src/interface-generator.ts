@@ -1,5 +1,5 @@
 import ts from 'typescript'
-import * as t from '../.buck/types' // Import the types namespace for TS API generation target
+import * as t from '.buck/types' // Import the types namespace for TS API generation target
 import { mapTypes } from './typedef'
 // import { mapTypes } from "./sync-types";
 
@@ -343,6 +343,9 @@ function createPropertySignaturesRecursive(obj: Record<string, any>): ts.Propert
             // It's a nested object (likely a table or resource level)
             // Create a TypeLiteral by recursively calling this function
             typeNode = ts.factory.createTypeLiteralNode(createPropertySignaturesRecursive(value))
+        } else if (value === null) {
+            // create Record<string, any>
+            typeNode = ts.factory.createTypeReferenceNode('Record', [ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword), ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)])
         } else {
             // Fallback for unexpected types (null, undefined, etc.)
             console.warn(`Unexpected value type in recursive generation for key: ${key}`, value)

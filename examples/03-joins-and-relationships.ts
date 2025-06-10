@@ -1,7 +1,7 @@
 // 🔗 BuckDB: Joins & Relationships Made Beautiful
 // Complex data relationships with simple JavaScript syntax
 
-import { Buck, MemoryDB } from '../buckdb'
+import { Buck, MemoryDB } from '@buckdb/isomorphic'
 
 // Use the memory database with DuckDB's built-in system tables
 const db = MemoryDB
@@ -12,7 +12,7 @@ const db = MemoryDB
 
 // Join DuckDB functions with their types - real system data!
 const functionTypes = await MemoryDB.from('duckdb_functions()')
-    .join('duckdb_types()', 'types', ({ duckdb_functions, types }) => 
+    .join('duckdb_types()', 'types').on(({ duckdb_functions, types }) => 
         duckdb_functions.return_type === types.logical_type
     )
     .select(({ duckdb_functions, types }) => ({
@@ -44,9 +44,9 @@ console.log('Function-Type Relationships:', functionTypes)
 // ================================
 
 // Join functions, types, and settings for comprehensive analysis
-const systemAnalysis = await MemoryMemoryDB.from('duckdb_functions()', 'f')
-    .join('duckdb_types()', 't', ({ f, t }) => f.return_type === t.logical_type)
-    .join('duckdb_settings()', 's', ({ f, s }) => 
+const systemAnalysis = await MemoryDB.from('duckdb_functions()', 'f')
+    .join('duckdb_types()', 't').on(({ f, t }) => f.return_type === t.logical_type)
+    .join('duckdb_settings()', 's').on(({ f, s }) =>
         f.function_name.upper().includes(s.name.upper())
     )
     .select(({ f, t, s }, D) => ({
@@ -92,7 +92,7 @@ console.log('System Analysis:', systemAnalysis)
 
 // Find functions that share similar characteristics
 const functionSimilarity = await MemoryDB.from('duckdb_functions()', 'f1')
-    .join('duckdb_functions()', 'f2', ({ f1, f2 }) => 
+    .join('duckdb_functions()', 'f2').on(({ f1, f2 }) => 
         f1.function_name !== f2.function_name &&
         f1.function_type === f2.function_type &&
         f1.return_type === f2.return_type
@@ -138,7 +138,7 @@ console.log('Function Similarities:', functionSimilarity)
 
 // Analyze function distribution by type and return type
 const functionDistribution = await MemoryDB.from('duckdb_functions()', 'f')
-    .join('duckdb_types()', 't', ({ f, t }) => f.return_type === t.logical_type)
+    .join('duckdb_types()', 't').on(({ f, t }) => f.return_type === t.logical_type)
     .select(({ f, t }, D) => ({
         functionType: f.function_type,
         returnType: t.logical_type,
@@ -178,7 +178,7 @@ console.log('Function Distribution Analysis:', functionDistribution)
 
 // Left join to find functions without matching types (edge cases)
 const functionsWithoutTypes = await MemoryDB.from('duckdb_functions()', 'f')
-    .leftJoin('duckdb_types()', 't', ({ f, t }) => f.return_type === t.logical_type)
+    .leftJoin('duckdb_types()', 't').on(({ f, t }) => f.return_type === t.logical_type)
     .select(({ f, t }, D) => ({
         functionName: f.function_name,
         declaredReturnType: f.return_type,
@@ -214,7 +214,7 @@ console.log('Functions Without Type Mappings:', functionsWithoutTypes)
 
 // Join based on complex conditions and pattern matching
 const dynamicRelationships = await MemoryDB.from('duckdb_functions()', 'f')
-    .join('duckdb_settings()', 's', ({ f, s }) => 
+    .join('duckdb_settings()', 's').on(({ f, s }) => 
         // 🔥 Complex join conditions with multiple criteria
         f.function_name.regexp_matches('[a-z]+_[a-z]+') &&
         s.name.regexp_matches('[a-z]+_[a-z]+') &&

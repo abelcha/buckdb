@@ -1,7 +1,7 @@
 // 🚀 BuckDB: Getting Started - Real Working Examples
 // All examples use actual DuckDB system tables with realistic operations
 
-import { Buck, MemoryDB } from '../buckdb'
+import { Buck, MemoryDB } from '@buckdb/isomorphic'
 
 // ================================
 // 🎯 TYPE-SAFE QUERYING - The Foundation
@@ -81,7 +81,7 @@ const stringOpsResult = await MemoryDB.from('duckdb_functions()')
         name_length: e.function_name.len(),
         prefix_3: e.function_name[0.3],
         suffix_3: e.function_name[-3],
-        starts_with_a: e.function_name.starts_with('a'),
+        starts_with_a: e.function_name.starts_with('a')
     }))
     .where(e => e.function_name.len() < 10)
     .limit(5)
@@ -324,7 +324,7 @@ Object.entries(advancedAggResult).forEach(([type, data]) => {
 
 // Cross join to demonstrate multi-table operations
 const joinResult = await MemoryDB.from('duckdb_functions()')
-    .join('duckdb_types()', 'types', (a, b) => true) // Cross join
+    .join('duckdb_types()', 'types').on((a, b) => true) // Cross join
     .select(e => ({
         function_name: e.duckdb_functions.function_name,
         type_name: e.types.logical_type,

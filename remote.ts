@@ -1,8 +1,8 @@
 
 import { builder } from './src/build'
-import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './src/readers'
+import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './io.ts'
 export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx }
-import { BuckDBBase } from './buckdb.core'
+import { BuckDBBase } from './core'
 
 class BuckDBRemote extends BuckDBBase {
     readonly type = 'remote' as const

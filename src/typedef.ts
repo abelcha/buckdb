@@ -1,5 +1,45 @@
 
-export const DNumeric=  {
+export const DuckDBTypeId = {
+  INVALID: 0,
+  BOOLEAN: 1,
+  TINYINT: 2,
+  SMALLINT: 3,
+  INTEGER: 4,
+  BIGINT: 5,
+  UTINYINT: 6,
+  USMALLINT: 7,
+  UINTEGER: 8,
+  UBIGINT: 9,
+  FLOAT: 10,
+  DOUBLE: 11,
+  TIMESTAMP: 12,
+  DATE: 13,
+  TIME: 14,
+  INTERVAL: 15,
+  HUGEINT: 16,
+  UHUGEINT: 32,
+  VARCHAR: 17,
+  BLOB: 18,
+  DECIMAL: 19,
+  TIMESTAMP_S: 20,
+  TIMESTAMP_MS: 21,
+  TIMESTAMP_NS: 22,
+  ENUM: 23,
+  LIST: 24,
+  STRUCT: 25,
+  MAP: 26,
+  ARRAY: 33,
+  UUID: 27,
+  UNION: 28,
+  BIT: 29,
+  TIME_TZ: 30,
+  TIMESTAMP_TZ: 31,
+  ANY: 34,
+  VARINT: 35,
+  SQLNULL: 36
+}
+
+export const DNumeric = {
   comptype: 'number',
   id: 'numeric',
   able: 'DNumericable',
@@ -7,66 +47,66 @@ export const DNumeric=  {
   rawType: 'number',
 }
 
-export const DVarchar=  {
+export const DVarchar = {
   id: 'varchar',
   able: 'DVarcharable',
   field: 'DVarcharField',
   rawType: 'string',
 }
 
-export const DArray=  {
+export const DArray = {
   id: 'array',
   able: 'DArrayable',
   field: 'DArrayField',
   rawType: 'any[]',
 }
-export const DStruct=  {
+export const DStruct = {
   id: 'struct',
   able: 'DStructable',
   field: 'DStructField',
   rawType: 'Record<string,any>',
 }
-export const DJson=  {
+export const DJson = {
   id: 'json',
   able: 'DJsonable',
   field: 'DJsonField',
   rawType: 'Record<string,any>',
 }
-export const DBool=  {
+export const DBool = {
   id: 'bool',
   able: 'DBoolable',
   field: 'DBoolField',
   rawType: 'boolean',
 
 }
-export const DBlob=  {
+export const DBlob = {
   id: 'blob',
   able: 'DBlobable',
   field: 'DBlobField',
   rawType: 'Blob',
 
 }
-export const DDate=  {
+export const DDate = {
   id: 'date',
   able: 'DDateable',
   field: 'DDateField',
   rawType: 'Date',
 
 }
-export const DMap=  {
+export const DMap = {
   id: 'map',
   able: 'DMapable',
   field: 'DMapField',
   rawType: 'Map<string,any>',
 
 }
-export const DOther=  {
+export const DOther = {
   id: 'other',
   able: 'DOtherable',
   field: 'DOtherField',
   rawType: 'any',
 }
-export const DAny=  {
+export const DAny = {
   id: 'any',
   able: 'DAnyable',
   field: 'DAnyField',
@@ -85,6 +125,46 @@ export const TypeProps = {
   DMap,
   DOther,
   DAny,
+}
+
+export const DuckDBTypeIdMap = {
+  [DuckDBTypeId.INVALID]: 'DAny',
+  [DuckDBTypeId.BOOLEAN]: 'DBool',
+  [DuckDBTypeId.TINYINT]: 'DNumeric',
+  [DuckDBTypeId.SMALLINT]: 'DNumeric',
+  [DuckDBTypeId.INTEGER]: 'DNumeric',
+  [DuckDBTypeId.BIGINT]: 'DNumeric',
+  [DuckDBTypeId.UTINYINT]: 'DNumeric',
+  [DuckDBTypeId.USMALLINT]: 'DNumeric',
+  [DuckDBTypeId.UINTEGER]: 'DNumeric',
+  [DuckDBTypeId.UBIGINT]: 'DNumeric',
+  [DuckDBTypeId.FLOAT]: 'DNumeric',
+  [DuckDBTypeId.DOUBLE]: 'DNumeric',
+  [DuckDBTypeId.TIMESTAMP]: 'DDate',
+  [DuckDBTypeId.DATE]: 'DDate',
+  [DuckDBTypeId.TIME]: 'DDate',
+  [DuckDBTypeId.INTERVAL]: 'DDate',
+  [DuckDBTypeId.HUGEINT]: 'DNumeric',
+  [DuckDBTypeId.UHUGEINT]: 'DNumeric',
+  [DuckDBTypeId.VARCHAR]: 'DVarchar',
+  [DuckDBTypeId.BLOB]: 'DBlob',
+  [DuckDBTypeId.DECIMAL]: 'DNumeric',
+  [DuckDBTypeId.TIMESTAMP_S]: 'DDate',
+  [DuckDBTypeId.TIMESTAMP_MS]: 'DDate',
+  [DuckDBTypeId.TIMESTAMP_NS]: 'DDate',
+  [DuckDBTypeId.ENUM]: 'DVarchar',
+  [DuckDBTypeId.LIST]: 'DArray',
+  [DuckDBTypeId.STRUCT]: 'DStruct',
+  [DuckDBTypeId.MAP]: 'DMap',
+  [DuckDBTypeId.ARRAY]: 'DArray',
+  [DuckDBTypeId.UUID]: 'DVarchar',
+  [DuckDBTypeId.UNION]: 'DAny',
+  [DuckDBTypeId.BIT]: 'DNumeric',
+  [DuckDBTypeId.TIME_TZ]: 'DDate',
+  [DuckDBTypeId.TIMESTAMP_TZ]: 'DDate',
+  [DuckDBTypeId.ANY]: 'DAny',
+  [DuckDBTypeId.VARINT]: 'DNumeric',
+  [DuckDBTypeId.SQLNULL]: 'DAny'
 }
 
 export const mapTypes = (type: string) => {
@@ -252,3 +332,43 @@ export const PolyfillMapping = Object.assign(PolyfillNumberMapping, PolyfillStri
 
 
 export const AggregateFunctions = 'entropy mode first arg_max list listagg sum bit_or countif min_by min mean max_by max bit_xor corr regr_r2 mad argmax last avg bit_and var_pop bool_or count sem median arg_min stddev product favg fsum argmin'.split(' ')
+
+
+
+
+
+
+export type DAction = 'select' | 'update' | 'upsert' | 'create'
+export type DCondition = { condition: string; operator?: 'OR' | 'AND' }
+export type DSelectee = { field: string; as?: string | number; raw?: string }
+export type DDirection = 'ASC' | 'DESC' | 'ASC NULLS FIRST' | 'DESC NULLS FIRST' | 'ASC NULLS LAST' | 'DESC NULLS LAST'
+export type DSetOpType = 'UNION' | 'UNION ALL' | 'UNION BY NAME' | 'UNION ALL BY NAME' | 'EXCEPT' | 'EXCEPT ALL' | 'INTERSECT' | 'INTERSECT ALL'
+export type DSetOp = { type: DSetOpType, value: string }
+export type DOrder = { field: string; direction?: DDirection }
+export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' | 'INNER JOIN' }
+export type DCopyTo = { uri: string; options?: Record<string, any> }
+export type DCte = { query: { toState: () => DState, toSQL: () => string } & Record<string, any>; name?: string }
+export type Parseable = string | Function
+export const dstate = {
+  copyTo: [] as DCopyTo[],
+  context: {} as Record<string, any>,
+  datasources: [] as DDatasource[],
+  selected: [] as DSelectee[],
+  conditions: [] as DCondition[],
+  having: [] as DCondition[],
+  groupBy: [] as string[],
+  distinctOn: [] as string[],
+  limit: null as number | null,
+  sample: null as number | `${number}%` | null,
+  offset: null as number | null,
+  orderBy: [] as DOrder[],
+  keyBy: null as string | null,
+  countBy: null as string | null,
+  agg: null as string | null,
+  action: 'select' as DAction,
+  updated: [] as DSelectee[],
+  ctes: [] as DCte[],
+  setops: [] as DSetOp[],
+}
+
+export type DState = typeof dstate

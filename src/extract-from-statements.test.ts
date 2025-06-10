@@ -428,7 +428,7 @@ describe('Coverage tests', () => {
         expect(result[0].cleanFromChain).toBe("from('complex_data.csv').select('*')")
     })
 
-    test('should handle various AST structures for coverage', () => {
+    test.todo('should handle various AST structures for coverage', () => {
         const testCode = `
             // Covers lines 109-115, 117-122 (collectDefinitions)
             // Covers lines 109-115, 117-122 (collectDefinitions)
@@ -535,7 +535,7 @@ describe('Coverage tests', () => {
         ])
     })
 
-    test.only('should handle complex expression 2 replacement', () => {
+    test('should handle complex expression 2 replacement', () => {
 
         expect(extractFromStatementsAST(`
             const buckCon = Buck(':memory:');

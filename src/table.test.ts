@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'bun:test'
-import { from, MemoryDB } from '../buckdb'
+import { from, MemoryDB } from '@buckdb/isomorphic'
 
 describe('Table Functions Return Schema Tests', () => {
   beforeAll(async () => {

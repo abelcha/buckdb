@@ -1,14 +1,6 @@
 {
     "compilerOptions": {
-        "types": [
-            "bun"
-        ],
-        // Environment setup & latest features
-        "lib": [
-            "esnext",
-            "dom"
-        ],
-        "noEmit": true,
+        "strict": true,
         "target": "ESNext",
         "module": "ESNext",
         "noImplicitAny": false,
@@ -23,14 +15,19 @@
         "verbatimModuleSyntax": false,
         "resolveJsonModule": true,
         // Best practices
-        "strict": true,
         "isolatedModules": true,
         "skipLibCheck": true,
         // "noFallthroughCasesInSwitch": true,
         // "noUncheckedIndexedAccess": true,
         // Some stricter flags (disabled by default)
         "noUnusedLocals": false,
-        "noUnusedParameters": false
+        "noUnusedParameters": false,
         // "noPropertyAccessFromIndexSignature": false
+        "baseUrl": ".",
+        "paths": {
+            "@buckdb/*": ["./*"],
+            ".buck/*": ["./.buck/*"],
+            "@buckdb/isomorphic": ["./node.ts"],
+        }
     }
 }

@@ -1,7 +1,7 @@
 // 🚀 BuckDB: Advanced Arrays & Transformations
 // Real working examples based on actual BuckDB capabilities
 
-import { Buck, MemoryDB } from '../buckdb'
+import { Buck, MemoryDB } from '@buckdb/isomorphic'
 
 // ================================
 // 🎯 ARRAY OPERATIONS - JavaScript patterns that work!

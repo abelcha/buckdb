@@ -1,9 +1,9 @@
-import { Buck, from } from '../buckdb'
+import { Buck, from } from '@buckdb/isomorphic'
 
 
 
 // console.log(q.toSql())
-db.from('repos.parquet')
+// db.from('repos.parquet')
 
 // from('repo_pairs').select()
 

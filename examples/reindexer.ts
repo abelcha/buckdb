@@ -1,4 +1,4 @@
-import { Buck, from, read_parquet } from '../buckdb'
+import { Buck, from, read_parquet } from '@buckdb/isomorphic'
 
 // Parse command line argument
 // const msg = process.argv[2] || ''

@@ -1,4 +1,4 @@
-import { DCondition, DCte, DDatasource, DOrder, DSelectee, DState } from './build'
+import { DCondition, DCte, DDatasource, DOrder, DSelectee, DState } from './typedef'
 import { copy } from './copy'
 import { parse } from './parser'
 import { isBucket, wrap, isFile, isFunction } from './utils'
@@ -14,15 +14,20 @@ export const formatSource = ({ catalog = '', uri = '' }) => {
         }
 
     }
+
+    if (isBucket(catalog)) {
+        // todo make the pr ob duckdb
+        return uri.replaceAll(/\'([^\/][^\'\:]+\.\w{3,12})\'/g, `'${catalog}/$1'`)
+    }
     return uri
 }
 
 
-const serializeTuple = (id: string) => (p: string[]) => {
+const serializeTuple = (id: string, opts: Record<string, any> = {}) => (p: string[]) => {
     if (!p.length) {
         return ''
     }
-    if (p.length === 1) {
+    if (p.length === 1 && !opts.forceParent) {
         return `${id} ${p[0]}`
     }
     return `${id} (${p.join(', ')})`
@@ -109,13 +114,14 @@ const serializeUpdated = (updated: DSelectee[]) => {
     return updated.map(e => ` ${e.as} = ${e.raw ? wrap(e.raw, "'") : e.field}`).join(', \n ')
 }
 
-function serializeSetops(setops: { type: string; value: string }[]) {
-    return setops.map(e => `\n${e.type}\n(${e.value})`)
+function serializeSetops(setops: { type: string; value: string }[], opts: { trim?: boolean } = {}) {
+    const CR = opts.trim ? '' : '\n'
+    return setops.map(e => `${CR}${e.type}${CR || ' '}(${e.value})`)
 }
 
 function serializeCte(e: DCte) {
-    const asq = e.query?.length > 50 ? `\n${e.query}\n` : e.query
-    return `\n\t${e.name} AS (${asq})`
+    const q = e.query.toSql({ false: true, minTrim: 50 })
+    return `\n\t${e.name} AS (${q > 50 ? `\n${q}\n` : q})`
 }
 function serializeCtes(ctes: DCte[]) {
     if (!ctes.length)
@@ -143,7 +149,7 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         'FROM',
         serializeDatasource(state.datasources),
         CR + ' SELECT',
-        serializeTuple('DISTINCT ON')(state.distinctOn),
+        serializeTuple('DISTINCT ON', { forceParent: true })(state.distinctOn),
         newLine(serializeSelected(state.selected)),
         CR,
         serializeConditions('WHERE')(state.conditions),
@@ -156,7 +162,7 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         serializeValue('OFFSET')(state.offset),
     ].filter(Boolean)
     if (state.setops.length) {
-        components = ['(', ...components, ')'].concat(...serializeSetops(state.setops))
+        components = ['(', ...components, ')'].concat(...serializeSetops(state.setops, state))
     }
 
     const comps = components.join(' ').trim()

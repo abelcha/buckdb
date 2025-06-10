@@ -1,4 +1,4 @@
-import { Buck, from, MemoryDB, read_parquet } from '../buckdb'
+import { Buck, from, MemoryDB, read_parquet } from '@buckdb/isomorphic'
 
 
 
@@ -9,14 +9,6 @@ import { Buck, from, MemoryDB, read_parquet } from '../buckdb'
 
 
 
-
-await from(read_parquet('/datasets/sources/*.parquet', { union_by_name: true }), 'T1')
-    .leftJoin('/datasets/communes.parquet', 'geo', ({ T1, geo }) => T1.zipcode === geo.code_postal)
-    .select((e, D) => ({
-        ...e,
-        lat: e.lat ?? D.cast(e.lat, 'Double'),
-    }))
-    .limit(100000)
 
 
 const q =

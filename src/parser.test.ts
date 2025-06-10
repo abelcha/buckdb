@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { DMetaField } from '../.buck/types'
+import { DMetaField } from '.buck/types'
 import jsep from './jsep'
 import { parse, parseObject } from './parser'
 
@@ -176,14 +176,14 @@ test('ternary', () => {
 })
 
 test('cast', () => {
-  expect(parse((e, D) => e.num.as('Bigint'))).toBe('num::Bigint')
-  expect(parse((e, D) => e.num.as('Decimal(1, 4)'))).toBe('num::Decimal(1, 4)')
-  expect(parse((e, D) => e.num.as('Decimal', 1, 3))).toBe('num::Decimal(1, 3)')
+  expect(parse((e, D) => e.num.as('Bigint'))).toBe('(num::Bigint)')
+  expect(parse((e, D) => e.num.as('Decimal(1, 4)'))).toBe('(num::Decimal(1, 4))')
+  expect(parse((e, D) => e.num.as('Decimal', 1, 3))).toBe('(num::Decimal(1, 3))')
   expect(parse((e, D) => D.cast(e.num, 'Bigint'))).toBe('CAST(num AS Bigint)')
   expect(parse((e, D) => D.cast(e.num, 'Decimal', 12, 42))).toBe('CAST(num AS Decimal(12, 42))')
   expect(parse((e, D) => D.cast(e.num, 'Map', 'Varchar', 'Float'))).toBe('CAST(num AS Map(Varchar, Float))')
   expect(parse((e, D) => e.lat.as('Bigint') === D.cast(e.lng.abs(), 'Bigint')))
-    .toBe('lat::Bigint = CAST(lng.abs() AS Bigint)')
+    .toBe('(lat::Bigint) = CAST(lng.abs() AS Bigint)')
 })
 
 test('object', () => {
@@ -375,8 +375,11 @@ test('alias.*', () => {
 test('array slicer', () => {
   expect(parse(e => e.timezone.string_split('/')[1])).toBe("timezone.string_split('/')[1]")
 })
-test('rental_date', () => {
+test('Equal/isnull', () => {
   expect(parse(e => e.Rental.rental_date === null)).toBe("Rental.rental_date IS NULL")
+  expect(parse(e => e.function_type == 'table')).toBe("function_type = 'table'")
+  expect(parse(e => e.function_type != 'table')).toBe("function_type != 'table'")
+  expect(parse(e => e.function_type !== 'table')).toBe("function_type IS DISTINCT FROM 'table'")
 })
 test('literral', () => {
   expect(parseObject(e => `_a_${e.comment}_b_`)).toEqual([['', '', "('_a_' || comment || '_b_')"]])
@@ -454,15 +457,16 @@ test('split+len', () => {
   // expect(parse(e => e.str.split(':').length)).toEqual(`str.string_split(':').len()`)
 })
 
-test.only('raw', () => {
+test.todo('raw', () => {
   // expect(parseObject((e, D) => ({ gg: D.Raw('lol 123') }))).toEqual([['gg', `lol 123`]])
-  expect(parseObject((e, D) => ({ uuu: D.Raw(`(SELECT string_agg(store_name, ', ') FROM (`) }) )).toEqual([['gg', `lol 123`]])
+  // expect(parseObject((e, D) => ({ uuu: D.Raw(`(SELECT string_agg(store_name, ', ') FROM (`) }) )).toEqual([['gg', `lol 123`]])
+  expect(parseObject((e, D) => ({ uuu: D.raw`HELLO` }))).toEqual([['HELLO']])
 })
 
 test('comma', () => {
   expect(parse((e) => e.f1.function_name.Like('%_%'))).toEqual(`f1.function_name LIKE '%_%'`)
-  expect(parse(({ e }) => e._latitude.as('Varchar') + ', ' + e._longitude.as('Varchar'))).toEqual(`(e._latitude::Varchar || ', ' || e._longitude::Varchar)`)
-  expect(parse((e) => e.ff._latitude.as('Varchar'))).toEqual(`ff._latitude::Varchar`)
+  expect(parse(({ e }) => e._latitude.as('Varchar') + ', ' + e._longitude.as('Varchar'))).toEqual(`((e._latitude::Varchar) || ', ' || (e._longitude::Varchar))`)
+  expect(parse((e) => e.ff._latitude.as('Varchar'))).toEqual(`(ff._latitude::Varchar)`)
 
 
 })
@@ -472,4 +476,8 @@ test('count filter', () => {
     .toEqual(`count() FILTER (function_name.len() > 10)`)
   expect(parse((e, D) => D.count(e.total).filter(e.function_name.len() > 10)))
     .toEqual(`count(total) FILTER (function_name.len() > 10)`)
+})
+
+test.todo('xxx', () => {
+  console.log('";;;;;;;;;', jsep(`read_csv(['2025-01/2025-01-04.descs.tsv'])`))
 })

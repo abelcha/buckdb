@@ -1,4 +1,4 @@
-import * as t from "../.buck/types";
+import * as t from ".buck/types";
 
 type Assert<T extends true> = T;
 type ExpectEqual<A, B> = (<G>() => G extends A ? 1 : 2) extends (<G>() => G extends B ? 1 : 2) ? (<G>() => G extends B ? 1 : 2) extends (<G>() => G extends A ? 1 : 2) ? true
@@ -7,109 +7,65 @@ type ExpectEqual<A, B> = (<G>() => G extends A ? 1 : 2) extends (<G>() => G exte
 
 // Original NestedKeyOf - recurses into all objects (includes prototype methods)
 export type NestedKeyOf<ObjectType extends Record<string, any>> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object 
-    ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}` 
-    : `${Key}`
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends object
+  ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}`
+  : `${Key}`
 }[keyof ObjectType & (string | number)]
 
 // Option 1: Exclude common built-in types (Array, Map, Set, Date, etc.)
 export type NestedKeyOf1<ObjectType extends Record<string, any>> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends Array<any> | Map<any, any> | Set<any> | Date | RegExp | Function 
-    ? `${Key}` 
-    : ObjectType[Key] extends object 
-      ? `${Key}` | `${Key}.${NestedKeyOf1<ObjectType[Key]>}` 
-      : `${Key}`
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends Array<any> | Map<any, any> | Set<any> | Date | RegExp | Function
+  ? `${Key}`
+  : ObjectType[Key] extends object
+  ? `${Key}` | `${Key}.${NestedKeyOf1<ObjectType[Key]>}`
+  : `${Key}`
 }[keyof ObjectType & (string | number)]
 
 // Option 2: Only recurse into plain objects (Record<string, any>) that aren't built-ins
 export type NestedKeyOf2<ObjectType extends Record<string, any>> = {
   [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends Record<string, any>
-    ? ObjectType[Key] extends Array<any> | Map<any, any> | Set<any> | Date | RegExp | Function
-      ? `${Key}`
-      : `${Key}` | `${Key}.${NestedKeyOf2<ObjectType[Key]>}`
-    : `${Key}`
+  ? ObjectType[Key] extends Array<any> | Map<any, any> | Set<any> | Date | RegExp | Function
+  ? `${Key}`
+  : `${Key}` | `${Key}.${NestedKeyOf2<ObjectType[Key]>}`
+  : `${Key}`
 }[keyof ObjectType & (string | number)]
 
-// Option 3: Use constructor check to detect plain objects
-export type NestedKeyOf3<ObjectType extends Record<string, any>> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends { constructor: ObjectConstructor }
-    ? `${Key}` | `${Key}.${NestedKeyOf3<ObjectType[Key]>}`
-    : `${Key}`
-}[keyof ObjectType & (string | number)]
+
 
 // Option 4: Check if it has a prototype that's not Object.prototype (more strict)
-type IsPlainObject<T> = T extends object 
+type IsPlainObject<T> = T extends object
   ? T extends Array<any> | Map<any, any> | Set<any> | Date | RegExp | Function | Promise<any>
-    ? false
-    : true
+  ? false
+  : true
   : false
 
 export type NestedKeyOf4<ObjectType extends Record<string, any>> = {
   [Key in keyof ObjectType & (string | number)]: IsPlainObject<ObjectType[Key]> extends true
-    ? `${Key}` | `${Key}.${NestedKeyOf4<ObjectType[Key]>}`
-    : `${Key}`
+  ? `${Key}` | `${Key}.${NestedKeyOf4<ObjectType[Key]>}`
+  : `${Key}`
 }[keyof ObjectType & (string | number)]
 
 // Option 5: More comprehensive built-in type exclusion
 export type NestedKeyOf5<ObjectType extends Record<string, any>> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends 
-    | Array<any> 
-    | Map<any, any> 
-    | Set<any> 
-    | WeakMap<any, any>
-    | WeakSet<any>
-    | Date 
-    | RegExp 
-    | Function 
-    | Promise<any>
-    | Error
-    | Number
-    | String
-    | Boolean
-    ? `${Key}` 
-    : ObjectType[Key] extends object 
-      ? `${Key}` | `${Key}.${NestedKeyOf5<ObjectType[Key]>}` 
-      : `${Key}`
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends
+  | Array<any>
+  | Map<any, any>
+  | Set<any>
+  | WeakMap<any, any>
+  | WeakSet<any>
+  | Date
+  | RegExp
+  | Function
+  | Promise<any>
+  | Error
+  | Number
+  | String
+  | Boolean
+  ? `${Key}`
+  : ObjectType[Key] extends object
+  ? `${Key}` | `${Key}.${NestedKeyOf5<ObjectType[Key]>}`
+  : `${Key}`
 }[keyof ObjectType & (string | number)]
-
-// Test the different variations with your example type
-type TestType = { lol: string, ooo: { toto: string }[], xm: Map<string, any>, lolo: { lili: string } }
-
-function testOriginal(ggg: NestedKeyOf<TestType>) {
-  // fail
-  ggg === ''
-  // Original - includes prototype methods like ooo.toSpliced, xm.clear, etc.
-}
-
-function testOption1(ggg: NestedKeyOf1<TestType>) {
-  // OK
-  ggg === ''
-  // Option 1 - should only show: "lol" | "ooo" | "xm" | "lolo" | "lolo.lili"
-}
-
-function testOption2(ggg: NestedKeyOf2<TestType>) {
-  // OK
-  ggg === ''
-  // Option 2 - should only show: "lol" | "ooo" | "xm" | "lolo" | "lolo.lili"
-}
-
-function testOption3(ggg: NestedKeyOf3<TestType>) {
-  // fail
-  ggg === ''
-  // Option 3 - constructor-based check
-}
-
-function testOption4(ggg: NestedKeyOf4<TestType>) {
-  // OK
-  ggg === ''
-  // Option 4 - IsPlainObject helper
-}
-
-function testOption5(ggg: NestedKeyOf5<TestType>) {
-  // OK
-  ggg === ''
-  // Option 5 - comprehensive built-in exclusion
-}
 
 // type nativ = ToJSON<Source>
 type res1 =
@@ -183,18 +139,30 @@ export type ToPlain<T> =
   : T extends readonly [any, ...any[]] ? { [K in keyof T]: ToPlain<T[K]> } // tuple handling
   : T extends t.DArrayField<infer U> ? ToPlain<U>[]
   : T extends Array<infer U> ? ToPlain<U>[]
-  /* 2. structs: rebuild an object, recursing on every member */
+  // /* 2. structs: rebuild an object, recursing on every member */
   : T extends t.DStructField<infer S> ? { [K in keyof S]: ToPlain<S[K]> }
-  /* 3. primitive wrappers */
+  // /* 3. primitive wrappers */
   : T extends t.DVarcharField | t.DJsonField | string ? string
   : T extends t.DNumericField | number ? number
   : T extends t.DBoolField | boolean ? boolean
   : T extends t.DDateField | Date ? Date
-  : T extends t.DMapField | Map<any, any> ? Map<any, any>
+  : T extends t.DMapField ? Map<any, any>
+  : T extends Map<any, any> ? T
   : T extends t.DAnyField ? any
+  // : T extends { [Symbol('__V')]: never } ? never :
   : T extends object ? { [K in keyof T]: ToPlain<T[K]> }
   /* 4. everything else is a mistake */
   : never;
+
+export type UnPlain<T> =
+  T extends t.DArrayField<infer U> ? t.DArrayField<UnPlain<U>>
+  : T extends Array<infer U> ? t.DArrayField<UnPlain<U>>
+  : T extends string ? t.DVarcharField
+  : T extends number ? t.DNumericField
+  : T extends boolean ? t.DBoolField
+  // : T extends object ? t.DStructField<{ [K in keyof T]: UnPlain<T[K]> }>
+  : T
+export type FromPlainDict<T extends object> = { [K in keyof T]: UnPlain<T[K]> }
 
 export type FromPlain<T> =
   T extends t.DArrayField<infer U> ? t.DArrayField<FromPlain<U>>

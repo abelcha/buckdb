@@ -1,16 +1,44 @@
-import { DuckDBDecimalValue, DuckDBListValue, DuckDBMapValue, DuckDBStructValue, DuckDBValue, type DuckDBConnection, type DuckDBInstance } from '@duckdb/node-api'
-import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './src/readers'
+import { DuckDBArrayValue, DuckDBBitValue, DuckDBBlobValue, DuckDBDateValue, DuckDBDecimalValue, DuckDBIntervalValue, DuckDBListValue, DuckDBMapValue, DuckDBResult, DuckDBStructValue, DuckDBTimestampMillisecondsValue, DuckDBTimestampNanosecondsValue, DuckDBTimestampSecondsValue, DuckDBTimestampTZValue, DuckDBTimestampValue, DuckDBTimeTZValue, DuckDBTimeValue, DuckDBTypeId, DuckDBUnionValue, DuckDBUUIDValue, DuckDBValue, type DuckDBConnection, type DuckDBInstance } from '@duckdb/node-api'
+import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './io'
 export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx }
 import { DSettings } from './.buck/types'
 import { builder } from './src/build'
 import { generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
-export * as readers from './src/readers'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { BuckDBBase, CommandQueue, DuckdbCon } from './buckdb.core'
-import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
+import { BuckDBBase, CommandQueue, DuckdbCon } from './core'
 import { deriveName, isBucket, Dict } from './src/utils'
 
+import { DuckDBTypeIdMap } from './src/typedef'
+import { omit, pick, zipObject } from 'es-toolkit'
+import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
 
+
+const InitConfigKeys = ['s3_access_key_id', 's3_secret_access_key', 's3_region', 's3_session_token']
+function mapDuckDBTypeToSchema(typeInfo: any): string | Record<string, any> {
+    const baseType = DuckDBTypeIdMap[typeInfo.typeId] || 'DAny'
+
+    if (typeInfo.typeId === DuckDBTypeId.LIST || typeInfo.typeId === DuckDBTypeId.ARRAY) {
+        if (typeInfo.valueType) {
+            return {
+                __type: 'array',
+                elementType: mapDuckDBTypeToSchema(typeInfo.valueType)
+            }
+        }
+        return baseType
+    }
+
+    if (typeInfo.typeId === DuckDBTypeId.STRUCT) {
+        const struct: Record<string, any> = { __type: 'struct' }
+        if (typeInfo.entryNames && typeInfo.entryTypes) {
+            typeInfo.entryNames.forEach((name: string, i: number) => {
+                struct[name] = mapDuckDBTypeToSchema(typeInfo.entryTypes[i])
+            })
+        }
+        return struct
+    }
+
+    return baseType
+}
 class JsonModelTable {
     constructor(
         private jsonContent: Dict = JSON.parse(readFileSync('./.buck/table.json', 'utf-8'))
@@ -19,14 +47,20 @@ class JsonModelTable {
     hasSchema(ressource: string, uri: string) {
         return this.jsonContent[ressource]?.[uri] ? true : false
     }
-    writeDescribedSchema(ressource: string, uri: string, described: Record<string, any>) {
+    writeSchema(ressource: string, uri: string, schemaJson: Record<string, any>) {
         if (!this.jsonContent[ressource]) {
             this.jsonContent[ressource] = {}
         }
-        this.jsonContent[ressource][uri] = serializeDescribe(described as any)
+        this.jsonContent[ressource][uri] = schemaJson
         const tsfile = generateInterface(this.jsonContent)
         writeFileSync('./.buck/table.json', JSON.stringify(this.jsonContent, null, 2))
         writeFileSync('./.buck/table3.ts', tsfile)
+    }
+    writeResultSchema(ressource: string, uri: string, result: DuckDBResult) {
+        return this.writeSchema(ressource, uri, zipObject(result.columnNames(), result.columnTypes().map(mapDuckDBTypeToSchema)))
+    }
+    writeDescribedSchema(ressource: string, uri: string, described: Record<string, any>) {
+        this.writeSchema(ressource, uri, serializeDescribe(described as any))
     }
 }
 
@@ -37,7 +71,11 @@ const mapValueRec = (value: DuckDBValue) => {
         return value.items.map(mapValueRec)
     } else if (value instanceof DuckDBDecimalValue) {
         return value.toDouble()
-    } else if (value instanceof DuckDBMapValue) {
+    }
+    else if (value instanceof DuckDBDateValue) {
+        return value.toString()
+    }
+    else if (value instanceof DuckDBMapValue) {
         return new Map(value.entries.map(x => [x.key, x.value]))
     } else if (value instanceof DuckDBStructValue) {
         const rtn = {}
@@ -45,8 +83,29 @@ const mapValueRec = (value: DuckDBValue) => {
             rtn[key] = mapValueRec(val)
         }
         return rtn
+    } else if (value instanceof DuckDBUUIDValue) {
+        return value.toString()
     } else if (typeof value === 'bigint') {
         return Number(value)
+    } else if (value instanceof DuckDBTimestampValue || value instanceof DuckDBTimeValue || value instanceof DuckDBTimeTZValue || value instanceof DuckDBTimestampTZValue) {
+        return new Date(Number(value.micros) * 1e-6)
+    } else if (value instanceof DuckDBTimestampSecondsValue) {
+        return new Date(Number(value.seconds))
+    } else if (value instanceof DuckDBTimestampMillisecondsValue) {
+        return new Date(Number(value.millis) * 1e-3)
+    } else if (value instanceof DuckDBTimestampNanosecondsValue) {
+        return new Date(Number(value.nanos) / 1e-9)
+    } else if (value instanceof DuckDBBlobValue) {
+        return value.bytes
+    } else if (value instanceof DuckDBBitValue) {
+        return value.data
+    } else if (value instanceof DuckDBIntervalValue) {
+        return value.toString()
+    } else if (value instanceof DuckDBArrayValue) {
+        return value.items.map(mapValueRec)
+    } else if (value instanceof DuckDBUnionValue) {
+        // todo, why isnt that an 
+        return mapValueRec(value.value)
     } else {
         return value
     }
@@ -97,8 +156,14 @@ class BuckDBNode extends BuckDBBase {
 
         this._initPromise = (async () => {
             const { DuckDBInstance } = await import('@duckdb/node-api')
-            const han = this.isBucket ? ':memory:' : (this.handle || ':memory:')
-            this._instance = await DuckDBInstance.create(han, (this.settings || {}) as any)
+            let h = this.handle || ':memory:'
+            if (isBucket(this.handle)) {
+                this.lazySettings({ file_search_path: this.handle })
+                h = ':memory:'
+            }
+            const configSettings = pick(this.settings, InitConfigKeys)
+            this.lazySettings(omit(this.settings, InitConfigKeys))
+            this._instance = await DuckDBInstance.create(h, configSettings as any)
             this._connection = await this._instance.connect()
         })()
 
@@ -118,14 +183,19 @@ class BuckDBNode extends BuckDBBase {
         // await Bun.file('./.buck/table3.ts').write(tsfile);
     }
 
-    async ensureSchema(uri: string) {
+    async ensureSchema(_uri: string) {
+        console.log('ensureSchemaensureSchema', _uri)
+        const uri = this.getSchemaUri(_uri)
+        // console.log({ uri, _uri })
         const h = this.handle || ''
         if (jsonModelTable.hasSchema(h, uri)) {
             return
         }
-        const describeResp = await this.describe(uri)
+        const describeResp = await this.describe(_uri)
         jsonModelTable.writeDescribedSchema(h, uri, describeResp)
     }
+
+
     async query(sql: string, opts: Record<string, any> = {}) {
         await this._initDB()
         const cmds = this.queue.flush()
@@ -133,7 +203,7 @@ class BuckDBNode extends BuckDBBase {
             await this._connection.run(cmd)
         }
         const run = await this._connection.run(sql)
-        const reader = new DuckDBResultReader(run);
+        const reader = new DuckDBResultReader(run as any);
         await reader.readAll()
         if (opts?.rows) {
             return reader.getRowsJson()
@@ -146,6 +216,8 @@ class BuckDBNode extends BuckDBBase {
         return this._connection.run(sql)
     }
 }
+
+
 
 
 export const Buck = builder(BuckDBNode)

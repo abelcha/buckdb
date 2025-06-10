@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test'
 import { copy } from './copy'
-import { from } from '../buckdb'
+import { from } from '@buckdb/isomorphic'
 
 test('basic copy to file', async () => {
     expect(

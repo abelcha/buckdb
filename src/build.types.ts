@@ -1,27 +1,16 @@
 import { Models } from '../.buck/table3'
 import * as t from '../.buck/types'
 import { DuckdbCon } from '../buckdb.core'
-import { DDirection } from './build'
+import { DDirection } from './typedef'
 import { CopyToInterface } from './copy'
 import { FromPlain, ToPlain } from './deep-map'
-import { Flatten, KeyIntersection, Merge, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge } from './generic-utils'
+import { Flatten, KeyIntersection, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge } from './generic-utils'
 import type { DeriveName } from './utils'
 
 type TRessource = keyof Models | (string & {})
 
 type StrictCollection = { catalog: string; uri: string; alias: string }
 // Utility type to merge two types into a frame object
-
-type DefaultizeCollection<C> = // Renamed 'Collection' to 'C' for clarity
-    // 1. If all properties (catalog, uri, alias) are present, return as is.
-    C extends { catalog: string; uri: string; alias: string } ? C
-    // 2. If alias is missing, infer uri as T, merge C with { alias: DeriveName<T> }.
-    : C extends { catalog: string; uri: infer T extends string } ? Merge<C, { alias: DeriveName<T> }>
-    : C extends { alias: string; uri: string } ? Merge<C, { catalog: '' }>
-    // 3. If catalog and alias are missing, infer uri as T, merge C with { catalog: '', alias: DeriveName<T> }.
-    : C extends { uri: infer T extends string } ? Merge<C, { catalog: ''; alias: DeriveName<T> }>
-    // 4. Otherwise, it's not a valid input structure.
-    : never
 
 type ModelForCollection<Mods extends Models, C extends StrictCollection> = C extends { catalog: infer R; uri: infer T } // Use uri T for lookup
     ? R extends keyof Mods ? T extends keyof Mods[R] ? Mods[R][T] : T extends keyof Mods[''] ? Mods[''][T] : {} : {}
@@ -35,12 +24,13 @@ type ShallowModel<T extends Record<string, any>> = {
 interface TFlag {
     [v__]: never
 }
-type ModelFromCollectionList<Mods extends Models, C extends StrictCollection[]> =
+
+type MergedModel<Mods extends Models, C extends StrictCollection[]> =
     C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]]
-    ? TripleMerge<{ [K in F['alias']]: TFlag & ModelForCollection<Mods, F> }, ModelForCollection<Mods, F>, ModelFromCollectionList<Mods, Rest>>
+    ? TripleMerge<{ [K in F['alias']]: TFlag & ModelForCollection<Mods, F> }, ModelForCollection<Mods, F>, MergedModel<Mods, Rest>>
     : {} // Base case should be an empty object for merging
 // Recursive type to merge all models from collections, using alias as key
-type ShallowModelFromCollectionList<Mods extends Models, C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? ModelForCollection<Mods, F> & ModelFromCollectionList<Mods, Rest>
+type ShallowMergedModel<Mods extends Models, C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? ModelForCollection<Mods, F> & MergedModel<Mods, Rest>
     : {} // Base case should be an empty object for merging
 
 type DRawField = t.DAnyField
@@ -62,59 +52,61 @@ type PrimitiveField<T> = T extends number ? t.DNumericField
 
 export type VTypes = 'frame' | 'records' | 'values' | 'grouped' | 'keyed' | 'row'
 
-// ====================================================================================================
-// ====================================================================================================
 
-type FnMap<Available extends MetaModel, MetaField extends t.DMetaField, Selected extends SelectModel = {}, SelectedValues = []> = {
-    row: (this: MS<'row', MetaField, Available, Selected, SelectedValues>) => Promise<SelectedValues extends [] ? ToPlain<Selected> : ToPlain<SelectedValues>>
-    values: (this: MS<'values', MetaField, Available, Selected, SelectedValues>) => PArray<ToPlain<SelectedValues>>
-    records: (this: MS<'records', MetaField, Available, Selected, SelectedValues>) => PArray<ToPlain<Selected>>
-
-    grouped: (this: MS<'grouped', MetaField, Available, Selected, SelectedValues>) => PRecord<ToPlain<Selected>[]>
-    keyed: (this: MS<'keyed', MetaField, Available, Selected, SelectedValues>) => PRecord<ToPlain<Selected>>
-    frame: (this: MS<'frame', MetaField, Available, Selected, SelectedValues>) => PArray<ToPlain<SelectedValues extends [infer F] ? F : any>>
+type FnMap<A extends MetaModel, GF extends t.DMetaField, S extends SelectModel = {}, SV = []> = {
+    row: () => Promise<SV extends [] ? ToPlain<S> : ToPlain<SV>>
+    values: () => PArray<ToPlain<SV>>
+    records: () => PArray<ToPlain<S>>
+    grouped: () => PRecord<ToPlain<S>[]>
+    keyed: () => PRecord<ToPlain<S>>
+    frame: () => PArray<ToPlain<SV extends [infer F] ? F : any>>
 }
+type ReturnModel<V extends VTypes, S extends SelectModel = {}, SV = []> = V extends 'row' ?
+    (SV extends [] ? S : SV)
+    : V extends 'values' ? SV
+    : V extends 'frame' ? (SV extends [infer F] ? F : any)
+    : S
 
-type MSR<A extends MetaModel, M extends t.DMetaField, S extends SelectModel = {}, SV = []> = MS<'records', M, A, S, SV>
-type MSV<A extends MetaModel, M extends t.DMetaField, S extends SelectModel = {}, SV = []> = MS<'values', M, A, S, SV>
-type MSF<A extends MetaModel, M extends t.DMetaField, S extends SelectModel = {}, SV = []> = MS<'frame', M, A, S, SV>
+
+type MSR<A extends MetaModel, GF extends t.DMetaField, S extends SelectModel = {}, SV = []> = MS<'records', GF, A, S, SV>
+type MSV<A extends MetaModel, GF extends t.DMetaField, S extends SelectModel = {}, SV = []> = MS<'values', GF, A, S, SV>
+type MSF<A extends MetaModel, GF extends t.DMetaField, S extends SelectModel = {}, SV = []> = MS<'frame', GF, A, S, SV>
 
 
 type KeyPicker<A extends Record<string, any>, S extends Record<string, any>, Rest = never> = NestedKeyOf<A> | NestedKeyOf<S> | ((p: A & S, D: t.DMetaField) => GField) | Rest
+type Awaited<T> = T extends PRecord<infer Z> ? (Z extends [infer D] ? D : Z) : T extends PArray<infer X> ? X : T extends Promise<infer M> ? M : never
+// type Awaited<T> = T extends Promise<infer U> ? U extends Array<infer U2> ? U2 : U extends Record<string, infer V> ? V : U : T
 
-export interface MS<V extends VTypes, M extends t.DMetaField, A extends MetaModel, S extends SelectModel = ShallowModel<A>, SV = []> extends Selectors<S, M> {
-    execute: FnMap<A, M, S, SV>[V]
+
+export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaModel, S extends SelectModel = ShallowModel<A>, SV = []> extends Selectors<S, GF> {
+    returnType: Awaited<ReturnType<this['execute']>>
+    // returnType: ReturnModel<V, S, SV>
+    compType: A & S
+
+    execute: FnMap<A, GF, S, SV>[V]
     exec: this['execute']
     show: this['execute']
     dump: (opts?: { state?: boolean }) => this
 
-    orderBy<U_ extends ([KeyPicker<A, S>, DDirection?][])>(...key: U_): MS<V, M, A, S, SV>
-    orderBy<U extends ('ALL' | KeyPicker<A, S>)>(k: U, d?: DDirection): MS<V, M, A, S, SV>
-    orderBy<Z>(_callback: (p: A & S, D: M) => Z, d?: DDirection): MS<V, M, A, S, SV>
-    // zby(fn: (x: A, f: UUU) => any): this
-    groupBy<G extends KeyPicker<A, S, 'ALL'>>(...keys: G[] | G[][] | (['GROUPING SETS', G[][]] | ['CUBE' | 'ROLLUP', G[]])): MS<'grouped', M, A, S, SV>
+    orderBy<U_ extends ([KeyPicker<A, S>, DDirection?][])>(...key: U_): MS<V, GF, A, S, SV>
+    orderBy<U extends ('ALL' | KeyPicker<A, S>)>(k: U, d?: DDirection): MS<V, GF, A, S, SV>
+    orderBy<Z>(_callback: (p: A & S, D: GF) => Z, d?: DDirection): MS<V, GF, A, S, SV>
+    groupBy<G extends KeyPicker<A, S, 'ALL'>>(...keys: G[] | G[][] | (['GROUPING SETS', G[][]] | ['CUBE' | 'ROLLUP', G[]])): MS<'grouped', GF, A, S, SV>
+    countBy<G extends (KeyPicker<A, S>)>(key: G): MS<'values', GF, A, S, [string, number]>
 
-    countBy<G extends (KeyPicker<A, S>)>(key: G): MS<'values', M, A, S, [string, number]>
-
-
-    keyBy<G extends (KeyPicker<A, S>)>(key: G): MS<'keyed', M, A, S, SV>
-
-    minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'row', M, A, S, SV>
-
+    keyBy<G extends (KeyPicker<A, S>)>(key: G): MS<'keyed', GF, A, S, SV>
+    minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'row', GF, A, S, SV>
     maxBy: this['minBy']
-
-    where(fn: (p: A & S, D: M) => any): MS<V, M, A, S, SV>
-    where(rawStr: string): MS<V, M, A, S, SV>
-
+    where(fn: (p: this['compType'], D: GF) => any): MS<V, GF, A, S, SV>
+    where(rawStr: string): MS<V, GF, A, S, SV>
     having: this['where']
-    distinctOn<G extends KeyPicker<A, S>>(...key: G[] | G[][]): MS<V, M, A, S, SV>
+    distinctOn<G extends KeyPicker<A, S>>(...key: G[] | G[][]): MS<V, GF, A, S, SV>
 
-    // except<VV extends V, A extends MetaModel, S extends Selected>(a: MS<VV, A, S>): MS<VV, A, S>
-    union<V2 extends VTypes, A2 extends MetaModel, S2 extends SelectModel>(a: MS<V2, M, A2, S2>): MS<V2, M, A & A2, S & S2>
+    union<V2 extends VTypes, A2 extends MetaModel, S2 extends SelectModel>(a: MS<V2, GF, A2, S2>): MS<V2, GF, A & A2, S & S2>
     unionAll: this['union']
     unionByName: this['union']
     unionAllByName: this['union']
-    except(a: MS<any, any, any>): MS<V, M, A, S, SV>
+    except(a: MS<any, any, any, any>): MS<V, GF, A, S, SV>
     exceptAll: this['except']
     intersect: this['except']
     intersectAll: this['except']
@@ -128,52 +120,47 @@ export interface MS<V extends VTypes, M extends t.DMetaField, A extends MetaMode
 }
 
 
-
-
-
-export interface UpdateResult<Mods extends Models, T extends keyof Mods, C extends StrictCollection[] = [], P extends MetaModel = ModelFromCollectionList<Mods, C>> {
+export interface UpdateResult<Mods extends Models, T extends keyof Mods & string, C extends StrictCollection[] = [], P extends MetaModel = MergedModel<Mods, C>> {
     set<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): UpdateResult<Mods, T, C, P>
     where<X>(fn: (p: P, D: t.DMetaField) => X): UpdateResult<Mods, T, C, P>
     where(...callback: string[]): UpdateResult<Mods, T, C, P>
 }
 
 type ExtractSelectModel<T> = T extends MS<any, any, any, infer S, any> ? S : T extends Record<string, MS<any, any, any, any, any>> ? { [K in keyof T]: ExtractSelectModel<T[K]> } : SelectModel
-type WithResult<Mods extends Models, T extends keyof Mods & string, Schema, M extends t.DMetaField> = DBuilderResult<Mods & Record<T, Schema>, T, M>
-type WithAccDB<Mods extends Models, T extends keyof Mods & string, Schema, M extends t.DMetaField> = DBuilderResult<Mods & Record<T, Schema>, T, M>
+type WithResult<Mods extends Models, T extends keyof Mods & string, Schema, GF extends t.DMetaField> = DBuilderResult<Mods & Record<T, Schema>, T, GF>
+type WithAccDB<Mods extends Models, T extends keyof Mods & string, Schema, GF extends t.DMetaField> = DBuilderResult<Mods & Record<T, Schema>, T, GF>
 type MSRecord = Record<string, MS<any, any, any, any, any>>
 
-// type InitialMaterializedResult<C extends StrictCollection[]> = MS<'records', ModelFromCollectionList<C>>
-export interface Withor<Mods extends Models, T extends keyof Mods & string, M extends t.DMetaField = t.DMetaField> {
-    with<O extends MSRecord>(fn: (accDB: DBuilderResult<Mods, T, M>) => O): WithResult<Mods, T, ExtractSelectModel<O>, M>
+// type InitialMaterializedResult<C extends StrictCollection[]> = MS<'records', MergedModel<C>>
+export interface Withor<Mods extends Models, T extends keyof Mods & string, GF extends t.DMetaField = t.DMetaField> {
+    with<O extends MSRecord>(fn: (accDB: DBuilderResult<Mods, T, GF>) => O): WithResult<Mods, T, ExtractSelectModel<O>, GF>
 
     with<O1 extends MSRecord, O2 extends MSRecord>(
-        fn1: (accDB: DBuilderResult<Mods, T, M>) => O1,
-        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, M>) => O2
-    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2>, M>
+        fn1: (accDB: DBuilderResult<Mods, T, GF>) => O1,
+        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, GF>) => O2
+    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2>, GF>
 
     with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord>(
-        fn1: (accDB: DBuilderResult<Mods, T, M>) => O1,
-        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, M>) => O2,
-        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>, M>) => O3
-    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3>, M>
+        fn1: (accDB: DBuilderResult<Mods, T, GF>) => O1,
+        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, GF>) => O2,
+        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>, GF>) => O3
+    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3>, GF>
 
     with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord, O4 extends MSRecord>(
-        fn1: (accDB: DBuilderResult<Mods, T, M>) => O1,
-        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, M>) => O2,
-        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>, M>) => O3,
-        fn4: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O3>, M>) => O4
-    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3 & O4>, M>
+        fn1: (accDB: DBuilderResult<Mods, T, GF>) => O1,
+        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, GF>) => O2,
+        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>, GF>) => O3,
+        fn4: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O3>, GF>) => O4
+    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3 & O4>, GF>
 
     with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord, O4 extends MSRecord, O5 extends MSRecord>(
-        fn1: (accDB: DBuilderResult<Mods, T, M>) => O1,
-        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, M>) => O2,
-        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>, M>) => O3,
-        fn4: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O3>, M>) => O4,
-        fn5: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O4>, M>) => O5
-    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3 & O4 & O5>, M>
+        fn1: (accDB: DBuilderResult<Mods, T, GF>) => O1,
+        fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, GF>) => O2,
+        fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>, GF>) => O3,
+        fn4: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O3>, GF>) => O4,
+        fn5: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O4>, GF>) => O5
+    ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3 & O4 & O5>, GF>
 }
-declare function Buck<T extends keyof Models & string = '', M extends t.DMetaField = t.DMetaField>(uri?: T, opts?: { settings?: Partial<t.DSettings>; macros?: Record<string, (...args: any[]) => any>; extensions?: string[] }): DBuilderResult<Models, T, M>
-
 
 
 interface Resultor<T> {
@@ -185,48 +172,126 @@ interface Resultor<T> {
 }
 
 
+// Option 3: Use constructor check to detect plain objects
+export type NestedKey42<ObjectType extends Record<string, any>> = {
+    [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends TFlag | t.DStructField //{ constructor: ObjectConstructor } 
+    ? `${Key}.${NestedKey42<ObjectType[Key]>}`
+    : `${Key}`
+}[keyof ObjectType & (string | number)]
 
-export interface Selectors<P extends MetaModel, M extends t.DMetaField> {
+
+// type Pick
+// type DeepPick<Obj, PathsArr extends string[]> = {
+//     [K in PathsArr[number]]: K extends `${infer Key}.${infer Rest}`
+//     ? Key extends keyof Obj
+//     ? { [K2 in Key]: DeepPick<Obj[K2], [Rest]> }
+//     : never
+//     : K extends keyof Obj
+//     ? Obj[K]
+//     : never
+// }[PathsArr[number]];
+
+
+
+
+// // const FPick
+// // // { [K in U[number] & keyof A]: A[K] }
+// type MapStringArrayKeepAfterDot<T extends string[]> = {
+//     [K in keyof T]: T[K] extends `${string}.${infer AfterDot}` ? AfterDot : T[K];
+// }
+
+// type PickRecursive<Obj, PathsArr extends string[]> = DeepPick<Obj, MapStringArrayKeepAfterDot<PathsArr>>
+
+
+type CustomPick<Obj, PathsArr extends string[]> = 42
+
+type Split<S extends string, D extends string = "."> =
+    S extends `${infer Head}${D}${infer Tail}`
+    ? [Head, ...Split<Tail, D>]
+    : [S];
+
+type Get<T, K extends readonly string[]> =
+    K extends [infer Head extends keyof T, ...infer Rest extends string[]]
+    ? Get<T[Head], Rest>
+    : T;
+
+type Project<T, Keys extends readonly string[]> = Flatten<{
+    [K in Keys[number]as K extends `${string}.${infer Leaf}` ? Leaf : K]:
+    Get<T, Split<K>>
+}>;
+
+
+const xr =
+    ((x?: Project<{ zz: 12, lol: 'toto', b: number, a: TFlag & { b: string } },
+        ['zz', 'a.b']>) => x)() satisfies { zz: 12, b: string }
+
+type HasAnyMuddy<T> =
+    { [K in keyof T]: T[K] extends { [v__]: any } ? true : false }[keyof T] extends true ? true : false;
+
+export interface Selectors<AV extends MetaModel, GF extends t.DMetaField> {
 
     // A: select()
-    select(): MSR<P, M, ShallowModel<P>>
+    select(): MSR<AV, GF, ShallowModel<AV>>
     // B: select('name', 'age')
-    select<U extends (NestedKeyOf<P> & string)[]>(...keys: U & (NestedKeyOf<P>)[]): MSR<P, M, { [K in U[number] & keyof P]: P[K] }>
+    select<U extends readonly (NestedKey42<AV>)[]>(...keys: U):
+        MSR<AV, GF, Project<AV, U>>
+    //MapStringArrayKeepAfterDot<U>
+    // { [K in U[number] & keyof P]: P[K] } //MSR<P, GF, { [K in U[number] & keyof P]: P[K] }>
+    // select<U extends (NestedKey42<A> & string)[]>(...keys: U & (NestedKey42<A>)[]): DeepPick<A, MapStringArrayKeepBeforeDot<U>> //MSR<P, GF, { [K in U[number] & keyof P]: P[K] }>
     // C select(e => [e.name, e.age])
-    select<T______________1, T______________2>(fn: (p: P, D: M) => [T______________1, T______________2]): MSV<P, M, {}, [T______________1, T______________2]>
-    select<T_________1, T_______2, T________3>(fn: (p: P, D: M) => [T_________1, T_______2, T________3]): MSV<P, M, {}, [T_________1, T_______2, T________3]>
-    select<T_____1, T_____2, T_____3, T_____4>(fn: (p: P, D: M) => [T_____1, T_____2, T_____3, T_____4]): MSV<P, M, {}, [T_____1, T_____2, T_____3, T_____4]>
-    select<T___1, T____2, T___3, T___4, T___5>(fn: (p: P, D: M) => [T___1, T____2, T___3, T___4, T___5]): MSV<P, M, {}, [T___1, T____2, T___3, T___4, T___5]>
-    select<T__1, T__2, T__3, T__4, T__5, T__6>(fn: (p: P, D: M) => [T__1, T__2, T__3, T__4, T__5, T__6]): MSV<P, M, {}, [T__1, T__2, T__3, T__4, T__5, T__6]>
-    select<T_1, T_2, T_3, T__4, T_5, T_6, T_7>(fn: (p: P, D: M) => [T_1, T_2, T_3, T__4, T_5, T_6, T_7]): MSV<P, M, {}, [T_1, T_2, T_3, T__4, T_5, T_6, T_7]>
-    select<T_1, T_2, T3, T4, T5, T6, T_7, T_8>(fn: (p: P, D: M) => [T_1, T_2, T3, T4, T5, T6, T_7, T_8]): MSV<P, M, {}, [T_1, T_2, T3, T4, T5, T6, T_7, T_8]>
-    select<A____, D, E, F, G, H, I, J, _____L>(fn: (p: P, D: M) => [A____, D, E, F, G, H, I, J, _____L]): MSV<P, M, {}, [A____, D, E, F, G, H, I, J, _____L]>
-    select<A___, C, D, E, F, G, H, I, J, ___L>(fn: (p: P, D: M) => [A___, C, D, E, F, G, H, I, J, ___L]): MSV<P, M, {}, [A___, C, D, E, F, G, H, I, J, ___L]>
-    select<A__, C, D, E, F, G, H, I, J, K, _L>(fn: (p: P, D: M) => [A__, C, D, E, F, G, H, I, J, K, _L]): MSV<P, M, {}, [A__, C, D, E, F, G, H, I, J, K, _L]>
-    select<A, B, C, D, E, F, G, H, I, J, K, L>(fn: (p: P, D: M) => [A, B, C, D, E, F, G, H, I, J, K, L]): MSV<P, M, {}, [A, B, C, D, E, F, G, H, I, J, K, L]>
+    select<T______________1, T______________2>(fn: (p: AV, D: GF) => [T______________1, T______________2]): MSV<AV, GF, {}, [T______________1, T______________2]>
+    select<T_________1, T_______2, T________3>(fn: (p: AV, D: GF) => [T_________1, T_______2, T________3]): MSV<AV, GF, {}, [T_________1, T_______2, T________3]>
+    select<T_____1, T_____2, T_____3, T_____4>(fn: (p: AV, D: GF) => [T_____1, T_____2, T_____3, T_____4]): MSV<AV, GF, {}, [T_____1, T_____2, T_____3, T_____4]>
+    select<T___1, T____2, T___3, T___4, T___5>(fn: (p: AV, D: GF) => [T___1, T____2, T___3, T___4, T___5]): MSV<AV, GF, {}, [T___1, T____2, T___3, T___4, T___5]>
+    select<T__1, T__2, T__3, T__4, T__5, T__6>(fn: (p: AV, D: GF) => [T__1, T__2, T__3, T__4, T__5, T__6]): MSV<AV, GF, {}, [T__1, T__2, T__3, T__4, T__5, T__6]>
+    select<T_1, T_2, T_3, T__4, T_5, T_6, T_7>(fn: (p: AV, D: GF) => [T_1, T_2, T_3, T__4, T_5, T_6, T_7]): MSV<AV, GF, {}, [T_1, T_2, T_3, T__4, T_5, T_6, T_7]>
+    select<T_1, T_2, T3, T4, T5, T6, T_7, T_8>(fn: (p: AV, D: GF) => [T_1, T_2, T3, T4, T5, T6, T_7, T_8]): MSV<AV, GF, {}, [T_1, T_2, T3, T4, T5, T6, T_7, T_8]>
+    select<A____, D, E, F, G, H, I, J, _____L>(fn: (p: AV, D: GF) => [A____, D, E, F, G, H, I, J, _____L]): MSV<AV, GF, {}, [A____, D, E, F, G, H, I, J, _____L]>
+    select<A___, C, D, E, F, G, H, I, J, ___L>(fn: (p: AV, D: GF) => [A___, C, D, E, F, G, H, I, J, ___L]): MSV<AV, GF, {}, [A___, C, D, E, F, G, H, I, J, ___L]>
+    select<A__, C, D, E, F, G, H, I, J, K, _L>(fn: (p: AV, D: GF) => [A__, C, D, E, F, G, H, I, J, K, _L]): MSV<AV, GF, {}, [A__, C, D, E, F, G, H, I, J, K, _L]>
+    select<A, B, C, D, E, F, G, H, I, J, K, L>(fn: (p: AV, D: GF) => [A, B, C, D, E, F, G, H, I, J, K, L]): MSV<AV, GF, {}, [A, B, C, D, E, F, G, H, I, J, K, L]>
     // Cbis: select(e => [e.name, e.age, e.total,... 421 more items])
-    select<T extends readonly GField[]>(fn: (p: P, D: M) => [...T]): MSV<P, M, {}, T>
+    select<T extends readonly GField[]>(fn: (p: AV, D: GF) => [...T]): MSV<AV, GF, {}, T>
     // D: select(e => e.age)
-    select<U extends DPrimitiveField>(fn: (p: P, D: M) => U): MSF<P, M, {}, [U]>
-    // F: select(e => `${e.name}__${e.total}`)
-    select<U extends Primitive>(fn: (p: P, D: M) => U): MSF<P, M, {}, [PrimitiveField<U>]>
+    select<U extends DPrimitiveField>(fn: (p: AV, D: GF) => U): MSF<AV, GF, {}, [U]>
+    // F: select(e => `${ e.name }__${ e.total } `)
+    select<U extends Primitive>(fn: (p: AV, D: GF) => U): MSF<AV, GF, {}, [PrimitiveField<U>]>
     // E: select(e => ({ name: e.name, age: e.age }))
-    select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: M) => U): MSR<P, M, ShallowModel<FromPlain<U>>>
+    // select<U extends TFlag>(fn: (p: AV & Record<string, any>, D: GF) => U): 42 //''
+    select<U extends SelectModel>(fn: (p: AV & Record<string, any>, D: GF) => U):
+        // U extends Record<string, infer FF extends TFlag> ? MSR<AV, GF, Omit<FF, keyof TFlag>> :
+        MSR<AV, GF, ShallowModel<U>>
 
 }
 
 
-// export type FromResultModel<Ressource extends keyof Models, C extends StrictCollection[] = [], M extends t.DMetaField = t.DMetaField, P extends MetaModel = ModelFromCollectionList<Models, C>> = FromResult<Models, Ressource, C, M, P>
+export type FromResultModel<Ressource extends keyof Models, C extends StrictCollection[] = [], GF extends t.DMetaField = t.DMetaField, P extends MetaModel = MergedModel<Models, C>> = FromResult<Models, Ressource, C, GF, P>
+export type From<Ressource extends keyof Models, S extends StrictCollection[]> = FromResultModel<Ressource, S>
 
-export interface FromResult<Mods extends Models, Ressource extends keyof Mods, C extends StrictCollection[] = [], M extends t.DMetaField = t.DMetaField, P extends MetaModel = ModelFromCollectionList<Mods, C>> extends Selectors<P, M> {
-    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>, A extends string>(table: K, alias: A, using: KeyIntersection<P, ModelForCollection<Mods, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>>>)
-        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>], M>
-    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>>(table: K, using: KeyIntersection<P, ModelForCollection<Mods, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>>>)
-        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>], M>
-    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>, A extends string>(table: K, alias: A, fn: (p: ModelFromCollectionList<Mods, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>]>, D: M) => any)
-        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>], M>
-    join<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>>(table: K, fn: (p: ModelFromCollectionList<Mods, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>]>, D: M) => any)
-        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: DeriveName<K> }>], M>
+type ToModel<Mods extends Models, Ressource extends string, Uri extends string, A extends string = DeriveName<Uri>> =
+    MergedModel<Mods, [{ catalog: Ressource; uri: Uri; alias: A }]>
+type PushCollection<C extends StrictCollection[], Ressource extends string, Uri extends string, A extends string = DeriveName<Uri>> =
+    [...C, { catalog: Ressource; uri: Uri; alias: A }]
+
+
+type ModKeys<Mods extends Models, Ressource extends keyof Mods & string> = Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>
+export interface FromResult<Mods extends Models, Ressource extends keyof Mods & string, C extends StrictCollection[] = [], GF extends t.DMetaField = t.DMetaField, P extends MetaModel = MergedModel<Mods, C>> extends Selectors<P, GF> {
+
+    // join<K extends ModKeys<Mods, Ressource>>/*              */(
+    //     table: K,
+    //     callb:
+    //         | KeyIntersection<P, ToModel<Mods, Ressource, K, DeriveName<K>>>
+    //         | (((p: MergedModel<Mods, PushCollection<C, Ressource, K>>, D: GF) => any))
+    // ): FromResult<Mods, Ressource, PushCollection<C, Ressource, K>, GF>
+    join<K extends ModKeys<Mods, Ressource> | (string | {}), A extends string = DeriveName<K>>(
+        table: K,
+        fn: K extends ModKeys<Mods, Ressource> ?
+            (((KeyIntersection<P, ToModel<Mods, Ressource, K, A>>)) | (((p: MergedModel<Mods, PushCollection<C, Ressource, K, A>>, D: GF) => any)))
+            : (((KeyIntersection<P, ToModel<Mods, '', '', A>>)) | (((p: MergedModel<Mods, PushCollection<C, '', '', A>>, D: GF) => any)))
+        , alias?: A,
+    ): K extends ModKeys<Mods, Ressource> ?
+        FromResult<Mods, Ressource, PushCollection<C, Ressource, K, A>, GF>
+        : FromResult<Mods, Ressource, PushCollection<C, '', '', A>, GF>
 
     leftJoin: this['join']
     rightJoin: this['join']
@@ -234,20 +299,23 @@ export interface FromResult<Mods extends Models, Ressource extends keyof Mods, C
     innerJoin: this['join']
 
     crossJoin<K extends Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>, A extends string = DeriveName<K>>(table: K, a?: A)
-        : FromResult<Mods, Ressource, [...C, DefaultizeCollection<{ catalog: Ressource; uri: K; alias: A }>], M>
+        : FromResult<Mods, Ressource, PushCollection<C, Ressource, K>, GF>
 
-    execute(): ReturnType<Flatten<MSR<P, M, ShallowModelFromCollectionList<Models, C>>>['execute']>
+    execute(): ReturnType<Flatten<MSR<P, GF, ShallowMergedModel<Models, C>>>['execute']>
     ensureSchemas(): Promise<void>
 }
 
 
 
-declare function Buck<T extends keyof Models>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>
-// const r =
-//     Buck('')
-//         .from('data/people.parquet')
-//         .crossJoin('data/str-test.jsonl', 'sssssss')
-//         .select('sssssss.str')
+export declare function Buck<T extends keyof Models>(catalog: T, settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>
+
+const r =
+    Buck('')
+        .from('data/people.parquet')
+        .join('data/final.csv', 'name')
+        .select()
+        .returnType
+// .select('sssssss.str')
 // //     // .from('duckdb_functions()')
 //         .from('data/people.parquet')
 //         .crossJoin('data/str-test.jsonl')
@@ -268,45 +336,64 @@ declare function Buck<T extends keyof Models>(catalog: T, settings?: Partial<t.D
 // .where(e => e.str === 123)
 
 // Define the return type for DBuilder
-export interface DBuilderResult<Mods extends Models, T extends keyof Mods & string, M extends t.DMetaField = t.DMetaField> extends Withor<Mods, T, M> {
+export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mods & string, GF extends t.DMetaField = t.DMetaField> extends Withor<Mods, Ressource, GF> {
     ddb: DuckdbCon
-    settings(s: Partial<t.DSettings>): DBuilderResult<Mods, T, M>
+    settings(s: Partial<t.DSettings>): DBuilderResult<Mods, Ressource, GF>
     fetchTables: () => Promise<[string, any][]>
-    // select<U extends SelectModel>(fn: (p: P & Record<string, any>, D: t.DMetaField) => U): MSR<P, ShallowModel<U>>
 
     macros: <U extends Record<string, (...args: any[]) => any>>(
         fn: (D: t.DMetaField & Record<string, (...args: any[]) => any>) => U
-    ) => DBuilderResult<Mods, '', U & M>
+    ) => DBuilderResult<Mods, '', U & GF>
 
     create(s: string, opts?: Partial<{ replace: boolean; ifNotExists: boolean }>): {
         as<U extends Record<string, any>>(...items: U[]): Resultor<any>
     }
 
-    update<K1 extends Flatten<Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string> & string>>(table: K1): UpdateResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1 }>]> & Resultor<any>
+    update<K1 extends (ModKeys<Mods, Ressource>) & string>(table: K1): UpdateResult<Mods, Ressource, PushCollection<[], Ressource, K1>> & Resultor<any>
 
-    // from<K1 extends Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string>, A extends string>(table: K1, alias: A):
-    //     & FromResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>], M>
-    //     & MS<'records', M, ModelFromCollectionList<Mods, DefaultizeCollection<{ catalog: T; uri: K1; alias: A }[]>>>
-
-    from<K1 extends Extract<keyof Mods[T], string> | Extract<keyof Mods[''], string>, A extends string = DeriveName<K1>>(table: K1, alias?: A):
-        & FromResult<Mods, T, [DefaultizeCollection<{ catalog: T; uri: K1; alias: A }>], M>
-        & MS<'records', M, ModelFromCollectionList<Mods, [{ catalog: T; uri: K1; alias: A }]>>
-
-
+    from<K1 extends ModKeys<Mods, Ressource> | (string & {}), A extends string = DeriveName<K1>>(table: K1, alias?: A):
+        K1 extends ModKeys<Mods, Ressource> ?
+        (FromResult<Mods, Ressource, PushCollection<[], Ressource, K1, A>, GF> & MS<'records', GF, MergedModel<Mods, PushCollection<[], Ressource, K1, A>>>)
+        : (FromResult<Mods, Ressource, PushCollection<[], '', '', A>, GF> & MS<'records', GF, MergedModel<Mods, PushCollection<[], '', '', A>>>)
+    // from(table: string): 123
     // from<K extends keyof Mods['error']>(x: K): Mods['error'][K]
 
-    from<TT extends keyof Mods, SS extends StrictCollection[]>(obj: FromResult<Mods, TT, SS, M>): FromResult<Mods, TT, SS, M>
-    from<V1 extends VTypes, A1 extends MetaModel, S1 extends SelectModel = {}>(obj: MS<V1, M, A1, S1>): MS<V1, M, A1, S1>
+    from<MM extends Mods, TT extends keyof Mods & string, SS extends StrictCollection[]>(obj: FromResult<MM, TT, SS, GF>): FromResult<Mods, TT, SS, GF>
+    from<V1 extends VTypes, A1 extends MetaModel, S1 extends SelectModel = {}>(obj: MS<V1, GF, A1, S1>): MS<V1, GF, A1, S1>
 
-    loadExtensions(...ext: string[]): DBuilderResult<Mods, T, M> // Use the defined type here
+    loadExtensions(...ext: string[]): DBuilderResult<Mods, Ressource, GF> // Use the defined type here
     // fetchSchema(id: string): Promise<Mods>
     describe(id: string): Promise<any>
-
+    run(sql: string): Promise<any>
 }
 
 
+() => {
+    const hh =
+        Buck('').from('data/people.parquet').select(e => e).returnType
 
+    const r =
+        Buck('').from('tusr').select(e => ({ gg: e.tusr })).returnType
+    const xr =
+        Buck('').from('tusr').select(e => ({ gg: e.tusr, xx: e.name.str_split('') })).returnType
 
+    const zzz
+        = Buck('').from('tusr').select(e => e)
+
+    const zzzZ
+        = Buck('').from('tusr').select(e => ({ ...e, gg: 12 })).returnType
+    const zzzZs
+        = Buck('').from('tusr').select(e => ({ ...e.tusr, gg: 12 })).returnType
+    // const zzzm
+    //     = Buck('').from('tusr').select(e => ({ zzz: { ttt: {df:e} }, gg: 12 })).returnType
+
+    const r2 =
+        Buck('').from('tusr').select(e => ({ lll: e.age, ppp: { lol: [{ zz: { f: e.age.to_hex() } }] } })).returnType
+    // r2
+    // const r4 =
+    //     Buck('').from('tusr').select()
+
+}
 
 // Overload for settings only
 export declare function DBuilder(settings?: Partial<t.DSettings>): DBuilderResult<Models, ''>

@@ -1,9 +1,13 @@
 import { getService, initialize as initializeMonacoService, IStorageService, IWorkbenchLayoutService } from '@codingame/monaco-vscode-api'
 import getQuickAccessServiceOverride from '@codingame/monaco-vscode-quickaccess-service-override'
 import { BrowserStorageService } from '@codingame/monaco-vscode-storage-service-override'
-import * as Buck from '@buckdb/buckdb.remote'
+import * as BCK from '@buckdb/isomorphic'
+import * as FN from '@buckdb/fn'
+import * as TF from '@buckdb/tf'
 
-Object.assign(window, Buck)
+Object.assign(window, BCK)
+Object.assign(window, FN)
+Object.assign(window, TF)
 // Buck.duckdb.db.
 import { registerExtension } from '@codingame/monaco-vscode-api/extensions'
 import { setUnexpectedErrorHandler } from '@codingame/monaco-vscode-api/monaco'

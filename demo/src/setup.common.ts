@@ -52,75 +52,82 @@ const tsconf = JSON.stringify({
         'target': 'ESNext',
         'module': 'ESNext',
         'moduleResolution': 'bundler',
+        "baseUrl": ".",
+        'paths': {
+            '@buckdb/*': ['./*'],
+            '@buckdb/isomorphic': ['./remote.ts'],
+        }
     },
-})
+}, null, 2)
 
-const parser = (await import('@buckdb/src/parser.ts?raw')).default
-const jsep = (await import('@buckdb/src/jsep.ts?raw')).default
+// Type declarations for import.meta
+declare interface ImportMeta {
+    glob: (paths: string | string[], options?: { as?: string; eager?: boolean }) => Record<string, () => Promise<any>>
+}
 
-const serializer = (await import('@buckdb/src/serializer.ts?raw')).default
-const readers = (await import('@buckdb/src/readers.ts?raw')).default
+// Type for glob imports
+type GlobImport = Record<string, () => Promise<{ default: string }>>
 
-const interfaceGenerator = (await import('@buckdb/src/interface-generator?raw')).default
-const typedef = (await import('@buckdb/src/typedef.ts?raw')).default
+// Import all source files
+const sourceFiles = await Promise.all(
+    Object.entries(
+        import.meta.glob('@buckdb/{src/*.ts,.buck/*.{ts,json},*.ts}', { as: 'raw', eager: false })
+    ).map(async ([path, loader]) => {
+        const content = await loader()
+        return {
+            path: path.split('buckdb/')[1],
+            content: content.default || content
+        }
+    })
+)
 
-const types = (await import('@buckdb/.buck/types.ts?raw')).default
-const utils = (await import('@buckdb/src/utils.ts?raw')).default
-const core = (await import('@buckdb/buckdb.core.ts?raw')).default
-const copy = (await import('@buckdb/src/copy.ts?raw')).default
-const formalise = (await import('@buckdb/src/formalise.ts?raw')).default
-const deepMap = (await import('@buckdb/src/deep-map.ts?raw')).default
-const table3 = (await import('@buckdb/.buck/table3.ts?raw')).default
-const tablejson = (await import('@buckdb/.buck/table.json?raw')).default
-const buildTypes = (await import('@buckdb/src/build.types.ts?raw')).default
-const build = (await import('@buckdb/src/build.ts?raw')).default
-const genericUtils = (await import('@buckdb/src/generic-utils.ts?raw')).default
-const buckdb = (await import('@buckdb/buckdb.remote.ts?raw')).default
 
+// loadFile(JSON.stringify(
+//     {
+//         "name": "xx",
+//         "module": "index.ts",
+//         "type": "module",
+//         "private": true,
+//         "devDependencies": {
+//         },
+//         "peerDependencies": {
+//             "typescript": "^5",
+//             "@buckdb/isomorphic": "file:./remote.ts"
+//         }
+//     }, null, 2), 'package.json')
+
+// Load all files
+loadFile(tsconf, 'tsconfig.json')
+
+for (const file of sourceFiles) {
+    loadFile(file.content, file.path)
+}
+
+// Load examples
 const examples = await Promise.all(
     Object.entries(
-        // @ts-ignore
-        import.meta.glob('@buckdb/examples/*.ts', { as: 'raw' })
-    ).map(async ([path, loader]) => ({
-        // @ts-ignore
-        path: path.split('/').pop(), content: await loader()
-    }))
+        import.meta.glob('@buckdb/examples/*.ts', { as: 'raw', eager: false })
+    ).map(async ([path, loader]) => {
+        const content = await loader()
+        return {
+            path: path.split('/').pop(),
+            content: content.default || content
+        }
+    })
 )
 for (const example of examples) {
     loadFile(example.content, `examples/${example.path}`)
 }
 
 
-loadFile(tsconf, 'tsconfig.json')
-loadFile(parser, 'src/parser.ts')
-loadFile(jsep, 'src/jsep.ts')
-loadFile(copy, 'src/copy.ts')
-loadFile(genericUtils, 'src/generic-utils.ts')
-
-loadFile(formalise, 'src/formalise.ts')
-loadFile(types, '.buck/types.ts')
-loadFile(tablejson, '.buck/table.json')
-loadFile(utils, 'src/utils.ts')
-loadFile(table3, '.buck/table3.ts')
-loadFile(buildTypes, 'src/build.types.ts')
-loadFile(deepMap, 'src/deep-map.ts')
-loadFile(build, 'src/build.ts')
-loadFile(core, 'buckdb.core.ts')
-loadFile(buckdb, 'buckdb.ts')
-// loadFile(demo, 'demo.ts')
-loadFile(typedef, 'src/typedef.ts')
-loadFile(serializer, 'src/serializer.ts')
-loadFile(readers, 'src/readers.ts')
-loadFile(interfaceGenerator, 'src/interface-generator.ts')
-
-const removeImports = (str: string) => str.split('\n').filter(e => !(e.match(/^\s*\/\//) || (e.startsWith('import') && e.includes('./')))).join('\n')
-const namespaceify = (name: string, str: string) => `namespace ${name}  {\n ${str}\n} \n`
-export const getFullBundle = () => {
-    const content = [jsep, parser, utils, table3, build].map(e => removeImports(e)).join('\n')
-        .replaceAll(/export\sdefault/g, '')
-        .replaceAll(/\n\s*export\s/g, '\n')
-    return namespaceify('t', types) + content
-}
+// const removeImports = (str: string) => str.split('\n').filter(e => !(e.match(/^\s*\/\//) || (e.startsWith('import') && e.includes('./')))).join('\n')
+// const namespaceify = (name: string, str: string) => `namespace ${name}  {\n ${str}\n} \n`
+// export const getFullBundle = () => {
+//     const content = [jsep, parser, utils, table3, build].map(e => removeImports(e)).join('\n')
+//         .replaceAll(/export\sdefault/g, '')
+//         .replaceAll(/\n\s*export\s/g, '\n')
+//     return namespaceify('t', types) + content
+// }
 // fileSystemProvider
 // export const bundle = transform(getFullBundle(), { transforms: ["typescript"] })
 // Use a workspace file to be able to add another folder later (for the "Attach filesystem" button)
@@ -153,12 +160,11 @@ window.MonacoEnvironment = {
 
 const queryParams = new URLSearchParams(location.search)
 const inlay = parseInt(queryParams.get('inlay'))
-console.log('-->', queryParams.has('inlay') && !isNaN(inlay) ? inlay : 0)
 await Promise.all([
     // initCustomThemeRegister(),
     initUserConfiguration(JSON.stringify({
         ...defaultConfiguration,
-        'editor.inlayHints.enabled': !queryParams.get('inlay')?.length ? 'offUnlessPressed' : 'onUnlessPressed',
+        'editor.inlayHints.enabled': 'on', //queryParams.get('inlay')?.length ? 'offUnlessPressed' : 'onUnlessPressed',
         'editor.inlayHints.maximumLength': queryParams.has('inlay') && !isNaN(inlay) ? inlay : 0,
         'editor.quickSuggestions': {
             'other': true,

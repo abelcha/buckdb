@@ -133,6 +133,13 @@ registerCustomView({
                             // Basic stringification for non-primitive types (optional, adjust as needed)
                             return (typeof value === 'object' && value !== null) ? JSON.stringify(value) : value
                         },
+                        cellRenderer: (params) => {
+                            const value = params.value;
+                            if (typeof value === 'string' && value.startsWith('http')) {
+                                return `<a href="${value}" target="_blank" style="color: #007bff; text-decoration: underline;">${value}</a>`;
+                            }
+                            return value;
+                        },
                         headerTooltip: columnType, // Show type as tooltip
                         sortable: true,
                         filter: true,

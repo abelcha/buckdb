@@ -1,25 +1,20 @@
-declare module '*?url' {
-    const url: string
-    export default url
-}
+// declare module '@buckdb/*' {
+//     const content: string
+//     export default content
+// }
 
-declare module '*?worker' {
-    interface WorkerConstructor {
-        new(): Worker
-    }
-
-    const Worker: WorkerConstructor
-    export default Worker
-}
-
-declare module '*?raw' {
+declare module '*.json?raw' {
     const content: string
     export default content
 }
 
-declare global {
-    import type { AsyncDuckDB } from '@duckdb/duckdb-wasm'
-    interface Window {
-        duckdb?: AsyncDuckDB
-    }
+declare module '*.html?raw' {
+    const content: string
+    export default content
+}
+
+declare interface ImportMeta {
+    url: string
+    main?: boolean
+    glob: (path: string, options?: { as?: string; eager?: boolean }) => Record<string, () => Promise<any>>
 }

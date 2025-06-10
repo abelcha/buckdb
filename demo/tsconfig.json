@@ -16,11 +16,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "baseUrl": "..",
+    "baseUrl": ".",
     "experimentalDecorators": true,
     "noUncheckedIndexedAccess": true,
     "paths": {
       "@buckdb/*": ["/me/dev/buckdb/*"],
+      "@buckdb/isomorphic": ["/me/dev/buckdb/remote.ts"],
       "vscode/vscode/*": ["../../monaco-vscode-api/dist/main/vscode/src/*"],
       "vscode/*": ["../../monaco-vscode-api/dist/main/*"]
     },

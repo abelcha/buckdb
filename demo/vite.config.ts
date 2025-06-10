@@ -3,7 +3,7 @@ import * as fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
 import { highlightSql, currentStyles } from '../src/highlighter'
-import { timecolor } from '../src/timecolor'
+import { timecolor } from '../src/log'
 
 const pkg = JSON.parse(
     fs.readFileSync(new URL('./package.json', import.meta.url).pathname).toString(),
@@ -17,23 +17,38 @@ const localDependencies = Object.entries(pkg.dependencies as Record<string, stri
 export default defineConfig({
     build: {
         target: 'esnext',
-        
-        sourcemap: false, // Disable sourcemaps
+        sourcemap: false,
     },
     worker: {
         format: 'es',
     },
+    // server: {
+    //     headers: {
+    //         'Cross-Origin-Embedder-Policy': 'require-corp',
+    //         'Cross-Origin-Opener-Policy': 'same-origin',
+    //     },
+    //     cors: true,
+    //     fs: {
+    //         strict: false,
+    //         allow: ['.']
+    //     },
+    //     proxy: {
+    //         '/duckdb': {
+    //             target: 'http://localhost:9998',
+    //             changeOrigin: true,
+    //             rewrite: (path) => path.replace(/^\/duckdb/, ''),
+    //         }
+    //     }
+    // },
     plugins: [
         wasm(),
         {
-            // For the *-language-features extensions which use SharedArrayBuffer
             name: 'configure-response-headers',
             apply: 'serve',
             configureServer: (server) => {
                 server.middlewares.use((_req, res, next) => {
-                    res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless')
+                    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp')
                     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
-                    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
                     next()
                 })
             },
@@ -186,6 +201,8 @@ export default defineConfig({
         dedupe: ['vscode', ...localDependencies],
         alias: {
             // Map an alias to the external directory
+            // '@buckdb': '',
+            '@buckdb/isomorphic': '/me/dev/buckdb/remote.ts',
             '@buckdb': '/me/dev/buckdb',
         },
     },

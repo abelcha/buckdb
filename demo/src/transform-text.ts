@@ -29,7 +29,7 @@ function transformCode(parts: FromStatementParts[]): string {
             res = execToSql((st.chain ? st.chain + '.' : '') + st.cleanFromChain).split('\n')
         } catch (err) {
             console.log(err, st)
-            res = ['Error: ', String(err), ...('-- xx\n'.repeat(st.lineEnd - st.lineStart - 3).split('\n'))]
+            res = ['Error: ', String(err), ...('-- xx\n'.repeat(Math.max(st.lineEnd - st.lineStart - 3, 0)).split('\n'))]
         }
         let offset = 0
         while (arr[st.lineStart + offset]) offset++
@@ -86,6 +86,9 @@ class Schemes {
         let toUpdate = false
         for (const statement of statements) {
             if (!isFile(statement.param) && !isFunction(statement.param)) {
+                continue
+            }
+            if (statement.param.includes('*') && !statement.param.includes('parquet')) {
                 continue
             }
             const resource = statement.resource || ''

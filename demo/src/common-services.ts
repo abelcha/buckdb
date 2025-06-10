@@ -9,12 +9,12 @@ import getModelServiceOverride from '@codingame/monaco-vscode-model-service-over
 // import getChatServiceOverride from '@codingame/monaco-vscode-chat-service-override'
 import getCommentsServiceOverride from '@codingame/monaco-vscode-comments-service-override'
 // import getDebugServiceOverride from '@codingame/monaco-vscode-debug-service-override'
-// import getDialogsServiceOverride from '@codingame/monaco-vscode-dialogs-service-override'
+import getDialogsServiceOverride from '@codingame/monaco-vscode-dialogs-service-override'
 import getEditSessionsServiceOverride from '@codingame/monaco-vscode-edit-sessions-service-override'
 // import getEmmetServiceOverride from '@codingame/monaco-vscode-emmet-service-override'
 import getEnvironmentServiceOverride from '@codingame/monaco-vscode-environment-service-override'
 import getExplorerServiceOverride from '@codingame/monaco-vscode-explorer-service-override'
-import getExtensionGalleryServiceOverride from '@codingame/monaco-vscode-extension-gallery-service-override'
+// import getExtensionGalleryServiceOverride from '@codingame/monaco-vscode-extension-gallery-service-override'
 import getExtensionServiceOverride from '@codingame/monaco-vscode-extensions-service-override'
 import getInteractiveServiceOverride from '@codingame/monaco-vscode-interactive-service-override'
 // import getIssueServiceOverride from '@codingame/monaco-vscode-issue-service-override'
@@ -69,7 +69,7 @@ export const commonServices: IEditorOverrideServices = {
     ...getExtensionServiceOverride(workerConfig),
     // ...getExtensionGalleryServiceOverride({ webOnly: false }),
     ...getModelServiceOverride(),
-    // ...getDialogsServiceOverride(),
+    ...getDialogsServiceOverride(),
     ...getConfigurationServiceOverride(),
     ...getKeybindingsServiceOverride(),
     ...getTextmateServiceOverride(),

@@ -76,14 +76,16 @@ export async function openTransformedViewAndSync(
     transformedProvider: TextDocumentContentProvider & { update(uri: Uri): void },
     vscodeApi: VsCodeApi,
 ) {
+    // console.log('========>', editor, editor.viewColumn)
     if (!editor || editor.document.uri.scheme === transformedScheme || editor.document.uri.scheme === 'cowsay') return
-
     const originalUri = editor.document.uri
     const originalUriString = originalUri.toString()
     // Modify the path for the label, store original URI in query
     const targetPath = originalUri.path.replace(/\.(ts|tsx)$/, '.sql')
     const targetUri = Uri.parse(`${transformedScheme}:${targetPath}?original=${encodeURIComponent(originalUriString)}`)
-
+    if (editor.viewColumn !== 1) {
+        return
+    }
     try {
         // Update provider *before* opening, as it might be needed immediately
         transformedProvider.update(targetUri)

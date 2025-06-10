@@ -8,7 +8,7 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const getPart = (document: vscode.TextDocument, targetLine: number) => {
     const extractedParts = extractFromStatementsAST(document.getText())
     // .find((e, index, arr) => {
-    for (const [index, e] of extractedParts.entries()) {
+    for (const [index, e] of Array.from(extractedParts.entries())) {
         // console.log({ index, e })
         const next = extractedParts[index + 1]
         // console.log({ targetLine, linestart: e.lineStart }, targetLine >= e.lineStart, (!next || targetLine < next.lineStart))

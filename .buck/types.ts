@@ -206,17 +206,11 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
   /**@description: Generates bin_count equi-width bins between the min and max. If enabled nice_rounding makes the numbers more readable/less jagged	@example: equi_width_bins(0, 10, 2, true)	@default: equi_width_bins(min:ANY, max:ANY, binCount:BIGINT, niceRounding:BOOLEAN) -> ANY[]*/
   equi_width_bins(max: DAnyable, binCount: DNumericable, niceRounding: DBoolable): DArrayField<DAnyField>;
 
-  /**@description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
-  greatest(...vargs: DAnyable[]): DAny<DNum, DStr>;
-
   /**@description: Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example: hash('🦆')	@default: hash(param:ANY) -> UBIGINT*/
   hash(...vargs: DAnyable[]): DNum;
 
   /**@description: Whether or not the provided value is the histogram "other" bin (used for values not belonging to any provided bin)	@example: is_histogram_other_bin(v)	@default: is_histogram_other_bin(val:ANY) -> BOOLEAN*/
   is_histogram_other_bin(): DBoolField;
-
-  /**@description: Returns the lowest value of the set of input parameters	@example: least(42, 84)	@default: least(arg1:ANY) -> ANY*/
-  least(...vargs: DAnyable[]): DAny<DNum, DStr>;
 
   /**@description: Map a struct to another struct type, potentially re-ordering, renaming and casting members and filling in defaults for missing values	@example: remap_struct({'i': 1, 'j': 2}, NULL::ROW(v1 INT, v2 INT, v3 INT), {'v1': 'j', 'v3': 'i'}, {'v2': NULL::INTEGER})	@default: remap_struct(input:ANY, targetType:ANY, mapping:ANY, defaults:ANY) -> ANY*/
   remap_struct(targetType: DAnyable, mapping: DAnyable, defaults: DAnyable): DAny<DNum, DStr>;
@@ -229,6 +223,12 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
 
   /**@description: Returns the VectorType of a given column	@example: vector_type(col)	@default: vector_type(col:ANY) -> VARCHAR*/
   vector_type(): DStr;
+
+  /**@description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
+  // greatest(...vargs: DAnyable[]): DAny<DNum,DStr>
+
+  /**@description: Returns the lowest value of the set of input parameters	@example: least(42, 84)	@default: least(arg1:ANY) -> ANY*/
+  // least(...vargs: DAnyable[]): DAny<DNum,DStr>
 }
 
 export interface DAnyComp extends DAny<DNumericComp, DVarcharComp> {
@@ -1910,7 +1910,7 @@ export interface DAggregate<DNum, DStr> {
 export interface DMacroAG {
 }
 
-export interface DMacro<DNum, DStr> {
+export interface DMacro {
   /**@example: NULL	@default: col_description(tableOid:, columnNumber:) -> null*/
   col_description(tableOid: DAnyable, columnNumber: DAnyable): DAnyField;
 
@@ -2595,9 +2595,6 @@ export interface DGlobal<DNum, DStr> {
   /**@default: getvariable(col0:VARCHAR) -> ANY*/
   getvariable(col0: DVarcharable): DAnyField;
 
-  /**@description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
-  greatest(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField;
-
   /**@description: Computes the greatest common divisor of x and y	@example: greatest_common_divisor(42, 57)	@default: greatest_common_divisor(x:BIGINT, y:BIGINT) -> BIGINT*/
   greatest_common_divisor(x: DNumericable, y: DNumericable): DNum;
   /**@description: Computes the greatest common divisor of x and y	@example: greatest_common_divisor(42, 57)	@default: gcd(x:BIGINT, y:BIGINT) -> BIGINT*/
@@ -3132,9 +3129,6 @@ export interface DGlobal<DNum, DStr> {
   lcase(string: DVarcharable): DStr;
   /**@description: Converts `string` to lower case	@example: lower('Hello')	@default: lower(string:VARCHAR) -> VARCHAR*/
   lower: this["lcase"];
-
-  /**@description: Returns the lowest value of the set of input parameters	@example: least(42, 84)	@default: least(arg1:ANY) -> ANY*/
-  least(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField;
 
   /**@description: Computes the least common multiple of x and y	@example: least_common_multiple(42, 57)	@default: least_common_multiple(x:BIGINT, y:BIGINT) -> BIGINT*/
   least_common_multiple(x: DNumericable, y: DNumericable): DNum;
@@ -4118,8 +4112,8 @@ export interface DGlobal<DNum, DStr> {
   /**@description: Number of bytes in `string`.	@example: strlen('🦆')	@default: strlen(string:VARCHAR) -> BIGINT*/
   strlen(string: DVarcharable): DNum;
 
-  /**@description: Converts the string text to timestamp according to the format string. Throws an error on failure. To return NULL on failure, use try_strptime.	@example: strptime('Wed, 1 January 1992 - 08:38:40 PM', '%a, %-d %B %Y - %I:%M:%S %p')	@default: strptime(text:VARCHAR, format:VARCHAR | VARCHAR[]) -> TIMESTAMP*/
-  strptime(text: DVarcharable, format: DArrayable | DVarcharable): DDateField;
+  /**@description: Converts the string text to timestamp applying the format strings in the list until one succeeds. Throws an error on failure. To return NULL on failure, use try_strptime.	@example: strptime('4/15/2023 10:56:00', ['%d/%m/%Y %H:%M:%S', '%m/%d/%Y %H:%M:%S'])	@default: strptime(text:VARCHAR, formatList:VARCHAR | VARCHAR[]) -> TIMESTAMP*/
+  strptime(text: DVarcharable, formatList: DArrayable | DVarcharable): DDateField;
 
   /**@description: Merge the multiple STRUCTs into a single STRUCT.	@example: struct_concat(struct_pack(i := 4), struct_pack(s := 'string'))*/
   struct_concat(...vargs: DAnyable[]): DStructField;
@@ -4369,6 +4363,12 @@ export interface DGlobal<DNum, DStr> {
   /**@description: Returns a list that is the result of applying the lambda function to each element of the input list. See the Lambda Functions section for more details	@example: list_transform([1, 2, 3], x -> x + 1)	@default: apply(list:ANY[], lambda:LAMBDA) -> ANY[]*/
   apply: this["array_transform"];
 
+  /**@description: Returns the highest value of the set of input parameters	@example: greatest(42, 84)	@default: greatest(arg1:ANY) -> ANY*/
+  // greatest(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField
+
+  /**@description: Returns the lowest value of the set of input parameters	@example: least(42, 84)	@default: least(arg1:ANY) -> ANY*/
+  // least(arg1: DAnyable, ...vargs: DAnyable[]): DAnyField
+
   // array_transform<T, U>(list: T[], lambda: (x: T) => U): DArrayField<FromPlain<U>>
   array_transform<T, U>(list: DArrayField<T> | T[], lambda: (x: FromPlain<T>) => U): DArrayField<FromPlain<U>>;
   array_reduce<T, U>(list: DArrayField<T> | T[], lambda: (accumulator: U, currentValue: FromPlain<T>) => U, initialValue: U): FromPlain<U>;
@@ -4378,9 +4378,6 @@ export interface DGlobal<DNum, DStr> {
 }
 
 export interface DTable {
-  /**@default: arrow_scan(col0:POINTER, col1:POINTER, col2:POINTER) -> null*/
-  arrow_scan(col0: DAnyable, col1: DAnyable, col2: DAnyable): DAnyField;
-
   /**@default: arrow_scan_dumb(col0:POINTER, col1:POINTER, col2:POINTER) -> null*/
   arrow_scan_dumb(col0: DAnyable, col1: DAnyable, col2: DAnyable): DAnyField;
 
@@ -4389,9 +4386,6 @@ export interface DTable {
 
   /**@default: checkpoint(col0:VARCHAR | ) -> null*/
   checkpoint(col0?: DAnyable | DVarcharable): DAnyField;
-
-  /**@default: delta_scan(col0:VARCHAR | VARCHAR[], hiveTypesAutocast:ANY | BOOLEAN, hivePartitioning:BOOLEAN, pushdownPartitionInfo:BOOLEAN | VARCHAR, hiveTypes:ANY, compression:BOOLEAN | VARCHAR, pushdownFilters:BOOLEAN | VARCHAR, explicitCardinality:UBIGINT | VARCHAR, unionByName:BOOLEAN, debugUseOpenssl:BOOLEAN | UBIGINT, binaryAsString:BOOLEAN | VARCHAR, filename:ANY | BOOLEAN, parquetVersion:ANY | VARCHAR, fileRowNumber:BOOLEAN, encryptionConfig:ANY | BOOLEAN) -> null*/
-  delta_scan(col0: DArrayable | DVarcharable, hiveTypesAutocast: DAnyable | DBoolable, hivePartitioning: DBoolable, pushdownPartitionInfo: DBoolable | DVarcharable, hiveTypes: DAnyable, compression: DBoolable | DVarcharable, pushdownFilters: DBoolable | DVarcharable, explicitCardinality: DNumericable | DVarcharable, unionByName: DBoolable, debugUseOpenssl: DBoolable | DNumericable, binaryAsString: DBoolable | DVarcharable, filename: DAnyable | DBoolable, parquetVersion: DAnyable | DVarcharable, fileRowNumber: DBoolable, encryptionConfig: DAnyable | DBoolable): DAnyField;
 
   duckdb_columns(): DAnyField;
 
@@ -4445,6 +4439,27 @@ export interface DTable {
 
   duckdb_views(): DAnyField;
 
+  /**@default: ducklake_cleanup_old_files(col0:VARCHAR, dryRun:BOOLEAN, cleanupAll:BOOLEAN, olderThan:TIMESTAMP WITH TIME ZONE) -> null*/
+  ducklake_cleanup_old_files(col0: DVarcharable, dryRun: DBoolable, cleanupAll: DBoolable, olderThan: DDateable): DAnyField;
+
+  /**@default: ducklake_expire_snapshots(col0:VARCHAR, versions:UBIGINT[], olderThan:TIMESTAMP WITH TIME ZONE) -> null*/
+  ducklake_expire_snapshots(col0: DVarcharable, versions: DArrayable, olderThan: DDateable): DAnyField;
+
+  /**@default: ducklake_merge_adjacent_files(col0:VARCHAR) -> null*/
+  ducklake_merge_adjacent_files(col0: DVarcharable): DAnyField;
+
+  /**@default: ducklake_snapshots(col0:VARCHAR) -> null*/
+  ducklake_snapshots(col0: DVarcharable): DAnyField;
+
+  /**@default: ducklake_table_deletions(col0:VARCHAR, col1:VARCHAR, col2:VARCHAR, col3:BIGINT | TIMESTAMP WITH TIME ZONE, col4:BIGINT | TIMESTAMP WITH TIME ZONE) -> null*/
+  ducklake_table_deletions(col0: DVarcharable, col1: DVarcharable, col2: DVarcharable, col3: DDateable | DNumericable, col4: DDateable | DNumericable): DAnyField;
+
+  /**@default: ducklake_table_info(col0:VARCHAR) -> null*/
+  ducklake_table_info(col0: DVarcharable): DAnyField;
+
+  /**@default: ducklake_table_insertions(col0:VARCHAR, col1:VARCHAR, col2:VARCHAR, col3:BIGINT | TIMESTAMP WITH TIME ZONE, col4:BIGINT | TIMESTAMP WITH TIME ZONE) -> null*/
+  ducklake_table_insertions(col0: DVarcharable, col1: DVarcharable, col2: DVarcharable, col3: DDateable | DNumericable, col4: DDateable | DNumericable): DAnyField;
+
   /**@default: force_checkpoint(col0:VARCHAR | ) -> null*/
   force_checkpoint(col0?: DAnyable | DVarcharable): DAnyField;
 
@@ -4459,9 +4474,6 @@ export interface DTable {
   /**@default: iceberg_metadata(col0:VARCHAR, col1:TIMESTAMP | UBIGINT | VARCHAR, allowMovedPaths:BOOLEAN | VARCHAR, metadataCompressionCodec:BOOLEAN | VARCHAR, skipSchemaInference:BOOLEAN | VARCHAR, versionNameFormat:BOOLEAN | VARCHAR, version:BOOLEAN | VARCHAR | ) -> null*/
   iceberg_metadata(col0: DVarcharable, col1: DDateable | DNumericable | DVarcharable, allowMovedPaths: DBoolable | DVarcharable, metadataCompressionCodec: DBoolable | DVarcharable, skipSchemaInference: DBoolable | DVarcharable, versionNameFormat: DBoolable | DVarcharable, version?: DAnyable | DBoolable | DVarcharable): DAnyField;
 
-  /**@default: iceberg_scan(col0:VARCHAR | VARCHAR[], versionNameFormat:VARCHAR, snapshotFromTimestamp:TIMESTAMP, version:VARCHAR, metadataCompressionCodec:VARCHAR, allowMovedPaths:BOOLEAN, skipSchemaInference:BOOLEAN, mode:ANY | VARCHAR, hiveTypesAutocast:BOOLEAN, snapshotFromId:UBIGINT | VARCHAR, hivePartitioning:ANY | BOOLEAN, hiveTypes:ANY | BOOLEAN, compression:BOOLEAN | VARCHAR, explicitCardinality:BOOLEAN | UBIGINT, unionByName:BOOLEAN | UBIGINT, debugUseOpenssl:BOOLEAN | VARCHAR, binaryAsString:ANY | BOOLEAN, filename:ANY | UBIGINT, parquetVersion:BOOLEAN | VARCHAR, fileRowNumber:BOOLEAN | VARCHAR, encryptionConfig:ANY | BOOLEAN) -> null*/
-  iceberg_scan(col0: DArrayable | DVarcharable, versionNameFormat: DVarcharable, snapshotFromTimestamp: DDateable, version: DVarcharable, metadataCompressionCodec: DVarcharable, allowMovedPaths: DBoolable, skipSchemaInference: DBoolable, mode: DAnyable | DVarcharable, hiveTypesAutocast: DBoolable, snapshotFromId: DNumericable | DVarcharable, hivePartitioning: DAnyable | DBoolable, hiveTypes: DAnyable | DBoolable, compression: DBoolable | DVarcharable, explicitCardinality: DBoolable | DNumericable, unionByName: DBoolable | DNumericable, debugUseOpenssl: DBoolable | DVarcharable, binaryAsString: DAnyable | DBoolable, filename: DAnyable | DNumericable, parquetVersion: DBoolable | DVarcharable, fileRowNumber: DBoolable | DVarcharable, encryptionConfig: DAnyable | DBoolable): DAnyField;
-
   /**@default: iceberg_snapshots(col0:VARCHAR, skipSchemaInference:BOOLEAN, versionNameFormat:VARCHAR, version:VARCHAR, metadataCompressionCodec:VARCHAR) -> null*/
   iceberg_snapshots(col0: DVarcharable, skipSchemaInference: DBoolable, versionNameFormat: DVarcharable, version: DVarcharable, metadataCompressionCodec: DVarcharable): DAnyField;
 
@@ -4469,9 +4481,6 @@ export interface DTable {
 
   /**@default: json_each(col0:JSON | VARCHAR, col1:VARCHAR | ) -> null*/
   json_each(col0: DJsonable | DVarcharable, col1?: DAnyable | DVarcharable): DAnyField;
-
-  /**@default: json_execute_serialized_sql(col0:VARCHAR) -> null*/
-  json_execute_serialized_sql(col0: DVarcharable): DAnyField;
 
   /**@default: json_tree(col0:JSON | VARCHAR, col1:VARCHAR | ) -> null*/
   json_tree(col0: DJsonable | DVarcharable, col1?: DAnyable | DVarcharable): DAnyField;
@@ -4490,9 +4499,6 @@ export interface DTable {
 
   /**@default: parquet_metadata(col0:VARCHAR | VARCHAR[]) -> null*/
   parquet_metadata(col0: DArrayable | DVarcharable): DAnyField;
-
-  /**@default: parquet_scan(col0:VARCHAR | VARCHAR[], encryptionConfig:ANY | BOOLEAN, fileRowNumber:BOOLEAN, schema:ANY, parquetVersion:VARCHAR, filename:ANY | UBIGINT, binaryAsString:BOOLEAN, debugUseOpenssl:BOOLEAN, unionByName:BOOLEAN, explicitCardinality:ANY | UBIGINT, compression:VARCHAR, hiveTypes:ANY, hivePartitioning:BOOLEAN, hiveTypesAutocast:ANY | BOOLEAN) -> null*/
-  parquet_scan(col0: DArrayable | DVarcharable, encryptionConfig: DAnyable | DBoolable, fileRowNumber: DBoolable, schema: DAnyable, parquetVersion: DVarcharable, filename: DAnyable | DNumericable, binaryAsString: DBoolable, debugUseOpenssl: DBoolable, unionByName: DBoolable, explicitCardinality: DAnyable | DNumericable, compression: DVarcharable, hiveTypes: DAnyable, hivePartitioning: DBoolable, hiveTypesAutocast: DAnyable | DBoolable): DAnyField;
 
   /**@default: parquet_schema(col0:VARCHAR | VARCHAR[]) -> null*/
   parquet_schema(col0: DArrayable | DVarcharable): DAnyField;
@@ -4543,15 +4549,8 @@ export interface DTable {
   /**@default: rtree_index_dump(col0:VARCHAR) -> null*/
   rtree_index_dump(col0: DVarcharable): DAnyField;
 
-  rtree_index_scan(): DAnyField;
-
-  seq_scan(): DAnyField;
-
   /**@default: shapefile_meta(col0:VARCHAR | VARCHAR[]) -> null*/
   shapefile_meta(col0: DArrayable | DVarcharable): DAnyField;
-
-  /**@default: sniff_csv(col0:VARCHAR, delim:VARCHAR, dateformat:VARCHAR, columnNames:VARCHAR[], sep:VARCHAR, hivePartitioning:BOOLEAN, header:BOOLEAN, escape:VARCHAR, allowQuotedNulls:BOOLEAN, comment:VARCHAR, maximumLineSize:VARCHAR, newLine:VARCHAR, columns:ANY, rejectsLimit:BIGINT, forceNotNull:VARCHAR[], timestampformat:VARCHAR, autoDetect:BOOLEAN, sampleSize:BIGINT, autoTypeCandidates:ANY, nullstr:ANY, encoding:VARCHAR, normalizeNames:BOOLEAN, rejectsTable:VARCHAR, columnTypes:ANY, skip:BIGINT, types:ANY, maxLineSize:VARCHAR, quote:VARCHAR, rejectsScan:VARCHAR, ignoreErrors:BOOLEAN, compression:VARCHAR, names:VARCHAR[], forceMatch:BOOLEAN, storeRejects:BOOLEAN, allVarchar:BOOLEAN, bufferSize:UBIGINT, decimalSeparator:VARCHAR, parallel:BOOLEAN, nullPadding:BOOLEAN, dtypes:ANY, strictMode:BOOLEAN, thousands:VARCHAR, filesToSniff:BIGINT, filename:ANY, unionByName:BOOLEAN, hiveTypes:ANY, hiveTypesAutocast:BOOLEAN) -> null*/
-  sniff_csv(col0: DVarcharable, delim: DVarcharable, dateformat: DVarcharable, columnNames: DArrayable, sep: DVarcharable, hivePartitioning: DBoolable, header: DBoolable, escape: DVarcharable, allowQuotedNulls: DBoolable, comment: DVarcharable, maximumLineSize: DVarcharable, newLine: DVarcharable, columns: DAnyable, rejectsLimit: DNumericable, forceNotNull: DArrayable, timestampformat: DVarcharable, autoDetect: DBoolable, sampleSize: DNumericable, autoTypeCandidates: DAnyable, nullstr: DAnyable, encoding: DVarcharable, normalizeNames: DBoolable, rejectsTable: DVarcharable, columnTypes: DAnyable, skip: DNumericable, types: DAnyable, maxLineSize: DVarcharable, quote: DVarcharable, rejectsScan: DVarcharable, ignoreErrors: DBoolable, compression: DVarcharable, names: DArrayable, forceMatch: DBoolable, storeRejects: DBoolable, allVarchar: DBoolable, bufferSize: DNumericable, decimalSeparator: DVarcharable, parallel: DBoolable, nullPadding: DBoolable, dtypes: DAnyable, strictMode: DBoolable, thousands: DVarcharable, filesToSniff: DNumericable, filename: DAnyable, unionByName: DBoolable, hiveTypes: DAnyable, hiveTypesAutocast: DBoolable): DAnyField;
 
   /**@default: sql_auto_complete(col0:VARCHAR) -> null*/
   sql_auto_complete(col0: DVarcharable): DAnyField;
@@ -4561,9 +4560,6 @@ export interface DTable {
 
   /**@default: sqlite_query(col0:VARCHAR, col1:VARCHAR) -> null*/
   sqlite_query(col0: DVarcharable, col1: DVarcharable): DAnyField;
-
-  /**@default: sqlite_scan(col0:VARCHAR, col1:VARCHAR) -> null*/
-  sqlite_scan(col0: DVarcharable, col1: DVarcharable): DAnyField;
 
   /**@description: Returns the list of supported GDAL drivers and file formats\n\nNote that far from all of these drivers have been tested properly.\nSome may require additional options to be passed to work as expected.\nIf you run into any issues please first consult the [consult the GDAL docs](https://gdal.org/drivers/vector/index.html).	@example: SELECT * FROM ST_Drivers();*/
   ST_Drivers(): DAnyField;
@@ -4630,7 +4626,7 @@ export type DConstructorsField = DConstructors<DNumericField, DVarcharField>;
 // export type DConstructorsComp = DConstructors<DNumericComp, DVarcharComp>
 
 export type DMacroAGField = DMacroAG;
-export type DMacroField = DMacro<DNumericField, DVarcharField>;
+export type DMacroField = DMacro;
 
 export type DMetaField = DGlobalField & DAggregateField & DConstructorsField & DGlobalPatternMatchers & DCastorsField & DMacroField & DMacroAGField & DKeywordsField & DTaggedTemplate;
 // export type DMetaComp = DGlobalComp & DAggregateComp & DConstructorsComp & DGlobalPatternMatchers & DCastorsComp
@@ -5202,4 +5198,4 @@ export interface DSettings {
   binary_as_string: boolean;
 }
 
-export type DExtensions = "autocomplete" | "aws" | "azure" | "core_functions" | "delta" | "encodings" | "excel" | "fts" | "h3" | "hostfs" | "http_client" | "httpfs" | "httpserver" | "iceberg" | "icu" | "inet" | "jemalloc" | "json" | "motherduck" | "mysql_scanner" | "parquet" | "parser_tools" | "postgres_scanner" | "spatial" | "sqlite_scanner" | "tpcds" | "tpch" | "ui" | "vss" | string | {};
+export type DExtensions = "autocomplete" | "aws" | "azure" | "core_functions" | "delta" | "ducklake" | "encodings" | "excel" | "fts" | "h3" | "hostfs" | "http_client" | "httpfs" | "httpserver" | "iceberg" | "icu" | "inet" | "jemalloc" | "json" | "motherduck" | "mysql_scanner" | "parquet" | "parser_tools" | "postgres_scanner" | "spatial" | "sqlite_scanner" | "tpcds" | "tpch" | "ui" | "vss" | string | {};

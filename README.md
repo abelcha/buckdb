@@ -69,8 +69,8 @@ import { from } from 'buckdb'
 
 async function complexQuery() {
     const results = await from('products', 'p') // Alias 'p'
-        .join('categories', 'c', c => c.id === p.category_id) // Join tables
-        .leftJoin('reviews', 'r', r => r.product_id === p.id) // Left Join
+        .join('categories', 'c').on(c => c.id === p.category_id) // Join tables
+        .leftJoin('reviews', 'r').on(r => r.product_id === p.id) // Left Join
         .where(p => p.price > 100 && p.stock > 0) // Multiple conditions
         .groupBy(p => p.category_id) // Group results
         .select((p, c, r) => ({ // Select from multiple tables (aliases match join order)

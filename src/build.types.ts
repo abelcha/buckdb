@@ -1,4 +1,4 @@
-import { Models } from '@buckdb/.buck/table3'
+import { Models } from '@buckdb/.buck/models'
 import * as t from '.buck/types'
 import { DuckdbCon } from '@buckdb/core'
 import { DDirection } from './typedef'

@@ -5,7 +5,7 @@ import { Buck, MemoryDB } from '@buckdb/isomorphic'
 import { builder } from './build'
 import { DBuilderResult, FromResultModel, Withor } from './build.types'
 import { FromPlain } from './deep-map'
-import { Models } from '@buckdb/.buck/table3'
+import { Models } from '@buckdb/.buck/models'
 
 const fns = await MemoryDB.from('duckdb_functions()').select().execute()
 type E<T> = T

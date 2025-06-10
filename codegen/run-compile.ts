@@ -13,7 +13,7 @@ const getCommunityExtensions = () => {
 
 const community_extensions = [] // await getCommunityExtensions()
 global.duckdb_extensions = await Buck('').from('duckdb_extensions()').select(e => e.extension_name).execute()
-const allextensions = ['h3', 'aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui']
+const allextensions = ['h3', 'aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui', 'ducklake']
 
 const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')
@@ -136,7 +136,6 @@ const getFuncId = (z: IFns) => {
 global.duckdb_settings = await instance.from('duckdb_settings()').execute()
 
 global.generateSettings = (xmap: Record<string, string[]> = {}) => {
-    console.log({ xmap })
     return global.duckdb_settings.map(e => buildJSDoc(e) + `  ${e.name}: ${xmap[e.name] || mapTypesProps(e.input_type).rawType},`).join('\n')
 }
 
@@ -183,7 +182,6 @@ global.renderMacros = (opts: Opts) => {
     const macros = _fns.filter(e => e.function_type === 'macro' && e.schema_name !== 'main')
         .map(fn => {
             // for (const i)
-            console.log(fn.schema_name, fn.function_name, fn.parameters)
             for (const i in fn.parameters) {
                 const item = fn.parameters[i]
                 if (item.match(/^(l|l\d|arr)$/)) {
@@ -227,7 +225,3 @@ async function main() {
 
 await main()
 
-// console.log({resp})
-
-// console.log({ xxx })
-// console.log('--------------')

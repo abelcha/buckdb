@@ -30,7 +30,9 @@ export interface DDateField extends DAnyField {
 }
 
 export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
-    /*{renderMethods({type: 'DAny', typeMap: {...gentypes }})}*/
+    /*{renderMethods({
+        override:['greatest', 'least'],
+        type: 'DAny', typeMap: {...gentypes }})}*/
 }
 
 export interface DAnyComp extends DAny<DNumericComp, DVarcharComp> {
@@ -134,7 +136,7 @@ export interface DMacroAG {
     })}*/
 }
 
-export interface DMacro<DNum, DStr> {
+export interface DMacro {
     /*{renderMacros({
         match: (e) =>  !e.macro_definition.startsWith('list_aggr'),
         typeMap: { numeric: 'DNum', varchar: 'DStr' },
@@ -148,7 +150,7 @@ export interface DGlobal<DNum, DStr> {
         match: (e) => e.function_type === 'scalar',
         typeMap: { numeric: 'DNum', varchar: 'DStr' },
         slice: 0,
-        override: ['array_transform', 'array_filter', 'array_reduce', 'array_slice', 'array_to_string']
+        override: ['array_transform', 'array_filter', 'array_reduce', 'array_slice', 'array_to_string', 'greatest', 'least']
     })}*/
     // array_transform<T, U>(list: T[], lambda: (x: T) => U): DArrayField<FromPlain<U>>
     array_transform<T, U>(list: DArrayField<T> | T[], lambda: (x: FromPlain<T>) => U): DArrayField<FromPlain<U>>
@@ -162,7 +164,7 @@ export interface DGlobal<DNum, DStr> {
 
 export interface DTable {
     /*{renderMethods({
-        match: (e) => e.function_type === 'table' && !e.function_name.startsWith('read'),
+        match: (e) => e.function_type === 'table' && !e.function_name.match(/^(sniff_.+|read_.+|.+_scan)$/),
         slice: 0,
     })}*/
 }
@@ -192,7 +194,7 @@ export type DConstructorsField = DConstructors<DNumericField, DVarcharField>
 // export type DConstructorsComp = DConstructors<DNumericComp, DVarcharComp>
 
 export type DMacroAGField = DMacroAG
-export type DMacroField = DMacro<DNumericField, DVarcharField>
+export type DMacroField = DMacro
 
 export type DMetaField = DGlobalField & DAggregateField & DConstructorsField & DGlobalPatternMatchers & DCastorsField & DMacroField & DMacroAGField & DKeywordsField & DTaggedTemplate
 // export type DMetaComp = DGlobalComp & DAggregateComp & DConstructorsComp & DGlobalPatternMatchers & DCastorsComp

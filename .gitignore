@@ -6,3 +6,4 @@ duckdb-node-neo
 src/.buck
 data
 demo/dist
+repomix-output.xml.txt

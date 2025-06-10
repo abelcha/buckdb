@@ -352,7 +352,7 @@ function createPropertySignaturesRecursive(obj: Record<string, any>): ts.Propert
             typeNode = ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword)
         }
 
-        // Use computed property name for all keys to match the target format .buck/table3.ts
+        // Use computed property name for all keys to match the target format .buck/models.ts
         const propertyName: ts.PropertyName = ts.factory.createComputedPropertyName(ts.factory.createStringLiteral(key))
 
         return ts.factory.createPropertySignature(undefined, propertyName, undefined, typeNode)
@@ -367,7 +367,7 @@ function createImportStatement(moduleName: string): ts.ImportDeclaration {
 }
 
 /**
- * STEP 2: Generates the Models interface string from a structure like .buck/table.json.
+ * STEP 2: Generates the Models interface string from a structure like .buck/models.json.
  */
 export const generateInterface = (inputData: Record<string, Record<string, any>>) => {
     const importDeclaration = createImportStatement('./types') // Adjusted path

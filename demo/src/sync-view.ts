@@ -41,10 +41,10 @@ class TransformedSqlCodeLensProvider implements vsCodeApi.CodeLensProvider {
             const extractedParts = extractFromStatementsAST(originalDoc.getText())
 
             for (const part of extractedParts) {
-                const lineIndex = part.lineEnd  // 0-based
+                const lineIndex = part.lineStart
 
                 if (lineIndex < 0 || lineIndex >= document.lineCount) {
-                    // console.warn(`TransformedSqlCodeLensProvider: Line index ${lineIndex} out of bounds for transformed doc ${document.uri.toString()}`);
+                    console.warn(`TransformedSqlCodeLensProvider: Line index ${lineIndex} out of bounds for transformed doc ${document.uri.toString()}`);
                     continue
                 }
 
@@ -56,7 +56,7 @@ class TransformedSqlCodeLensProvider implements vsCodeApi.CodeLensProvider {
                     tooltip: 'xxxx', // Matching SqlCodeLensProvider
                     title: '⌘ ↩︎ [Run Query]',
                     command: 'buckdb.runQueryFromLine',
-                    arguments: [lineIndex + 1], // Matching SqlCodeLensProvider (0-based line index of original TS)
+                    arguments: [lineIndex, 10], // Matching SqlCodeLensProvider (0-based line index of original TS)
                 }
                 codeLenses.push(new this.vscodeApi.CodeLens(range, command))
             }

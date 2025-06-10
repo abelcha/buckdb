@@ -123,7 +123,7 @@ for (const example of examples) {
 // const removeImports = (str: string) => str.split('\n').filter(e => !(e.match(/^\s*\/\//) || (e.startsWith('import') && e.includes('./')))).join('\n')
 // const namespaceify = (name: string, str: string) => `namespace ${name}  {\n ${str}\n} \n`
 // export const getFullBundle = () => {
-//     const content = [jsep, parser, utils, table3, build].map(e => removeImports(e)).join('\n')
+//     const content = [jsep, parser, utils, models, build].map(e => removeImports(e)).join('\n')
 //         .replaceAll(/export\sdefault/g, '')
 //         .replaceAll(/\n\s*export\s/g, '\n')
 //     return namespaceify('t', types) + content

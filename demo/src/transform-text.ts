@@ -1,7 +1,7 @@
 import { debounce, memoize } from 'es-toolkit'
 import type { IDisposable } from 'monaco-editor'
 import { EventEmitter, TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
-import contentjson from '@buckdb/.buck/table.json' // Use relative path
+import contentjson from '@buckdb/.buck/models.json' // Use relative path
 import { generateInterface, serializeDescribe } from '@buckdb/src/interface-generator' // Use relative path
 import { isFile, isFunction } from '@buckdb/src/utils'
 import { BuckStatementParts, extractBuckStatement, extractFromStatementsAST, FromStatementParts } from '@buckdb/src/extract-from-statements'
@@ -57,9 +57,9 @@ class Schemes {
         })
     }
     updateContent = async () => {
-        await this.writeFile('.buck/table.json', JSON.stringify(this.content, null, 2))
+        await this.writeFile('.buck/models.json', JSON.stringify(this.content, null, 2))
         const tsfile = generateInterface(this.content)
-        await this.writeFile('.buck/table3.ts', tsfile)
+        await this.writeFile('.buck/models.ts', tsfile)
     }
     upsertBuckStatements = async (statements: BuckStatementParts[]) => {
         let toUpdate = false

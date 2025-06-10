@@ -41,7 +41,7 @@ function mapDuckDBTypeToSchema(typeInfo: any): string | Record<string, any> {
 }
 class JsonModelTable {
     constructor(
-        private jsonContent: Dict = JSON.parse(readFileSync('./.buck/table.json', 'utf-8'))
+        private jsonContent: Dict = JSON.parse(readFileSync('./.buck/models.json', 'utf-8'))
     ) {
     }
     hasSchema(ressource: string, uri: string) {
@@ -53,8 +53,8 @@ class JsonModelTable {
         }
         this.jsonContent[ressource][uri] = schemaJson
         const tsfile = generateInterface(this.jsonContent)
-        writeFileSync('./.buck/table.json', JSON.stringify(this.jsonContent, null, 2))
-        writeFileSync('./.buck/table3.ts', tsfile)
+        writeFileSync('./.buck/models.json', JSON.stringify(this.jsonContent, null, 2))
+        writeFileSync('./.buck/models.ts', tsfile)
     }
     writeResultSchema(ressource: string, uri: string, result: DuckDBResult) {
         return this.writeSchema(ressource, uri, zipObject(result.columnNames(), result.columnTypes().map(mapDuckDBTypeToSchema)))
@@ -172,7 +172,7 @@ class BuckDBNode extends BuckDBBase {
 
     async upsertSchema(model: string, schema: Record<string, string>) {
         // await this._initDB();
-        // const tableFile = Bun.file(`./.buck/table.json`);
+        // const tableFile = Bun.file(`./.buck/models.json`);
         // const tableContent = await tableFile.json();
         // if (!tableContent[this.handle || '']) {
         //     tableContent[this.handle || ''] = {};
@@ -180,13 +180,11 @@ class BuckDBNode extends BuckDBBase {
         // tableContent[this.handle || ''][model] = schema;
         // await tableFile.write(JSON.stringify(tableContent, null, 2));
         // const tsfile = generateInterface(tableContent);
-        // await Bun.file('./.buck/table3.ts').write(tsfile);
+        // await Bun.file('./.buck/models.ts').write(tsfile);
     }
 
     async ensureSchema(_uri: string) {
-        console.log('ensureSchemaensureSchema', _uri)
         const uri = this.getSchemaUri(_uri)
-        // console.log({ uri, _uri })
         const h = this.handle || ''
         if (jsonModelTable.hasSchema(h, uri)) {
             return

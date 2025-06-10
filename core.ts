@@ -106,6 +106,7 @@ export class CommandQueue {
             'core_functions',
             'delta',
             'excel',
+            'ducklake',
             'fts',
             'h3',
             'httpfs',

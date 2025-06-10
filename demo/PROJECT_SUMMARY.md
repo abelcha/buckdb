@@ -30,9 +30,9 @@ This is a web-based Integrated Development Environment (IDE) built using the Mon
 
 ### 4. Schema Management and Type Generation
 
-- **Description:** Automatically fetches, caches, and manages data schemas associated with the Buck queries. Based on these schemas, it generates TypeScript interface definitions (`.buck/table3.ts`) to provide type safety and intellisense.
+- **Description:** Automatically fetches, caches, and manages data schemas associated with the Buck queries. Based on these schemas, it generates TypeScript interface definitions (`.buck/models.ts`) to provide type safety and intellisense.
 - **Implementation:**
-  - **[`src/transform-text.ts`](./src/transform-text.ts) (`Schemes` class, `schemes.upsert`, `schemes.merge`):** This class within the `transformedProvider` manages the schema logic. When processing a `.from()` statement (`upsert`), it checks if the schema is cached (`this.content`, loaded from `@buckdb/.buck/table.json`). If not, it debounces a `merge` call which executes a `.fetchSchema()` method derived from the query's `chain` (`new Function`), updates the cache, saves it to `.buck/table.json` (using `writeFile` from `setup.common.ts` and the `/save-file` endpoint), calls `generateInterface` (from `@buckdb/src/interface-generator`), and saves the result to `.buck/table3.ts`.
+  - **[`src/transform-text.ts`](./src/transform-text.ts) (`Schemes` class, `schemes.upsert`, `schemes.merge`):** This class within the `transformedProvider` manages the schema logic. When processing a `.from()` statement (`upsert`), it checks if the schema is cached (`this.content`, loaded from `@buckdb/.buck/models.json`). If not, it debounces a `merge` call which executes a `.fetchSchema()` method derived from the query's `chain` (`new Function`), updates the cache, saves it to `.buck/models.json` (using `writeFile` from `setup.common.ts` and the `/save-file` endpoint), calls `generateInterface` (from `@buckdb/src/interface-generator`), and saves the result to `.buck/models.ts`.
   - **[`src/setup.common.ts`](./src/setup.common.ts) (`writeFile` function):** Provides the utility used by `Schemes` to write the updated schema JSON and generated TS types to the virtual file system and trigger the backend save.
 
 ### 5. S3 Path Autocompletion
@@ -48,4 +48,4 @@ This is a web-based Integrated Development Environment (IDE) built using the Mon
 - **Implementation:**
   - **[`src/save-command.ts`](./src/save-command.ts)**: Exports a function that registers an `onDidSaveTextDocument` listener. When a document with the `file:` scheme is saved, it extracts the path and content and sends it via a `fetch` POST request to the `/save-file` endpoint.
   - **[`src/main.v2.ts`](./src/main.v2.ts)**: Imports and calls the function from `save-command.ts` to activate the save listener.
-  - **[`src/setup.common.ts`](./src/setup.common.ts) (`writeFile` function):** Also used internally (e.g., by schema management) to save generated files (`.buck/table.json`, `.buck/table3.ts`) by writing to the virtual FS and calling the `/save-file` endpoint.
+  - **[`src/setup.common.ts`](./src/setup.common.ts) (`writeFile` function):** Also used internally (e.g., by schema management) to save generated files (`.buck/models.json`, `.buck/models.ts`) by writing to the virtual FS and calling the `/save-file` endpoint.

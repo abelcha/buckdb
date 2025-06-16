@@ -10,6 +10,7 @@ import { Models } from '@buckdb/.buck/models'
 const fns = await MemoryDB.from('duckdb_functions()').select().execute()
 type E<T> = T
 
+
 test('basic tests', async () => {
     const result1 = await MemoryDB.from('duckdb_functions()')
         .select(e => ({

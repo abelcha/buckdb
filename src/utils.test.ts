@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'bun:test'
 import { wrap, upperFirst, last, isPlainObject, Σ, keyBy, isBucket } from './utils'
 import { formatSource } from './formalise'
+export const normalizeSQL = (sql: string): string =>
+    sql.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
+
+export const expectSQL = (actual: string | { toString: () => string }, expected: string) =>
+    expect(normalizeSQL(actual.toString())).toEqual(normalizeSQL(expected))
+
 
 describe('utils', () => {
     it('should wrap strings', () => {

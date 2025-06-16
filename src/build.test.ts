@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import { MemoryDB } from '@buckdb/isomorphic'
 import { deriveState } from './build'
-
-// Utility function to normalize SQL for comparison
-const normalizeSQL = (sql: string): string =>
-    sql.replace(/\s+/g, ' ').replace(/\n/g, ' ').trim()
-
-const expectSQL = (actual: string, expected: string) =>
-    expect(normalizeSQL(actual)).toEqual(normalizeSQL(expected))
-
+import { expectSQL } from './utils.test'
 describe('build.ts - Query Building with Bug Documentation', () => {
     describe('basic select operations', () => {
         it('should build simple select query', () => {
@@ -23,7 +16,7 @@ describe('build.ts - Query Building with Bug Documentation', () => {
                 desc: e.description
             }))
             const sql = query.toSql() satisfies string
-            expectSQL(sql, 'FROM duckdb_functions() SELECT function_name AS name, description AS desc')
+            expectSQL(sql, 'FROM duckdb_functions() SELECT name: function_name, desc: description')
         })
 
         it('should handle select all', () => {
@@ -144,7 +137,7 @@ describe('ordering and grouping', () => {
             .select((e, D) => ({ type: e.function_type, count: D.count('*') }))
             .groupBy(e => e.function_type)
         const sql = query.toSql() satisfies string
-        expectSQL(sql, "FROM duckdb_functions() SELECT function_type AS type, count(*) AS count GROUP BY function_type")
+        expectSQL(sql, "FROM duckdb_functions() SELECT type: function_type, count: count(*) GROUP BY function_type")
     })
 })
 
@@ -208,7 +201,7 @@ describe('aggregation methods', () => {
             .having((e, D) => D.count('*') > 5)
         const sql = query.toSql() satisfies string
         // BUG: HAVING condition wrapped in unnecessary parentheses
-        expectSQL(sql, "FROM duckdb_functions() SELECT function_type AS type, count(*) AS count GROUP BY function_type HAVING (count(*) > 5)")
+        expectSQL(sql, "FROM duckdb_functions() SELECT type: function_type, count: count(*) GROUP BY function_type HAVING (count(*) > 5)")
     })
 
     it('should handle distinctOn', () => {
@@ -227,7 +220,7 @@ describe('set operations', () => {
         const query2 = MemoryDB.from('duckdb_types()').select('logical_type')
         const unionQuery = query1.union(query2)
         const sql = unionQuery.toSql({ trim: true }) satisfies string
-        expectSQL(sql, '( FROM duckdb_functions() SELECT function_name ) UNION (FROM duckdb_types() SELECT logical_type)')
+        expectSQL(sql, 'FROM ( FROM duckdb_functions() SELECT function_name ) UNION (FROM duckdb_types() SELECT logical_type)')
     })
 
     it('should handle union all', () => {
@@ -235,7 +228,7 @@ describe('set operations', () => {
         const query2 = MemoryDB.from('duckdb_types()').select('logical_type')
         const unionQuery = query1.unionAll(query2)
         const sql = unionQuery.toSql({ trim: true }) satisfies string
-        expectSQL(sql, '( FROM duckdb_functions() SELECT function_name ) UNION ALL (FROM duckdb_types() SELECT logical_type)')
+        expectSQL(sql, 'FROM ( FROM duckdb_functions() SELECT function_name ) UNION ALL (FROM duckdb_types() SELECT logical_type)')
     })
 
     it('should handle except', () => {
@@ -243,7 +236,7 @@ describe('set operations', () => {
         const query2 = MemoryDB.from('duckdb_types()').select('logical_type')
         const exceptQuery = query1.except(query2)
         const sql = exceptQuery.toSql({ trim: true }) satisfies string
-        expectSQL(sql, '( FROM duckdb_functions() SELECT function_name ) EXCEPT (FROM duckdb_types() SELECT logical_type)')
+        expectSQL(sql, 'FROM ( FROM duckdb_functions() SELECT function_name ) EXCEPT (FROM duckdb_types() SELECT logical_type)')
     })
 
     it('should handle intersect', () => {
@@ -251,7 +244,7 @@ describe('set operations', () => {
         const query2 = MemoryDB.from('duckdb_types()').select('logical_type')
         const intersectQuery = query1.intersect(query2)
         const sql = intersectQuery.toSql({ trim: true }) satisfies string
-        expectSQL(sql, '( FROM duckdb_functions() SELECT function_name ) INTERSECT (FROM duckdb_types() SELECT logical_type)')
+        expectSQL(sql, 'FROM ( FROM duckdb_functions() SELECT function_name ) INTERSECT (FROM duckdb_types() SELECT logical_type)')
     })
 })
 
@@ -278,7 +271,7 @@ describe('context and variables - BUG: Variable resolution issues', () => {
             }))
         // This will throw an error about undefined variable 'vars'
         const sql = query.toSql() satisfies string
-        expectSQL(sql, 'FROM duckdb_functions() SELECT function_name AS name, function_oid BETWEEN 10 AND 100 AS inRange')
+        expectSQL(sql, 'FROM duckdb_functions() SELECT name: function_name, inRange: function_oid BETWEEN 10 AND 100')
     })
 })
 
@@ -354,7 +347,7 @@ describe('advanced features - BUG: Template literal handling', () => {
                 is_long: e.function_name.len() > 10
             }))
         const sql = query.toSql() satisfies string
-        expectSQL(sql, 'FROM duckdb_functions() SELECT function_name.upper() AS name, function_name.len() AS length, function_name.len() > 10 AS is_long')
+        expectSQL(sql, 'FROM duckdb_functions() SELECT name: function_name.upper(), length: function_name.len(), is_long: function_name.len() > 10')
     })
 
     it('should handle template literals in context', () => {
@@ -366,7 +359,7 @@ describe('advanced features - BUG: Template literal handling', () => {
             }))
         const sql = query.toSql() satisfies string
         // BUG: Template literal produces different concatenation than expected
-        expectSQL(sql, "FROM duckdb_functions() SELECT ('test_' || function_name) AS formatted")
+        expectSQL(sql, "FROM duckdb_functions() SELECT formatted: ('test_' || function_name)")
     })
 })
 
@@ -466,7 +459,7 @@ describe('edge cases and potential bugs', () => {
             .select((e, D) => ({ sum: e.function_oid + (1) + (2) }))
         const sql = query.toSql() satisfies string
         // This will FAIL - expecting parentheses around literals like context vars get
-        expectSQL(sql, 'FROM duckdb_functions() SELECT function_oid + 1 + 2 AS sum')
+        expectSQL(sql, 'FROM duckdb_functions() SELECT sum: function_oid + 1 + 2')
     })
 
     it('should FAIL: regexp should use function syntax not method syntax', () => {

@@ -1,7 +1,7 @@
 import { DCondition, DCte, DDatasource, DOrder, DSelectee, DState } from './typedef'
 import { copy } from './copy'
 import { parse } from './parser'
-import { isBucket, wrap, isFile, isFunction } from './utils'
+import { isBucket, wrap, isFile, isFunction, maxBy } from './utils'
 import { highlightSql } from './highlighter'
 
 export const formatSource = ({ catalog = '', uri = '' }) => {
@@ -51,31 +51,32 @@ const serializeOrder = (id: string) => (orders: DOrder[]) => {
 
 const formatAlias = (source: { alias?: string; uri: string }) => {
     if (source.alias) {
+        // return `${formatSource(source)} AS ${source.alias}`
         return `${formatSource(source)} AS ${source.alias}`
     }
     return formatSource(source)
 }
-const formatAs = (source: DSelectee) => {
+const formatAs = (source: DSelectee, maxLen = 100) => {
     if (source.as && typeof source.as === 'string') {
-        return `${source.field.toString().padEnd(20)} AS ${source.as}`
+        return `${(source.as + ':').padEnd(maxLen)} ${source.field.toString()}`
     }
     return source.field
 }
-export const formatOptions = (options?: Record<string, any>): string => {
-    if (!options || Object.keys(options).length === 0) return ''
-    if (typeof options === 'string') return `'${options}'`
+// export const formatOptions = (options?: Record<string, any>): string => {
+//     if (!options || Object.keys(options).length === 0) return ''
+//     if (typeof options === 'string') return `'${options}'`
 
-    const formatValue = (value: any): string => {
-        if (typeof value === 'string') return `'${value}'`
-        if (typeof value !== 'object' || value === null) return String(value)
-        if (Array.isArray(value)) {
-            return `(${value.join(', ')})`
-        }
-        return `{${Object.entries(value).map(([k, v]) => `${k}: ${formatValue(v)}`).join(', ')}}`
-    }
+//     const formatValue = (value: any): string => {
+//         if (typeof value === 'string') return `'${value}'`
+//         if (typeof value !== 'object' || value === null) return String(value)
+//         if (Array.isArray(value)) {
+//             return `(${value.join(', ')})`
+//         }
+//         return `{${Object.entries(value).map(([k, v]) => `${k}: ${formatValue(v)}`).join(', ')}}`
+//     }
 
-    return Object.entries(options).map(([key, value]) => `${key.toUpperCase()} ${formatValue(value)}`).join(',\n')
-}
+//     return Object.entries(options).map(([key, value]) => `${key.toUpperCase()} ${formatValue(value)}`).join(',\n')
+// }
 export const wrapIfNotEmpty = (value: string) => value ? `(${value})` : ''
 const serializeDatasource = (datasources: DDatasource[]) => {
     return datasources.map((d) => {
@@ -99,7 +100,11 @@ const serializeSelected = (selected: DSelectee[]) => {
     if (!selected.length) {
         return '*'
     }
-    return selected.map(e => e.raw || `${formatAs(e)}`).join(', \n        ')
+    if (selected[0].raw) {
+        return selected.map(e => `${e.raw}`).join(',')
+    }
+    const maxLen = Math.max(...selected.map(e => (e.as || e.field)?.length))
+    return selected.map(e => ` \n\t${formatAs(e, maxLen)}`).join(',')
     // return prettifyPrintSQL(selected.map(([v, k]) => !k?.match(/[^\d]/) ? v : `${v} AS ${k}`).join(", ") || "*", pretty);
 }
 const newLine = (e: string) => {
@@ -146,32 +151,28 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
 
     let components = [
         serializeCtes(state.ctes),
-        'FROM',
-        serializeDatasource(state.datasources),
-        CR + ' SELECT',
-        serializeTuple('DISTINCT ON', { forceParent: true })(state.distinctOn),
-        newLine(serializeSelected(state.selected)),
-        CR,
+        'FROM ' + serializeDatasource(state.datasources),
+        'SELECT ' + serializeTuple('DISTINCT ON', { forceParent: true })(state.distinctOn),
+        serializeSelected(state.selected),
         serializeConditions('WHERE')(state.conditions),
-        serializeTuple(' GROUP BY')(state.groupBy),
+        serializeTuple('GROUP BY')(state.groupBy),
         serializeConditions('HAVING')(state.having),
-        CR,
         serializeValue('USING SAMPLE')(state.sample),
         serializeOrder('ORDER BY')(state.orderBy),
         serializeValue('LIMIT')(state.limit),
         serializeValue('OFFSET')(state.offset),
     ].filter(Boolean)
     if (state.setops.length) {
-        components = ['(', ...components, ')'].concat(...serializeSetops(state.setops, state))
+        components = ['FROM (', ...components, ')'].concat(...serializeSetops(state.setops, state))
     }
 
-    const comps = components.join(' ').trim()
+    const comps = components.join('\n').trim()
     if (state.copyTo.length) {
         return copy(comps).to(state.copyTo[0].uri, state.copyTo[0].options).toSql(state)
     }
-    if (state.trim && (!state.minTrim || comps.length < state.minTrim)) {
-        return comps.replace(/(\s|\n)+/g, ' ').trim()
-    }
+    // if (state.trim && (!state.minTrim || comps.length < state.minTrim)) {
+    //     return comps.replace(/(\s|\n)+/g, '$1').trim()
+    // }
     return comps
 }
 

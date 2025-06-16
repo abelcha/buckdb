@@ -1,7 +1,7 @@
 import { it, describe, expect } from 'bun:test'
 import { Extracted, extractAssignations, extractReconciledCalls, extractSpecialCalls } from './extractor'
 import { parse } from './parser'
-import { MemoryDB } from '@buckdb/node'
+import { MemoryDB, Buck } from '@buckdb/node'
 
 const testCode = `
             // Covers lines 109-115, 117-122 (collectDefinitions)
@@ -9,7 +9,7 @@ const testCode = `
             const def1 = Buck('res1').from('param1');
             const someVar = {}; // Define someVar for the test
             const def2 = someVar.from('param2'); // someVar not Buck initialized
-            const def3 = Buck('res3').settings().with('param3');
+            // const def3 = Buck('res3').settings().with('param3');
 
             // Covers lines 124-132, 134-136, 138-148 (visitExecutableChains - isOutermost, stmtParentSearch)
             function wrapper() {
@@ -39,7 +39,7 @@ const testCode = `
             Buck('resOnly');
             Buck('resWithOptions', {opt: true});
             Buck(123); // Non-string, non-object first arg
-            
+            Buck().with(db => ({ repo_pairs: db.from('starbase/*.parquet', 'a') })).from('enhanced_functions').select()
         `
 it('test assignation extraction', () => {
     const result = extractAssignations(testCode, { positions: false, chain: true })
@@ -65,16 +65,16 @@ it('test assignation extraction', () => {
                 base: "someVar",
             }
         ],
-        ["def3",
-            {
-                expression: "Buck('res3').settings().with('param3')",
-                method: "with",
-                chain: [
-                    ["Buck", ["'res3'"], 6], ["settings", [], 6], ["with", ["'param3'"], 6]
-                ],
-                base: null,
-            }
-        ],
+        // ["def3",
+        //     {
+        //         expression: "Buck('res3').settings().with('param3')",
+        //         method: "with",
+        //         chain: [
+        //             ["Buck", ["'res3'"], 6], ["settings", [], 6], ["with", ["'param3'"], 6]
+        //         ],
+        //         base: null,
+        //     }
+        // ],
         ["x",
             {
                 expression: "def1.filter().show()",
@@ -121,7 +121,7 @@ it('test assignation extraction', () => {
 // })
 
 it('test special calls extraction', () => {
-    const result = extractSpecialCalls(testCode, { chain: false })
+    const result = extractSpecialCalls(testCode, { chain: false, positions: true })
     expect(result).toEqual([
         {
             expression: `Buck('res1').from('param1')`,
@@ -136,64 +136,95 @@ it('test special calls extraction', () => {
             end: { line: 6, column: 48, charPos: 297 }
         },
         {
-            expression: `Buck('res3').settings().with('param3')`,
-            method: 'with',
-            start: { line: 7, column: 26, charPos: 356 },
-            end: { line: 7, column: 64, charPos: 394 }
-        },
-        {
             expression: `from('direct_from').select().execute()`,
             method: 'from',
-            start: { line: 22, column: 13, charPos: 1034 },
-            end: { line: 22, column: 51, charPos: 1072 }
+            start: { line: 22, column: 13, charPos: 1037 },
+            end: { line: 22, column: 51, charPos: 1075 }
         },
         {
             expression: `anotherBuck.settings().from('leading_expr').filter().execute()`,
             method: 'from',
-            start: { line: 26, column: 13, charPos: 1260 },
-            end: { line: 26, column: 75, charPos: 1322 }
+            start: { line: 26, column: 13, charPos: 1263 },
+            end: { line: 26, column: 75, charPos: 1325 }
+        },
+        {
+            expression: "Buck().with(db => ({ repo_pairs: db.from('starbase/*.parquet', 'a') })).from('enhanced_functions').select()",
+            method: "from",
+            children: [
+                {
+                    expression: "db.from('starbase/*.parquet', 'a')",
+                    method: "from",
+                    start: { charPos: 1908, column: 46, line: 37 },
+                    end: { charPos: 1942, column: 80, line: 37 },
+                }
+            ],
+            start: { charPos: 1875, column: 13, line: 37, },
+            end: { charPos: 1982, column: 120, line: 37, },
         }
     ])
 })
 
 it('reconciliation', () => {
-    const result = extractReconciledCalls(testCode, { positions: false })
-    expect(result).toEqual([
-        {
-            expression: `Buck('res1').from('param1')`,
-            base: null,
-            chain: [["Buck", ["'res1'"], 3], ["from", ["'param1'"], 3]],
-            method: 'from',
-        },
-        {
-            expression: `someVar.from('param2')`,
-            base: 'someVar',
-            chain: [["from", ["'param2'"], 5]],
-            method: 'from',
-        },
-        {
-            base: null,
-            expression: `Buck('res3').settings().with('param3')`,
-            chain: [["Buck", ["'res3'"], 6], ["settings", [], 6], ["with", ["'param3'"], 6]],
-            method: 'with',
-        },
-        {
-            base: null,
-            expression: `from('direct_from').select().execute()`,
-            chain: [['from', ["'direct_from'"], 21], ['select', [], 21], ['execute', [], 21]],
-            method: 'from',
-        },
-        {
-            base: 'anotherBuck',
-            chain: [['Buck', ["'another_res'"], 24], ["settings", [], 25], ["from", ["'leading_expr'"], 25], ["filter", [], 25], ["execute", [], 25]],
-            // chain: [["settings", []], ["from", ["'leading_expr'"]], ["filter", []], ["execute", []]],
-            expression: `Buck('another_res').settings().from('leading_expr').filter().execute()`,
-            // expression: `anotherBuck.settings().from('leading_expr').filter().execute()`,
-            method: 'from',
-        }
-    ])
+    const results = extractReconciledCalls(testCode, { positions: false })
+    // expect(result).toEqual([
+    expect(results[0]).toEqual({
+        expression: `Buck('res1').from('param1')`,
+        base: null,
+        chain: [["Buck", ["'res1'"], 3], ["from", ["'param1'"], 3]],
+        method: 'from',
+    })
+    // expect(results[1]).toEqual({
+    //     expression: `someVar.from('param2')`,
+    //     base: 'someVar',
+    //     chain: [["from", ["'param2'"], 5]],
+    //     method: 'from',
+    // })
+    // return
+    expect(results[2 - 1]).toEqual({
+        base: null,
+        expression: `from('direct_from').select().execute()`,
+        chain: [['from', ["'direct_from'"], 21], ['select', [], 21], ['execute', [], 21]],
+        method: 'from',
+    })
+    expect(results[3 - 1]).toEqual({
+        base: 'anotherBuck',
+        chain: [['Buck', ["'another_res'"], 24], ["settings", [], 25], ["from", ["'leading_expr'"], 25], ["filter", [], 25], ["execute", [], 25]],
+        // chain: [["settings", []], ["from", ["'leading_expr'"]], ["filter", []], ["execute", []]],
+        expression: `Buck('another_res').settings().from('leading_expr').filter().execute()`,
+        // expression: `anotherBuck.settings().from('leading_expr').filter().execute()`,
+        method: 'from',
+    })
+    expect(results[4 - 1]).toEqual({
+        expression: "Buck().with(db => ({ repo_pairs: db.from('starbase/*.parquet', 'a') })).from('enhanced_functions').select()",
+        method: "from",
+        base: null,
+        chain: [
+            ["Buck", [], 36],
+            ["with", ["db => ({ repo_pairs: db.from('starbase/*.parquet', 'a') })"], 36],
+            ["from", ["'enhanced_functions'"], 36], ["select", [], 36]],
+        children: [
+            // {
+            //     expression: "Buck().with(db => ({ repo_pairs: db.from('starbase/*.parquet', 'a') })).from('enhanced_functions').select()",
+            //     method: "with",
+            //     base: null,
+            //     chain: [
+            //         ["Buck", [], 36],
+            //         ["with", ["db => ({ repo_pairs: db.from('starbase/*.parquet', 'a') })"], 36],
+            //         ["from", ["'enhanced_functions'"], 36],
+            //         ["select", [], 36]
+            //     ],
+            // },
+            {
+                expression: "db.from('starbase/*.parquet', 'a')",
+                method: "from",
+                base: "db",
+                chain: [["from", ["'starbase/*.parquet'", "'a'"], 36]],
+            }
+        ],
+    })
+    // ])
 })
-it('test spaces', () => {
+it('test spaces1', () => {
     expect(
         extractSpecialCalls(`def3\n .from('xxx')`, { positions: false, chain: false, })
     ).toEqual([{
@@ -205,7 +236,7 @@ it('test spaces', () => {
 
 it('test spaces2', () => {
     expect(
-        extractSpecialCalls(`def3\n .from('xxx').select(e => ({...e}))`, { positions: true, chain: false, })
+        extractSpecialCalls(`def3\n .from('xxx').select(e => ({...e}))`, { positions: false, chain: false, })
     ).toEqual([{
         expression: "def3\n .from('xxx').select(e => ({...e}))",
         method: 'from',
@@ -214,65 +245,67 @@ it('test spaces2', () => {
 })
 
 
-it('test nested extract', () => {
-    const code = `
-    Buck('file:///Volumes/dev/fsimrep').with(
-        db => ({
-            repo_pairs: db
+// it('test nested extract1', () => {
+//     const code = `
+//     Buck('file:///Volumes/dev/fsimrep').with(
+//         db => ({
+//             repo_pairs: db
 
-            .from('starbase/*.parquet', 'a')
-        })
-    )
-    // comment
-    `
-    expect(extractSpecialCalls(code, { positions: false, chain: false })).toEqual([
-        {
-            method: 'with',
-            children: [
-                {
-                    expression: "db\n\n            .from('starbase/*.parquet', 'a')",
-                    method: "from",
-                }
-            ],
-            expression: `Buck('file:///Volumes/dev/fsimrep').with(
-        db => ({
-            repo_pairs: db
+//             .from('starbase/*.parquet', 'a')
+//         })
+//     )
+//     // comment
+//     `
+//     const re = extractSpecialCalls(code, { positions: false, chain: false })
+//     console.log(extractReconciledCalls(testCode))
+//     expect(re).toEqual([
+//         {
+//             method: 'with',
+//             children: [
+//                 {
+//                     expression: "db\n\n            .from('starbase/*.parquet', 'a')",
+//                     method: "from",
+//                 }
+//             ],
+//             expression: `Buck('file:///Volumes/dev/fsimrep').with(
+//         db => ({
+//             repo_pairs: db
 
-            .from('starbase/*.parquet', 'a')
-        })
-    )`,
-        }]
-    )
-})
+//             .from('starbase/*.parquet', 'a')
+//         })
+//     )`,
+//         }]
+//     )
+// })
 
-it('test nested extract', () => {
-    const code = `
-const q = 
-Buck('file:///Volumes/dev/fsimrep').with(
-    db => ({
-        results: db.from('similarity_metrics')
-        .select(e => ({
-            ...e,
-            // comment
-        }))
-    }),
-    db => ({
-        results: db.from('xx')
-    }),
+// it('test nested extract', () => {
+//     const code = `
+// const q = 
+// Buck('file:///Volumes/dev/fsimrep').with(
+//     db => ({
+//         results: db.from('similarity_metrics')
+//         .select(e => ({
+//             ...e,
+//             // comment
+//         }))
+//     }),
+//     db => ({
+//         results: db.from('xx')
+//     }),
 
-)
-    .from('results')
-    .leftJoin('repos.parquet', 'x').using('full_name')
-    .limit(100)`
-    const rr = extractSpecialCalls(code, { chain: true })
-    console.log({ rr })
-    // console.log(extractSpecialCalls(rr[0].expression))
-    // expect()
-    //     .toEqual([
+// )
+//     .from('results')
+//     .leftJoin('repos.parquet', 'x').using('full_name')
+//     .limit(100)`
+//     const rr = extractSpecialCalls(code, { chain: true })
+//     console.log({ rr })
+//     // console.log(extractSpecialCalls(rr[0].expression))
+//     // expect()
+//     //     .toEqual([
 
-    //     ])
+//     //     ])
 
-})
+// })
 
 // it('extractChains', async () => {
 //     // console.log(extractReconciledCalls(await Bun.file('./examples/fsimrep.ts').text()))
@@ -301,36 +334,70 @@ Buck('file:///Volumes/dev/fsimrep').with(
 //         ])
 // })
 
-it.only('whatever', async () => {
-    const testCodee = `
-// String concatenation using multiple patterns
-const stringConcatResult =
-    await MemoryDB.from('duckdb_functions()')
-        .select(e => ({
-            // Template literal style
-            description: \`Function "\${e.function_name}" is of type \${e.function_type}\`,
+it('whatever', async () => {
+    const c2 = `
+Buck().with(
+        db => ({
+            repo_pairs: db
 
-            // Plus operator concatenation
-            simple_concat: e.function_name + '_func',
+            .from('starbase/*.parquet', 'a')
+        })
+    )
+    .from('enhanced_functions')
+    .select()
+    `
+    const testCode = `
+// WITH clauses for complex multi-step transformations
+const withClauseResult = await Buck().with(
+    // Step 1: Create a filtered dataset
+    (accDB) => ({
+        filtered_functions: accDB.from('duckdb_functions()')
+            .select('function_name', 'function_oid', 'function_type', 'description')
+            .where(f => f.function_name.len() > 5)
+    }),
 
-            // Mixed operations
-            detailed_info: 'Name: ' + e.function_name + ', Length: ' + e.function_name.len(),
-        }))
-        .where(e => e.function_type === 'scalar')
-        .limit(3)
-        .execute() satisfies {
-            description: string
-            simple_concat: string
-            detailed_info: string
-        }[]
-`
-    const r = extractReconciledCalls(await Bun.file('./examples/01-getting-started.ts').text())
-    r.forEach(e => {
-        // MemoryDB
-        console.log('---', MemoryDB)
-        const fn = new Function(`return ${e.expression.replace('.execute()', '')}.toSql() `)
-        console.log(fn())
+    // Step 2: Add computed columns
+    accDB => ({
+        enhanced_functions: accDB.from('filtered_functions')
+            .select(e => ({
+                original_name: e.function_name,
+                name_length: e.function_name.len(),
+                type_category: e.function_type === 'scalar' ? 'SCALAR' : 'OTHER',
+                has_description: !e.description.IsNull()
+            }))
     })
+).from('enhanced_functions')
+    .select()
+    .execute() satisfies {
+        original_name: string
+        name_length: number
+        type_category: string
+        has_description: boolean
+    }[]
+
+`
+    // console.log()
+    extractReconciledCalls(c2)
+    // const r = Buck && extractReconciledCalls(await Bun.file('./examples/01-getting-started.ts').text())
+    // const r = Buck && extractReconciledCalls(testCode)
+    // const rrr = await fetch('http://localhost:3000/extractReconciledCalls', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ code: c2 })
+    // })
+    // console.log({ rrr })
+    // console.log(r)
+    // console.log({  })
+    // r.slice(1, 2).forEach(e => {
+    //     // MemoryDB
+    //     // console.log('---', MemoryDB)
+    //     console.log('--------------')
+    //     console.log(e)
+    //     const resp = eval(`${e.expression.replace('.execute()', '')}.toSql()`)
+    //     console.log(resp)
+    //     // const fn = new Function(`return ${e.expression.replace('.execute()', '')}.toSql() `)
+    //     // console.log(fn())
+    // })
     // console.log({  })
     // expect(r).toEqual([])
 

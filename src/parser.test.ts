@@ -379,7 +379,7 @@ test('Equal/isnull', () => {
   expect(parse(e => e.Rental.rental_date === null)).toBe("Rental.rental_date IS NULL")
   expect(parse(e => e.function_type == 'table')).toBe("function_type = 'table'")
   expect(parse(e => e.function_type != 'table')).toBe("function_type != 'table'")
-  expect(parse(e => e.function_type !== 'table')).toBe("function_type IS DISTINCT FROM 'table'")
+  expect(parse(e => e.function_type !== 'table')).toBe("function_type is distinct from 'table'")
 })
 test('literral', () => {
   expect(parseObject(e => `_a_${e.comment}_b_`)).toEqual([['', '', "('_a_' || comment || '_b_')"]])

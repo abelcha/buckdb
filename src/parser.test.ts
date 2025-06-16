@@ -481,3 +481,11 @@ test('count filter', () => {
 test.todo('xxx', () => {
   console.log('";;;;;;;;;', jsep(`read_csv(['2025-01/2025-01-04.descs.tsv'])`))
 })
+
+test(('comments'), () => {
+  jsep.Jsep.parse(`MemoryDB.from('duckdb_functions()').select(e => ({
+            /* */
+            detailed_info: 'Name: ',
+        }))
+`)
+})

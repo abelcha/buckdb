@@ -9,4 +9,11 @@
   </head>
   <body>
   </body>
+  <script>
+    window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason?.name === 'Canceled') {
+    event.preventDefault(); // suppress in dev
+  }
+});
+  </script>
 </html>

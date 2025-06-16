@@ -48,6 +48,10 @@ export const keyBy = <T extends object, K extends keyof T>(array: T[], key: K): 
     }, {} as Record<string, T>)
 }
 
+export const maxBy = <T>(array: T[], key: (item: T) => number): T | undefined => {
+    if (array.length === 0) return undefined
+    return array.reduce((max, item) => (key(item) > key(max) ? item : max), array[0])
+}
 
 export const isBucket = e => e?.match(/^(\/\w+|\w+\:\/\/)/) && !e.match(/\.\w+$/)
 

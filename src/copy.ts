@@ -162,7 +162,7 @@ function xcopy(
             return {
                 toSql: (opts?: Record<string, any>) => opts?.trim ? copyStatement.replaceAll(/(\n|\s)+/g, ' ') : copyStatement,
                 execute: async () => {
-                    console.log('Executing COPY statement:', copyStatement)
+                    // console.log('Executing COPY statement:', copyStatement)
                     // Execute the COPY statement
                     // Access the DuckDB connection (assuming the structure)
                     const ddb = (source as any).toState?.().ddb as DuckdbCon

@@ -5,7 +5,7 @@ export type Extracted = {
     base?: string | null,
     expression: string,
     children?: Extracted[],
-    chain?: [string, any[]],
+    chain?: [string, any[], number?][],
     start?: Position,
     end?: Position
 }
@@ -47,12 +47,15 @@ const BuckAssign = {
 
 export const extractReconciledCalls = (testCode: string, opts: Opts = {}) => {
     const result = extractSpecialCalls(testCode, opts)
+    // console.log(result)
     const assignations = extractAssignations(testCode, opts)
+    // console.log({ assignations })
     // console.log(result)
     // return result
     return result.map(e => {
         // console.log('resssssssssssss', e)
-        if ((e.base === null || e.base === 'MemoryDB')) {
+        // console.log('EBVASSSE', e.base)
+        if ((/*e.base === null ||*/ e.base === 'MemoryDB')) {
             return {
                 ...e,
                 expression: 'Buck().' + e.expression.replace(/MemoryDB\s*\./img, ''),
@@ -66,8 +69,11 @@ export const extractReconciledCalls = (testCode: string, opts: Opts = {}) => {
                 chain: assignations[e.base].chain.concat(e.chain)
             }
         }
+        if (e.base && !assignations[e.base]) {
+            return null
+        }
         return e
-    })
+    }).filter(e => e !== null)
 }
 export const reconstituteAssignations = (assignations: [string, string][]) => {
     const assignationMap = new Map<string, string>();
@@ -167,14 +173,18 @@ const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression
 }
 
 
-export const extractSpecialCalls = (text: string, opts = { positions: true, chain: false }) => {
+export const extractSpecialCalls = (text: string, opts: Opts = { positions: true, chain: false }): Extracted[] => {
     const sourceFile = ts.createSourceFile('temp.ts', text, ts.ScriptTarget.Latest, true);
     const specialCalls: Extracted[] = [];
+    const pOmiter = (x: Extracted) => {
+        const { start, end, ...rest } = x;
+        return opts.positions === false ? rest : x
+    }
 
 
     function visit(node: ts.Node) {
         if (ts.isCallExpression(node)) {
-            const items = handleCallExpression(sourceFile, node, opts)
+            const items = handleCallExpression(sourceFile, node, { ...opts, positions: true })
             // console.log('PUSSSSSSG', items)
             for (const item of items) {
                 if (specialCalls.length && isTranscluded(specialCalls[specialCalls.length - 1], item)) {
@@ -190,7 +200,11 @@ export const extractSpecialCalls = (text: string, opts = { positions: true, chai
     }
 
     ts.forEachChild(sourceFile, visit);
-    return specialCalls;
+
+    return specialCalls.map(e => !e.children ? pOmiter(e) : ({
+        ...pOmiter(e),
+        children: e.children.map(pOmiter),
+    }))
 }
 function collectChain(node: ts.Node, chain: [string, any[], number?][] = [], opts: Opts = {}) {
     const pushArgs = (method: string, n: ts.CallExpression) => {

@@ -30,7 +30,7 @@ const OperatorMap = new Map([
   ['==', '='],
   ['!=', '!='],
   ['===', '='],
-  ['!==', 'IS DISTINCT FROM'],
+  ['!==', 'is distinct from'],
   ['??', 'COALESCE'],
   ['+', '+'],
   ['-', '-'],

@@ -1,12 +1,28 @@
 {
-  "name": "xx",
+  "name": "buckdb",
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "devDependencies": {},
+  "@duckdb/node-api": "file:../duckdb-node-neo/api",
+  "devDependencies": {
+    "@types/bun": "^1.2.5"
+  },
+  "scripts": {
+    "typecheck": " tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports"
+  },
   "peerDependencies": {
-    "typescript": "^5",
-    "@buckdb": "file:./buckdb.remote.ts",
-    "io": "file:///workspace/io.ts"
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.29.1-dev132.0",
+    "@duckdb/node-api": "^1.3.0-alpha.21",
+    "@fmt/sql-fmt": "npm:@jsr/fmt__sql-fmt",
+    "apache-arrow": "^19.0.1",
+    "emphasize": "^7.0.0",
+    "es-toolkit": "^1.33.0",
+    "match-iz": "^5.0.1",
+    "type-fest": "^4.38.0",
+    "type-plus": "^7.6.2",
+    "web-worker": "^1.5.0"
   }
 }

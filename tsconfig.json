@@ -29,5 +29,9 @@
             ".buck/*": ["./.buck/*"],
             "@buckdb/isomorphic": ["./node.ts"],
         }
-    }
+    },
+    "exclude": [
+        "**/*.js",
+        "*.js",
+    ]
 }

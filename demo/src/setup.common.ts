@@ -164,7 +164,7 @@ await Promise.all([
     // initCustomThemeRegister(),
     initUserConfiguration(JSON.stringify({
         ...defaultConfiguration,
-        'editor.inlayHints.enabled': 'on', //queryParams.get('inlay')?.length ? 'offUnlessPressed' : 'onUnlessPressed',
+        'editor.inlayHints.enabled': 'off', //queryParams.get('inlay')?.length ? 'offUnlessPressed' : 'onUnlessPressed',
         'editor.inlayHints.maximumLength': queryParams.has('inlay') && !isNaN(inlay) ? inlay : 0,
         'editor.quickSuggestions': {
             'other': true,

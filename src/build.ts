@@ -216,6 +216,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 return this
             },
             with: function (...arr: (() => any)[]) {
+                // @ts-ignore
                 const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query:v }) as DCte)
                 return {
                     from: (table: string, alias?: string) =>

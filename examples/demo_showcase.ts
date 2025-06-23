@@ -41,7 +41,7 @@ try {
     const minParams = 1
 
     await from('duckdb_functions()', 'f')
-        .context({ thresholdOid, excludePattern, allowedSchemas, minParams }) // Pass external variables
+        .context({ thresholdOid: 16000, excludePattern: '%internal%', allowedSchemas: ['main', 'pg_catalog', 'information_schema'], minParams: 1 }) // Pass external variables
         .select(f => ({
             name: f.function_name,
             params: f.parameters,

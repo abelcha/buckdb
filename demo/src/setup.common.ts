@@ -69,13 +69,15 @@ declare interface ImportMeta {
 type GlobImport = Record<string, () => Promise<{ default: string }>>
 
 // Import all source files
+const entries = Object.entries(
+    import.meta.glob('@buckdb/{src/*.ts,.buck/*.{ts,json},*.ts}', { as: 'raw', eager: false })
+)
+
 const sourceFiles = await Promise.all(
-    Object.entries(
-        import.meta.glob('@buckdb/{src/*.ts,.buck/*.{ts,json},*.ts}', { as: 'raw', eager: false })
-    ).map(async ([path, loader]) => {
-        const content = await loader()
+    entries.map(async ([path, loader]) => {
+        const content = await loader() as any
         return {
-            path: path.split('buckdb/')[1],
+            path: path.split('../')[1],
             content: content.default || content
         }
     })

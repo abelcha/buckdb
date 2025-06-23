@@ -205,9 +205,10 @@ export default defineConfig({
         alias: {
             // Map an alias to the external directory
             // '@buckdb': '',
-            '@buckdb/isomorphic': '/me/dev/buckdb/remote.ts',
-            '@buckdb': '/me/dev/buckdb',
+            '@buckdb/isomorphic': path.resolve(__dirname, '../remote.ts'),
+            '@buckdb': path.resolve(__dirname, '../'),
         },
     },
 })
-// console.log('===', path.resolve(__dirname, '@buckdb'))
+console.log('===', path.resolve(__dirname, '../remote.ts'))
+console.log('===', path.resolve(__dirname, '../'))

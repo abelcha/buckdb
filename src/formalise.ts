@@ -22,120 +22,107 @@ export const formatSource = ({ catalog = '', uri = '' }) => {
     return uri
 }
 
-
-const serializeTuple = (id: string, opts: Record<string, any> = {}) => (p: string[]) => {
-    if (!p.length) {
-        return ''
-    }
-    if (p.length === 1 && !opts.forceParent) {
-        return `${id} ${p[0]}`
-    }
-    return `${id} (${p.join(', ')})`
-}
-const serializeValue = (id: string) => (p: any) => p !== null ? `${id} ${p}` : ''
-
-const serializeConditions = (id = 'WHERE') => (conditions: DCondition[]) => {
-    return conditions.map((e, i) => {
-        const prefix = i === 0 ? id : (e.operator || 'AND')
-        return `${prefix} (${e.condition})`
-    }).join(' ')
-}
-const serializeOrder = (id: string) => (orders: DOrder[]) => {
-    if (!orders.length) return ''
-    const m = orders.map((e, i) => {
-        // const prefix = i === 0 ? id : (e.direction)
-        return `${e.field} ${e.direction || ''}`.trim()
-    })
-    return m.length ? `${id} ${m.join(', ')}` : ''
-}
-
-const formatAlias = (source: { alias?: string; uri: string }) => {
-    if (source.alias) {
-        // return `${formatSource(source)} AS ${source.alias}`
-        return `${formatSource(source)} AS ${source.alias}`
-    }
-    return formatSource(source)
-}
-const formatAs = (source: DSelectee, maxLen = 100) => {
-    if (source.as && typeof source.as === 'string') {
-        return `${(source.as + ':').padEnd(maxLen)} ${source.field.toString()}`
-    }
-    return source.field
-}
-// export const formatOptions = (options?: Record<string, any>): string => {
-//     if (!options || Object.keys(options).length === 0) return ''
-//     if (typeof options === 'string') return `'${options}'`
-
-//     const formatValue = (value: any): string => {
-//         if (typeof value === 'string') return `'${value}'`
-//         if (typeof value !== 'object' || value === null) return String(value)
-//         if (Array.isArray(value)) {
-//             return `(${value.join(', ')})`
-//         }
-//         return `{${Object.entries(value).map(([k, v]) => `${k}: ${formatValue(v)}`).join(', ')}}`
-//     }
-
-//     return Object.entries(options).map(([key, value]) => `${key.toUpperCase()} ${formatValue(value)}`).join(',\n')
-// }
-export const wrapIfNotEmpty = (value: string) => value ? `(${value})` : ''
-const serializeDatasource = (datasources: DDatasource[]) => {
-    return datasources.map((d) => {
-        const getJointure = (d: DDatasource): string => {
-            if (d.using && d.join === 'CROSS JOIN') {
-                return ` AS ${d.using}`
-            }
-            if (d.joinOn) return `ON (${d.joinOn})`;
-            if (d.using) return `USING (${d.using})`;
-            return '';
-        };
-        const jointure = getJointure(d);
-        if (d.join) {
-            return `${d.join} ${formatAlias(d)} ${jointure}`.trim();
-        }
-
-        return formatAlias(d);
-    }).join('\n ')
-}
-const serializeSelected = (selected: DSelectee[]) => {
-    if (!selected.length) {
-        return '*'
-    }
-    if (selected[0].raw) {
-        return selected.map(e => `${e.raw}`).join(',')
-    }
-    const maxLen = Math.max(...selected.map(e => (e.as || e.field)?.length))
-    return selected.map(e => ` \n\t${formatAs(e, maxLen)}`).join(',')
-    // return prettifyPrintSQL(selected.map(([v, k]) => !k?.match(/[^\d]/) ? v : `${v} AS ${k}`).join(", ") || "*", pretty);
-}
-const newLine = (e: string) => {
-    const raw = e.replaceAll(/\n/g, '').replaceAll(/\s+/g, ' ').trim()
-    if (raw.length < 30) {
-        return raw
-    }
-    return e
-}
-
-const serializeUpdated = (updated: DSelectee[]) => {
-    return updated.map(e => ` ${e.as} = ${e.raw ? wrap(e.raw, "'") : e.field}`).join(', \n ')
-}
-
-function serializeSetops(setops: { type: string; value: string }[], opts: { trim?: boolean } = {}) {
-    const CR = opts.trim ? '' : '\n'
-    return setops.map(e => `${CR}${e.type}${CR || ' '}(${e.value})`)
-}
-
-function serializeCte(e: DCte) {
-    const q = e.query.toSql({ false: true, minTrim: 50 })
-    return `\n\t${e.name} AS (${q > 50 ? `\n${q}\n` : q})`
-}
-function serializeCtes(ctes: DCte[]) {
-    if (!ctes.length)
-        return ''
-    return `WITH ${ctes.map(serializeCte).join(', ')}\n`
-
-}
 export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
     const CR = state.trim ? '' : '\n'
+    const CRW = state.trim ? ' ' : '\n '
+    const CRT = state.trim ? ' ' : '\n\t'
+
+
+
+
+    const serializeTuple = (id: string, opts: Record<string, any> = {}) => (p: string[]) => {
+        if (!p.length) {
+            return ''
+        }
+        if (p.length === 1 && !opts.forceParent) {
+            return `${id} ${p[0]}`
+        }
+        return `${id} (${p.join(', ')})`
+    }
+    const serializeValue = (id: string) => (p: any) => p !== null ? `${id} ${p}` : ''
+
+    const serializeConditions = (id = 'WHERE') => (conditions: DCondition[]) => {
+        return conditions.map((e, i) => {
+            const prefix = i === 0 ? id : (e.operator || 'AND')
+            return `${prefix} (${e.condition})`
+        }).join(' ')
+    }
+    const serializeOrder = (id: string) => (orders: DOrder[]) => {
+        if (!orders.length) return ''
+        const m = orders.map((e, i) => {
+            // const prefix = i === 0 ? id : (e.direction)
+            return `${e.field} ${e.direction || ''}`.trim()
+        })
+        return m.length ? `${id} ${m.join(', ')}` : ''
+    }
+
+    const formatAlias = (source: { alias?: string; uri: string }) => {
+        if (source.alias) {
+            // return `${formatSource(source)} AS ${source.alias}`
+            return `${formatSource(source)} AS ${source.alias}`
+        }
+        return formatSource(source)
+    }
+    const formatAs = (source: DSelectee, maxLen = 100) => {
+        if (source.as && typeof source.as === 'string') {
+            return `${(source.as + ':').padEnd(maxLen)} ${source.field.toString()}`
+        }
+        return source.field
+    }
+
+    const wrapIfNotEmpty = (value: string) => value ? `(${value})` : ''
+    const serializeDatasource = (datasources: DDatasource[]) => {
+        return datasources.map((d) => {
+            const getJointure = (d: DDatasource): string => {
+                if (d.using && d.join === 'CROSS JOIN') {
+                    return ` AS ${d.using}`
+                }
+                if (d.joinOn) return `ON (${d.joinOn})`;
+                if (d.using) return `USING (${d.using})`;
+                return '';
+            };
+            const jointure = getJointure(d);
+            if (d.join) {
+                return `${d.join} ${formatAlias(d)} ${jointure}`.trim();
+            }
+
+            return formatAlias(d);
+        }).join(CRW)
+    }
+    const serializeSelected = (selected: DSelectee[]) => {
+        // console.log('SERIALIZE SELECTED', selected)
+        if (!selected.length) {
+            return '*'
+        }
+        const maxLen = Math.max(...selected.map(e => (e.as || e.field).toString()?.length))
+        // if (selected[0].raw) {
+        //     const [e, ...rest] = selected
+        //     return [e.raw, ...rest.map(e => `${CRT}${formatAs(e, maxLen)}`)].join(',')
+        // }
+        const m = selected.map(e => e.raw || `${CRT}${formatAs(e, maxLen)}`)
+        // console.log({ m })
+        return m.join(',')
+        // return prettifyPrintSQL(selected.map(([v, k]) => !k?.match(/[^\d]/) ? v : `${v} AS ${k}`).join(", ") || "*", pretty);
+    }
+
+    const serializeUpdated = (updated: DSelectee[]) => {
+        return updated.map(e => ` ${e.as} = ${e.raw ? wrap(e.raw, "'") : e.field}`).join(`,${CRW}`)
+    }
+
+    function serializeSetops(setops: { type: string; value: string }[], opts: { trim?: boolean } = {}) {
+        return setops.map(e => `${CR}${e.type}${CRW}(${e.value})`)
+    }
+
+    function serializeCte(e: DCte) {
+        const q = e.query.toSql({ false: true, minTrim: 50 })
+        return `${CRW}${e.name} AS (${q > 50 ? `${CR}${q}${CR}` : q})`
+    }
+    function serializeCtes(ctes: DCte[]) {
+        if (!ctes.length)
+            return ''
+        return `WITH ${ctes.map(serializeCte).join(', ')}${CR}`
+
+    }
     if (state.action === 'update') {
         // return `UPDATE ${state.table} SET ${serializeUpdates(state.updated)} WHERE ${serializeConditions('WHERE')(state.conditions)}`
         return [
@@ -166,7 +153,7 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         components = ['FROM (', ...components, ')'].concat(...serializeSetops(state.setops, state))
     }
 
-    const comps = components.join('\n').trim()
+    const comps = components.join(CRW).trim()
     if (state.copyTo.length) {
         return copy(comps).to(state.copyTo[0].uri, state.copyTo[0].options).toSql(state)
     }
@@ -176,15 +163,6 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
     return comps
 }
 
-export const dump = (state: DState, opts?: { state?: boolean }) => {
-    console.log(highlightSql(toSql(state)))
-    if (opts?.state) {
-        console.log(state)
-    }
-    return false
-}
-
-export const formalize = (e: string | Function, context = {}) => typeof e === 'function' ? parse(e, context) : e
 
 
 const createSerialize = (table: string, ex: string, opts: Record<string, any> = {}) => {
@@ -217,3 +195,14 @@ export const serializeCreate = (table: string, items: any[], opts: Record<string
         createSerialize(table, "SELECT UNNEST(json_transform(j, getvariable('S'))) FROM " + tempname, opts),
     ].join(';\n')
 }
+
+
+export const dump = (state: DState, opts?: { state?: boolean }) => {
+    console.log(highlightSql(toSql(state)))
+    if (opts?.state) {
+        console.log(state)
+    }
+    return false
+}
+
+export const formalize = (e: string | Function, context = {}) => typeof e === 'function' ? parse(e, context) : e

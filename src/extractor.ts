@@ -5,7 +5,15 @@ export type Extracted = {
     base?: string | null,
     expression: string,
     children?: Extracted[],
-    chain?: [string, any[], number?][],
+    /** Array of tuples representing method calls in the chain */
+    chain: [
+        /** Name of the method being called */
+        methodName: string,
+        /** Array of arguments passed to the method */
+        methodArgs: any[],
+        /** Line number where this method appears in source (optional) */
+        lineNumber?: number
+    ][],
     start?: Position,
     end?: Position
 }
@@ -45,16 +53,10 @@ const BuckAssign = {
 }
 
 
-export const extractReconciledCalls = (testCode: string, opts: Opts = {}) => {
+export const extractReconciledCalls = (testCode: string, opts: Opts = {}): Extracted[] => {
     const result = extractSpecialCalls(testCode, opts)
-    // console.log(result)
     const assignations = extractAssignations(testCode, opts)
-    // console.log({ assignations })
-    // console.log(result)
-    // return result
     return result.map(e => {
-        // console.log('resssssssssssss', e)
-        // console.log('EBVASSSE', e.base)
         if ((/*e.base === null ||*/ e.base === 'MemoryDB')) {
             return {
                 ...e,
@@ -116,7 +118,7 @@ function isTranscluded(parentPos: Extracted, childPos: Extracted) {
     return parentPos.start.charPos <= childPos.start.charPos && parentPos.end.charPos >= childPos.end.charPos
 }
 
-const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression, opts: any) => {
+const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression, opts: any): Extracted[] => {
     const expressionText = node.expression.getText(sourceFile);
     const targetMethods = opts.targetMethods || ['from', 'create'];
     let method: string | null = null;
@@ -136,22 +138,11 @@ const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression
             while (currentNode.parent && (ts.isPropertyAccessExpression(currentNode.parent) || ts.isCallExpression(currentNode.parent))) {
                 currentNode = currentNode.parent;
             }
-            // const resourceText = node.expression.expression.getText(sourceFile);
-            // const leadingSpaces = ((currentNode as ts.PropertyAccessChain).expression).getChildAt(1).getLeadingTriviaWidth()
-            // console.log({leadingSpaces})
-            // const chain: { method: string, params: any[] }[] = [];
-            // console.log('--------', collectChain(node))
-            // ts.forEachChild(currentNode.expression, (child) => {
-            //     console.log('FEEEEE', [child.getText()])
-            // })
-            // console.log('====>>>=', [(currentNode as ts.PropertyAccessChain).expression.getChildAt(1).getText()])
-            // console.log('====>>>=', nb(currentNode.getChildAt(0).getChildAt(0).getChildAt(0).getChildAt(1)))
-            // console.log('==>', method, [node.   expression.getChildren().map(c => c.getText())])
             const chainProps = opts.chain !== false ? collectChain(currentNode) : {}
             fullExpression = currentNode.getText(sourceFile)//.substring(resourceText.length + 1 + leadingSpaces)
             const positions = opts.positions === false ? {} :
                 { start: getPosition(sourceFile, node, true), end: getPosition(sourceFile, currentNode, false) }
-            return [{ expression: fullExpression, method, ...positions, ...chainProps }]
+            return [{ expression: fullExpression, method, ...positions, ...chainProps }] as Extracted[]
         }
     } else if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && isOK(expressionText)) {
         method = expressionText;
@@ -167,7 +158,7 @@ const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression
         fullExpression = currentNode.getText(sourceFile);
         const positions = opts.positions === false ? {} :
             { start: getPosition(sourceFile, node, true), end: getPosition(sourceFile, currentNode, false) }
-        return [{ expression: fullExpression, ...positions, method, ...chains }]
+        return [{ expression: fullExpression, ...positions, method, ...chains }] as Extracted[]
     }
     return []
 }
@@ -240,9 +231,9 @@ export const extractChains = (text: string) => {
         if (ts.isCallExpression(node)) {
             if (!node.parent || !ts.isPropertyAccessExpression(node.parent) || !ts.isCallExpression(node.parent.parent)) {
                 // This is the outermost call in the chain
-                const chain: { method: string, params: any[] }[] = [];
+                // const chain: Extracted['chain'] = [];
                 return collectChain(node);
-                chains.push(...chain);
+                // chains.push(...chain);
             }
         }
         ts.forEachChild(node, visit);
@@ -250,4 +241,20 @@ export const extractChains = (text: string) => {
 
     ts.forEachChild(sourceFile, visit);
     return chains;
+}
+
+export function cleanEval(s: string, logErrors = false) {
+    try {
+        return new Function(`return ${s}`)()
+    } catch (err) {
+        if (logErrors)
+            console.warn('cleanEval error', err)
+        return ''
+    }
+}
+
+
+export function evalChain(chain: Extracted['chain'], logErrors = false) {
+    const s = chain.map(([method, params]) => `${method}(${params.join(',')})`).join('.')
+    return cleanEval(s, logErrors)
 }

@@ -314,18 +314,11 @@ export const PolyfillStringMapping = {
   'trimStart': 'ltrim',
 }
 export const PolyfillArrayMapping = {
+  'map': `list_transform`,
+  'reduce': `list_reduce`,
+  'join': `array_to_string`,
+  'filter': `list_filter`,
 }
-
-export const UnmethodMapping = {
-  'map': e => `list_transform(${e})`,
-  'reduce': e => `array_reduce(${e})`,
-  'join': e => `array_to_string(${e})`,
-  'filter': e => `list_filter(${e})`,
-  'charCodeAt': e => `array_extract(${e}).ascii()`,
-  'codePointAt': e => `array_extract(${e}).ord()`,
-} as Record<string, (body: any) => string>
-
-
 
 
 export const PolyfillMapping = Object.assign(PolyfillNumberMapping, PolyfillStringMapping, PolyfillArrayMapping)
@@ -372,3 +365,14 @@ export const dstate = {
 }
 
 export type DState = typeof dstate
+
+export const triggerMethods = ['exec', 'execute', 'show', 'describe']
+export const RessourceOps = ['from', 'leftJoin', 'join', 'rightJoin', 'naturalJoin', 'innerJoin']
+export const InstanceOps = ['Buck', 'settings', 'loadExtensions']
+
+const compressExtensions = ['.gz', '.zst', '.brotli', '.lz4', '.lzma', '.zlib', '']
+const fileExtensions = ['parquet', 'csv', 'json', 'orc', 'avro', 'tsv', 'json', 'ndjson', 'jsonl']
+const dbExtension = ['sqlite', 'sqlite3', 'duckdb', 'ddb', 'db']
+
+export const ReadableFileRegexp = new RegExp(`\\.(${[...fileExtensions, ...dbExtension].join('|')})(${compressExtensions.join('|')})$`)
+export const DirectoryRegexp = /^[^\.]+$/

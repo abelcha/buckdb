@@ -608,11 +608,11 @@ describe('UPDATE operations', () => {
 
 it('wildcard', async () => {
     // Create test table
-    expect(MemoryDB.from('similarity_metrics').select((e, D) => ({ ...e })).toSql({ trim: true }))
-        .toEqual("FROM similarity_metrics SELECT  *")
+    expect(MemoryDB.from('duckdb_types()').select((e, D) => ({ ...e })).toSql({ trim: true }))
+        .toEqual("FROM duckdb_types() SELECT  *")
     expect(
-        MemoryDB.from('similarity_metrics').select((e, D) => ({ ...e, full_name: e.repo_b })).toSql({ trim: true })
-    ).toEqual("FROM similarity_metrics SELECT  *, full_name: repo_b")
+        MemoryDB.from('duckdb_types()').select((e, D) => ({ ...e, full_name: e.database_name })).toSql({ trim: true })
+    ).toEqual("FROM duckdb_types() SELECT  *, full_name: database_name")
 
 })
 

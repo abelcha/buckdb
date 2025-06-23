@@ -1,7 +1,5 @@
-import { it, describe, expect } from 'bun:test'
-import { Extracted, extractAssignations, extractReconciledCalls, extractSpecialCalls } from './extractor'
-import { parse } from './parser'
-import { MemoryDB, Buck } from '@buckdb/node'
+import { it, expect } from 'bun:test'
+import { extractAssignations, Extracted, extractReconciledCalls, extractSpecialCalls } from './extractor'
 
 const testCode = `
             // Covers lines 109-115, 117-122 (collectDefinitions)
@@ -122,7 +120,7 @@ it('test assignation extraction', () => {
 
 it('test special calls extraction', () => {
     const result = extractSpecialCalls(testCode, { chain: false, positions: true })
-    expect(result).toEqual([
+    expect(result as any).toEqual([
         {
             expression: `Buck('res1').from('param1')`,
             method: 'from',
@@ -226,7 +224,7 @@ it('reconciliation', () => {
 })
 it('test spaces1', () => {
     expect(
-        extractSpecialCalls(`def3\n .from('xxx')`, { positions: false, chain: false, })
+        extractSpecialCalls(`def3\n .from('xxx')`, { positions: false, chain: false, }) as any
     ).toEqual([{
         expression: "def3\n .from('xxx')",
         method: 'from',
@@ -236,7 +234,7 @@ it('test spaces1', () => {
 
 it('test spaces2', () => {
     expect(
-        extractSpecialCalls(`def3\n .from('xxx').select(e => ({...e}))`, { positions: false, chain: false, })
+        extractSpecialCalls(`def3\n .from('xxx').select(e => ({...e}))`, { positions: false, chain: false, }) as any
     ).toEqual([{
         expression: "def3\n .from('xxx').select(e => ({...e}))",
         method: 'from',

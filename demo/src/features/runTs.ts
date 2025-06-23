@@ -3,10 +3,11 @@ import { Parts } from '@codingame/monaco-vscode-views-service-override'
 import type * as vscode from '@codingame/monaco-vscode-extension-api' // Use type import for vscode API
 import { evalChain, extractReconciledCalls } from '@buckdb/src/extractor'
 import { triggerMethods } from '@buckdb/src/typedef'
+import type { TextDocument } from 'vscode'
 
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-const getPart = (document: vscode.TextDocument, targetLine: number) => {
+const getPart = (document: TextDocument, targetLine: number) => {
     const extractedParts = extractReconciledCalls(document.getText())
     let i = 0;
     for (const e of extractedParts) {

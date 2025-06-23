@@ -5,7 +5,8 @@ import type * as vsCodeApi from '@codingame/monaco-vscode-extension-api'
 import { runActiveTypeScriptFile } from './features/runTs'
 import { openTransformedViewAndSync, scrollSyncMap, transformedScheme } from './sync-view'
 import './imports.ts'
-import { Disposable, EventEmitter, OutputChannel, TextDocumentContentProvider, TextEditor, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api' // Added imports, TextDocument, CodeLensProvider
+import { Disposable, EventEmitter, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api' // Added imports, TextDocument, CodeLensProvider
+import type { OutputChannel, TextDocumentContentProvider, TextEditor } from 'vscode'
 import { pathCompletionProvider } from './completion-provider.ts'
 import { extractSpecialCalls } from '@buckdb/src/extractor'
 import { SqlCodeLensProvider } from './features/sqlCodeLensProvider' // Import the new CodeLensProvider

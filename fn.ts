@@ -271,7 +271,6 @@ export const julian = FN.julian
 export const last_day = FN.last_day
 export const lcase = FN.lcase
 export const lcm = FN.lcm
-export const least = FN.least
 export const least_common_multiple = FN.least_common_multiple
 export const left = FN.left
 export const left_grapheme = FN.left_grapheme

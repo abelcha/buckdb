@@ -603,6 +603,17 @@ describe('UPDATE operations', () => {
         const result = await (MemoryDB as any).from('test_global').select().execute()
         expect(result.every((row: any) => row.flag === true)).toBe(true)
     })
+
+})
+
+it('wildcard', async () => {
+    // Create test table
+    expect(MemoryDB.from('similarity_metrics').select((e, D) => ({ ...e })).toSql({ trim: true }))
+        .toEqual("FROM similarity_metrics SELECT  *")
+    expect(
+        MemoryDB.from('similarity_metrics').select((e, D) => ({ ...e, full_name: e.repo_b })).toSql({ trim: true })
+    ).toEqual("FROM similarity_metrics SELECT  *, full_name: repo_b")
+
 })
 
 /*

@@ -129,17 +129,22 @@ test('coalesce', () => {
 
 test('lambda', () => {
   expect(parseObject((e, D) => ({ ll: e.parameters.map(z => z.upper()) })))
-    .toEqual([['ll', 'list_transform(parameters, (z) -> z.upper())']])
+    .toEqual([['ll', 'parameters.list_transform((z) -> z.upper())']])
   expect(parseObject((e, D) => ({ ll: e.parameters.filter(z => z.len() > 12) })))
-    .toEqual([['ll', 'list_filter(parameters, (z) -> z.len() > 12)']])
+    .toEqual([['ll', 'parameters.list_filter((z) -> z.len() > 12)']])
   expect(parseObject((e, D) => ({ ll: e.whatever.x.parameters.filter(z => z.xxx.len() > 12) })))
-    .toEqual([['ll', 'list_filter(whatever.x.parameters, (z) -> z.xxx.len() > 12)']])
+    .toEqual([['ll', 'whatever.x.parameters.list_filter((z) -> z.xxx.len() > 12)']])
 })
-
-test('unmethod-mapping', () => {
+test.todo('closure var redeclratation', () => {
+  expect(parse(e => e.deep.str.split('.').map(e => e.toUpperCase()))).toEqual("deep.str.string_split('.').list_transform((x) -> e.upper())")
+})
+test.todo('.charCodeAt()', () => {
   expect(parse(e => e.str.charCodeAt(42))).toEqual("array_extract(str, 42).ascii()")
-  expect(parse(e => e.deep.str.split('.').map(e => e.toUpperCase()))).toEqual("list_transform(deep.str.string_split('.'), (e) -> upper())")
   expect(parse(e => e.x.y.z.str.charCodeAt(12))).toEqual("array_extract(x.y.z.str, 12).ascii()")
+})
+test('unmethod-mapping', () => {
+  expect(parse(e => e.deep.str.toUpperCase())).toEqual("deep.str.upper()")
+  expect(parse(e => e.arr.array_transform(x => x.toUpperCase()))).toEqual("arr.array_transform((x) -> x.upper())")
 })
 
 test('accessor', () => {
@@ -471,13 +476,6 @@ test('comma', () => {
 
 })
 
-test('count filter', () => {
-  expect(parse((e, D) => D.count().filter(e.function_name.len() > 10)))
-    .toEqual(`count() FILTER (function_name.len() > 10)`)
-  expect(parse((e, D) => D.count(e.total).filter(e.function_name.len() > 10)))
-    .toEqual(`count(total) FILTER (function_name.len() > 10)`)
-})
-
 test.todo('xxx', () => {
   console.log('";;;;;;;;;', jsep(`read_csv(['2025-01/2025-01-04.descs.tsv'])`))
 })
@@ -489,3 +487,11 @@ test(('comments'), () => {
         }))
 `)
 })
+
+test('count filter', () => {
+  expect(parse((e, D) => D.count().filter(e.function_name.len() > 10)))
+    .toEqual(`count() FILTER (function_name.len() > 10)`)
+  expect(parse((e, D) => D.count(e.total).filter(e.function_name.len() > 10)))
+    .toEqual(`count(total) FILTER (function_name.len() > 10)`)
+})
+

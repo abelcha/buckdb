@@ -1,6 +1,6 @@
 import { DMetaField } from '.buck/types'
 import jsep, { ArrayExpression, ArrowFunctionExpression, BinaryExpression, CallExpression, ConditionalExpression, Expression, Identifier, Literal, MemberExpression, ObjectExpression, Property, SequenceExpression, SpreadElement, TemplateElement, TemplateLiteral, UnaryExpression } from './jsep'
-import { AggregateFunctions, LitteralTypesMap, PatternMatchers, PolyfillMapping, UnmethodMapping } from './typedef'
+import { AggregateFunctions, LitteralTypesMap, PatternMatchers, PolyfillMapping } from './typedef'
 import { wrap, Σ } from './utils'
 
 const RegexpFuncsWthOptions = new Map([
@@ -245,7 +245,15 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         return node.raw
       },
       CallExpression(node: CallExpression) {
+
         if (node.callee.type === 'MemberExpression' && node.callee.property.type === 'Identifier' && PolyfillMapping[node.callee.property.name]) {
+          if (node.callee.property.name === 'filter') {
+            const calleeArr = transformNode(node.callee, { isFuncArg: true })
+            if (AggregateFunctions.find(e => calleeArr[0].startsWith(e))) {
+              const gargs = node.arguments.map(transformNode)
+              return `${calleeArr.slice(0, -1)} FILTER (${gargs.join(', ')})`
+            }
+          }
           node.callee.property.name = PolyfillMapping[node.callee.property.name]
         }
         const calleeArr = transformNode(node.callee, { isFuncArg: true })
@@ -273,17 +281,6 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         const firstValue = (node.arguments[0] as Literal)?.value
         const secValue = (node.arguments[1] as Literal)?.value
 
-        if (UnmethodMapping[lastCallee]) {
-
-          const gargs = node.arguments.map(transformNode)
-          if (lastCallee === 'filter' && AggregateFunctions.find(e => calleeArr[0].startsWith(e))) {
-            return `${calleeArr.slice(0, -1)} FILTER (${gargs.join(', ')})`
-          }
-          if (node.arguments?.[0]?.type === 'ArrowFunctionExpression') {
-            return UnmethodMapping[lastCallee](`${calleeArr.slice(0, -1).join('.')}, ${gargs.join(', ')}`);
-          }
-          return UnmethodMapping[lastCallee](`${calleeArr.slice(0, -1).join('.')}, ${gargs.join(', ')}`)
-        }
         if (PatternMatchers[lastCallee]) {
           const { keyword, joinWith } = PatternMatchers[lastCallee]
           if (node.callee.type === 'MemberExpression' && node.callee.object?.type === 'Identifier' && params.has(node.callee.object.name)) {

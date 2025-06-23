@@ -1,12 +1,10 @@
 import { Buck } from '@buckdb/isomorphic'
 import { from } from '@buckdb/isomorphic'
 
-const SP = Buck('file:///me/dev/buckdb/data/spatial_lite.db', {
-    access_mode: 'READ_ONLY'
-})
-    .loadExtensions('spatial')
+const SP = Buck('file:///me/dev/buckdb/data/spatial_lite.db', { access_mode: 'READ_ONLY' }).loadExtensions('spatial')
 
-SP.from('Center').select('center')
+SP.from('Center')
+    .select('center').select()
 
 // await SP.create('Center', { ifNotExists: true })
 //     .as([

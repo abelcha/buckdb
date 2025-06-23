@@ -1,5 +1,40 @@
 import { Buck, from, MemoryDB, read_parquet } from '@buckdb/isomorphic'
 
+await MemoryDB.from('duckdb_functions()')
+    .select((e, D) => [D.count(),D.min(e.function_name),D.avg(e.function_name.len())])
+    
+    .groupBy('function_type')
+
+    .execute() satisfies Record<string, {
+        function_count: number
+        shortest_name: string
+        avg_name_length: number
+    }[]>
+
+
+
+
+    
+
+
+
+// await MemoryDB
+
+
+
+
+// .from('duckdb_functions()')
+//     .select((e, D) => ({
+//         function_count: D.count(),
+//         shortest_name: D.min(e.function_name),
+//         avg_name_length: D.avg(e.function_name.len()),
+//     }))
+//     .groupBy('function_type')
+//     .execute() satisfies Record<string, {
+//         function_count: number
+//         shortest_name: string
+//         avg_name_length: number
+//     }[]>
 
 
 
@@ -11,16 +46,18 @@ import { Buck, from, MemoryDB, read_parquet } from '@buckdb/isomorphic'
 
 
 
-const q =
-    from('duckdb_functions()').select((e, D) => ({
-        function_name: e.function_oid,
-        xx: e.function_oid + 12,
-    }))
-        // .keyBy(e => e.database_name)
-        // .groupBy('function_name')
-        // .groupBy(e => e.has_side_effects.Ilike('%whatever%'))
+
+
+// const q =
+//     from('duckdb_functions()').select((e, D) => ({
+//         function_name: e.function_oid,
+//         xx: e.function_oid + 12,
+//     }))
+//         // .keyBy(e => e.database_name)
+//         // .groupBy('function_name')
+//         // .groupBy(e => e.has_side_effects.Ilike('%whatever%'))
        
-const resp = await q.execute()
+// const resp = await q.execute()
 
 // //### 123 test abel
 

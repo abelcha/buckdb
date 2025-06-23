@@ -13,13 +13,13 @@ const basicResult = await MemoryDB.from('duckdb_functions()')
         function_name: e.function_name,
         function_type: e.function_type,
     }))
-    .limit(5)
     .execute() satisfies {
         function_name: string
         function_type: string
     }[]
 
 console.log('Basic query:', basicResult)
+
 
 // ================================
 // 🎪 WHERE CLAUSES - Boolean operations used correctly
@@ -39,22 +39,17 @@ const whereClausesResult = await MemoryDB.from('duckdb_functions()')
         name_length: number
     }[]
 
-console.log('WHERE with Like and Between:', whereClausesResult)
+// console.log('WHERE with Like and Between:', whereClausesResult)
 
-// Using IsNull in WHERE clause
+// Using array values
 const notNullResult = await MemoryDB.from('duckdb_functions()')
-    .select(e => ({
-        function_name: e.function_name,
-        function_type: e.function_type,
-    }))
+    .select(e => [e.function_name, e.function_type, e.function_name.len()])
     .where(e => !e.description.IsNull())
     .limit(5)
-    .execute() satisfies {
-        function_name: string
-        function_type: string
-    }[]
+    .execute() satisfies [string, string, number][]
 
 console.log('Functions with descriptions:', notNullResult)
+
 
 // String WHERE clause
 const stringWhereResult = await MemoryDB.from('duckdb_functions()')
@@ -101,8 +96,7 @@ console.log('String operations:', stringOpsResult)
 // ================================
 
 // GroupBy returns Record<string, Array> - very powerful!
-const groupedResult = await MemoryDB
-    .from('duckdb_functions()')
+const groupedResult = await MemoryDB.from('duckdb_functions()')
     .select((e, D) => ({
         function_count: D.count(),
         shortest_name: D.min(e.function_name),
@@ -192,8 +186,8 @@ const conditionalResult = await MemoryDB.from('duckdb_functions()')
     .select(e => ({
         function_name: e.function_name,
         category: e.function_type === 'scalar' ? 'SCALAR_FUNC' : 'OTHER_FUNC',
-        size_category: e.function_name.len() > 10 ? 'LONG' : 
-                     e.function_name.len() > 5 ? 'MEDIUM' : 'SHORT',
+        size_category: e.function_name.len() > 10 ? 'LONG' :
+            e.function_name.len() > 5 ? 'MEDIUM' : 'SHORT',
         mixed_result: e.function_name === 'sum' ? 42 : e.function_name,
     }))
     .limit(5)
@@ -243,16 +237,12 @@ console.log('Nested structure:', nestedResult)
 // 🔗 PATTERN MATCHING - WHERE clause patterns
 // ================================
 
-// Pattern matching with Like, Between, IsNull used correctly in WHERE
+// xxzPattern matching with Like, Between, IsNull used correctly in WHERE
 const patternResult = await MemoryDB.from('duckdb_functions()')
-    .select(e => ({
-        function_name: e.function_name,
-        name_length: e.function_name.len(),
-        function_type: e.function_type,
-    }))
-    .where(e => 
-        e.function_name.Like('%str%') && 
-        e.function_name.len().Between(3, 12) && 
+    .select()
+    .where(e =>
+        e.function_name.Like('%str%') &&
+        e.function_name.len().Between(3, 12) &&
         !e.description.IsNull()
     )
     .execute() satisfies {
@@ -268,24 +258,25 @@ console.log('Pattern matching in WHERE:', patternResult)
 // ================================
 
 // String concatenation using multiple patterns
-const stringConcatResult = await MemoryDB.from('duckdb_functions()')
-    .select(e => ({
-        // Template literal style
-        description: `Function "${e.function_name}" is of type ${e.function_type}`,
-        
-        // Plus operator concatenation
-        simple_concat: e.function_name + '_func',
-        
-        // Mixed operations
-        detailed_info: 'Name: ' + e.function_name + ', Length: ' + e.function_name.len(),
-    }))
-    .where(e => e.function_type === 'scalar')
-    .limit(3)
-    .execute() satisfies {
-        description: string
-        simple_concat: string
-        detailed_info: string
-    }[]
+const stringConcatResult =
+    await MemoryDB.from('duckdb_functions()')
+        .select(e => ({
+            // Template literal style
+            description: `Function "${e.function_name}" is of type ${e.function_type}`,
+
+            // Plus operator concatenation
+            simple_concat: e.function_name + '_func',
+
+            // Mixed operations
+            detailed_info: 'Name: ' + e.function_name + ', Length: ' + e.function_name.len(),
+        }))
+        .where(e => e.function_type === 'scalar')
+        .limit(3)
+        .execute() satisfies {
+            description: string
+            simple_concat: string
+            detailed_info: string
+        }[]
 
 console.log('String concatenation:', stringConcatResult)
 
@@ -324,7 +315,7 @@ Object.entries(advancedAggResult).forEach(([type, data]) => {
 
 // Cross join to demonstrate multi-table operations
 const joinResult = await MemoryDB.from('duckdb_functions()')
-    .join('duckdb_types()', 'types').on((a, b) => true) // Cross join
+    .leftJoin('duckdb_types()', 'types').on((a, b) => true)
     .select(e => ({
         function_name: e.duckdb_functions.function_name,
         type_name: e.types.logical_type,

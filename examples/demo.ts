@@ -1,4 +1,16 @@
 import { Buck, from } from '@buckdb/isomorphic'
+from('Fsq_os_places_eu', 'f')
+    .select(({ f, base_location }, D) => ({
+        location: D.ST_Point(f.longitude, f.latitude),
+        _latitude: f.latitude,
+        distance_meters: D.round(
+            D.ST_Distance_Spheroid(
+                D.ST_Point(f.longitude, f.latitude),
+                base_location.center
+            ),
+            2
+        )
+    }))
 
 
 

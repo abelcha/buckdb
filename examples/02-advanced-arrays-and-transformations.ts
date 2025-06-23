@@ -2,29 +2,29 @@
 // Real working examples based on actual BuckDB capabilities
 
 import { Buck, MemoryDB } from '@buckdb/isomorphic'
+import { duckdb_functions } from '@buckdb/tf'
 
 // ================================
 // 🎯 ARRAY OPERATIONS - JavaScript patterns that work!
 // ================================
 
 // Array methods and transformations using working BuckDB syntax
-const arrayOperationsResult = await MemoryDB.from('duckdb_functions()')
+const arrayOperationsResult = await MemoryDB.from(duckdb_functions())
     .select((e, D) => ({
         function_name: e.function_name,
 
-        // 🔥 String split into arrays - real BuckDB syntax!
-        name_parts: e.function_name.str_split('_'),
-
-        // 🔥 Array transformations using D.array_transform
-        uppercase_parts: D.array_transform(e.function_name.str_split('_'), part => part.upper()),
-
+        
         // 🔥 Array filtering using array_filter
-        filtered_parts: e.function_name.str_split('_').array_filter(part => part.len() > 3),
+        filtered_parts: e.function_name
+            .str_split('_')
+            .array_filter(part => part.len() > 3),
 
-        // 🔥 Complex array operations with map and filter chaining
-        processed_name: e.function_name.str_split('_')
-            .map(part => part.upper())
-            .filter(part => part.len() > 2),
+
+        // 🔥 template literals + Conditional
+        summary:
+            e.function_type === 'scalar'
+                ? `⚡ XSCALAR: ${e.function_name} (${e.function_name.len()})`
+                : `OTHER: 📊 ${e.function_type.upper()}: ${e.function_name}`,
 
         // 🔥 Array creation and manipulation
         sample_array: D.Array(['prefix', 'main', 'suffix'])
@@ -33,7 +33,7 @@ const arrayOperationsResult = await MemoryDB.from('duckdb_functions()')
         // 🔥 Array contains checks
         has_underscore: e.function_name.str_split('').array_contains('_'),
     }))
-    .where(e => e.function_name.Like('%_%'))  // Only functions with underscores
+    .where(e => e.function_name.SimilarTo(/^[a-z_]+$/i))  // Only functions with underscores
     .limit(5)
     .execute() satisfies {
         function_name: string
@@ -105,6 +105,12 @@ const unionResult = await MemoryDB.from('duckdb_functions()')
 
 console.log('Union result:', unionResult)
 
+
+
+
+
+
+
 // Except operations - find differences between datasets
 const exceptResult = await MemoryDB.from('duckdb_functions()')
     .select(f => ({ name: f.function_name }))
@@ -120,6 +126,11 @@ const exceptResult = await MemoryDB.from('duckdb_functions()')
     }[]
 
 console.log('Except result:', exceptResult)
+
+
+
+
+
 
 // ================================
 // 🎭 COMPLEX CONDITIONAL EXPRESSIONS - Advanced type inference
@@ -221,8 +232,7 @@ const arrayTransformationsResult = await MemoryDB.from('duckdb_functions()')
         function_name: e.function_name,
 
         // 🔥 Array transformations with D.array_transform
-        char_analysis: D.array_transform(
-            e.function_name.str_split(''),
+        char_analysis: D.array_transform(e.function_name.str_split(''),
             char => ({
                 character: char,
                 is_vowel: D.Array(['a', 'e', 'i', 'o', 'u']).array_contains(char.lower()),
@@ -299,7 +309,7 @@ const mixedResultsArray = await MemoryDB.from('duckdb_functions()')
     .execute() satisfies (number | string)[]
 
 const mixedResultsTuple = await MemoryDB.from('duckdb_functions()')
-    .select(e => [e.function_name, e.function_name.len()] as const)
+    .select(e => [e.function_name, e.function_name.len()])
     .limit(3)
     .execute() satisfies [string, number][]
 

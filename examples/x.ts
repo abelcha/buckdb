@@ -1,19 +1,26 @@
 import { Buck, from, MemoryDB } from "@buckdb/isomorphic";
 import { read_parquet } from '@buckdb/io'
+import { extractReconciledCalls } from "@buckdb/src/extractor";
+
+const parts = extractReconciledCalls(`
+from('geo/cities.parquet').select(e => e.label_en).describe("geo/cities.parquet")
+`)
+// const resp =  extractReconciledCalls(code)
+// const resp = await Buck('s3://a1738/files').
+console.log({parts})
+
+// const db = 
+// Buck('s3://a1738/sakila.duckdb')
 
 
-const db = 
-Buck('s3://a1738/sakila.duckdb')
+// const resp = 
+// await db.from(read_parquet('s3://a1738/files/macif.parquet')).show()
 
 
-const resp = 
-await db.from(read_parquet('s3://a1738/files/macif.parquet')).show()
-
-
-db.from('Actor')
-.join('Film_actor').using('actor_id')
-.join('Film_category').on(e => e.Actor.actor_id === e.Film_actor.actor_id)
-.select('category_id', 'Actor.first_name')
+// db.from('Actor')
+// .join('Film_actor').using('actor_id')
+// .join('Film_category').on(e => e.Actor.actor_id === e.Film_actor.actor_id)
+// .select('category_id', 'Actor.first_name')
 
 
 // from('s3://us-prd-motherduck-open-datasets/misc/csv/popular_currency_rate_dollar.csv')

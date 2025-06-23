@@ -14,6 +14,9 @@ export default defineConfig({
     build: {
         target: 'esnext',
         assetsInlineLimit: 0,
+        rollupOptions: {
+            external: ['typescript'],
+        },
     },
     worker: {
         format: 'es',

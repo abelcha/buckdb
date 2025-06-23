@@ -7,3 +7,6 @@ src/.buck
 data
 demo/dist
 repomix-output.xml.txt
+stuffs
+docs/
+demo/dist

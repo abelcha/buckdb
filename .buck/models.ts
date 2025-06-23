@@ -544,4 +544,127 @@ export interface Models {
             ["help_url"]: t.DVarcharField;
         };
     };
+    ["s3://a1738/akira09.db"]: {
+        ["Actor"]: {
+            ["actor_id"]: t.DNumericField;
+            ["first_name"]: t.DVarcharField;
+            ["last_name"]: t.DVarcharField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Address"]: {
+            ["address_id"]: t.DNumericField;
+            ["address"]: t.DVarcharField;
+            ["address2"]: t.DVarcharField;
+            ["district"]: t.DVarcharField;
+            ["city_id"]: t.DNumericField;
+            ["postal_code"]: t.DVarcharField;
+            ["phone"]: t.DVarcharField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Category"]: {
+            ["category_id"]: t.DNumericField;
+            ["name"]: t.DVarcharField;
+            ["last_update"]: t.DDateField;
+        };
+        ["City"]: {
+            ["city_id"]: t.DNumericField;
+            ["city"]: t.DVarcharField;
+            ["country_id"]: t.DNumericField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Country"]: {
+            ["country_id"]: t.DNumericField;
+            ["country"]: t.DVarcharField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Customer"]: {
+            ["customer_id"]: t.DNumericField;
+            ["store_id"]: t.DNumericField;
+            ["first_name"]: t.DVarcharField;
+            ["last_name"]: t.DVarcharField;
+            ["email"]: t.DVarcharField;
+            ["address_id"]: t.DNumericField;
+            ["active"]: t.DVarcharField;
+            ["create_date"]: t.DDateField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Film"]: {
+            ["film_id"]: t.DNumericField;
+            ["title"]: t.DVarcharField;
+            ["description"]: t.DVarcharField;
+            ["release_year"]: t.DVarcharField;
+            ["language_id"]: t.DNumericField;
+            ["original_language_id"]: t.DNumericField;
+            ["rental_duration"]: t.DNumericField;
+            ["rental_rate"]: t.DNumericField;
+            ["length"]: t.DNumericField;
+            ["replacement_cost"]: t.DNumericField;
+            ["rating"]: t.DVarcharField;
+            ["special_features"]: t.DVarcharField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Film_actor"]: {
+            ["actor_id"]: t.DNumericField;
+            ["film_id"]: t.DNumericField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Film_category"]: {
+            ["film_id"]: t.DNumericField;
+            ["category_id"]: t.DNumericField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Film_text"]: {
+            ["film_id"]: t.DNumericField;
+            ["title"]: t.DVarcharField;
+            ["description"]: t.DVarcharField;
+        };
+        ["Inventory"]: {
+            ["inventory_id"]: t.DNumericField;
+            ["film_id"]: t.DNumericField;
+            ["store_id"]: t.DNumericField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Language"]: {
+            ["language_id"]: t.DNumericField;
+            ["name"]: t.DVarcharField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Payment"]: {
+            ["payment_id"]: t.DNumericField;
+            ["customer_id"]: t.DNumericField;
+            ["staff_id"]: t.DNumericField;
+            ["rental_id"]: t.DNumericField;
+            ["amount"]: t.DNumericField;
+            ["payment_date"]: t.DDateField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Rental"]: {
+            ["rental_id"]: t.DNumericField;
+            ["rental_date"]: t.DDateField;
+            ["inventory_id"]: t.DNumericField;
+            ["customer_id"]: t.DNumericField;
+            ["return_date"]: t.DDateField;
+            ["staff_id"]: t.DNumericField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Staff"]: {
+            ["staff_id"]: t.DNumericField;
+            ["first_name"]: t.DVarcharField;
+            ["last_name"]: t.DVarcharField;
+            ["address_id"]: t.DNumericField;
+            ["picture"]: t.DAnyField;
+            ["email"]: t.DVarcharField;
+            ["store_id"]: t.DNumericField;
+            ["active"]: t.DNumericField;
+            ["username"]: t.DVarcharField;
+            ["password"]: t.DVarcharField;
+            ["last_update"]: t.DDateField;
+        };
+        ["Store"]: {
+            ["store_id"]: t.DNumericField;
+            ["manager_staff_id"]: t.DNumericField;
+            ["address_id"]: t.DNumericField;
+            ["last_update"]: t.DDateField;
+        };
+    };
 }

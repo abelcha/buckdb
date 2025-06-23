@@ -629,5 +629,128 @@
       "can_open": "DBool",
       "help_url": "DVarchar"
     }
+  },
+  "s3://a1738/akira09.db": {
+    "Actor": {
+      "actor_id": "DNumeric",
+      "first_name": "DVarchar",
+      "last_name": "DVarchar",
+      "last_update": "DDate"
+    },
+    "Address": {
+      "address_id": "DNumeric",
+      "address": "DVarchar",
+      "address2": "DVarchar",
+      "district": "DVarchar",
+      "city_id": "DNumeric",
+      "postal_code": "DVarchar",
+      "phone": "DVarchar",
+      "last_update": "DDate"
+    },
+    "Category": {
+      "category_id": "DNumeric",
+      "name": "DVarchar",
+      "last_update": "DDate"
+    },
+    "City": {
+      "city_id": "DNumeric",
+      "city": "DVarchar",
+      "country_id": "DNumeric",
+      "last_update": "DDate"
+    },
+    "Country": {
+      "country_id": "DNumeric",
+      "country": "DVarchar",
+      "last_update": "DDate"
+    },
+    "Customer": {
+      "customer_id": "DNumeric",
+      "store_id": "DNumeric",
+      "first_name": "DVarchar",
+      "last_name": "DVarchar",
+      "email": "DVarchar",
+      "address_id": "DNumeric",
+      "active": "DVarchar",
+      "create_date": "DDate",
+      "last_update": "DDate"
+    },
+    "Film": {
+      "film_id": "DNumeric",
+      "title": "DVarchar",
+      "description": "DVarchar",
+      "release_year": "DVarchar",
+      "language_id": "DNumeric",
+      "original_language_id": "DNumeric",
+      "rental_duration": "DNumeric",
+      "rental_rate": "DNumeric",
+      "length": "DNumeric",
+      "replacement_cost": "DNumeric",
+      "rating": "DVarchar",
+      "special_features": "DVarchar",
+      "last_update": "DDate"
+    },
+    "Film_actor": {
+      "actor_id": "DNumeric",
+      "film_id": "DNumeric",
+      "last_update": "DDate"
+    },
+    "Film_category": {
+      "film_id": "DNumeric",
+      "category_id": "DNumeric",
+      "last_update": "DDate"
+    },
+    "Film_text": {
+      "film_id": "DNumeric",
+      "title": "DVarchar",
+      "description": "DVarchar"
+    },
+    "Inventory": {
+      "inventory_id": "DNumeric",
+      "film_id": "DNumeric",
+      "store_id": "DNumeric",
+      "last_update": "DDate"
+    },
+    "Language": {
+      "language_id": "DNumeric",
+      "name": "DVarchar",
+      "last_update": "DDate"
+    },
+    "Payment": {
+      "payment_id": "DNumeric",
+      "customer_id": "DNumeric",
+      "staff_id": "DNumeric",
+      "rental_id": "DNumeric",
+      "amount": "DNumeric",
+      "payment_date": "DDate",
+      "last_update": "DDate"
+    },
+    "Rental": {
+      "rental_id": "DNumeric",
+      "rental_date": "DDate",
+      "inventory_id": "DNumeric",
+      "customer_id": "DNumeric",
+      "return_date": "DDate",
+      "staff_id": "DNumeric",
+      "last_update": "DDate"
+    },
+    "Staff": {
+      "staff_id": "DNumeric",
+      "first_name": "DVarchar",
+      "last_name": "DVarchar",
+      "address_id": "DNumeric",
+      "picture": "DAny",
+      "email": "DVarchar",
+      "store_id": "DNumeric",
+      "active": "DNumeric",
+      "username": "DVarchar",
+      "password": "DVarchar",
+      "last_update": "DDate"
+    },
+    "Store": {
+      "store_id": "DNumeric",
+      "manager_staff_id": "DNumeric",
+      "address_id": "DNumeric",
+      "last_update": "DDate"
+    }
   }
 }

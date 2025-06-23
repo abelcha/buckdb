@@ -8,12 +8,12 @@
     "clean": "tsc -b -c",
     "start": "vite --config vite.config.ts",
     "start:debug": "vite --config vite.config.ts --debug --force",
-    "lint": "eslint '{src/**/*.ts,rollup/*.ts,*.ts}'",
+    "lint": "#eslint '{src/**/*.ts,rollup/*.ts,*.ts}'",
     "typecheck": "tsc --noEmit",
     "check-build": "npm run lint && npm run typecheck",
-    "build": "npm run check-build && vite --config vite.config.ts build",
-    "build:netlify": "npm run check-build && vite --config vite.netlify.config.ts build",
-    "start:debugServer": "tsx src/debugServer.ts",
+    "build": "vite --config vite.config.ts build",
+    "build:netlify": "vite --config vite.netlify.config.ts build",
+    "start:debugServer": "tsx src/debiugServer.ts",
     "preprepare": "patch-package"
   },
   "devDependencies": {

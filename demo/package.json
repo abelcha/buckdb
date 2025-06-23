@@ -26,10 +26,10 @@
     "@types/wicg-file-system-access": "^2023.10.6",
     "@types/ws": "^8.18.1",
     "patch-package": "^8.0.0",
-    "typescript": "~5.8.3",
     "vite": "~6.3.5"
   },
   "dependencies": {
+    "typescript": "~5.8.3",
     "@codingame/monaco-vscode-0764a541-f621-5022-a1f8-cbdadacae5ec-common": "^17.2",
     "@codingame/monaco-vscode-0b087f42-a5a3-5eb9-9bfd-1eebc1bba163-common": "^17.2",
     "@codingame/monaco-vscode-0c06bfba-d24d-5c4d-90cd-b40cefb7f811-common": "^17.2",

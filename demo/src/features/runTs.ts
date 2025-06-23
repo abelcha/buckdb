@@ -1,19 +1,20 @@
 import { getService, IWorkbenchLayoutService } from '@codingame/monaco-vscode-api'
 import { Parts } from '@codingame/monaco-vscode-views-service-override'
-import { transform } from 'sucrase'
 import type * as vscode from 'vscode' // Use type import for vscode API
-import { extractFromStatementsAST } from '@buckdb/src/extract-from-statements'
+import { evalChain, extractReconciledCalls } from '@buckdb/src/extractor'
+import { triggerMethods } from '@buckdb/src/typedef'
+
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 const getPart = (document: vscode.TextDocument, targetLine: number) => {
-    const extractedParts = extractFromStatementsAST(document.getText())
-    // .find((e, index, arr) => {
-    for (const [index, e] of Array.from(extractedParts.entries())) {
+    const extractedParts = extractReconciledCalls(document.getText())
+    let i = 0;
+    for (const e of extractedParts) {
         // console.log({ index, e })
-        const next = extractedParts[index + 1]
+        const next = extractedParts[++i]
         // console.log({ targetLine, linestart: e.lineStart }, targetLine >= e.lineStart, (!next || targetLine < next.lineStart))
-        if (targetLine >= e.lineStart && (!next || targetLine < next.lineStart)) {
-            return { ...e, lineEnd: next?.lineStart || document.lineCount + 1 }
+        if (targetLine >= e.start.line && (!next || targetLine < next.start.line)) {
+            return { ...e, lineEnd: next?.start.line || document.lineCount + 1 }
         }
     }
     throw new Error('not found')
@@ -58,33 +59,37 @@ export async function runActiveTypeScriptFile(
         return
     }
 
-    const document = editor.document
-    // Allow .ts or .tsx
+    let document = editor.document
+    console.log(document.languageId);
+
+    // For SQL files, use the corresponding TypeScript mirror file
+    if (document.languageId === 'sql') {
+        const mirrorDoc = VsCodeWindow.visibleTextEditors
+            .find(e => e.document.fileName === document.fileName.replace('sql', 'ts'))
+        if (mirrorDoc) {
+            document = mirrorDoc.document
+        }
+    }
+
     if (document.languageId !== 'typescript' && document.languageId !== 'typescriptreact' && !document.fileName.endsWith('.ts') && !document.fileName.endsWith('.tsx')) {
-        // console.warn("Active file is not a TypeScript file."); // Removed log
         return
     }
-    let codImp = document.getText().split(/\n+/).filter(e => !e.startsWith('import')).join('\n')
     if (typeof targetLine === 'number') {
         startBar()
         layoutService.setPartHidden(true, Parts.PANEL_PART)
         const part = getPart(document, targetLine + 1)
-        // console.log('x', part) // Removed log
-        const dst = [part.chain, part.cleanFromChain, 'execute({ withSchema: true })'].filter(Boolean).join('.')
-        // console.log({ dst }) // Removed log
+        const passiveChain = part.chain.filter(([method]) => !triggerMethods.includes(method))
+        const statement = evalChain(passiveChain, true)
         window.globalData = null
         window.globalError = null
         try {
             // console.log({ dst }) // Removed log
-            const evl = new Function(`return ${dst}`)
-            window.globalData = await evl()
-            // console.log({ dst, globalData: window.globalData, SCHEMAAAA: window.globalData?.schema }) // Removed log (also fixes TS error)
-            // console.log('GLOBAL DATA:') // Removed log
-            // console.log(window.globalData) // Removed log
+            const response = await statement?.execute({ withSchema: true })
+            window.globalData = response
         } catch (err) {
             // @ts-ignore
             window.globalError = err
-            // console.log('erorr in evalllll', err) // Removed log
+            console.error('erorr in eval', err)
         } finally {
             finishBar()
             await sleep(100) // Wait for the bar to finish
@@ -93,12 +98,5 @@ export async function runActiveTypeScriptFile(
         layoutService.setPartHidden(false, Parts.PANEL_PART)
         return
     }
-
-    const compiledCode = transform(codImp, { transforms: ['typescript'] }).code
-    // console.log({ compiledCode }) // Removed log
-    const str = `(async () => {\n ${compiledCode} \n})()`
-    // console.log({ str }) // Removed log
-    // console.log(compiledCode) // Removed log
-    eval(str)
     return
 }

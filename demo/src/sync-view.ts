@@ -2,7 +2,8 @@ import * as monaco from 'monaco-editor'
 import type { IDisposable } from 'monaco-editor'
 import { languages as VsCodeLanguages, TextDocumentContentProvider, TextEditor, Uri, ViewColumn, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
 import type * as vsCodeApi from 'vscode'
-import { extractFromStatementsAST } from '@buckdb/src/extract-from-statements' // Added for CodeLens
+import { extractSpecialCalls } from '@buckdb/src/extractor'
+
 type VsCodeApi = typeof vsCodeApi
 
 // Flag to ensure CodeLens provider is registered only once
@@ -38,10 +39,10 @@ class TransformedSqlCodeLensProvider implements vsCodeApi.CodeLensProvider {
         }
 
         try {
-            const extractedParts = extractFromStatementsAST(originalDoc.getText())
+            const extractedParts = extractSpecialCalls(originalDoc.getText())
 
             for (const part of extractedParts) {
-                const lineIndex = part.lineStart
+                const lineIndex = part.start.line - 1
 
                 if (lineIndex < 0 || lineIndex >= document.lineCount) {
                     console.warn(`TransformedSqlCodeLensProvider: Line index ${lineIndex} out of bounds for transformed doc ${document.uri.toString()}`);

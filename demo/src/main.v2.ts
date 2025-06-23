@@ -6,8 +6,8 @@ import { runActiveTypeScriptFile } from './features/runTs'
 import { openTransformedViewAndSync, scrollSyncMap, transformedScheme } from './sync-view'
 import './imports.ts'
 import { Disposable, EventEmitter, OutputChannel, TextDocumentContentProvider, TextEditor, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode' // Added imports, TextDocument, CodeLensProvider
-import { s3CompletionProvider } from './completion-provider.ts'
-import { extractFromStatementsAST } from '@buckdb/src/extract-from-statements'
+import { pathCompletionProvider } from './completion-provider.ts'
+import { extractSpecialCalls } from '@buckdb/src/extractor'
 import { SqlCodeLensProvider } from './features/sqlCodeLensProvider' // Import the new CodeLensProvider
 import { transformedProvider } from './transform-text'
 type VsCodeApi = typeof vsCodeApi
@@ -153,6 +153,7 @@ void getApi().then(async (vscode: VsCodeApi) => {
 
     // Register the command triggered by the CodeLens
     commandDisposables.push(vscode.commands.registerCommand('buckdb.runQueryFromLine', async (lineIndex: number) => {
+        console.log('RUN QUERY FROM LINE', lineIndex)
         // Call the updated runActiveTypeScriptFile function without the channel
         await runActiveTypeScriptFile(VsCodeWindow, lineIndex)
     }))
@@ -169,9 +170,8 @@ void getApi().then(async (vscode: VsCodeApi) => {
 
         const documentText = activeEditor.document.getText()
         try {
-            // extractFromStatementsAST now returns { chain: string | null, param: string }[]
-            const extractedParts = extractFromStatementsAST(documentText)
-            // extractedParts.forEach()
+            const extractedParts = extractSpecialCalls(documentText)
+            console.table(extractedParts)
         } catch (error) {
             console.error("Error extracting 'from' statements:", error)
             vscode.window.showErrorMessage(`Error extracting statements: ${error instanceof Error ? error.message : String(error)}`)
@@ -180,9 +180,9 @@ void getApi().then(async (vscode: VsCodeApi) => {
         }
     }))
 
-    // Register the S3 completion provider for TypeScript files.
+    // Register the path completion provider for TypeScript files.
     // Trigger automatically when '/' is typed.
-    commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, s3CompletionProvider, '/'))
+    commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, pathCompletionProvider, '/'))
 
     // Register the CodeLensProvider for TypeScript files
     const tsFileSelector = [{ language: 'typescript' }, { language: 'typescriptreact' }]

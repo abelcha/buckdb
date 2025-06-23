@@ -126,9 +126,12 @@ export default defineConfig({
             name: 'start-duckdb-http-server',
             apply: 'serve',
             async configureServer(server) {
-                const duckdbProcess = spawn('duckdb_httpserver_cli',
-                    "--port 9998 --load hostfs --auth ".split(' ')
-                )
+                const duckdbProcess = spawn('duckdb', [
+                    '-c',
+                    'INSTALL httpserver FROM community; LOAD httpserver; SELECT httpserve_start(\'0.0.0.0\', 9998, \'\');'
+                ], {
+                    env: { ...process.env, DUCKDB_HTTPSERVER_FOREGROUND: '1' }
+                })
                 duckdbProcess.stdout.on('data', (data) => {
                     console.log(`[DuckDB] ${data.toString()}`)
                 })

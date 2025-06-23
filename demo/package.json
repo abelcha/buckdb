@@ -214,6 +214,7 @@
     "@codingame/monaco-vscode-npm-default-extension": "^17.2",
     "@codingame/monaco-vscode-objective-c-default-extension": "^17.2",
     "@codingame/monaco-vscode-outline-service-override": "^17.2",
+    "@codingame/monaco-vscode-output-service-override": "^17.2.1",
     "@codingame/monaco-vscode-performance-service-override": "^17.2",
     "@codingame/monaco-vscode-perl-default-extension": "^17.2",
     "@codingame/monaco-vscode-php-default-extension": "^17.2",

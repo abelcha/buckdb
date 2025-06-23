@@ -253,8 +253,11 @@ export function cleanEval(s: string, logErrors = false) {
     }
 }
 
+export function buildChain(chain: Extracted['chain']) {
+    return chain.map(([method, params]) => `${method}(${params.join(',')})`).join('.')
+}
 
 export function evalChain(chain: Extracted['chain'], logErrors = false) {
-    const s = chain.map(([method, params]) => `${method}(${params.join(',')})`).join('.')
+    const s = buildChain(chain)
     return cleanEval(s, logErrors)
 }

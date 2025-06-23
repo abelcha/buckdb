@@ -1,7 +1,7 @@
 import { debounce, memoize } from 'es-toolkit'
 import type { IDisposable } from 'monaco-editor'
 import { alignExpressionWithSql } from './realign'
-import { EventEmitter, TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
+import { EventEmitter, TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api'
 import contentjson from '@buckdb/.buck/models.json' // Use relative path
 import { generateInterface, serializeDescribe } from '@buckdb/src/interface-generator' // Use relative path
 import { isFile, isFunction } from '@buckdb/src/utils'

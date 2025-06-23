@@ -5,11 +5,11 @@ import { initUserConfiguration, IStoredWorkspace } from '@codingame/monaco-vscod
 import { createIndexedDBProviders, RegisteredFileSystemProvider, RegisteredMemoryFile, registerFileSystemOverlay } from '@codingame/monaco-vscode-files-service-override'
 import { initUserKeybindings } from '@codingame/monaco-vscode-keybindings-service-override'
 import * as monaco from 'monaco-editor'
-import * as vscode from 'vscode'
+import * as vscode from '@codingame/monaco-vscode-extension-api'
 import { Worker } from './tools/crossOriginWorker'
 import defaultConfiguration from './user/configuration.json'
 import defaultKeybindings from './user/keybindings.json?raw'
-import 'vscode/localExtensionHost'
+import '@codingame/monaco-vscode-extension-api/localExtensionHost'
 
 const url = new URL(document.location.href)
 const params = url.searchParams

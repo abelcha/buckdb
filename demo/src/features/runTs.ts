@@ -1,6 +1,6 @@
 import { getService, IWorkbenchLayoutService } from '@codingame/monaco-vscode-api'
 import { Parts } from '@codingame/monaco-vscode-views-service-override'
-import type * as vscode from 'vscode' // Use type import for vscode API
+import type * as vscode from '@codingame/monaco-vscode-extension-api' // Use type import for vscode API
 import { evalChain, extractReconciledCalls } from '@buckdb/src/extractor'
 import { triggerMethods } from '@buckdb/src/typedef'
 

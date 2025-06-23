@@ -10,3 +10,6 @@ repomix-output.xml.txt
 stuffs
 docs/
 demo/dist
+
+# Local Netlify folder
+.netlify

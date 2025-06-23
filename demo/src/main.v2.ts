@@ -1,11 +1,11 @@
 import onSaveCommand from './save-command'
 import './style.css'
 import { ExtensionHostKind, registerExtension } from '@codingame/monaco-vscode-api/extensions'
-import type * as vsCodeApi from 'vscode'
+import type * as vsCodeApi from '@codingame/monaco-vscode-extension-api'
 import { runActiveTypeScriptFile } from './features/runTs'
 import { openTransformedViewAndSync, scrollSyncMap, transformedScheme } from './sync-view'
 import './imports.ts'
-import { Disposable, EventEmitter, OutputChannel, TextDocumentContentProvider, TextEditor, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode' // Added imports, TextDocument, CodeLensProvider
+import { Disposable, EventEmitter, OutputChannel, TextDocumentContentProvider, TextEditor, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api' // Added imports, TextDocument, CodeLensProvider
 import { pathCompletionProvider } from './completion-provider.ts'
 import { extractSpecialCalls } from '@buckdb/src/extractor'
 import { SqlCodeLensProvider } from './features/sqlCodeLensProvider' // Import the new CodeLensProvider

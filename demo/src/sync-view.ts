@@ -1,7 +1,7 @@
 import * as monaco from 'monaco-editor'
 import type { IDisposable } from 'monaco-editor'
-import { languages as VsCodeLanguages, TextDocumentContentProvider, TextEditor, Uri, ViewColumn, window as VsCodeWindow, workspace as VsCodeWorkspace } from 'vscode'
-import type * as vsCodeApi from 'vscode'
+import { languages as VsCodeLanguages, TextDocumentContentProvider, TextEditor, Uri, ViewColumn, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api'
+import type * as vsCodeApi from '@codingame/monaco-vscode-extension-api'
 import { extractSpecialCalls } from '@buckdb/src/extractor'
 
 type VsCodeApi = typeof vsCodeApi

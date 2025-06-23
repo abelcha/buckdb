@@ -1,7 +1,7 @@
-import { from } from '@buckdb/isomorphic';
+import { from } from '@buckdb/remote';
 import { DirectoryRegexp, ReadableFileRegexp } from '@buckdb/src/typedef';
 import { glob } from '@buckdb/tf';
-import * as vscode from 'vscode';
+import * as vscode from '@codingame/monaco-vscode-extension-api';
 
 // Regex for detecting S3 paths
 const S3_PATH_REGEX = /\.from\(['"](s3:\/\/([^/'"]+)\/([^'"]*))['"]\)/i;
@@ -126,7 +126,7 @@ export const pathCompletionProvider: vscode.CompletionItemProvider = {
         }
 
         // Handle file paths (file:// or /)
-        if (fileMatch) {
+        if (fileMatch && import.meta.env.DEV) {
             let prefix = fileMatch[0];
             let cleanPrefix = prefix;
 

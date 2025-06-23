@@ -1,7 +1,4 @@
-// declare module '@buckdb/*' {
-//     const content: string
-//     export default content
-// }
+/// <reference types="vite/client" />
 
 declare module '*.json?raw' {
     const content: string
@@ -13,8 +10,18 @@ declare module '*.html?raw' {
     export default content
 }
 
-declare interface ImportMeta {
-    url: string
-    main?: boolean
-    glob: (path: string, options?: { as?: string; eager?: boolean }) => Record<string, () => Promise<any>>
+
+interface ViteTypeOptions {
+  // By adding this line, you can make the type of ImportMetaEnv strict
+  // to disallow unknown keys.
+  // strictImportMetaEnv: unknown
+}
+
+interface ImportMetaEnv {
+  readonly VITE_APP_TITLE: string
+  // more env variables...
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
 }

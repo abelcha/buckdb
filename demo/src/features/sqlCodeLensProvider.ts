@@ -1,4 +1,4 @@
-import * as vscode from 'vscode'
+import * as vscode from '@codingame/monaco-vscode-extension-api'
 import { extractSpecialCalls } from '@buckdb/src/extractor'
 
 export class SqlCodeLensProvider implements vscode.CodeLensProvider {

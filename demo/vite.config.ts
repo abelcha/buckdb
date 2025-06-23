@@ -154,7 +154,7 @@ export default defineConfig({
             '@codingame/monaco-vscode-api/extensions',
             '@codingame/monaco-vscode-api',
             '@codingame/monaco-vscode-api/monaco',
-            'vscode/localExtensionHost',
+            '@codingame/monaco-vscode-extension-api/localExtensionHost',
 
             // These 2 lines prevent vite from reloading the whole page when starting a worker (so 2 times in a row after cleaning the vite cache - for the editor then the textmate workers)
             // it's mainly empirical and probably not the best way, fix me if you find a better way

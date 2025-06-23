@@ -61,7 +61,7 @@ import getWorkingCopyServiceOverride from '@codingame/monaco-vscode-working-copy
 // import getWorkspaceTrustOverride from '@codingame/monaco-vscode-workspace-trust-service-override'
 // import { TerminalBackend } from './features/terminal'
 import { workerConfig } from './tools/extHostWorker'
-import 'vscode/localExtensionHost'
+import '@codingame/monaco-vscode-extension-api/localExtensionHost'
 
 export const commonServices: IEditorOverrideServices = {
     // ...getAuthenticationServiceOverride(),

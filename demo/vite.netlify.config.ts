@@ -1,6 +1,7 @@
 // @ts-nocheck
 import * as fs from 'fs'
 import { defineConfig } from 'vite'
+import path from 'node:path'
 const pkg = JSON.parse(
     fs.readFileSync(new URL('./package.json', import.meta.url).pathname).toString(),
 )
@@ -20,7 +21,17 @@ export default defineConfig({
     esbuild: {
         minifySyntax: false,
     },
+    
+    define: {
+        rootDirectory: JSON.stringify(__dirname),
+    },
     resolve: {
         dedupe: ['vscode', ...localDependencies],
+        alias: {
+            // Map an alias to the external directory
+            // '@buckdb': '',
+            '@buckdb/isomorphic': path.resolve(__dirname, '../remote.ts'),
+            '@buckdb': path.resolve(__dirname, '../'),
+        },
     },
 })

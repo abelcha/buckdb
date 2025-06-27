@@ -1,9 +1,4 @@
-@font-face {
-  font-family: 'Comic Mono';
-  src: url('https://a1738.s3.eu-west-3.amazonaws.com/ComicMono.ttf?') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-}
+
 #workbench.parts.banner {
   display: none;
 }

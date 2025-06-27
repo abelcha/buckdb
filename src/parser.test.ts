@@ -466,6 +466,13 @@ test('split+len', () => {
   // expect(parse(e => e.str.split(':').length)).toEqual(`str.string_split(':').len()`)
 })
 
+
+test('prop spaces', () => {
+  expect(parse(e => e.arr['prop space'])).toEqual(`arr."prop space"`)
+  expect(parse(e => e['First Name'])).toEqual(`"First Name"`)
+})
+
+
 test.todo('raw', () => {
   // expect(parseObject((e, D) => ({ gg: D.Raw('lol 123') }))).toEqual([['gg', `lol 123`]])
   // expect(parseObject((e, D) => ({ uuu: D.Raw(`(SELECT string_agg(store_name, ', ') FROM (`) }) )).toEqual([['gg', `lol 123`]])

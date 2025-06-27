@@ -206,6 +206,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
       },
       MemberExpression(node: MemberExpression) {
         node as MemberExpression
+
         const hasSubMember = node.object?.type === 'MemberExpression'
         if (hasSubMember && node.property.type === 'Identifier' && !node.subMemberExpression && node.property.name === 'length') {
           node.property.name = 'len()' // tmp
@@ -224,8 +225,16 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         }
         node.property.isProperty = true
         const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean).flatMap(x => x) as string[]
+        if (node.property.type === 'Literal' && node.accessor === '['
+          // todo: handle this better
+          && typeof node.property.value === 'string' && node.property.value?.includes(' ')
+        ) {
+          return rtn.slice(0, -1).concat('"' + node.property.value + '"').join('.')
+        }
         // @ts-ignore
-        return opts.isFuncArg && node.accessor !== '[' ? rtn : joinMembers(rtn)
+        const ret = opts.isFuncArg && node.accessor !== '[' ? rtn : joinMembers(rtn)
+        // console.log([opts.isFuncArg, node.accessor], { ret })
+        return ret
       },
       Literal(node: Literal) {
         node = node as Literal

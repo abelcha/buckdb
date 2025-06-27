@@ -1,0 +1,9 @@
+name = "monaco-vscode-api-demo"
+type = "javascript"
+account_id = "484a8e9325b8ae025dad57df36471a9d"
+workers_dev = true
+route = ""
+zone_id = ""
+[site]
+bucket = "dist"
+entry-point = "."

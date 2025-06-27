@@ -1,4 +1,5 @@
 import { DMetaField } from '.buck/types'
+import * as FNS from '../fn'
 import jsep, { ArrayExpression, ArrowFunctionExpression, BinaryExpression, CallExpression, ConditionalExpression, Expression, Identifier, Literal, MemberExpression, ObjectExpression, Property, SequenceExpression, SpreadElement, TemplateElement, TemplateLiteral, UnaryExpression } from './jsep'
 import { AggregateFunctions, LitteralTypesMap, PatternMatchers, PolyfillMapping } from './typedef'
 import { wrap, Σ } from './utils'
@@ -193,6 +194,8 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
             return node.name
           } else if (typeof globalThis[node.name] !== 'undefined') {
             return `${node.name}`
+          } else if (FNS[node.name]) {
+            return node.name
           } else if (typeof context[node.name] !== 'undefined') {
             return '(' + JSON.stringify(context[node.name]).replaceAll(/'/g, "''").replaceAll(/\"/g, "'") + ')'
           } else {

@@ -366,7 +366,7 @@ export const dstate = {
 
 export type DState = typeof dstate
 
-export const triggerMethods = ['exec', 'execute', 'show', 'describe']
+export const triggerMethods = ['exec', 'execute', 'show', 'describe', 'run']
 export const RessourceOps = ['from', 'leftJoin', 'join', 'rightJoin', 'naturalJoin', 'innerJoin']
 export const InstanceOps = ['Buck', 'settings', 'loadExtensions']
 

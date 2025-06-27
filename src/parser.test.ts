@@ -351,6 +351,10 @@ test('function call with multiple argument types', () => {
   expect(parse((e, D) => D.concat(e.name, 123, 'suffix', e.age))).toBe("concat(name, 123, 'suffix', age)")
 })
 
+test('function call with fn function', () => {
+  expect(parse('() => add(12, 341)')).toBe("add(12, 341)")
+})
+
 test('function call with nested function calls as arguments', () => {
   expect(parse((e, D) => D.add(e.num.abs(), D.len(e.str)))).toBe("add(num.abs(), len(str))")
 })

@@ -3395,8 +3395,6 @@ export interface DGlobal<DNum, DStr> {
   /**@description: Returns a random number between 0 and 1	@example: random()*/
   random(): DNum;
 
-  /**@description: Create a list of values between start and stop - the stop parameter is exclusive	@example: range(2, 5, 3)	@default: range(start:TIMESTAMP WITH TIME ZONE, stop:TIMESTAMP WITH TIME ZONE, step:INTERVAL) -> TIMESTAMP WITH TIME ZONE[]*/
-  range(start: DDateable, stop: DDateable, step: DAnyable): DArrayField;
 
   /**@description: Create a list of values between start and stop - the stop parameter is exclusive	@example: range(2, 5, 3)	@default: range(start:BIGINT, stop:BIGINT | , step:BIGINT | ) -> BIGINT[]*/
   range(start: DNumericable, stop?: DAnyable | DNumericable, step?: DAnyable | DNumericable): DArrayField<DNumericField>;

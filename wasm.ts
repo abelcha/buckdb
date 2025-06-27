@@ -4,7 +4,7 @@ export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_
 // @ts-ignore
 import type * as DuckdbTyped from '@duckdb/duckdb-wasm/dist/types/src/index'
 // @ts-ignore
-import * as _Duckdb from 'https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.1-dev132.0/+esm'
+import * as _Duckdb from '@duckdb/duckdb-wasm'
 import { BuckDBBase } from './core'
 import { isBucket } from './src/utils'
 const Duckdb = _Duckdb as typeof DuckdbTyped

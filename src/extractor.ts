@@ -1,5 +1,18 @@
-import { VariableDeclaration, VariableDeclarationKind } from 'ts-morph';
-import * as ts from 'typescript';
+import {
+    CallExpression,
+    createSourceFile,
+    forEachChild,
+    isCallExpression,
+    isIdentifier,
+    isPropertyAccessExpression,
+    isVariableDeclaration,
+    isVariableStatement,
+    Node,
+    ScriptTarget,
+    SourceFile,
+    SyntaxKind,
+    VariableDeclaration
+} from 'typescript';
 type Position = { line: number, column: number, charPos: number }
 export type Extracted = {
     method: string,
@@ -24,17 +37,17 @@ type Opts = {
     targetMethods?: string[] | null
 }
 
-const primitiveInitializer = (e: ts.VariableDeclaration['initializer']) => {
-    return e.kind === ts.SyntaxKind.StringLiteral || e.kind === ts.SyntaxKind.NumericLiteral || e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword
-        || e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.UndefinedKeyword || e.kind === ts.SyntaxKind.RegularExpressionLiteral || e.kind === ts.SyntaxKind.ObjectLiteralExpression || e.kind === ts.SyntaxKind.ArrayLiteralExpression
+const primitiveInitializer = (e: VariableDeclaration['initializer']) => {
+    return e.kind === SyntaxKind.StringLiteral || e.kind === SyntaxKind.NumericLiteral || e.kind === SyntaxKind.TrueKeyword || e.kind === SyntaxKind.FalseKeyword
+        || e.kind === SyntaxKind.NullKeyword || e.kind === SyntaxKind.UndefinedKeyword || e.kind === SyntaxKind.RegularExpressionLiteral || e.kind === SyntaxKind.ObjectLiteralExpression || e.kind === SyntaxKind.ArrayLiteralExpression
 }
 
 export const extractPrimitiveAssignations = (text: string, opts: Opts = {}) => {
-    const sourceFile = ts.createSourceFile('temp.ts', text, ts.ScriptTarget.Latest, true);
+    const sourceFile = createSourceFile('temp.ts', text, ScriptTarget.Latest, true);
     const assignations = {}
 
-    function visit(node: ts.Node) {
-        if (ts.isVariableStatement(node)) {
+    function visit(node: Node) {
+        if (isVariableStatement(node)) {
             const declarationList = node.declarationList;
             declarationList.declarations.forEach(declaration => {
                 if (primitiveInitializer(declaration.initializer)) {
@@ -44,19 +57,19 @@ export const extractPrimitiveAssignations = (text: string, opts: Opts = {}) => {
             })
         }
     }
-    ts.forEachChild(sourceFile, visit);
+    forEachChild(sourceFile, visit);
     return assignations;
 }
 
 export const extractAssignations = (text: string, opts: Opts = {}) => {
-    const sourceFile = ts.createSourceFile('temp.ts', text, ts.ScriptTarget.Latest, true);
+    const sourceFile = createSourceFile('temp.ts', text, ScriptTarget.Latest, true);
     const assignations = {}
 
-    function visit(node: ts.Node) {
-        if (ts.isVariableStatement(node)) {
+    function visit(node: Node) {
+        if (isVariableStatement(node)) {
             const declarationList = node.declarationList;
             declarationList.declarations.forEach(declaration => {
-                if (ts.isVariableDeclaration(declaration) && ts.isCallExpression(declaration.initializer)) {
+                if (isVariableDeclaration(declaration) && isCallExpression(declaration.initializer)) {
                     const name = declaration.name.getText(sourceFile);
                     // const value = declaration.initializer.getText(sourceFile);
                     const val = handleCallExpression(sourceFile, declaration.initializer, { targetMethods: null, ...opts })
@@ -66,10 +79,10 @@ export const extractAssignations = (text: string, opts: Opts = {}) => {
                 }
             });
         }
-        ts.forEachChild(node, visit);
+        forEachChild(node, visit);
     }
 
-    ts.forEachChild(sourceFile, visit);
+    forEachChild(sourceFile, visit);
     return assignations;
 }
 
@@ -131,7 +144,7 @@ export const reconstituteAssignations = (assignations: [string, string][]) => {
     return result;
 }
 
-function getPosition(sourceFile: ts.SourceFile, node: ts.Node, isStart: boolean = true) {
+function getPosition(sourceFile: SourceFile, node: Node, isStart: boolean = true) {
     const pos = isStart ? node.getStart(sourceFile) : node.getEnd();
     const lineAndChar = sourceFile.getLineAndCharacterOfPosition(pos);
     return {
@@ -144,7 +157,7 @@ function isTranscluded(parentPos: Extracted, childPos: Extracted) {
     return parentPos.start.charPos <= childPos.start.charPos && parentPos.end.charPos >= childPos.end.charPos
 }
 
-const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression, opts: any): Extracted[] => {
+const handleCallExpression = (sourceFile: SourceFile, node: CallExpression, opts: any): Extracted[] => {
     const expressionText = node.expression.getText(sourceFile);
     const targetMethods = opts.targetMethods || ['from', 'create'];
     let method: string | null = null;
@@ -152,16 +165,16 @@ const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression
     let fullExpression: string = '';
     const isOK = name => opts.targetMethods === null ? true : targetMethods.includes(name);
 
-    if (ts.isPropertyAccessExpression(node.expression)) {
+    if (isPropertyAccessExpression(node.expression)) {
         const name = node.expression.name.getText(sourceFile);
         if (isOK(name)) {
             method = name;
             // resource = node.expression.expression.getText(sourceFile).trim();
 
             // Start with the current node
-            let currentNode: ts.Node = node;
+            let currentNode: Node = node;
             // If parent is a property access expression or call expression, go up to capture full chain
-            while (currentNode.parent && (ts.isPropertyAccessExpression(currentNode.parent) || ts.isCallExpression(currentNode.parent))) {
+            while (currentNode.parent && (isPropertyAccessExpression(currentNode.parent) || isCallExpression(currentNode.parent))) {
                 currentNode = currentNode.parent;
             }
             const chainProps = opts.chain !== false ? collectChain(currentNode) : {}
@@ -170,13 +183,13 @@ const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression
                 { start: getPosition(sourceFile, node, true), end: getPosition(sourceFile, currentNode, false) }
             return [{ expression: fullExpression, method, ...positions, ...chainProps }] as Extracted[]
         }
-    } else if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && isOK(expressionText)) {
+    } else if (isCallExpression(node) && isIdentifier(node.expression) && isOK(expressionText)) {
         method = expressionText;
         // resource = null;
         // Start with the current node
-        let currentNode: ts.Node = node;
+        let currentNode: Node = node;
         // If parent is a property access expression or call expression, go up to capture full chain
-        while (currentNode.parent && (ts.isPropertyAccessExpression(currentNode.parent) || ts.isCallExpression(currentNode.parent))) {
+        while (currentNode.parent && (isPropertyAccessExpression(currentNode.parent) || isCallExpression(currentNode.parent))) {
             currentNode = currentNode.parent;
         }
         const chains = opts.chain !== false ? collectChain(currentNode) : {}
@@ -190,7 +203,7 @@ const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression
 
 
 export const extractSpecialCalls = (text: string, opts: Opts = { positions: true, chain: false }): Extracted[] => {
-    const sourceFile = ts.createSourceFile('temp.ts', text, ts.ScriptTarget.Latest, true);
+    const sourceFile = createSourceFile('temp.ts', text, ScriptTarget.Latest, true);
     const specialCalls: Extracted[] = [];
     const pOmiter = (x: Extracted) => {
         const { start, end, ...rest } = x;
@@ -198,8 +211,8 @@ export const extractSpecialCalls = (text: string, opts: Opts = { positions: true
     }
 
 
-    function visit(node: ts.Node) {
-        if (ts.isCallExpression(node)) {
+    function visit(node: Node) {
+        if (isCallExpression(node)) {
             const items = handleCallExpression(sourceFile, node, { ...opts, positions: true })
             for (const item of items) {
                 if (specialCalls.length && isTranscluded(specialCalls[specialCalls.length - 1], item)) {
@@ -210,30 +223,30 @@ export const extractSpecialCalls = (text: string, opts: Opts = { positions: true
                 }
             }
         }
-        ts.forEachChild(node, visit);
+        forEachChild(node, visit);
     }
 
-    ts.forEachChild(sourceFile, visit);
+    forEachChild(sourceFile, visit);
 
     return specialCalls.map(e => !e.children ? pOmiter(e) : ({
         ...pOmiter(e),
         children: e.children.map(pOmiter),
     }))
 }
-function collectChain(node: ts.Node, chain: [string, any[], number?][] = [], opts: Opts = {}) {
-    const pushArgs = (method: string, n: ts.CallExpression) => {
+function collectChain(node: Node, chain: [string, any[], number?][] = [], opts: Opts = {}) {
+    const pushArgs = (method: string, n: CallExpression) => {
         chain.unshift([method, n.arguments.map(e => e.getText())])
         if (opts?.positions !== false)
             chain[0].push(n.expression.getSourceFile().getLineAndCharacterOfPosition(n.expression.getEnd()).line)
 
     }
-    if (ts.isCallExpression(node)) {
+    if (isCallExpression(node)) {
         let method = '';
-        if (ts.isPropertyAccessExpression(node.expression)) {
+        if (isPropertyAccessExpression(node.expression)) {
             method = node.expression.name.getText();
             pushArgs(method, node)
             return collectChain(node.expression.expression, chain);
-        } else if (ts.isIdentifier(node.expression)) {
+        } else if (isIdentifier(node.expression)) {
             method = node.expression.getText();
             pushArgs(method, node)
         }
@@ -245,24 +258,24 @@ function collectChain(node: ts.Node, chain: [string, any[], number?][] = [], opt
 
 
 export const extractChains = (text: string) => {
-    const sourceFile = ts.createSourceFile('temp.ts', text, ts.ScriptTarget.Latest, true);
+    const sourceFile = createSourceFile('temp.ts', text, ScriptTarget.Latest, true);
     const chains: { method: string, params: any[] }[] = [];
 
 
 
-    function visit(node: ts.Node) {
-        if (ts.isCallExpression(node)) {
-            if (!node.parent || !ts.isPropertyAccessExpression(node.parent) || !ts.isCallExpression(node.parent.parent)) {
+    function visit(node: Node) {
+        if (isCallExpression(node)) {
+            if (!node.parent || !isPropertyAccessExpression(node.parent) || !isCallExpression(node.parent.parent)) {
                 // This is the outermost call in the chain
                 // const chain: Extracted['chain'] = [];
                 return collectChain(node);
                 // chains.push(...chain);
             }
         }
-        ts.forEachChild(node, visit);
+        forEachChild(node, visit);
     }
 
-    ts.forEachChild(sourceFile, visit);
+    forEachChild(sourceFile, visit);
     return chains;
 }
 

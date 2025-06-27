@@ -1,3 +1,8 @@
+### bucket + duckdb
+
+occult generics
+
+
 [wip] https://buckdb.pages.dev/
 
 

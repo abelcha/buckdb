@@ -234,9 +234,9 @@ export const constructOptions: IWorkbenchConstructionOptions = {
         'files.hotExit': 'off',
     },
     defaultLayout: {
-        editors: [
-            { uri: monaco.Uri.file('/workspace/showcase/demo.ts') },
-        ],
+          editors: Object.keys(import.meta.glob('@buckdb/showcase/*.ts', { eager: true }))
+            .map(path => ({ uri: monaco.Uri.file('/workspace/' + path.split('/').slice(-2).join('/')) }))
+            .sort((a) => a.uri.path.endsWith('demo.ts') ? -1 : 1),
         layout: { editors: { orientation: 0, groups: [{ size: 1 }, { size: 1 }] } },
         views: [{ id: 'cussqdtom-view' }],
         force: resetLayout,

@@ -353,6 +353,11 @@
     "when": "editorTextFocus"
   },
   {
+    "key": "cmd+enter",
+    "command": "run.activeCell",
+    "when": "editorTextFocus"
+  },
+  {
     "key": "ctrl+shift+alt+cmd+[Comma]",
     "command": "workbench.action.chat.toggleAgentMode",
     "when": "chatHasToolsAgent && inChatInput && !chatSessionRequestInProgress && chatLocation == 'editing-session'"

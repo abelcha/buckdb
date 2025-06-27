@@ -820,6 +820,36 @@
     },
     "range(1000)": {
       "range": "DNumeric"
+    },
+    "starbase/*.parquet": {
+      "repo_id": "DNumeric",
+      "repo": "DVarchar",
+      "login_id": "DNumeric",
+      "login": "DVarchar",
+      "date": "DDate",
+      "star_count": "DNumeric"
+    },
+    "read_csv(['s3://a1738/geonames-cities-150k.csv'])": {
+      "GeonameID": "DNumeric",
+      "Name": "DVarchar",
+      "ASCIIName": "DVarchar",
+      "AlternateNames": "DVarchar",
+      "FeatureClass": "DVarchar",
+      "FeatureCode": "DVarchar",
+      "CountryCode": "DVarchar",
+      "CountrynameEN": "DVarchar",
+      "CountryCode2": "DVarchar",
+      "Admin1Code": "DVarchar",
+      "Admin2Code": "DVarchar",
+      "Admin3Code": "DVarchar",
+      "Admin4Code": "DVarchar",
+      "Population": "DNumeric",
+      "Elevation": "DNumeric",
+      "DIgitalElevationModel": "DNumeric",
+      "Timezone": "DVarchar",
+      "Modificationdate": "DDate",
+      "LABELEN": "DVarchar",
+      "Coordinates": "DVarchar"
     }
   },
   "s3://a1738/akira09.db": {
@@ -2919,6 +2949,112 @@
       "city_name": "DVarchar",
       "center_lon": "DNumeric",
       "center_lat": "DNumeric"
+    }
+  },
+  "s3://a1738/fsimrep": {
+    "repos.parquet": {
+      "id": "DNumeric",
+      "name": "DVarchar",
+      "full_name": "DVarchar",
+      "default_branch": "DVarchar",
+      "description": "DVarchar",
+      "fork": "DBool",
+      "created_at": "DDate",
+      "updated_at": "DDate",
+      "pushed_at": "DDate",
+      "homepage": "DVarchar",
+      "size": "DNumeric",
+      "stargazers_count": "DNumeric",
+      "watchers_count": "DNumeric",
+      "language": "DVarchar",
+      "has_issues": "DBool",
+      "has_projects": "DBool",
+      "has_downloads": "DBool",
+      "has_wiki": "DBool",
+      "has_pages": "DBool",
+      "has_discussions": "DBool",
+      "forks_count": "DNumeric",
+      "archived": "DBool",
+      "disabled": "DBool",
+      "open_issues_count": "DNumeric",
+      "watchers": "DNumeric",
+      "allow_forking": "DBool",
+      "is_template": "DBool",
+      "topics": {
+        "__type": "array",
+        "elementType": "DVarchar"
+      },
+      "visibility": "DVarchar",
+      "forks": "DNumeric",
+      "owner_login": "DVarchar",
+      "owner_id": "DVarchar",
+      "rn": "DNumeric"
+    },
+    "starlite.parquet": {
+      "id": "DNumeric",
+      "repo": "DVarchar",
+      "c": "DNumeric"
+    },
+    "starbase/*.parquet": {
+      "repo_id": "DNumeric",
+      "repo": "DVarchar",
+      "login_id": "DNumeric",
+      "login": "DVarchar",
+      "date": "DDate",
+      "star_count": "DNumeric"
+    }
+  },
+  "s3://a1738/": {
+    "spotify/tracks.parquet": {
+      "id": "DAny",
+      "disc_number": "DAny",
+      "duration": "DAny",
+      "explicit": "DAny",
+      "audio_feature_id": "DAny",
+      "name": "DAny",
+      "preview_url": "DAny",
+      "track_number": "DAny",
+      "popularity": "DAny",
+      "is_playable": "DAny"
+    },
+    "spotify/r_albums_tracks.parquet": {
+      "album_id": "DAny",
+      "track_id": "DAny"
+    },
+    "spotify/albums.parquet": {
+      "id": "DAny",
+      "name": "DAny",
+      "album_group": "DAny",
+      "album_type": "DAny",
+      "release_date": "DAny",
+      "popularity": "DAny"
+    },
+    "spotify/r_albums_artists.parquet": {
+      "album_id": "DAny",
+      "artist_id": "DAny"
+    },
+    "spotify/artists.parquet": {
+      "name": "DAny",
+      "id": "DAny",
+      "popularity": "DAny",
+      "followers": "DAny"
+    },
+    "spotify/audio_features.parquet": {
+      "id": "DAny",
+      "acousticness": "DAny",
+      "analysis_url": "DAny",
+      "danceability": "DAny",
+      "duration": "DAny",
+      "energy": "DAny",
+      "instrumentalness": "DAny",
+      "key": "DAny",
+      "liveness": "DAny",
+      "loudness": "DAny",
+      "mode": "DAny",
+      "speechiness": "DAny",
+      "tempo": "DAny",
+      "time_signature": "DAny",
+      "valence": "DAny"
     }
   }
 }

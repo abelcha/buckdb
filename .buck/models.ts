@@ -735,6 +735,36 @@ export interface Models {
         ["range(1000)"]: {
             ["range"]: t.DNumericField;
         };
+        ["starbase/*.parquet"]: {
+            ["repo_id"]: t.DNumericField;
+            ["repo"]: t.DVarcharField;
+            ["login_id"]: t.DNumericField;
+            ["login"]: t.DVarcharField;
+            ["date"]: t.DDateField;
+            ["star_count"]: t.DNumericField;
+        };
+        ["read_csv(['s3://a1738/geonames-cities-150k.csv'])"]: {
+            ["GeonameID"]: t.DNumericField;
+            ["Name"]: t.DVarcharField;
+            ["ASCIIName"]: t.DVarcharField;
+            ["AlternateNames"]: t.DVarcharField;
+            ["FeatureClass"]: t.DVarcharField;
+            ["FeatureCode"]: t.DVarcharField;
+            ["CountryCode"]: t.DVarcharField;
+            ["CountrynameEN"]: t.DVarcharField;
+            ["CountryCode2"]: t.DVarcharField;
+            ["Admin1Code"]: t.DVarcharField;
+            ["Admin2Code"]: t.DVarcharField;
+            ["Admin3Code"]: t.DVarcharField;
+            ["Admin4Code"]: t.DVarcharField;
+            ["Population"]: t.DNumericField;
+            ["Elevation"]: t.DNumericField;
+            ["DIgitalElevationModel"]: t.DNumericField;
+            ["Timezone"]: t.DVarcharField;
+            ["Modificationdate"]: t.DDateField;
+            ["LABELEN"]: t.DVarcharField;
+            ["Coordinates"]: t.DVarcharField;
+        };
     };
     ["s3://a1738/akira09.db"]: {
         ["Actor"]: {
@@ -2711,6 +2741,109 @@ export interface Models {
             ["city_name"]: t.DVarcharField;
             ["center_lon"]: t.DNumericField;
             ["center_lat"]: t.DNumericField;
+        };
+    };
+    ["s3://a1738/fsimrep"]: {
+        ["repos.parquet"]: {
+            ["id"]: t.DNumericField;
+            ["name"]: t.DVarcharField;
+            ["full_name"]: t.DVarcharField;
+            ["default_branch"]: t.DVarcharField;
+            ["description"]: t.DVarcharField;
+            ["fork"]: t.DBoolField;
+            ["created_at"]: t.DDateField;
+            ["updated_at"]: t.DDateField;
+            ["pushed_at"]: t.DDateField;
+            ["homepage"]: t.DVarcharField;
+            ["size"]: t.DNumericField;
+            ["stargazers_count"]: t.DNumericField;
+            ["watchers_count"]: t.DNumericField;
+            ["language"]: t.DVarcharField;
+            ["has_issues"]: t.DBoolField;
+            ["has_projects"]: t.DBoolField;
+            ["has_downloads"]: t.DBoolField;
+            ["has_wiki"]: t.DBoolField;
+            ["has_pages"]: t.DBoolField;
+            ["has_discussions"]: t.DBoolField;
+            ["forks_count"]: t.DNumericField;
+            ["archived"]: t.DBoolField;
+            ["disabled"]: t.DBoolField;
+            ["open_issues_count"]: t.DNumericField;
+            ["watchers"]: t.DNumericField;
+            ["allow_forking"]: t.DBoolField;
+            ["is_template"]: t.DBoolField;
+            ["topics"]: t.DArrayField<t.DVarcharField>;
+            ["visibility"]: t.DVarcharField;
+            ["forks"]: t.DNumericField;
+            ["owner_login"]: t.DVarcharField;
+            ["owner_id"]: t.DVarcharField;
+            ["rn"]: t.DNumericField;
+        };
+        ["starlite.parquet"]: {
+            ["id"]: t.DNumericField;
+            ["repo"]: t.DVarcharField;
+            ["c"]: t.DNumericField;
+        };
+        ["starbase/*.parquet"]: {
+            ["repo_id"]: t.DNumericField;
+            ["repo"]: t.DVarcharField;
+            ["login_id"]: t.DNumericField;
+            ["login"]: t.DVarcharField;
+            ["date"]: t.DDateField;
+            ["star_count"]: t.DNumericField;
+        };
+    };
+    ["s3://a1738/"]: {
+        ["spotify/tracks.parquet"]: {
+            ["id"]: t.DAnyField;
+            ["disc_number"]: t.DAnyField;
+            ["duration"]: t.DAnyField;
+            ["explicit"]: t.DAnyField;
+            ["audio_feature_id"]: t.DAnyField;
+            ["name"]: t.DAnyField;
+            ["preview_url"]: t.DAnyField;
+            ["track_number"]: t.DAnyField;
+            ["popularity"]: t.DAnyField;
+            ["is_playable"]: t.DAnyField;
+        };
+        ["spotify/r_albums_tracks.parquet"]: {
+            ["album_id"]: t.DAnyField;
+            ["track_id"]: t.DAnyField;
+        };
+        ["spotify/albums.parquet"]: {
+            ["id"]: t.DAnyField;
+            ["name"]: t.DAnyField;
+            ["album_group"]: t.DAnyField;
+            ["album_type"]: t.DAnyField;
+            ["release_date"]: t.DAnyField;
+            ["popularity"]: t.DAnyField;
+        };
+        ["spotify/r_albums_artists.parquet"]: {
+            ["album_id"]: t.DAnyField;
+            ["artist_id"]: t.DAnyField;
+        };
+        ["spotify/artists.parquet"]: {
+            ["name"]: t.DAnyField;
+            ["id"]: t.DAnyField;
+            ["popularity"]: t.DAnyField;
+            ["followers"]: t.DAnyField;
+        };
+        ["spotify/audio_features.parquet"]: {
+            ["id"]: t.DAnyField;
+            ["acousticness"]: t.DAnyField;
+            ["analysis_url"]: t.DAnyField;
+            ["danceability"]: t.DAnyField;
+            ["duration"]: t.DAnyField;
+            ["energy"]: t.DAnyField;
+            ["instrumentalness"]: t.DAnyField;
+            ["key"]: t.DAnyField;
+            ["liveness"]: t.DAnyField;
+            ["loudness"]: t.DAnyField;
+            ["mode"]: t.DAnyField;
+            ["speechiness"]: t.DAnyField;
+            ["tempo"]: t.DAnyField;
+            ["time_signature"]: t.DAnyField;
+            ["valence"]: t.DAnyField;
         };
     };
 }

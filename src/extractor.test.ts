@@ -1,5 +1,5 @@
 import { it, expect } from 'bun:test'
-import { extractAssignations, Extracted, extractReconciledCalls, extractSpecialCalls } from './extractor'
+import { extractAssignations, Extracted, extractPrimitiveAssignations, extractReconciledCalls, extractSpecialCalls } from './extractor'
 
 const testCode = `
             // Covers lines 109-115, 117-122 (collectDefinitions)
@@ -7,7 +7,7 @@ const testCode = `
             const def1 = Buck('res1').from('param1');
             const someVar = {}; // Define someVar for the test
             const def2 = someVar.from('param2'); // someVar not Buck initialized
-            // const def3 = Buck('res3').settings().with('param3');
+            const tata = 42;//ck('res3').settings().with('param3');
 
             // Covers lines 124-132, 134-136, 138-148 (visitExecutableChains - isOutermost, stmtParentSearch)
             function wrapper() {
@@ -38,9 +38,21 @@ const testCode = `
             Buck('resWithOptions', {opt: true});
             Buck(123); // Non-string, non-object first arg
             Buck().with(db => ({ repo_pairs: db.from('starbase/*.parquet', 'a') })).from('enhanced_functions').select()
-        `
+`
+it('promitive extractions', () => {
+    expect(extractPrimitiveAssignations(testCode)).toEqual({
+        someVar: '{}',
+        tata: "42"
+    })
+})
+
+
+
+
+
 it('test assignation extraction', () => {
     const result = extractAssignations(testCode, { positions: false, chain: true })
+    // console.log({ result })
     expect(Object.entries(result)).toEqual([
         ["def1",
             {

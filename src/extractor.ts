@@ -1,3 +1,4 @@
+import { VariableDeclaration, VariableDeclarationKind } from 'ts-morph';
 import * as ts from 'typescript';
 type Position = { line: number, column: number, charPos: number }
 export type Extracted = {
@@ -22,6 +23,31 @@ type Opts = {
     chain?: boolean,
     targetMethods?: string[] | null
 }
+
+const primitiveInitializer = (e: ts.VariableDeclaration['initializer']) => {
+    return e.kind === ts.SyntaxKind.StringLiteral || e.kind === ts.SyntaxKind.NumericLiteral || e.kind === ts.SyntaxKind.TrueKeyword || e.kind === ts.SyntaxKind.FalseKeyword
+        || e.kind === ts.SyntaxKind.NullKeyword || e.kind === ts.SyntaxKind.UndefinedKeyword || e.kind === ts.SyntaxKind.RegularExpressionLiteral || e.kind === ts.SyntaxKind.ObjectLiteralExpression || e.kind === ts.SyntaxKind.ArrayLiteralExpression
+}
+
+export const extractPrimitiveAssignations = (text: string, opts: Opts = {}) => {
+    const sourceFile = ts.createSourceFile('temp.ts', text, ts.ScriptTarget.Latest, true);
+    const assignations = {}
+
+    function visit(node: ts.Node) {
+        if (ts.isVariableStatement(node)) {
+            const declarationList = node.declarationList;
+            declarationList.declarations.forEach(declaration => {
+                if (primitiveInitializer(declaration.initializer)) {
+                    const name = declaration.name.getText()
+                    assignations[name] = declaration.initializer.getText()
+                }
+            })
+        }
+    }
+    ts.forEachChild(sourceFile, visit);
+    return assignations;
+}
+
 export const extractAssignations = (text: string, opts: Opts = {}) => {
     const sourceFile = ts.createSourceFile('temp.ts', text, ts.ScriptTarget.Latest, true);
     const assignations = {}
@@ -153,7 +179,6 @@ const handleCallExpression = (sourceFile: ts.SourceFile, node: ts.CallExpression
         while (currentNode.parent && (ts.isPropertyAccessExpression(currentNode.parent) || ts.isCallExpression(currentNode.parent))) {
             currentNode = currentNode.parent;
         }
-        // console.log('=======>', )
         const chains = opts.chain !== false ? collectChain(currentNode) : {}
         fullExpression = currentNode.getText(sourceFile);
         const positions = opts.positions === false ? {} :
@@ -176,7 +201,6 @@ export const extractSpecialCalls = (text: string, opts: Opts = { positions: true
     function visit(node: ts.Node) {
         if (ts.isCallExpression(node)) {
             const items = handleCallExpression(sourceFile, node, { ...opts, positions: true })
-            // console.log('PUSSSSSSG', items)
             for (const item of items) {
                 if (specialCalls.length && isTranscluded(specialCalls[specialCalls.length - 1], item)) {
                     specialCalls[specialCalls.length - 1].children ??= []
@@ -185,7 +209,6 @@ export const extractSpecialCalls = (text: string, opts: Opts = { positions: true
                     specialCalls.push(item)
                 }
             }
-            // specialCalls.push(...items)
         }
         ts.forEachChild(node, visit);
     }
@@ -257,7 +280,13 @@ export function buildChain(chain: Extracted['chain']) {
     return chain.map(([method, params]) => `${method}(${params.join(',')})`).join('.')
 }
 
-export function evalChain(chain: Extracted['chain'], logErrors = false) {
+export function evalChain(chain: Extracted['chain'], context: Record<string, string>) {
+    const contextString = Object.entries(context)
+        .map(([key, value]) => `const ${key} = ${value};`)
+        .join('\n')
+    // if (Object.entries(context).length)
+    //     debugger
     const s = buildChain(chain)
-    return cleanEval(s, logErrors)
+    const body = `${contextString}; \n return ${s}`
+    return new Function(body)()
 }

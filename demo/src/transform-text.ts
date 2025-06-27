@@ -65,11 +65,12 @@ class Schemes {
     writeFile = async (filePath: string, content: string) => {
         console.log('writefile', filePath, content.length)
         await writeFile(filePath, content)
-        await fetch('/save-file', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filePath: '/workspace/' + filePath, content }),
-        })
+        if (import.meta.env.DEV)
+            await fetch('/save-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ filePath: '/workspace/' + filePath, content }),
+            })
     }
     updateContent = async () => {
         await this.writeFile('.buck/models.json', JSON.stringify(this.content, null, 2))
@@ -115,10 +116,10 @@ class Schemes {
                     tlogger(ressourceName, 'not a file an not a function')
                     continue
                 }
-                if (ressourceName.includes('*')/* && !ressource.includes('parquet')*/) {
-                    tlogger(ressourceName, 'wildcard detected, continue ...')
-                    continue
-                }
+                // if (ressourceName.includes('*')/* && !ressource.includes('parquet')*/) {
+                //     tlogger(ressourceName, 'wildcard detected, continue ...')
+                //     continue
+                // }
 
                 if (this.content[instanceName]?.[ressourceName]) {
                     tlogger(ressourceName, 'allready exist, continue ...')

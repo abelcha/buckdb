@@ -201,7 +201,7 @@ setTimeout(() => {
         // Set initial value based on current active editor
         const initialSetting = getInlayHintsSetting()
         vscode.workspace.getConfiguration('editor').update('inlayHints.enabled', initialSetting, vscode.ConfigurationTarget.Global)
-        
+
         // Listen for active editor changes to update inlay hints setting dynamically
         vscode.window.onDidChangeActiveTextEditor(() => {
             const newSetting = getInlayHintsSetting()

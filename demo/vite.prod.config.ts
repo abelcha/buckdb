@@ -12,6 +12,10 @@ const pkg = JSON.parse(
 const localDependencies = Object.entries(pkg.dependencies as Record<string, string>)
     .filter(([, version]) => version.startsWith('file:../'))
     .map(([name]) => name)
+const _headers = `/*
+    Cross-Origin-Opener-Policy: same-origin
+    Cross-Origin-Embedder-Policy: credentialless
+`
 
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '')
@@ -45,6 +49,12 @@ export default defineConfig(({ mode }) => {
                 minify: true
             }),
             visualizer(),
+            {
+                name: 'copy-headers',
+                writeBundle() {
+                    fs.writeFileSync('dist/_headers', _headers);
+                }
+            }
         ]
     }
 })

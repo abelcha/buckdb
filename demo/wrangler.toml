@@ -7,3 +7,9 @@ zone_id = ""
 [site]
 bucket = "dist"
 entry-point = "."
+
+[preview]
+preview_urls = true
+
+[access]
+enabled = false

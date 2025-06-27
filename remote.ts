@@ -7,12 +7,14 @@ import { BuckDBBase } from './core'
 class BuckDBRemote extends BuckDBBase {
     readonly type = 'remote' as const
 
+
     async ensureSchema(uri: string) {
         // todo
     }
 
     async remoteQuery(query: string): Promise<{ data: Record<string, any>[]; meta: { name: string, type: string }[] }> {
-        const resp = await fetch('/duckdb?default_format=JSONCompact', {
+        const uri = import.meta.env.VITE_REMOTE_URI || '/duckdb'
+        const resp = await fetch(`${uri}?default_format=JSONCompact`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: query
@@ -35,10 +37,10 @@ class BuckDBRemote extends BuckDBBase {
         }
     }
 
+
     async query(sql: string, opts: { rows?: boolean; withSchema?: boolean } = {}): Promise<Record<string, any>[]> {
         await this._executeQueuedCommands() // Ensure setup commands run first
         const { data, meta } = await this.remoteQuery(this.queue.getUsedDB() + sql)
-        // console.log({ rtn })
         const rtn = opts?.rows ? data : data.map(row => {
             const result: Record<string, any> = {}
             for (let i = 0; i < meta.length; i++) {

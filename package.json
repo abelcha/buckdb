@@ -11,7 +11,7 @@
     "typecheck": " tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "~5.8.3"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.29.1-dev132.0",

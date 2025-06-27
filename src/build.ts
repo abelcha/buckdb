@@ -177,6 +177,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 intersect: (q) => fromRes({ ...state, setops: state.setops.concat({ type: 'INTERSECT', value: q.toSql() }) }),
                 intersectAll: (q) => fromRes({ ...state, setops: state.setops.concat({ type: 'INTERSECT ALL', value: q.toSql() }) }),
                 exec: execute,
+                run: execute,
                 execute,
                 toState: () => state,
                 dump: (opts: any) => { dump(state, opts); return fromRes(state) },

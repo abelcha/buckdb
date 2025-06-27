@@ -78,6 +78,7 @@ export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaMod
 
     execute: FnMap<A, GF, S, SV>[V]
     exec: this['execute']
+    run: this['execute']
     show: this['execute']
     dump: (opts?: { state?: boolean }) => this
 
@@ -160,6 +161,7 @@ interface Resultor<T> {
     toSql: (opts?: any) => string,
     execute: () => Promise<T>
     exec: this['execute']
+    run: this['execute']
     show: this['execute']
     dump: (opts?: { state?: boolean }) => this
 }

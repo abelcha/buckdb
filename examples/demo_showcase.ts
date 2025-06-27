@@ -34,51 +34,41 @@ try {
 
 // --- WHERE Clause Showcase ---
 console.log('\n--- WHERE Showcase ---')
-try {
-    const thresholdOid = 16000 // Example context variable
-    const excludePattern = '%internal%' // Example context variable
-    const allowedSchemas = ['main', 'pg_catalog', 'information_schema'] // Example context variable
-    const minParams = 1
+const thresholdOid = 16000 // Example context variable
+const excludePattern = '%internal%' // Example context variable
+const allowedSchemas = ['main', 'pg_catalog', 'information_schema'] // Example context variable
+const minParams = 1
 
-    await from('duckdb_functions()', 'f')
-        .context({ thresholdOid: 16000, excludePattern: '%internal%', allowedSchemas: ['main', 'pg_catalog', 'information_schema'], minParams: 1 }) // Pass external variables
-        .select(f => ({
-            name: f.function_name,
-            params: f.parameters,
-            return: f.return_type,
-            schema: f.schema_name,
-        }))
-        .where((f, D) =>
-            f.schema_name.In(allowedSchemas) // IN operator with context array
-            && (f.parameters.length >= minParams || f.return_type === 'BOOLEAN') // Logical OR, >=, context number
-            && !f.function_name.Like(excludePattern) // NOT LIKE with context string
-            && D.Between(1, 12, 41)
-            && f.description !== null // IS NOT NULL
-            && f.function_oid > D.Bigint(thresholdOid) // Greater than with context number + explicit type
-            && f.function_name.SimilarTo(/^[a-z_]+$/i) // SimilarTo with Regex (case-insensitive flag)
-            && !f.return_type.In(['UNKNOWN', 'INVALID']) // NOT IN
-            && f.function_type === 'immutable' // Equality check
-            && f.function_oid.Between(10000, 20000) // BETWEEN operator
-        )
-        .orderBy(f => f.function_name) // Simple ORDER BY
-        .limit(10)
-        .execute()
-    console.log('WHERE Showcase executed successfully.')
-} catch (error) {
-    console.error('Error during WHERE Showcase:', error)
-}
+await from('duckdb_functions()', 'f')
+    .context({ minParams })
+    .select(f => ({
+        name: f.function_name,
+        params: f.parameters,
+        return: f.return_type,
+        schema: f.schema_name,
+    }))
+    .where((f, D) =>
+        f.schema_name.In(['main', 'pg_catalog', 'information_schema']) // IN operator with context array
+        && (f.parameters.len() >= minParams) // Logical OR, >=, context number
+        // && !f.function_name.Like('%internal%') // NOT LIKE with context string
+        // && f.description !== null // IS NOT NULL
+        // && f.function_oid > 100 // Greater than with context number + explicit type
+        // && f.function_name.SimilarTo(/^[a-z_]+$/i) // SimilarTo with Regex (case-insensitive flag)
+        // && !f.return_type.In(['UNKNOWN', 'INVALID']) // NOT IN
+        // && f.function_type === 'immutable' &&  // Equality check
+        // && f.function_oid.Between(0, 20000) // BETWEEN operator
+    )
+    .orderBy(f => f.function_name) // Simple ORDER BY
+    .limit(10)
+    .execute()
+console.log('WHERE Showcase executed successfully.')
 
 // --- ORDER BY and OFFSET Showcase ---
-console.log('\n--- ORDER BY / OFFSET Showcase ---')
-try {
-    await from('duckdb_types()', 't')
-        .select(t => ({ type_name: t.type_name, oid: t.type_oid, category: t.type_category }))
-        .orderBy(['category', 'ASC NULLS LAST']) // ORDER BY ASC NULLS FIRST
-        // .orderBy(t => t.type_oid, 'DESC') // Multiple ORDER BY clauses
-        .limit(5)
-        .offset(2) // OFFSET clause
-        .execute()
-    console.log('ORDER BY / OFFSET Showcase executed successfully.')
-} catch (error) {
-    console.error('Error during ORDER BY / OFFSET Showcase:', error)
-}
+await from('duckdb_types()', 't')
+    .select(t => ({ type_name: t.type_name, oid: t.type_oid, category: t.type_category }))
+    .orderBy(['category', 'ASC NULLS LAST']) // ORDER BY ASC NULLS FIRST
+    // .orderBy(t => t.type_oid, 'DESC') // Multiple ORDER BY clauses
+    .limit(5)
+    .offset(2) // OFFSET clause
+    .execute()
+console.log('ORDER BY / OFFSET Showcase executed successfully.')

@@ -1,5 +1,5 @@
 // import { Buck, from } from "@buckdb/isomorphic";
-import { Buck, from } from "../remote";
+// import { Buck, from } from "../wasm";
 // https://renenyffenegger.ch/notes/development/databases/DuckDB/index
 import { glob } from "../tf";
 

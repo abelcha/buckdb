@@ -1,25 +1,8 @@
 import { Buck } from '@buckdb/isomorphic'
 import { from } from '@buckdb/isomorphic'
 
-const SP = Buck('file:///me/dev/buckdb/data/spatial_lite.db', { access_mode: 'READ_ONLY' }).loadExtensions('spatial')
-
-SP.from('Center')
-    .select('center').select()
-
-// await SP.create('Center', { ifNotExists: true })
-//     .as([
-//         { center: [48.8866, 2.3431] }
-//     ]).execute()
-
-const resp = await SP.from('Center').select('center').execute()
-SP.from('Center')
-    .select((e, D) => ({
-        center: D.ST_Point(e.center[2], e.center[1]),
-        // a: e.center[1],
-        // b: e.center[2],
-    }))
-// console.log({ resp })
-
+const SP = Buck('s3://a1738/spatial_lite.db', { access_mode: 'READ_ONLY' })
+    .loadExtensions('spatial')
 
 const nearbyStorePairs = SP.with(
     db => ({
@@ -38,17 +21,11 @@ const nearbyStorePairs = SP.with(
                 _longitude: f.longitude,
                 _latitude: f.latitude,
                 location: D.ST_Point(f.longitude, f.latitude),
-                distance_meters: D.round(
-                    D.ST_Distance_Spheroid(
-                        D.ST_Point(f.longitude, f.latitude),
-                        base_location.center
-                    ),
-                    2
-                )
+                distance_meters: D.round(D.ST_Distance_Spheroid(D.ST_Point(f.longitude, f.latitude), base_location.center), 2)
             }))
             .where(({ f, base_location }, D) =>
-                f.date_closed.IsNull()
-                && D.ST_Distance_Spheroid(
+                f.date_closed.IsNull() &&
+                D.ST_Distance_Spheroid(
                     D.ST_Point(f.longitude, f.latitude),
                     base_location.center
                 ) <= 100

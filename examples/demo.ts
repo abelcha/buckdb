@@ -1,3 +1,27 @@
+/**
+ * 
+ * perfect demo as:
+ * fn function like read_csv
+ * 2 example one array fetch and one object fetch
+ * xJoin
+ * where condition with js regexp
+ * function from tn.ts
+ * chain mapping with lambda
+ * ternary
+ * template string
+ * operation
+ * 
+ * SECOND EXAMPLE:
+ * GROUP BY
+ * IN  
+ * 
+ * third example
+ * with
+ * spatial x
+ */
+
+
+
 import { Buck, from } from '@buckdb/isomorphic'
 from('Fsq_os_places_eu', 'f')
     .select(({ f, base_location }, D) => ({

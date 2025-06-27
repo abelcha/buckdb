@@ -679,3 +679,37 @@ export const var_samp = FN.var_samp
 export const variance = FN.variance
 export const first = FN.first
 export const quantile = FN.quantile
+
+
+
+export const Json = FN.Json
+export const Struct = FN.Struct
+export const List = FN.List
+// export const Bigint = FN.Bigint
+export const Bit = FN.Bit
+// export const Blob = FN.Blob
+// export const Boolean = FN.Boolean
+export const Decimal = FN.Decimal
+export const Double = FN.Double
+export const Enum = FN.Enum
+export const Float = FN.Float
+export const Hugeint = FN.Hugeint
+export const Integer = FN.Integer
+export const Interval = FN.Interval
+export const Null = FN.Null
+export const Smallint = FN.Smallint
+export const Time = FN.Time
+export const Timestamp = FN.Timestamp
+export const Tinyint = FN.Tinyint
+export const Ubigint = FN.Ubigint
+export const Uhugeint = FN.Uhugeint
+export const Uinteger = FN.Uinteger
+export const Union = FN.Union
+export const Usmallint = FN.Usmallint
+export const Utinyint = FN.Utinyint
+export const Uuid = FN.Uuid
+export const Varchar = FN.Varchar
+export const Varint = FN.Varint
+
+
+export const Cast = FN.cast

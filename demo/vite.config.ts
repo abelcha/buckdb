@@ -1,7 +1,7 @@
 import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin'
 import * as fs from 'fs'
 import path from 'path'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import { highlightSql, currentStyles } from '../src/highlighter'
 import { timecolor } from '../src/log'
 

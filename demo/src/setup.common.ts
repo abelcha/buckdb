@@ -105,20 +105,22 @@ for (const file of sourceFiles) {
     loadFile(file.content, file.path)
 }
 
-// Load examples
+
 const examples = await Promise.all(
-    Object.entries(
-        import.meta.glob('@buckdb/examples/*.ts', { as: 'raw', eager: false })
-    ).map(async ([path, loader]) => {
-        const content = await loader()
-        return {
-            path: path.split('/').pop(),
-            content: content.default || content
-        }
-    })
+    [
+        ...Object.entries(import.meta.glob('@buckdb/examples/*.ts', { as: 'raw', eager: false })),
+        ...Object.entries(import.meta.glob('@buckdb/showcase/*.ts', { as: 'raw', eager: false }))
+    ]
+        .map(async ([path, loader]) => {
+            const content = await loader()
+            return {
+                path: path.split('/').slice(-2).join('/'),
+                content: content.default || content
+            }
+        })
 )
 for (const example of examples) {
-    loadFile(example.content, `examples/${example.path}`)
+    loadFile(example.content, `${example.path}`)
 }
 
 
@@ -162,12 +164,28 @@ window.MonacoEnvironment = {
 
 const queryParams = new URLSearchParams(location.search)
 const inlay = parseInt(queryParams.get('inlay'))
+
+// Function to get inlay hints setting based on active file
+const getInlayHintsSetting = () => {
+    try {
+        const activeEditor = vscode.window.activeTextEditor
+        if (activeEditor) {
+            const fileName = activeEditor.document.uri.path.split('/').pop()
+            return fileName === 'demo.ts' ? 'onUnlessPressed' : 'off'
+        }
+        return 'off'
+    } catch (error) {
+        // API not ready yet, return default
+        return 'off'
+    }
+}
+
 await Promise.all([
     // initCustomThemeRegister(),
     initUserConfiguration(JSON.stringify({
         ...defaultConfiguration,
-        'editor.inlayHints.enabled': 'off', //queryParams.get('inlay')?.length ? 'offUnlessPressed' : 'onUnlessPressed',
-        'editor.inlayHints.maximumLength': queryParams.has('inlay') && !isNaN(inlay) ? inlay : 0,
+        'editor.inlayHints.enabled': 'off', // Start with 'off', will be updated when API is ready
+        'editor.inlayHints.maximumLength': 60,
         'editor.quickSuggestions': {
             'other': true,
             'comments': false,
@@ -176,8 +194,25 @@ await Promise.all([
     })),
     initUserKeybindings(defaultKeybindings),
 ])
-const file = '/workspace/examples' + (location.pathname || '/demo.ts')
 
+// Initialize inlay hints setting after API is ready and listen for changes
+setTimeout(() => {
+    try {
+        // Set initial value based on current active editor
+        const initialSetting = getInlayHintsSetting()
+        vscode.workspace.getConfiguration('editor').update('inlayHints.enabled', initialSetting, vscode.ConfigurationTarget.Global)
+        
+        // Listen for active editor changes to update inlay hints setting dynamically
+        vscode.window.onDidChangeActiveTextEditor(() => {
+            const newSetting = getInlayHintsSetting()
+            vscode.workspace.getConfiguration('editor').update('inlayHints.enabled', newSetting, vscode.ConfigurationTarget.Global)
+        })
+    } catch (error) {
+        console.warn('Failed to initialize inlay hints setting:', error)
+    }
+}, 500) // Wait 1 second for API to be ready
+
+const file = '/workspace/examples' + (location.pathname || '/01-getting-started.ts')
 
 export const constructOptions: IWorkbenchConstructionOptions = {
     remoteAuthority,
@@ -199,17 +234,27 @@ export const constructOptions: IWorkbenchConstructionOptions = {
         'files.hotExit': 'off',
     },
     defaultLayout: {
-        editors: [{ uri: monaco.Uri.file(file) }],
+        editors: [
+            { uri: monaco.Uri.file('/workspace/showcase/demo.ts') },
+        ],
         layout: { editors: { orientation: 0, groups: [{ size: 1 }, { size: 1 }] } },
-        views: [{ id: 'custom-view' }],
+        views: [{ id: 'cussqdtom-view' }],
         force: resetLayout,
     },
     welcomeBanner: { message: 'Welcome in monaco-vscode-api demo' },
     productConfiguration: {
         nameShort: 'monaco-vscode-api',
         nameLong: 'monaco-vscode-api',
-        extensionsGallery: { serviceUrl: 'https://open-vsx.org/vscode/gallery', resourceUrlTemplate: 'https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}', extensionUrlTemplate: 'https://open-vsx.org/vscode/gallery/{publisher}/{name}/latest', controlUrl: '', nlsBaseUrl: '' },
+        extensionsGallery: {
+            serviceUrl: 'https://open-vsx.org/vscode/gallery',
+            resourceUrlTemplate: 'https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}',
+            extensionUrlTemplate: 'https://open-vsx.org/vscode/gallery/{publisher}/{name}/latest',
+            controlUrl: '',
+            nlsBaseUrl: ''
+        },
     },
+    // Set the default file to open when workspace loads
+
 }
 
 export const envOptions: EnvironmentOverride = {}

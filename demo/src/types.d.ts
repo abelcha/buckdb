@@ -19,6 +19,7 @@ interface ViteTypeOptions {
 
 interface ImportMetaEnv {
   readonly VITE_APP_TITLE: string
+  readonly VITE_REMOTE_URI: string
   // more env variables...
 }
 

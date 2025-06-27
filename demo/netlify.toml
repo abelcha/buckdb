@@ -3,3 +3,6 @@ for = "/*"
 [headers.values]
 Cross-Origin-Opener-Policy = "same-origin"
 Cross-Origin-Embedder-Policy = "credentialless"
+
+[build]
+publish = "dist"

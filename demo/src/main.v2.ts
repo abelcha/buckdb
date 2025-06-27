@@ -45,13 +45,13 @@ const commandDisposables: Disposable[] = []
 let runOutputChannel: OutputChannel | undefined
 
 // Initialize disk save state from localStorage, default to true
-const initialSaveState = localStorage.getItem('buckdbDiskSaveEnabled')
-let isDiskSaveEnabled = initialSaveState === null ? true : initialSaveState === 'true'
-
+// const initialSaveState = true;//localStorage.getItem('buckdbDiskSaveEnabled')
+let isDiskSaveEnabled = import.meta.env.DEV
+// Console log to check VITE_REMOTE_URI variable via import.meta.env (production only)
 // Helper function to load content from localStorage if needed, ONLY for demo.ts
 const loadVirtualContentIfNeeded = async (editor: TextEditor | undefined, vscodeApi: VsCodeApi) => {
     // Check if editor exists, scheme is file, disk save is OFF, AND it's demo.ts
-    if (editor && editor.document.uri.scheme === 'file' && !isDiskSaveEnabled && editor.document.uri.fsPath.endsWith('/demo.ts')) {
+    if (editor && editor.document.uri.scheme === 'file' && !isDiskSaveEnabled/* && editor.document.uri.fsPath.endsWith('/demo.ts')*/) {
         const filePath = editor.document.uri.fsPath
         const storageKey = `buckdbVirtualFile:${filePath}` // Key remains specific to the file path
         const storedContent = localStorage.getItem(storageKey)

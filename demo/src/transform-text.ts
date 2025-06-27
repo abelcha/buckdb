@@ -1,26 +1,26 @@
-import { debounce, memoize } from 'es-toolkit'
+import { debounce } from 'es-toolkit'
 import type { IDisposable } from 'monaco-editor'
 import { alignExpressionWithSql } from './realign'
-import { EventEmitter, TextDocumentContentProvider, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api'
+import { EventEmitter, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api'
 import contentjson from '@buckdb/.buck/models.json' // Use relative path
 import { generateInterface, serializeDescribe } from '@buckdb/src/interface-generator' // Use relative path
 import { isFile, isFunction } from '@buckdb/src/utils'
-// import { BuckStatementParts, extractBuckStatement, extractFromStatementsAST, FromStatementParts } from '@buckdb/src/extract-from-statements'
 import { writeFile } from './setup.common'
-import { Extracted, extractReconciledCalls, cleanEval, evalChain } from '@buckdb/src/extractor'
+import { Extracted, extractReconciledCalls, cleanEval, evalChain, extractPrimitiveAssignations } from '@buckdb/src/extractor'
 import { InstanceOps, RessourceOps, triggerMethods } from '@buckdb/src/typedef'
+import { TextDocumentContentProvider } from 'vscode'
 
 export const transformedScheme = 'transformed'
 export const scrollSyncMap = new Map<string, { sourceDisposable: IDisposable; targetDisposable: IDisposable }>()
 
 const transformCache = new Map<string, string>()
 
-const execToSql = (part: Extracted) => {
+const execToSql = (part: Extracted, context: Record<string, any>) => {
     if (transformCache.has(part.expression)) {
         return transformCache.get(part.expression)
     }
     const passiveChain = part.chain.filter(([method]) => !triggerMethods.includes(method))
-    const st = evalChain(passiveChain)
+    const st = evalChain(passiveChain, context)
     const rtn = st.toSql({ trim: true }) as string
     if (rtn.startsWith('CREATE')) {
         transformCache.set(part.expression, rtn)
@@ -33,14 +33,14 @@ const execToSql = (part: Extracted) => {
     if (s1 !== s2) {
         console.error({ aligned, rtn })
         console.log({ s1, s2 })
-        throw new Error(`Alignment failed for expression: ${part.expression}\nExpected: ${rtn}\nGot: ${aligned}`);
-        console.error(`Alignment failed for expression: ${part.expression}\nExpected: ${rtn}\nGot: ${aligned}`);
+        // throw new Error(`Alignment failed for expression: ${part.expression}\nExpected: ${rtn}\nGot: ${aligned}`);
+        console.warn(`Alignment failed for expression: ${part.expression}\nExpected: ${rtn}\nGot: ${aligned}`);
         return rtn
     } else {
         // console.log('Alignment successful for expression:', { exp, aligned, rtn })
         // console.log('DIFFLEN', exp.trim().split('\n').length, aligned.trim().split('\n').length)
     }
-    transformCache.set(part.expression, rtn)
+    transformCache.set(part.expression, aligned)
     return aligned
 }
 
@@ -57,24 +57,6 @@ const parseChain = (chain: Extracted['chain']) => {
     return { instanceName, instanceStr }
 }
 
-
-
-function transformCode(parts: Extracted[]): string {
-    const arr = new Array().fill(null)
-    for (const st of parts || []) {
-        let res: string[] = []
-        try {
-            res = execToSql(st).split('\n')
-        } catch (err) {
-            // console.error(err)
-            res = ['Error: ', String(err), ...('-- xx\n'.repeat(Math.max(st.end.line - st.start.line - 3, 0)).split('\n'))]
-        }
-        let offset = 0
-        while (arr[st.start.line + offset]) offset++
-        res.forEach((line, i) => arr[st.start.line + i + offset - 1 + 0] = line)
-    }
-    return arr.map(e => e || '').join('\n')
-}
 
 const tlogger = globalThis.TRANSFORM_LOGS ? (...e) => console.log('[TRANSFORM]', ...e) : () => { }
 
@@ -209,9 +191,7 @@ const getCode = (uri: Uri): string => {
 }
 
 
-const refreshTypes = debounce(async (code: string) => {
-    const parts = extractReconciledCalls(code)
-
+const refreshTypes = debounce(async (parts: Extracted[]) => {
     schemes.upsertBuckStatements(parts)
         .then(() => schemes.upsertFromStatements(parts))
         .catch(err => console.error(err))
@@ -222,13 +202,30 @@ export const transformedProvider = new class implements TextDocumentContentProvi
     onDidChange = this.onDidChangeEmitter.event
     provideTextDocumentContent(uri: Uri): string {
         const code = getCode(uri)
-        refreshTypes(code)
+        const lineNumber = code.split('\n').length
         try {
             const parts = extractReconciledCalls(code)
-            return transformCode(parts)
+            const pa = extractPrimitiveAssignations(code)
+
+            refreshTypes(parts)
+            const arr = new Array(lineNumber).fill(null)
+            for (const st of parts || []) {
+                let res: string[] = []
+                try {
+                    res = execToSql(st, pa).split('\n')
+                } catch (err) {
+                    // console.error(err)
+                    res = ['Error: ', String(err), ...('-- xx\n'.repeat(Math.max(st.end.line - st.start.line - 3, 0)).split('\n'))]
+                }
+                let offset = 0
+                while (arr[st.start.line + offset]) offset++
+                res.forEach((line, i) => arr[st.start.line + i + offset - 1 + 0] = line)
+            }
+            return arr.map(e => e || '').join('\n')
+
         } catch (error) {
             console.error(error)
-            return `// Error processing document:\n// ${error instanceof Error ? error.message : String(error)}`
+            return `// Error processing document:\n// ${error instanceof Error ? error.message : String(error)}` + '\n---'.repeat(lineNumber)
         }
     }
     update(uri: Uri) {

@@ -1,7 +1,7 @@
 
-import { cast_to_type, generate_series, ST_Distance_Spheroid, ST_Point } from "@buckdb/fn";
+import { generate_series, Json, lower, regexp_replace, upper } from "@buckdb/fn";
 import { duckdb_functions, range } from "@buckdb/tf";
-import { Buck, from, read_csv } from "@buckdb/isomorphic";
+import { from } from "@buckdb/isomorphic";
 
 
 const d1 = await from(duckdb_functions())
@@ -31,133 +31,36 @@ const d4 = await from(range(1000))
 
 
 
+const thresholdOid = 16000 // Example context variable
+const minParams = 1
 
-
-const d4 =
-    await Buck('s3://a1738').loadExtensions('spatial')
-        .from(read_csv('geonames-cities-150k.csv', { ignore_errors: true }))
-        .select((e, D) => [
-            e.Elevation, e.ASCIIName, e.Coordinates,
-            ST_Point(D.cast(e.Coordinates[1], 'Int'), D.cast(e.Coordinates[2], 'Int'))
-            // ST_Distance_Spheroid(
-            //     ,
-            //     base_location.center
-            // ),
-
-
-
-
-        ])
-        // .select(e => ({
-        //     name: e.database_name.lower(),
-        //     str: `ex:  ${array_to_string(e.examples, ' - ')}`
-        // }))
-        .run()
-
-
-
-// // Example 2: Artist genre analysis with aggregations
-// const artistGenreStats = await Buck()
-//   .from('../spot/artists.parquet', 'ar')
-//   .join('../spot/r_artist_genre.parquet', 'rag', 'ar.id = rag.artist_id')
-//   .join('../spot/genres.parquet', 'g', 'rag.genre_id = g.id')
-//   .join('../spot/r_track_artist.parquet', 'rta', 'ar.id = rta.artist_id')
-//   .join('../spot/tracks.parquet', 't', 'rta.track_id = t.id')
-//   .select([
-//     'g.name as genre',
-//     'COUNT(DISTINCT ar.id) as artist_count',
-//     'COUNT(DISTINCT t.id) as track_count',
-//     'AVG(ar.popularity) as avg_artist_popularity',
-//     'AVG(t.popularity) as avg_track_popularity',
-//     'MAX(t.popularity) as max_track_popularity'
-//   ])
-//   .groupBy('g.name')
-//   .having('COUNT(DISTINCT ar.id) > 5')
-//   .orderBy('avg_track_popularity', 'DESC')
-//   .limit(20)
-//   .show()
-
-// // Example 3: Album completeness analysis
-// const albumAnalysis = await Buck()
-//   .from('../spot/albums.parquet', 'a')
-//   .join('../spot/r_albums_tracks.parquet', 'rat', 'a.id = rat.album_id')
-//   .join('../spot/tracks.parquet', 't', 'rat.track_id = t.id')
-//   .join('../spot/r_albums_artists.parquet', 'raa', 'a.id = raa.album_id')
-//   .join('../spot/artists.parquet', 'ar', 'raa.artist_id = ar.id')
-//   .leftJoin('../spot/audio_features.parquet', 'af', 't.id = af.id')
-//   .select([
-//     'a.name as album_name',
-//     'ar.name as artist_name',
-//     'a.release_date',
-//     'COUNT(t.id) as track_count',
-//     'AVG(t.popularity) as avg_track_popularity',
-//     'AVG(af.danceability) as avg_danceability',
-//     'AVG(af.energy) as avg_energy',
-//     'SUM(t.duration_ms) / 1000 / 60 as total_duration_minutes'
-//   ])
-//   .where("a.release_date LIKE '2023%'")
-//   .groupBy(['a.id', 'a.name', 'ar.name', 'a.release_date'])
-//   .having('COUNT(t.id) >= 5')
-//   .orderBy('avg_track_popularity', 'DESC')
-//   .limit(50)
-//   .show()
-
-// // Example 4: Audio features correlation by genre
-// const genreAudioFeatures = await Buck()
-//   .from('../spot/genres.parquet', 'g')
-//   .join('../spot/r_artist_genre.parquet', 'rag', 'g.id = rag.genre_id')
-//   .join('../spot/artists.parquet', 'ar', 'rag.artist_id = ar.id')
-//   .join('../spot/r_track_artist.parquet', 'rta', 'ar.id = rta.artist_id')
-//   .join('../spot/tracks.parquet', 't', 'rta.track_id = t.id')
-//   .join('../spot/audio_features.parquet', 'af', 't.id = af.id')
-//   .select([
-//     'g.name as genre',
-//     'COUNT(*) as track_count',
-//     'ROUND(AVG(af.danceability), 3) as avg_danceability',
-//     'ROUND(AVG(af.energy), 3) as avg_energy',
-//     'ROUND(AVG(af.valence), 3) as avg_valence',
-//     'ROUND(AVG(af.acousticness), 3) as avg_acousticness',
-//     'ROUND(AVG(af.instrumentalness), 3) as avg_instrumentalness',
-//     'ROUND(AVG(af.tempo), 1) as avg_tempo'
-//   ])
-//   .where('af.danceability IS NOT NULL')
-//   .groupBy('g.name')
-//   .having('COUNT(*) > 100')
-//   .orderBy('avg_energy', 'DESC')
-//   .show()
-
-// // Example 5: Popular tracks with full context
-// const popularTracksFullContext = await Buck()
-//   .with('track_artists', `
-//     SELECT 
-//       t.id,
-//       t.name as track_name,
-//       t.popularity,
-//       t.duration_ms,
-//       STRING_AGG(ar.name, ', ') as artists
-//     FROM '../spot/tracks.parquet' t
-//     JOIN '../spot/r_track_artist.parquet' rta ON t.id = rta.track_id
-//     JOIN '../spot/artists.parquet' ar ON rta.artist_id = ar.id
-//     GROUP BY t.id, t.name, t.popularity, t.duration_ms
-//   `)
-//   .from('track_artists', 'ta')
-//   .join('../spot/r_albums_tracks.parquet', 'rat', 'ta.id = rat.track_id')
-//   .join('../spot/albums.parquet', 'a', 'rat.album_id = a.id')
-//   .leftJoin('../spot/audio_features.parquet', 'af', 'ta.id = af.id')
-//   .select([
-//     'ta.track_name',
-//     'ta.artists',
-//     'a.name as album_name',
-//     'a.release_date',
-//     'ta.popularity',
-//     'ta.duration_ms / 1000 / 60 as duration_minutes',
-//     'af.danceability',
-//     'af.energy',
-//     'af.valence'
-//   ])
-//   .where('ta.popularity > 80')
-//   .orderBy('ta.popularity', 'DESC')
-//   .limit(25)
-//   .show()
-
-// console.log('🎵 Spotify database analysis complete!');
+const kitchenSink =
+    await from(duckdb_functions(), 'f')
+        .context({ minParams, thresholdOid })
+        .distinctOn('function_name')
+        .select(f => ({
+            name: f.function_name.upper(),
+            params: f.parameters ?? [],
+            return: upper(f.return_type[.1]) + '' + lower(f.return_type[2.]),
+            oidPlus: f.function_oid + 12,
+            nullCheck: !f.description ? 'default' : f.description,
+            lastEx: f.examples[-1],
+            casted: f.database_oid.as('Bigint'),
+            json_literal: Json({ key: 'value', num: 1 }), // JSON Literal
+            xxx: `hello`,
+            regex_example: regexp_replace(f.function_name, /_/, '-'), // Regex function
+        }))
+        .where((f, D) =>
+            f.schema_name in ['main', 'pg_catalog', 'information_schema'] // IN operator with context array
+            && (f.parameters.len() >= minParams) // Logical OR, >=, context number
+            && !f.function_name.Like('%internal%') // NOT LIKE with context string
+            && f.description !== null // IS NOT NULL
+            && f.function_oid > 100 // Greater than with context number + explicit type
+            && f.function_name.SimilarTo(/^[a-z_]+$/i) // SimilarTo with Regex (case-insensitive flag)
+            && f.return in ['Double', 'Varchar'] // NOT IN
+            && f.function_type === 'scalar'  // Equality check
+            && f.function_oid.Between(0, thresholdOid) // BETWEEN operator
+        )
+        .orderBy(f => f.function_name) // Simple ORDER BY
+        .limit(10)
+        .execute()

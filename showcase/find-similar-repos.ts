@@ -1,7 +1,8 @@
 import { Buck, from } from '@buckdb/isomorphic'
 
+const repo = 'yamadashy/repomix'
 
-const q = Buck('file:///Volumes/dev/fsimrep').with(
+Buck('s3://a1738/fsimrep').with(
     db => ({
         repo_pairs: db.from('starbase/*.parquet', 'a')
             .join('starlite.parquet', 'r1').using('repo')
@@ -15,7 +16,8 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
                 repo_a_stars: r1.c,
                 repo_b_stars: r2.c
             }))
-            .where(({ a }) => a.repo === 'yamadashy/repomix')
+            .context({ repo })
+            .where(({ a }) => a.repo === repo)
     }),
     db => ({
         similarity_metrics: db.from('repo_pairs')
@@ -55,5 +57,3 @@ const q = Buck('file:///Volumes/dev/fsimrep').with(
     }))
     .orderBy('similarity_score', 'DESC')
     .limit(100)
-
-await q.show()

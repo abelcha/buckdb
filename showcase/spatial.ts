@@ -1,14 +1,11 @@
 import { Buck } from '@buckdb/isomorphic'
-import { from } from '@buckdb/isomorphic'
 
-const SP = Buck('s3://a1738/spatial_lite.db', { access_mode: 'READ_ONLY' })
-    .loadExtensions('spatial')
+const SP = Buck('s3://a1738/spatial_lite.db').loadExtensions('spatial')
 
 const nearbyStorePairs = SP.with(
     db => ({
         base_location: db.from('Center')
             .select((e, D) => ({
-                uuu: `123`,
                 center: D.ST_Point(e.center[2], e.center[1])
             })),
     }),
@@ -48,5 +45,3 @@ const nearbyStorePairs = SP.with(
     .limit(200)
 
 const results = await nearbyStorePairs.execute()
-console.log(`Found ${results.length} nearby store pairs`)
-console.table(results)

@@ -1,4 +1,44 @@
-import { Buck, from, MemoryDB, read_parquet } from '@buckdb/isomorphic'
+import { Buck, from, MemoryDB, read_csv, read_parquet } from '@buckdb/isomorphic'
+
+
+
+
+
+
+
+
+
+MemoryDB.from(read_csv('s3://a1738/geonames-cities-150k.csv'))
+.select(e => ({
+    name: `${e.ASCIIName}: ${e.Elevation.round(2)} km`,
+
+})).groupBy('ALL')
+
+
+
+
+
+
+MemoryDB.from(read_csv('s3://a1738/geonames-cities-150k.csv'))
+.select(e => ({
+    title: `${e.ASCIIName} - ${e.Elevation.round(2)} km`,
+}))
+.groupBy('CountryCode')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 await MemoryDB.from('duckdb_functions()')
     .select((e, D) => [D.count(),D.min(e.function_name),D.avg(e.function_name.len())])

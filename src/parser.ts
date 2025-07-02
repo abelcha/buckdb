@@ -185,6 +185,10 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
       },
       Identifier(node: Identifier) {
         if (!node.isProperty) {
+          // console.log('NOPROP', node.name)
+          if (node.name === 'global') {
+            return null
+          }
           if (params.has(node.name)) {
             if (params.get(node.name)?.depth === 0) {
               return null
@@ -257,7 +261,22 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         return node.raw
       },
       CallExpression(node: CallExpression) {
-
+        if (node.callee.type === 'Identifier' && FNS[node.callee.name]) {
+          // TODO: FIND BETTER SOLUTION
+          node.callee = {
+            type: "MemberExpression",
+            accessor: ".",
+            computed: false,
+            object: {
+              type: "Identifier",
+              name: "global",
+            },
+            property: {
+              type: "Identifier",
+              name: node.callee.name,
+            },
+          }
+        }
         if (node.callee.type === 'MemberExpression' && node.callee.property.type === 'Identifier' && PolyfillMapping[node.callee.property.name]) {
           if (node.callee.property.name === 'filter') {
             const calleeArr = transformNode(node.callee, { isFuncArg: true })
@@ -268,7 +287,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
           }
           node.callee.property.name = PolyfillMapping[node.callee.property.name]
         }
-        const calleeArr = transformNode(node.callee, { isFuncArg: true })
+        const calleeArr = node.callee.type === 'Identifier' ? [node.callee.name] : transformNode(node.callee, { isFuncArg: true })
         const lastCallee = calleeArr[calleeArr.length - 1]
         // let args = node.arguments.map(e => transformNode(e, { isFuncArg: true }))
         let args = node.arguments.map(e => joinMembers(transformNode(e, { isFuncArg: true }) || []))
@@ -308,7 +327,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
           const gargs = node.arguments.slice(1).map(transformNode)
           return wrap(`${joinMembers(calleeArr.slice(0, -1))}::${firstValue}` + (gargs?.length ? ('(' + gargs.join(', ') + ')') : ''), '(', ')')
         }
-
+        // debugger
         if (typeof calleeArr[0] === 'string' && calleeArr[0].toLowerCase() === 'cast' && node.arguments.length >= 2) {
           const supp = args.length > 2 ? `(${node.arguments.map((e: any) => e.value).slice(2).join(', ')})` : ''
           return `CAST(${args[0]} AS ${secValue}${supp})`

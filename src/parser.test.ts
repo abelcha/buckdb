@@ -181,13 +181,14 @@ test('ternary', () => {
 })
 
 test('cast', () => {
+  expect(parseObject((e, D) => ({ date: Cast(e.ts, 'Date') }))).toEqual([["date", "CAST(ts AS Date)"]])
   expect(parse((e, D) => e.num.as('Bigint'))).toBe('(num::Bigint)')
   expect(parse((e, D) => e.num.as('Decimal(1, 4)'))).toBe('(num::Decimal(1, 4))')
   expect(parse((e, D) => e.num.as('Decimal', 1, 3))).toBe('(num::Decimal(1, 3))')
-  expect(parse((e, D) => D.cast(e.num, 'Bigint'))).toBe('CAST(num AS Bigint)')
-  expect(parse((e, D) => D.cast(e.num, 'Decimal', 12, 42))).toBe('CAST(num AS Decimal(12, 42))')
-  expect(parse((e, D) => D.cast(e.num, 'Map', 'Varchar', 'Float'))).toBe('CAST(num AS Map(Varchar, Float))')
-  expect(parse((e, D) => e.lat.as('Bigint') === D.cast(e.lng.abs(), 'Bigint')))
+  expect(parse((e, D) => D.Cast(e.num, 'Bigint'))).toBe('CAST(num AS Bigint)')
+  expect(parse((e, D) => D.Cast(e.num, 'Decimal', 12, 42))).toBe('CAST(num AS Decimal(12, 42))')
+  expect(parse((e, D) => D.Cast(e.num, 'Map', 'Varchar', 'Float'))).toBe('CAST(num AS Map(Varchar, Float))')
+  expect(parse((e, D) => e.lat.as('Bigint') === D.Cast(e.lng.abs(), 'Bigint')))
     .toBe('(lat::Bigint) = CAST(lng.abs() AS Bigint)')
 })
 

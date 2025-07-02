@@ -273,12 +273,12 @@ export interface DConstructors<DNum, DStr> {
 }
 
 export interface DCastors<DNum, DStr> {
-    cast(val: DAnyable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField
-    cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField
-    cast(val: DAnyable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField
-    cast(val: DAnyable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNum
-    cast(val: DAnyable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DStr
-    cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField
+    Cast(val: DAnyable, destype: DBOOLEAN_NATIVE, ...args: DAnyable[]): DBoolField
+    Cast(val: DAnyable, destype: DCOMPOSITE_NATIVE, ...args: DAnyable[]): DAnyField
+    Cast(val: DAnyable, destype: DDATETIME_NATIVE, ...args: DAnyable[]): DDateField
+    Cast(val: DAnyable, destype: DNUMERIC_NATIVE, ...args: DAnyable[]): DNum
+    Cast(val: DAnyable, destype: DSTRING_NATIVE, ...args: DAnyable[]): DStr
+    Cast(val: DAnyable, destype: DANY_NATIVE, ...args: DAnyable[]): DAnyField
 }
 
 export interface Astor<DNum, DStr> {

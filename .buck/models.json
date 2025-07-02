@@ -850,6 +850,47 @@
       "Modificationdate": "DDate",
       "LABELEN": "DVarchar",
       "Coordinates": "DVarchar"
+    },
+    "/me/dev/fsimrep/data/watchev.parquet": {
+      "login": "DVarchar",
+      "repo": "DVarchar",
+      "ts": "DDate"
+    },
+    "/me/dev/fsimrep/starbase/2024-09.parquet": {
+      "repo_id": "DNumeric",
+      "repo": "DVarchar",
+      "login_id": "DNumeric",
+      "login": "DVarchar",
+      "date": "DDate",
+      "star_count": "DNumeric"
+    },
+    "data/str-test.jsonl": {
+      "str": "DVarchar"
+    },
+    "test_usr": {
+      "id": "DNumeric",
+      "name": "DVarchar",
+      "age": "DNumeric",
+      "status": "DVarchar"
+    },
+    "test_scores": {
+      "player_id": "DNumeric",
+      "score": "DNumeric",
+      "multiplier": "DNumeric"
+    },
+    "test_global": {
+      "id": "DNumeric",
+      "flag": "DBool"
+    },
+    "/Volumes/T9/gh-2025/2025-06.csv": {
+      "repo": "DVarchar",
+      "login": "DVarchar",
+      "ts": "DDate"
+    },
+    "/me/dev/fsimrep/data/union.parquet": {
+      "login": "DVarchar",
+      "repo": "DVarchar",
+      "ts": "DDate"
     }
   },
   "s3://a1738/akira09.db": {

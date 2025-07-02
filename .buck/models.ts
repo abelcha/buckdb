@@ -765,6 +765,47 @@ export interface Models {
             ["LABELEN"]: t.DVarcharField;
             ["Coordinates"]: t.DVarcharField;
         };
+        ["/me/dev/fsimrep/data/watchev.parquet"]: {
+            ["login"]: t.DVarcharField;
+            ["repo"]: t.DVarcharField;
+            ["ts"]: t.DDateField;
+        };
+        ["/me/dev/fsimrep/starbase/2024-09.parquet"]: {
+            ["repo_id"]: t.DNumericField;
+            ["repo"]: t.DVarcharField;
+            ["login_id"]: t.DNumericField;
+            ["login"]: t.DVarcharField;
+            ["date"]: t.DDateField;
+            ["star_count"]: t.DNumericField;
+        };
+        ["data/str-test.jsonl"]: {
+            ["str"]: t.DVarcharField;
+        };
+        ["test_usr"]: {
+            ["id"]: t.DNumericField;
+            ["name"]: t.DVarcharField;
+            ["age"]: t.DNumericField;
+            ["status"]: t.DVarcharField;
+        };
+        ["test_scores"]: {
+            ["player_id"]: t.DNumericField;
+            ["score"]: t.DNumericField;
+            ["multiplier"]: t.DNumericField;
+        };
+        ["test_global"]: {
+            ["id"]: t.DNumericField;
+            ["flag"]: t.DBoolField;
+        };
+        ["/Volumes/T9/gh-2025/2025-06.csv"]: {
+            ["repo"]: t.DVarcharField;
+            ["login"]: t.DVarcharField;
+            ["ts"]: t.DDateField;
+        };
+        ["/me/dev/fsimrep/data/union.parquet"]: {
+            ["login"]: t.DVarcharField;
+            ["repo"]: t.DVarcharField;
+            ["ts"]: t.DDateField;
+        };
     };
     ["s3://a1738/akira09.db"]: {
         ["Actor"]: {

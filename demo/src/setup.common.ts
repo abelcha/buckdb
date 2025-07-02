@@ -10,6 +10,7 @@ import { Worker } from './tools/crossOriginWorker'
 import defaultConfiguration from './user/configuration.json'
 import defaultKeybindings from './user/keybindings.json?raw'
 import '@codingame/monaco-vscode-extension-api/localExtensionHost'
+import { retry } from 'es-toolkit'
 
 const url = new URL(document.location.href)
 const params = url.searchParams
@@ -196,24 +197,34 @@ await Promise.all([
 ])
 
 // Initialize inlay hints setting after API is ready and listen for changes
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+retry(async () => {
+    await sleep(250)
+    console.log('testing READYness')
+    // Set initial value based on current active editor
+    const initialSetting = getInlayHintsSetting()
+    vscode.workspace.getConfiguration('editor').update('inlayHints.enabled', initialSetting, vscode.ConfigurationTarget.Global)
+
+    // Listen for active editor changes to update inlay hints setting dynamically
+    vscode.window.onDidChangeActiveTextEditor(() => {
+        const newSetting = getInlayHintsSetting()
+        vscode.workspace.getConfiguration('editor').update('inlayHints.enabled', newSetting, vscode.ConfigurationTarget.Global)
+    })
+    console.log('INIT SUCCEED')
+}, 10) // Wait 1 second for API to be ready
 setTimeout(() => {
-    try {
-        // Set initial value based on current active editor
-        const initialSetting = getInlayHintsSetting()
-        vscode.workspace.getConfiguration('editor').update('inlayHints.enabled', initialSetting, vscode.ConfigurationTarget.Global)
-
-        // Listen for active editor changes to update inlay hints setting dynamically
-        vscode.window.onDidChangeActiveTextEditor(() => {
-            const newSetting = getInlayHintsSetting()
-            vscode.workspace.getConfiguration('editor').update('inlayHints.enabled', newSetting, vscode.ConfigurationTarget.Global)
-        })
-    } catch (error) {
-        console.warn('Failed to initialize inlay hints setting:', error)
+    // Check if no editor is open after 1 second and open demo.ts if needed
+    const editors = vscode.window.visibleTextEditors
+    if (editors.length === 0) {
+        vscode.window.showTextDocument(monaco.Uri.file('/workspace/showcase/demo.ts'), { preview: false })
     }
-}, 500) // Wait 1 second for API to be ready
+    // /
+    // const demoUri = 
+}, 3000)
 
-const file = '/workspace/examples' + (location.pathname || '/01-getting-started.ts')
-
+export const defaultEditors = Object.keys(import.meta.glob('@buckdb/showcase/*.ts', { eager: true }))
+    .map(path => ({ uri: monaco.Uri.file('/workspace/' + path.split('/').slice(-2).join('/')) }))
+    .sort((a) => a.uri.path.endsWith('demo.ts') ? -1 : 1)
 export const constructOptions: IWorkbenchConstructionOptions = {
     remoteAuthority,
     enableWorkspaceTrust: false,
@@ -229,14 +240,9 @@ export const constructOptions: IWorkbenchConstructionOptions = {
     },
     developmentOptions: { logLevel: LogLevel.Info },
     configurationDefaults: {
-        'window.title': 'Monaco-Vscode-Api${separator}${dirty}${activeEditorShort}',
-        'editor.minimap.enabled': false,
-        'files.hotExit': 'off',
     },
     defaultLayout: {
-          editors: Object.keys(import.meta.glob('@buckdb/showcase/*.ts', { eager: true }))
-            .map(path => ({ uri: monaco.Uri.file('/workspace/' + path.split('/').slice(-2).join('/')) }))
-            .sort((a) => a.uri.path.endsWith('demo.ts') ? -1 : 1),
+        editors: defaultEditors,
         layout: { editors: { orientation: 0, groups: [{ size: 1 }, { size: 1 }] } },
         views: [{ id: 'cussqdtom-view' }],
         force: resetLayout,

@@ -8,6 +8,5 @@ document.querySelector('#clearStorage')?.addEventListener('click', async () => {
     await clearStorage()
 })
 
-monaco.editor.onDidCreateModel(() => {
-    updateUserKeybindings(defaultKeybindings)
-})
+// Removed: updateUserKeybindings on model creation to prevent undo stack pollution
+// The keybindings are already initialized in setup.common.ts via initUserKeybindings()

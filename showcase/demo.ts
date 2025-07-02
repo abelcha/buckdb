@@ -16,6 +16,7 @@ const d2 = await from(range(0, 10000))
     .run()
 
 const d3 = await from(range(1000))
+
     .select(e => `${e.range} is ${e.range % 2 === 0 ? 'even' : 'odd'}`)
     .run()
 

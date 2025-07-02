@@ -113,6 +113,7 @@
   "typescript.inlayHints.variableTypes.enabled": true,
   "editor.inlayHints.maximumLength": 50,
   "workbench.colorTheme": "Default Dark Modern",
+  "files.hotExit": "off",
   "editor.quickSuggestions": {
     "other": false,
     "comments": false,

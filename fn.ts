@@ -712,4 +712,4 @@ export const Varchar = FN.Varchar
 export const Varint = FN.Varint
 
 
-export const Cast = FN.cast
+export const Cast = FN.Cast

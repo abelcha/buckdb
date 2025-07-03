@@ -5,12 +5,13 @@ import type * as vsCodeApi from '@codingame/monaco-vscode-extension-api'
 import { runActiveTypeScriptFile } from './features/runTs'
 import { openTransformedViewAndSync, scrollSyncMap, transformedScheme } from './sync-view'
 import './imports.ts'
-import { Disposable, EventEmitter, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api' // Added imports, TextDocument, CodeLensProvider
+import { Disposable, EventEmitter, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api'; // Added imports, TextDocument, CodeLensProvider
 import type { OutputChannel, TextDocumentContentProvider, TextEditor } from 'vscode'
-import { pathCompletionProvider } from './completion-provider.ts'
 import { extractSpecialCalls } from '@buckdb/src/extractor'
-import { SqlCodeLensProvider } from './features/sqlCodeLensProvider' // Import the new CodeLensProvider
+
+import { SqlCodeLensProvider } from './features/sqlCodeLensProvider'; // Import the new CodeLensProvider
 import { transformedProvider } from './transform-text'
+import { fsCompletionProvider } from './completion-provider.ts'
 type VsCodeApi = typeof vsCodeApi
 
 const { getApi } = registerExtension(
@@ -49,6 +50,7 @@ let runOutputChannel: OutputChannel | undefined
 let isDiskSaveEnabled = import.meta.env.DEV
 // Console log to check VITE_REMOTE_URI variable via import.meta.env (production only)
 // Helper function to load content from localStorage if needed, ONLY for demo.ts
+// Modified to avoid conflicts with undo operations
 const loadVirtualContentIfNeeded = async (editor: TextEditor | undefined, vscodeApi: VsCodeApi) => {
     // Check if editor exists, scheme is file, disk save is OFF, AND it's demo.ts
     if (editor && editor.document.uri.scheme === 'file' && !isDiskSaveEnabled/* && editor.document.uri.fsPath.endsWith('/demo.ts')*/) {
@@ -56,7 +58,12 @@ const loadVirtualContentIfNeeded = async (editor: TextEditor | undefined, vscode
         const storageKey = `buckdbVirtualFile:${filePath}` // Key remains specific to the file path
         const storedContent = localStorage.getItem(storageKey)
 
-        if (storedContent !== null && editor.document.getText() !== storedContent) {
+        // Only load if document is empty or hasn't been modified (to avoid undo conflicts)
+        const currentContent = editor.document.getText()
+        const isDocumentEmpty = currentContent.trim() === ''
+        const isDirty = editor.document.isDirty
+
+        if (storedContent !== null && currentContent !== storedContent && (isDocumentEmpty || !isDirty)) {
             const success = await editor.edit(editBuilder => {
                 const fullRange = new vscodeApi.Range(
                     new vscodeApi.Position(0, 0),
@@ -181,9 +188,8 @@ void getApi().then(async (vscode: VsCodeApi) => {
         }
     }))
 
-    // Register the path completion provider for TypeScript files.
-    // Trigger automatically when '/' is typed.
-    commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, pathCompletionProvider, '/'))
+
+    commandDisposables.push(vscode.languages.registerCompletionItemProvider({ scheme: 'file', language: 'typescript' }, fsCompletionProvider, '/'));
 
     // Register the CodeLensProvider for TypeScript files
     const tsFileSelector = [{ language: 'typescript' }, { language: 'typescriptreact' }]

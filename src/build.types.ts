@@ -284,7 +284,7 @@ export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mod
 
     update<K1 extends (ModKeys<Mods, Ressource>) & string>(table: K1): UpdateResult<Mods, Ressource, PushCollection<[], Ressource, K1>> & Resultor<any>
 
-    from<K1 extends ModKeys<Mods, Ressource> | (string & {}), A extends string = DeriveName<K1>>(table: K1, alias?: A):
+    from<K1 extends ModKeys<Mods, Ressource> | (string), A extends string = DeriveName<K1>>(table: K1, alias?: A):
         K1 extends ModKeys<Mods, Ressource> ?
         (FromResult<Mods, Ressource, PushCollection<[], Ressource, K1, A>, GF> & MS<'records', GF, MergedModel<Mods, PushCollection<[], Ressource, K1, A>>>)
         : (FromResult<Mods, Ressource, PushCollection<[], '', '', A>, GF> & MS<'records', GF, MergedModel<Mods, PushCollection<[], '', '', A>>>)

@@ -8,6 +8,8 @@ repomix-output.xml.txt
 stuffs
 docs/
 demo/dist
-
+*/*/node_modules
 # Local Netlify folder
 .netlify
+executor/frontend/node_modules
+executor/frontend/node_modules

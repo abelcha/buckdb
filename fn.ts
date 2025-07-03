@@ -713,3 +713,14 @@ export const Varint = FN.Varint
 
 
 export const Cast = FN.Cast
+
+
+export const path_exists = FN.path_exists
+export const path_type = FN.path_type
+export const pwd = FN.pwd
+export const file_extension = FN.file_extension
+export const file_last_modified = FN.file_last_modified
+export const file_name = FN.file_name
+export const file_size = FN.file_size
+export const is_dir = FN.is_dir
+export const is_file = FN.is_file

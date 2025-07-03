@@ -13,7 +13,7 @@ const getCommunityExtensions = () => {
 
 const community_extensions = [] // await getCommunityExtensions()
 global.duckdb_extensions = await Buck('').from('duckdb_extensions()').select(e => e.extension_name).execute()
-const allextensions = ['h3', 'aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui', 'ducklake']
+const allextensions = ['hostfs', 'h3', 'aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui', 'ducklake']
 
 const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')
@@ -120,6 +120,8 @@ global.renderMethod = (e: IFns, typeMap = {}, slice = 1, hidden = false) => {
 const banMethods = (e: IFns, type: string) => {
     return e.function_name.startsWith('h3')
         || e.function_name.startsWith('ST_')
+        || e.function_name.match(/^(is_|path_|file_)/)
+        || e.function_name.match(/(hsize|hostfs|_path)$/)
         || e.function_name.startsWith('__internal')
         || e.return_type?.startsWith('INTERVAL')
         || (type !== 'DDate' && e.return_type?.match(/^(DATE|TIME)/))

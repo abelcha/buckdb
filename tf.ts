@@ -160,6 +160,18 @@ export interface TFExtensions {
     ST_Drivers(): RetCon<'ST_Drivers'>;
     /** ST_GeneratePoints(box, count, seed) @description Generates random points within the specified bounding box. @description @param box Bounding box (min_x, min_y, max_x, max_y) as BOX_2D. @description @param count Number of points to generate. @description @param seed Optional random seed. */
     ST_GeneratePoints(box: [number, number, number, number], count: number, seed?: number): RetCon<'ST_GeneratePoints'>;
+
+
+
+    /**@default: cd(col0:VARCHAR) -> null*/
+    cd(col0: string): RetCon<'cd'>;
+    /**@default: ls(col0:VARCHAR | , col1:BOOLEAN | ) -> null*/
+    ls(col0?: string, col1?: boolean): RetCon<'ls'>;
+    /**@default: lsr(col0:VARCHAR | , col1:INTEGER | , col2:BOOLEAN | ) -> null*/
+    lsr(col0?: string, col1?: number, col2?: boolean): RetCon<'lsr'>;
+
+
+
 }
 
 export interface TableFunctions extends TFMetadata, TFPragma, TFBase, TFExtensions {
@@ -259,3 +271,7 @@ export const sqlite_query = TF.sqlite_query
 export const sqlite_scan = TF.sqlite_scan
 export const ST_Drivers = TF.ST_Drivers
 export const ST_GeneratePoints = TF.ST_GeneratePoints
+
+export const cd = TF.cd
+export const ls = TF.ls
+export const lsr = TF.lsr

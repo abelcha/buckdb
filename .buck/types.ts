@@ -209,9 +209,6 @@ export interface DAny<DNum, DStr> extends Astor<DNum, DStr>, DPatternMatchers {
   /**@description: Returns an integer with the hash of the value. Note that this is not a cryptographic hash	@example: hash('🦆')	@default: hash(param:ANY) -> UBIGINT*/
   hash(...vargs: DAnyable[]): DNum;
 
-  /**@description: Whether or not the provided value is the histogram "other" bin (used for values not belonging to any provided bin)	@example: is_histogram_other_bin(v)	@default: is_histogram_other_bin(val:ANY) -> BOOLEAN*/
-  is_histogram_other_bin(): DBoolField;
-
   /**@description: Map a struct to another struct type, potentially re-ordering, renaming and casting members and filling in defaults for missing values	@example: remap_struct({'i': 1, 'j': 2}, NULL::ROW(v1 INT, v2 INT, v3 INT), {'v1': 'j', 'v3': 'i'}, {'v2': NULL::INTEGER})	@default: remap_struct(input:ANY, targetType:ANY, mapping:ANY, defaults:ANY) -> ANY*/
   remap_struct(targetType: DAnyable, mapping: DAnyable, defaults: DAnyable): DAny<DNum, DStr>;
 
@@ -516,12 +513,6 @@ export interface _DJsonField {
   /**@default: json_extract(col0:JSON, col1:BIGINT | VARCHAR) -> JSON*/
   json_extract(col1: DNumericable | DVarcharable): DJsonField;
 
-  /**@default: json_extract_path(col0:JSON, col1:VARCHAR[]) -> JSON[]*/
-  json_extract_path(col1: DArrayable): DArrayField<DJsonField>;
-
-  /**@default: json_extract_path(col0:JSON, col1:BIGINT | VARCHAR) -> JSON*/
-  json_extract_path(col1: DNumericable | DVarcharable): DJsonField;
-
   /**@default: json_extract_path_text(col0:JSON, col1:VARCHAR[]) -> VARCHAR[]*/
   json_extract_path_text(col1: DArrayable): DArrayField<DVarcharField>;
 
@@ -665,9 +656,6 @@ export interface _DVarcharField extends DAnyField {
   /**@description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
   ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
 
-  /**@description: Returns whether or not the database/schema are in the search path	@example: in_search_path('memory', 'main')	@default: in_search_path(databaseName:VARCHAR, schemaName:VARCHAR) -> BOOLEAN*/
-  in_search_path(schemaName: DVarcharable): DBoolField;
-
   /**@description: The Jaccard similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaccard('duck','luck')	@default: jaccard(str1:VARCHAR, str2:VARCHAR) -> DOUBLE*/
   jaccard(str2: DVarcharable): DNumericField;
 
@@ -744,9 +732,6 @@ export interface _DVarcharField extends DAnyField {
 
   /**@description: Returns the last component of the path similarly to Python's os.path.basename. If trim_extension is true, the file extension will be removed (it defaults to false). separator options: system, both_slash (default), forward_slash, backslash	@example: parse_filename('path/to/file.csv', true, 'forward_slash')	@default: parse_filename(string:VARCHAR, trimExtension:BOOLEAN | VARCHAR | , separator:VARCHAR | ) -> VARCHAR*/
   parse_filename(trimExtension?: DAnyable | DBoolable | DVarcharable, separator?: DAnyable | DVarcharable): DVarcharField;
-
-  /**@description: Returns a list of the components (directories and filename) in the path similarly to Python's pathlib.PurePath::parts. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_path('path/to/file.csv', 'system')	@default: parse_path(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR[]*/
-  parse_path(separator?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
 
   /**@description: Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example: instr('test test','es')	@default: position(haystack:VARCHAR, needle:VARCHAR) -> BIGINT*/
   position(needle: DVarcharable): DNumericField;
@@ -1179,9 +1164,6 @@ export interface _DVarcharComp extends DAnyComp {
   /**@description: Returns true if the `string` matches the `like_specifier` (see Pattern Matching) using case-insensitive matching. `escape_character` is used to search for wildcard characters in the `string`.	@example: ilike_escape('A%c', 'a$%C', '$')	@default: ilike_escape(string:VARCHAR, likeSpecifier:VARCHAR, escapeCharacter:VARCHAR) -> BOOLEAN*/
   ilike_escape(likeSpecifier: DVarcharable, escapeCharacter: DVarcharable): DBoolField;
 
-  /**@description: Returns whether or not the database/schema are in the search path	@example: in_search_path('memory', 'main')	@default: in_search_path(databaseName:VARCHAR, schemaName:VARCHAR) -> BOOLEAN*/
-  in_search_path(schemaName: DVarcharable): DBoolField;
-
   /**@description: The Jaccard similarity between two strings. Different case is considered different. Returns a number between 0 and 1	@example: jaccard('duck','luck')	@default: jaccard(str1:VARCHAR, str2:VARCHAR) -> DOUBLE*/
   jaccard(str2: DVarcharable): number & _DNumericComp;
 
@@ -1258,9 +1240,6 @@ export interface _DVarcharComp extends DAnyComp {
 
   /**@description: Returns the last component of the path similarly to Python's os.path.basename. If trim_extension is true, the file extension will be removed (it defaults to false). separator options: system, both_slash (default), forward_slash, backslash	@example: parse_filename('path/to/file.csv', true, 'forward_slash')	@default: parse_filename(string:VARCHAR, trimExtension:BOOLEAN | VARCHAR | , separator:VARCHAR | ) -> VARCHAR*/
   parse_filename(trimExtension?: DAnyable | DBoolable | DVarcharable, separator?: DAnyable | DVarcharable): string & _DVarcharComp;
-
-  /**@description: Returns a list of the components (directories and filename) in the path similarly to Python's pathlib.PurePath::parts. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_path('path/to/file.csv', 'system')	@default: parse_path(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR[]*/
-  parse_path(separator?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
 
   /**@description: Returns location of first occurrence of needle in haystack, counting from 1. Returns 0 if no match found	@example: instr('test test','es')	@default: position(haystack:VARCHAR, needle:VARCHAR) -> BIGINT*/
   position(needle: DVarcharable): number & _DNumericComp;
@@ -2057,6 +2036,9 @@ export interface DGlobal<DNum, DStr> {
   /**@description: Absolute value	@example: abs(-17.4)	@default: abs(x:BIGINT) -> BIGINT*/
   abs(x: DNumericable): DNum;
 
+  /**@default: absolute_path(col0:VARCHAR) -> VARCHAR*/
+  absolute_path(col0: DVarcharable): DStr;
+
   /**@description: Computes the arccosine of x	@example: acos(0.5)	@default: acos(x:DOUBLE) -> DOUBLE*/
   acos(x: DNumericable): DNum;
 
@@ -2519,6 +2501,18 @@ export interface DGlobal<DNum, DStr> {
   /**@default: family(col0:INET) -> UTINYINT*/
   family(col0: DAnyable): DNum;
 
+  /**@default: file_extension(col0:VARCHAR) -> VARCHAR*/
+  file_extension(col0: DVarcharable): DStr;
+
+  /**@default: file_last_modified(col0:VARCHAR) -> TIMESTAMP*/
+  file_last_modified(col0: DVarcharable): DDateField;
+
+  /**@default: file_name(col0:VARCHAR) -> VARCHAR*/
+  file_name(col0: DVarcharable): DStr;
+
+  /**@default: file_size(col0:VARCHAR) -> UBIGINT*/
+  file_size(col0: DVarcharable): DNum;
+
   /**@default: finalize(col0:AGGREGATE_STATE<?>) -> INVALID*/
   finalize(col0: DAnyable): DAnyField;
 
@@ -2907,11 +2901,17 @@ export interface DGlobal<DNum, DStr> {
   /**@default: host(col0:INET) -> VARCHAR*/
   host(col0: DAnyable): DStr;
 
+  /**@default: hostfs(col0:VARCHAR) -> VARCHAR*/
+  hostfs(col0: DVarcharable): DStr;
+
   /**@description: Extract the hour component from a date or timestamp	@example: hour(timestamp '2021-08-03 11:59:44.123456')	@default: hour(ts:INTERVAL) -> BIGINT*/
   hour(ts: DAnyable): DNum;
 
   /**@description: Extract the hour component from a date or timestamp	@example: hour(timestamp '2021-08-03 11:59:44.123456')	@default: hour(ts:DATE) -> BIGINT*/
   hour(ts: DDateable): DNum;
+
+  /**@default: hsize(col0:HUGEINT) -> VARCHAR*/
+  hsize(col0: DNumericable): DStr;
 
   /**@default: html_escape(col0:VARCHAR, col1:BOOLEAN | ) -> VARCHAR*/
   html_escape(col0: DVarcharable, col1?: DAnyable | DBoolable): DStr;
@@ -2927,6 +2927,12 @@ export interface DGlobal<DNum, DStr> {
 
   /**@description: Returns whether or not the database/schema are in the search path	@example: in_search_path('memory', 'main')	@default: in_search_path(databaseName:VARCHAR, schemaName:VARCHAR) -> BOOLEAN*/
   in_search_path(databaseName: DVarcharable, schemaName: DVarcharable): DBoolField;
+
+  /**@default: is_dir(col0:VARCHAR) -> BOOLEAN*/
+  is_dir(col0: DVarcharable): DBoolField;
+
+  /**@default: is_file(col0:VARCHAR) -> BOOLEAN*/
+  is_file(col0: DVarcharable): DBoolField;
 
   /**@description: Whether or not the provided value is the histogram "other" bin (used for values not belonging to any provided bin)	@example: is_histogram_other_bin(v)	@default: is_histogram_other_bin(val:ANY) -> BOOLEAN*/
   is_histogram_other_bin(val: DAnyable): DBoolField;
@@ -3362,6 +3368,12 @@ export interface DGlobal<DNum, DStr> {
   /**@description: Returns a list of the components (directories and filename) in the path similarly to Python's pathlib.PurePath::parts. separator options: system, both_slash (default), forward_slash, backslash	@example: parse_path('path/to/file.csv', 'system')	@default: parse_path(string:VARCHAR, separator:VARCHAR | ) -> VARCHAR[]*/
   parse_path(string: DVarcharable, separator?: DAnyable | DVarcharable): DArrayField<DVarcharField>;
 
+  /**@default: path_exists(col0:VARCHAR) -> BOOLEAN*/
+  path_exists(col0: DVarcharable): DBoolField;
+
+  /**@default: path_type(col0:VARCHAR) -> VARCHAR*/
+  path_type(col0: DVarcharable): DStr;
+
   /**@description: Returns the value of pi	@example: pi()*/
   pi(): DNum;
 
@@ -3383,6 +3395,8 @@ export interface DGlobal<DNum, DStr> {
   /**@description: Formats a string using printf syntax	@example: printf('Benchmark "%s" took %d seconds', 'CSV', 42)	@default: printf(format:VARCHAR) -> VARCHAR*/
   printf(format: DVarcharable, ...vargs: DAnyable[]): DStr;
 
+  pwd(): DStr;
+
   /**@description: Extract the quarter component from a date or timestamp	@example: quarter(timestamp '2021-08-03 11:59:44.123456')	@default: quarter(ts:INTERVAL) -> BIGINT*/
   quarter(ts: DAnyable): DNum;
 
@@ -3394,7 +3408,6 @@ export interface DGlobal<DNum, DStr> {
 
   /**@description: Returns a random number between 0 and 1	@example: random()*/
   random(): DNum;
-
 
   /**@description: Create a list of values between start and stop - the stop parameter is exclusive	@example: range(2, 5, 3)	@default: range(start:BIGINT, stop:BIGINT | , step:BIGINT | ) -> BIGINT[]*/
   range(start: DNumericable, stop?: DAnyable | DNumericable, step?: DAnyable | DNumericable): DArrayField<DNumericField>;
@@ -4379,6 +4392,9 @@ export interface DTable {
   /**@default: arrow_scan_dumb(col0:POINTER, col1:POINTER, col2:POINTER) -> null*/
   arrow_scan_dumb(col0: DAnyable, col1: DAnyable, col2: DAnyable): DAnyField;
 
+  /**@default: cd(col0:VARCHAR) -> null*/
+  cd(col0: DVarcharable): DAnyField;
+
   /**@default: check_peg_parser(col0:VARCHAR) -> null*/
   check_peg_parser(col0: DVarcharable): DAnyField;
 
@@ -4485,6 +4501,12 @@ export interface DTable {
 
   /**@default: load_aws_credentials(col0:BOOLEAN | VARCHAR, redactSecret:BOOLEAN, setRegion:BOOLEAN | ) -> null*/
   load_aws_credentials(col0: DBoolable | DVarcharable, redactSecret: DBoolable, setRegion?: DAnyable | DBoolable): DAnyField;
+
+  /**@default: ls(col0:VARCHAR | , col1:BOOLEAN | ) -> null*/
+  ls(col0?: DAnyable | DVarcharable, col1?: DAnyable | DBoolable): DAnyField;
+
+  /**@default: lsr(col0:VARCHAR | , col1:INTEGER | , col2:BOOLEAN | ) -> null*/
+  lsr(col0?: DAnyable | DVarcharable, col1?: DAnyable | DNumericable, col2?: DAnyable | DBoolable): DAnyField;
 
   /**@default: parquet_bloom_probe(col0:VARCHAR | VARCHAR[], col1:VARCHAR, col2:ANY) -> null*/
   parquet_bloom_probe(col0: DArrayable | DVarcharable, col1: DVarcharable, col2: DAnyable): DAnyField;

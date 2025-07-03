@@ -116,7 +116,7 @@ const examples = await Promise.all(
             const content = await loader()
             return {
                 path: path.split('/').slice(-2).join('/'),
-                content: content.default || content
+                content: content
             }
         })
 )
@@ -185,6 +185,11 @@ await Promise.all([
     // initCustomThemeRegister(),
     initUserConfiguration(JSON.stringify({
         ...defaultConfiguration,
+        "files.hotExit": 'off',
+        "window.confirmBeforeClose": false,
+        "workbench.editor.confirmClose": false,
+        "workbench.editor.confirmCloseWithUnsavedChanges": false,
+        "files.confirmDelete": false,
         'editor.inlayHints.enabled': 'off', // Start with 'off', will be updated when API is ready
         'editor.inlayHints.maximumLength': 60,
         'editor.quickSuggestions': {
@@ -193,7 +198,12 @@ await Promise.all([
             'strings': true, // <-- Enable here
         },
     })),
-    initUserKeybindings(defaultKeybindings),
+    initUserKeybindings(
+        import.meta.env.PROD ?
+            defaultKeybindings.replace('control+enter', 'cmd+enter') :
+            defaultKeybindings
+
+    )
 ])
 
 // Initialize inlay hints setting after API is ready and listen for changes
@@ -212,6 +222,7 @@ retry(async () => {
     })
     console.log('INIT SUCCEED')
 }, 10) // Wait 1 second for API to be ready
+
 setTimeout(() => {
     // Check if no editor is open after 1 second and open demo.ts if needed
     const editors = vscode.window.visibleTextEditors

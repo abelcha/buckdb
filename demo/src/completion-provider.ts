@@ -1,10 +1,11 @@
 import './style.css'
 import './imports.ts'
-import * as vscode from 'vscode'
+import * as vscode from '@codingame/monaco-vscode-extension-api'
 import { from } from '@buckdb/remote.ts'
 import { ls } from '@buckdb/tf.ts'
+import type { CompletionItem, CompletionItemProvider, Position, TextDocument } from 'vscode'
 
-const s3CompletionProvider = async (linePrefix: string, document: vscode.TextDocument, position: vscode.Position) => {
+const s3CompletionProvider = async (linePrefix: string, document: TextDocument, position: Position) => {
     const S3_PREFIX_REGEX = /s3:\/\/([^/'"]+)\/([^'"]*)$/;
     const s3Match = linePrefix.match(S3_PREFIX_REGEX);
 
@@ -84,7 +85,7 @@ const s3CompletionProvider = async (linePrefix: string, document: vscode.TextDoc
                 }
                 return item;
             })
-            .filter((item): item is vscode.CompletionItem => item !== null)
+            .filter((item): item is CompletionItem => item !== null)
             .filter((item, index, self) => index === self.findIndex((t) => t.insertText === item.insertText));
     } catch (error) {
         console.error('Error fetching S3 completions:', error);
@@ -93,7 +94,7 @@ const s3CompletionProvider = async (linePrefix: string, document: vscode.TextDoc
 
 }
 
-export const fsCompletionProvider: vscode.CompletionItemProvider = {
+export const fsCompletionProvider: CompletionItemProvider = {
     async provideCompletionItems(document, position) {
         const linePrefix = document.lineAt(position).text.substr(0, position.character);
         const match = linePrefix.match(/[^'"`]+$/)[0]

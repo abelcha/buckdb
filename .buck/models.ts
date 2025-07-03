@@ -806,6 +806,12 @@ export interface Models {
             ["repo"]: t.DVarcharField;
             ["ts"]: t.DDateField;
         };
+        ["ls()"]: {
+            ["path"]: t.DVarcharField;
+        };
+        ["lsr()"]: {
+            ["path"]: t.DVarcharField;
+        };
     };
     ["s3://a1738/akira09.db"]: {
         ["Actor"]: {

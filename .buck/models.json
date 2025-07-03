@@ -891,6 +891,12 @@
       "login": "DVarchar",
       "repo": "DVarchar",
       "ts": "DDate"
+    },
+    "ls()": {
+      "path": "DVarchar"
+    },
+    "lsr()": {
+      "path": "DVarchar"
     }
   },
   "s3://a1738/akira09.db": {

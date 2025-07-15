@@ -1,9 +1,9 @@
-import { Models } from '@buckdb/.buck/models'
-import * as t from '.buck/types'
+import { Models } from '../.buck/models'
+import * as t from '../.buck/types'
 import { DuckdbCon } from '@buckdb/core'
 import { DDirection } from './typedef'
 import { CopyToInterface } from './copy'
-import { FromPlainDict, ToPlain } from './deep-map'
+import { FromPlainDict, ToCompDict, ToPlain } from './deep-map'
 import { Flatten, KeyIntersection, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge } from './generic-utils'
 import type { DeriveName } from './utils'
 
@@ -72,9 +72,10 @@ type Awaited<T> = T extends PRecord<infer Z> ? (Z extends [infer D] ? D : Z) : T
 // type Awaited<T> = T extends Promise<infer U> ? U extends Array<infer U2> ? U2 : U extends Record<string, infer V> ? V : U : T
 
 
+
 export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaModel, S extends SelectModel = ShallowModel<A>, SV = []> extends Selectors<S, GF> {
     returnType: Awaited<ReturnType<this['execute']>>
-    compType: A & S
+    // compType: 
 
     execute: FnMap<A, GF, S, SV>[V]
     exec: this['execute']
@@ -91,7 +92,7 @@ export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaMod
     keyBy<G extends (KeyPicker<A, S>)>(key: G): MS<'keyed', GF, A, S, SV>
     minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'row', GF, A, S, SV>
     maxBy: this['minBy']
-    where(fn: (p: this['compType'], D: GF) => any): MS<V, GF, A, S, SV>
+    where(fn: (p: ToCompDict<A & S>, D: t.DMetaComp) => any): MS<V, GF, A, S, SV>
     where(rawStr: string): MS<V, GF, A, S, SV>
     having: this['where']
     distinctOn<G extends KeyPicker<A, S>>(...key: G[] | G[][]): MS<V, GF, A, S, SV>
@@ -283,8 +284,7 @@ export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mod
     }
 
     update<K1 extends (ModKeys<Mods, Ressource>) & string>(table: K1): UpdateResult<Mods, Ressource, PushCollection<[], Ressource, K1>> & Resultor<any>
-
-    from<K1 extends ModKeys<Mods, Ressource> | (string), A extends string = DeriveName<K1>>(table: K1, alias?: A):
+    from<K1 extends ModKeys<Mods, Ressource> | (string & {}), A extends string = DeriveName<K1>>(table: K1, alias?: A):
         K1 extends ModKeys<Mods, Ressource> ?
         (FromResult<Mods, Ressource, PushCollection<[], Ressource, K1, A>, GF> & MS<'records', GF, MergedModel<Mods, PushCollection<[], Ressource, K1, A>>>)
         : (FromResult<Mods, Ressource, PushCollection<[], '', '', A>, GF> & MS<'records', GF, MergedModel<Mods, PushCollection<[], '', '', A>>>)

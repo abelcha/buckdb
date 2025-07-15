@@ -193,3 +193,13 @@ type res2 =
       { id: string; value: number }[]
     >
   >;
+
+
+export type ToComp<T> =
+  T extends t.DArrayField<infer U> ? t.DArrayField<ToComp<U>>
+  : T extends Array<infer U> ? t.DArrayField<ToComp<U>>
+  : T extends t.DVarcharField ? t.DVarcharComp
+  : T extends t.DNumericField ? t.DNumericComp
+  : T extends object ? t.DStructField<{ [K in keyof T]: ToComp<T[K]> }>
+  : T
+export type ToCompDict<T extends object> = { [K in keyof T]: ToComp<T[K]> }

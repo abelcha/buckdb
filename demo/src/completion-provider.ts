@@ -97,11 +97,14 @@ const s3CompletionProvider = async (linePrefix: string, document: TextDocument, 
 export const fsCompletionProvider: CompletionItemProvider = {
     async provideCompletionItems(document, position) {
         const linePrefix = document.lineAt(position).text.substr(0, position.character);
-        const match = linePrefix.match(/[^'"`]+$/)[0]
+        const match = linePrefix.match(/['"`]([\w\/\-\_\.]+)/)?.[1]
 
 
         if (linePrefix.includes('s3://')) {
             return s3CompletionProvider(linePrefix, document, position)
+        }
+        if (!match) {
+            return [];
         }
         // if (!linePrefix.endsWith('/')) {
         //     return undefined;

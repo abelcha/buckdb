@@ -17,7 +17,7 @@ const allextensions = ['hostfs', 'h3', 'aws', 'azure', 'delta', 'excel', 'fts', 
 
 const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')
-const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number', 'length-ANY[]-number', 'substr-VARCHAR-string']
+const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number', 'length-ANY[]-number', 'substr-VARCHAR-string', 'range-TIMESTAMP WITH TIME ZONE-any[]', , 'range-TIMESTAMP-any[]']
 const entriesSorted = <T>(items: Record<string, T>) => {
     return Object.keys(items).sort().map(e => [e, items[e]]) as [string, T][]
 }
@@ -172,7 +172,7 @@ const formatFunctions = (p: ReturnType<typeof getFunctions>, opts: Opts) => {
             return fst.signatures.map((e, i) => [
                 buildJSDoc(e),
                 global.renderMethod(e, opts.typeMap || {}, opts.slice ?? 1, override.includes(fsig.function_name)),
-                ...(i ? [] :  rest.map(e => e.signatures[0]).map(e => `${buildJSDoc(e, fsig.function_name)} ${e.function_name}: this['${fsig.function_name}'];`))
+                ...(i ? [] : rest.map(e => e.signatures[0]).map(e => `${buildJSDoc(e, fsig.function_name)} ${e.function_name}: this['${fsig.function_name}'];`))
             ])
         })
     return sortBy(gpx, [e => e[1].toLowerCase()]).map(e => e.join('') + '\n').join('\n')

@@ -23,8 +23,6 @@ export declare const sComptype: unique symbol;
 export declare const sAnti: unique symbol;
 export declare const sInferred: unique symbol;
 
-undefined;
-
 type FromPlain<T> = T extends DArrayField<infer U> ? DArrayField<FromPlain<U>>
   : T extends Array<infer U> ? DArrayField<FromPlain<U>>
   : T extends DStructField ? { [K in keyof T]: FromPlain<T[K]> }
@@ -135,9 +133,6 @@ export interface DDateField extends DAnyField {
 
   /**@description: Extract the quarter component from a date or timestamp	@example: quarter(timestamp '2021-08-03 11:59:44.123456')	@default: quarter(ts:DATE) -> BIGINT*/
   quarter(): DNumericField;
-
-  /**@description: Create a list of values between start and stop - the stop parameter is exclusive	@example: range(2, 5, 3)	@default: range(start:TIMESTAMP WITH TIME ZONE, stop:TIMESTAMP WITH TIME ZONE, step:INTERVAL) -> TIMESTAMP WITH TIME ZONE[]*/
-  range(stop: DDateable, step: DAnyable): DArrayField;
 
   /**@description: Extract the second component from a date or timestamp	@example: second(timestamp '2021-08-03 11:59:44.123456')	@default: second(ts:DATE) -> BIGINT*/
   second(): DNumericField;
@@ -3430,9 +3425,6 @@ export interface DGlobal<DNum, DStr> {
 
   /**@description: Returns a random number between 0 and 1	@example: random()*/
   random(): DNum;
-
-  /**@description: Create a list of values between start and stop - the stop parameter is exclusive	@example: range(2, 5, 3)	@default: range(start:TIMESTAMP WITH TIME ZONE, stop:TIMESTAMP WITH TIME ZONE, step:INTERVAL) -> TIMESTAMP WITH TIME ZONE[]*/
-  range(start: DDateable, stop: DDateable, step: DAnyable): DArrayField;
 
   /**@description: Create a list of values between start and stop - the stop parameter is exclusive	@example: range(2, 5, 3)	@default: range(start:BIGINT, stop:BIGINT | , step:BIGINT | ) -> BIGINT[]*/
   range(start: DNumericable, stop?: DAnyable | DNumericable, step?: DAnyable | DNumericable): DArrayField<DNumericField>;

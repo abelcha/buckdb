@@ -24,16 +24,22 @@ export default defineConfig(({ mode }) => {
         envPrefix: 'VITE_',
         build: {
             target: 'esnext',
-            assetsInlineLimit: 0,
+            assetsInlineLimit: 100_000_000_000,
             minify: true,
-
+            rollupOptions: {
+                output: {
+                    // dynamicImportInCjs: true,
+                    // inlineDynamicImports: true,
+                    manualChunks: undefined,
+                }
+            }
         },
         worker: {
             format: 'es',
         },
         esbuild: {
             minifySyntax: true,
-
+            treeShaking: true,
         },
         resolve: {
             dedupe: ['vscode', ...localDependencies],

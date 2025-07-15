@@ -71,18 +71,15 @@ type GlobImport = Record<string, () => Promise<{ default: string }>>
 
 // Import all source files
 const entries = Object.entries(
-    import.meta.glob('@buckdb/{src/*.ts,.buck/*.{ts,json},*.ts}', { as: 'raw', eager: false })
+    import.meta.glob('@buckdb/{src/*.ts,.buck/*.{ts,json},*.ts}', { as: 'raw', eager: true })
 )
 
-const sourceFiles = await Promise.all(
-    entries.map(async ([path, loader]) => {
-        const content = await loader() as any
-        return {
-            path: path.split('../')[1],
-            content: content.default || content
-        }
-    })
-)
+const sourceFiles = entries.map(([path, content]) => {
+    return {
+        path: path.split('../')[1],
+        content: content as string
+    }
+})
 
 
 // loadFile(JSON.stringify(
@@ -107,19 +104,15 @@ for (const file of sourceFiles) {
 }
 
 
-const examples = await Promise.all(
-    [
-        ...Object.entries(import.meta.glob('@buckdb/examples/*.ts', { as: 'raw', eager: false })),
-        ...Object.entries(import.meta.glob('@buckdb/showcase/*.ts', { as: 'raw', eager: false }))
-    ]
-        .map(async ([path, loader]) => {
-            const content = await loader()
-            return {
-                path: path.split('/').slice(-2).join('/'),
-                content: content
-            }
-        })
-)
+const examples = [
+    ...Object.entries(import.meta.glob('@buckdb/examples/*.ts', { as: 'raw', eager: true })),
+    ...Object.entries(import.meta.glob('@buckdb/showcase/*.ts', { as: 'raw', eager: true }))
+].map(([path, content]) => {
+    return {
+        path: path.split('/').slice(-2).join('/'),
+        content: content as string
+    }
+})
 for (const example of examples) {
     loadFile(example.content, `${example.path}`)
 }
@@ -145,21 +138,22 @@ fileSystemProvider.registerFile(
 )
 registerFileSystemOverlay(1, fileSystemProvider)
 
-export type WorkerLoader = () => Worker
-const workerLoaders: Partial<Record<string, WorkerLoader>> = {
-    TextEditorWorker: () => new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url), { type: 'module' }),
-    TextMateWorker: () => new Worker(new URL('@codingame/monaco-vscode-textmate-service-override/worker', import.meta.url), { type: 'module' }),
-    OutputLinkDetectionWorker: () => new Worker(new URL('@codingame/monaco-vscode-output-service-override/worker', import.meta.url), { type: 'module' }),
-    LanguageDetectionWorker: () => new Worker(new URL('@codingame/monaco-vscode-language-detection-worker-service-override/worker', import.meta.url), { type: 'module' }),
-    LocalFileSearchWorker: () => new Worker(new URL('@codingame/monaco-vscode-search-service-override/worker', import.meta.url), { type: 'module' }),
-}
 window.MonacoEnvironment = {
     getWorker: function (moduleId, label) {
-        const workerFactory = workerLoaders[label]
-        if (workerFactory != null) {
-            return workerFactory()
+        switch (label) {
+            case 'TextEditorWorker':
+                return new Worker(new URL('monaco-editor/esm/vs/editor/editor.worker.js', import.meta.url), { type: 'module' })
+            case 'TextMateWorker':
+                return new Worker(new URL('@codingame/monaco-vscode-textmate-service-override/worker', import.meta.url), { type: 'module' })
+            case 'OutputLinkDetectionWorker':
+                return new Worker(new URL('@codingame/monaco-vscode-output-service-override/worker', import.meta.url), { type: 'module' })
+            case 'LanguageDetectionWorker':
+                return new Worker(new URL('@codingame/monaco-vscode-language-detection-worker-service-override/worker', import.meta.url), { type: 'module' })
+            case 'LocalFileSearchWorker':
+                return new Worker(new URL('@codingame/monaco-vscode-search-service-override/worker', import.meta.url), { type: 'module' })
+            default:
+                throw new Error(`Unimplemented worker ${label} (${moduleId})`)
         }
-        throw new Error(`Unimplemented worker ${label} (${moduleId})`)
     },
 }
 
@@ -199,10 +193,7 @@ await Promise.all([
         },
     })),
     initUserKeybindings(
-        import.meta.env.PROD ?
-            defaultKeybindings.replace('control+enter', 'cmd+enter') :
             defaultKeybindings
-
     )
 ])
 

@@ -78,8 +78,11 @@ global.gentypes = { 'numeric': 'DNum', 'varchar': 'DStr', 'any': 'DAny<DNum,DStr
 type IFns = typeof _fns[number]
 
 
-const buildJSDoc = (row: IFns) => {
+const buildJSDoc = (row: IFns, aliased?: string) => {
     const items: string[] = []
+    if (aliased) {
+        items.push('@alias: ' + aliased)
+    }
     if (row.description) {
         items.push('@description: ' + row.description)
     }
@@ -169,7 +172,7 @@ const formatFunctions = (p: ReturnType<typeof getFunctions>, opts: Opts) => {
             return fst.signatures.map((e, i) => [
                 buildJSDoc(e),
                 global.renderMethod(e, opts.typeMap || {}, opts.slice ?? 1, override.includes(fsig.function_name)),
-                ...(i ? [] :  rest.map(e => e.signatures[0]).map(e => `${buildJSDoc(e)} ${e.function_name}: this['${fsig.function_name}'];`))
+                ...(i ? [] :  rest.map(e => e.signatures[0]).map(e => `${buildJSDoc(e, fsig.function_name)} ${e.function_name}: this['${fsig.function_name}'];`))
             ])
         })
     return sortBy(gpx, [e => e[1].toLowerCase()]).map(e => e.join('') + '\n').join('\n')

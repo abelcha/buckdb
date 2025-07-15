@@ -11,7 +11,10 @@ import { deriveName, isBucket, Dict } from './src/utils'
 import { DuckDBTypeIdMap } from './src/typedef'
 import { omit, pick, zipObject } from 'es-toolkit'
 import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
+import path from 'node:path'
 
+const ModelsJsonPath = path.join(__dirname, './.buck/models.json')
+const ModelsTSPath = path.join(__dirname, './.buck/models.ts')
 
 const InitConfigKeys = ['s3_access_key_id', 's3_secret_access_key', 's3_region', 's3_session_token']
 function mapDuckDBTypeToSchema(typeInfo: any): string | Record<string, any> {
@@ -41,7 +44,7 @@ function mapDuckDBTypeToSchema(typeInfo: any): string | Record<string, any> {
 }
 class JsonModelTable {
     constructor(
-        private jsonContent: Dict = JSON.parse(readFileSync('./.buck/models.json', 'utf-8'))
+        private jsonContent: Dict = JSON.parse(readFileSync(ModelsJsonPath, 'utf-8'))
     ) {
     }
     hasSchema(ressource: string, uri: string) {
@@ -53,8 +56,8 @@ class JsonModelTable {
         }
         this.jsonContent[ressource][uri] = schemaJson
         const tsfile = generateInterface(this.jsonContent)
-        writeFileSync('./.buck/models.json', JSON.stringify(this.jsonContent, null, 2))
-        writeFileSync('./.buck/models.ts', tsfile)
+        writeFileSync(ModelsJsonPath, JSON.stringify(this.jsonContent, null, 2))
+        writeFileSync(ModelsTSPath, tsfile)
     }
     writeResultSchema(ressource: string, uri: string, result: DuckDBResult) {
         return this.writeSchema(ressource, uri, zipObject(result.columnNames(), result.columnTypes().map(mapDuckDBTypeToSchema)))

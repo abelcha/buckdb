@@ -1,7 +1,8 @@
 import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin'
 import * as fs from 'fs'
-import path from 'path'
+import path, { resolve } from 'path'
 import { defineConfig, loadEnv } from 'vite'
+import { duckdbProxy, duckdbServer } from './vite.dbserver'
 import { highlightSql, currentStyles } from '../src/highlighter'
 import { timecolor } from '../src/log'
 
@@ -22,24 +23,6 @@ export default defineConfig({
     worker: {
         format: 'es',
     },
-    // server: {
-    //     headers: {
-    //         'Cross-Origin-Embedder-Policy': 'require-corp',
-    //         'Cross-Origin-Opener-Policy': 'same-origin',
-    //     },
-    //     cors: true,
-    //     fs: {
-    //         strict: false,
-    //         allow: ['.']
-    //     },
-    //     proxy: {
-    //         '/duckdb': {
-    //             target: 'http://localhost:9998',
-    //             changeOrigin: true,
-    //             rewrite: (path) => path.replace(/^\/duckdb/, ''),
-    //         }
-    //     }
-    // },
     plugins: [
         wasm(),
         {
@@ -122,27 +105,8 @@ export default defineConfig({
                 return modules
             },
         },
-        {
-            name: 'start-duckdb-http-server',
-            apply: 'serve',
-            async configureServer(server) {
-                const duckdbProcess = spawn('duckdb', [
-                    '-c',
-                    'INSTALL httpserver FROM community; LOAD httpserver; SELECT httpserve_start(\'0.0.0.0\', 9998, \'\');'
-                ], {
-                    env: { ...process.env, DUCKDB_HTTPSERVER_FOREGROUND: '1' }
-                })
-                duckdbProcess.stdout.on('data', (data) => {
-                    console.log(`[DuckDB] ${data.toString()}`)
-                })
-                duckdbProcess.stderr.on('data', (data) => {
-                    console.log(`[DuckDB] ${data.toString()}`)
-                })
-                duckdbProcess.on('close', (code) => {
-                    console.log(`[DuckDB] process exited with code ${code}`)
-                })
-            },
-        },
+
+        duckdbServer()
     ],
     esbuild: {
         minifySyntax: false,
@@ -178,24 +142,7 @@ export default defineConfig({
         fs: {
             allow: ['../../../'], // allow to load codicon.ttf from monaco-editor in the parent folder and monaco-vscode-api package resources
         },
-        proxy: {
-            '/duckdb': {
-                target: 'http://localhost:9998',
-                changeOrigin: true,
-                rewrite: (path) => path.replace(/^\/duckdb/, ''),
-                configure: (proxy) => {
-                    proxy.on('proxyReq', (proxyReq, req, res) => {
-                        const chunks: Buffer[] = []
-                        req.on('data', chunk => chunks.push(chunk))
-                        req.on('end', () => {
-                            const body = Buffer.concat(chunks).toString()
-                            console.log(currentStyles.comment, '-----------', timecolor(new Date().toISOString()), currentStyles.comment, '----------')
-                            console.log(highlightSql(body))
-                        })
-                    })
-                },
-            },
-        }
+        proxy: duckdbProxy({ port: '9998' }),
     },
     define: {
         rootDirectory: JSON.stringify(__dirname),

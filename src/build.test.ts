@@ -265,9 +265,9 @@ describe('context and variables - BUG: Variable resolution issues', () => {
         const maxVal = 100
         const query = MemoryDB.from('duckdb_functions()')
             .context({ minVal, maxVal })
-            .select(e => ({
+            .select((e, D) => ({
                 name: e.function_name,
-                inRange: e.function_oid.Between(minVal, maxVal)
+                inRange: D.Between(e.function_oid, minVal, maxVal)
             }))
         // This will throw an error about undefined variable 'vars'
         const sql = query.toSql() satisfies string

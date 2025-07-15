@@ -1,5 +1,5 @@
 import * as t from '.buck/types'
-import { DuckdbCon } from '@buckdb/core'
+import { DuckdbCon } from '../core'
 import { DBuilder } from './build.types'
 import { dump, formalize, serializeCreate, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'

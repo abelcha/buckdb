@@ -2,9 +2,8 @@ import { expect, test } from 'bun:test'
 import { sortBy } from 'es-toolkit'
 import * as t from '.buck/types'
 import { Buck, MemoryDB } from '@buckdb/isomorphic'
-import { builder } from './build'
 import { DBuilderResult, FromResultModel, Withor } from './build.types'
-import { FromPlain } from './deep-map'
+import { FromPlain, ToCompDict } from './deep-map'
 import { Models } from '@buckdb/.buck/models'
 
 const fns = await MemoryDB.from('duckdb_functions()').select().execute()
@@ -432,10 +431,10 @@ test('kitchen_sink', async () => {
         db.join('duckdb_settings()', 'oo').using('name').select(e => e satisfies RecPeople & { oo: Setting })
 
         db.join('duckdb_settings()').on((a) => a.people.name === a.duckdb_settings.name)
-            .join('duckdb_types()', 'xxx').on((p) => p.input_type.Like('%%'))
+            .join('duckdb_types()', 'xxx').on((p, D) => D.Like(p.input_type, '%%'))
             .select(e => e satisfies RecPeople & { duckdb_settings: Setting } & { xxx: any })
 
-        db.select(e => ({ zz: e.name })).where(e => e satisfies RecPeople & { zz: t.DVarcharField })
+        db.select(e => ({ zz: e.name })).where(e => e satisfies ToCompDict<RecPeople & { zz: t.DVarcharField }>)
             ; (await db.select().groupBy(e => (e satisfies RecPeople).age).execute()) satisfies Record<string, PClean[]>
             ; (await db.select().keyBy(e => (e satisfies RecPeople).name).execute()) satisfies Record<string, PClean>
 

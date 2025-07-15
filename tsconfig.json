@@ -22,6 +22,7 @@
         // "noFallthroughCasesInSwitch": true,
         // "noUncheckedIndexedAccess": true,
         // Some stricter flags (disabled by default)
+        "allowImportingTsExtensions": true,
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         // "noPropertyAccessFromIndexSignature": false

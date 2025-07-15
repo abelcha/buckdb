@@ -9,7 +9,6 @@ stuffs
 docs/
 demo/dist
 */*/node_modules
+*/target
 # Local Netlify folder
 .netlify
-executor/frontend/node_modules
-executor/frontend/node_modules

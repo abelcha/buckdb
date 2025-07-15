@@ -181,7 +181,7 @@ test('ternary', () => {
 })
 
 test('cast', () => {
-  expect(parseObject((e, D) => ({ date: Cast(e.ts, 'Date') }))).toEqual([["date", "CAST(ts AS Date)"]])
+  expect(parseObject((e, D) => ({ date: D.Cast(e.ts, 'Date') }))).toEqual([["date", "CAST(ts AS Date)"]])
   expect(parse((e, D) => e.num.as('Bigint'))).toBe('(num::Bigint)')
   expect(parse((e, D) => e.num.as('Decimal(1, 4)'))).toBe('(num::Decimal(1, 4))')
   expect(parse((e, D) => e.num.as('Decimal', 1, 3))).toBe('(num::Decimal(1, 3))')

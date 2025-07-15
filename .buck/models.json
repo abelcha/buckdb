@@ -897,6 +897,11 @@
     },
     "lsr()": {
       "path": "DVarchar"
+    },
+    "data/people.parquet": {
+      "name": "DVarchar",
+      "age": "DNumeric",
+      "total": "DNumeric"
     }
   },
   "s3://a1738/akira09.db": {

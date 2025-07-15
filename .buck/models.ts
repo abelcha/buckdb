@@ -812,6 +812,11 @@ export interface Models {
         ["lsr()"]: {
             ["path"]: t.DVarcharField;
         };
+        ["data/people.parquet"]: {
+            ["name"]: t.DVarcharField;
+            ["age"]: t.DNumericField;
+            ["total"]: t.DNumericField;
+        };
     };
     ["s3://a1738/akira09.db"]: {
         ["Actor"]: {

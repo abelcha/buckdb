@@ -1,16 +1,13 @@
 import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin'
 import * as fs from 'fs'
-import path, { resolve } from 'path'
-import { defineConfig, loadEnv } from 'vite'
+import path from 'path'
+import { defineConfig } from 'vite'
 import { duckdbProxy, duckdbServer } from './vite.dbserver'
-import { highlightSql, currentStyles } from '../src/highlighter'
-import { timecolor } from '../src/log'
+import wasm from 'vite-plugin-wasm'
 
 const pkg = JSON.parse(
     fs.readFileSync(new URL('./package.json', import.meta.url).pathname).toString(),
 )
-import wasm from 'vite-plugin-wasm'
-import { spawn } from 'child_process'
 
 const localDependencies = Object.entries(pkg.dependencies as Record<string, string>)
     .filter(([, version]) => version.startsWith('file:../../monaco-vscode-api/'))

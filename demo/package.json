@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "update-local-dependencies": "tsx update-local-dependencies.ts",
-    "clean": "tsc -b -c",
+    "clean": "rm -fr dist",
     "start": "vite --config vite.config.ts",
     "start:debug": "vite --config vite.config.ts --debug --force",
     "lint": "#eslint '{src/**/*.ts,rollup/*.ts,*.ts}'",
@@ -296,5 +296,8 @@
   },
   "volta": {
     "extends": "../package.json"
-  }
+  },
+  "trustedDependencies": [
+    "protobufjs"
+  ]
 }

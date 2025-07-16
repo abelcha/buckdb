@@ -2,9 +2,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
   },
+  // "includes": 
   "exclude": [
-    "node_modules",
-    "demo",
+    // "node_modules",
+    // "demo",
     "examples",
   ]
 }

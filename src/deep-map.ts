@@ -160,6 +160,7 @@ export type UnPlain<T> =
   : T extends string ? t.DVarcharField
   : T extends number ? t.DNumericField
   : T extends boolean ? t.DBoolField
+  : T extends Date ? t.DDateField
   // : T extends object ? t.DStructField<{ [K in keyof T]: UnPlain<T[K]> }>
   : T
 export type FromPlainDict<T extends object> = { [K in keyof T]: UnPlain<T[K]> }
@@ -200,6 +201,7 @@ export type ToComp<T> =
   : T extends Array<infer U> ? t.DArrayField<ToComp<U>>
   : T extends t.DVarcharField ? t.DVarcharComp
   : T extends t.DNumericField ? t.DNumericComp
+  : T extends t.DField ? T
   : T extends object ? t.DStructField<{ [K in keyof T]: ToComp<T[K]> }>
   : T
 export type ToCompDict<T extends object> = { [K in keyof T]: ToComp<T[K]> }

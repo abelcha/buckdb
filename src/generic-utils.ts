@@ -26,6 +26,8 @@ export type NestedKeyOf<ObjectType extends Record<string, any>> = {
 export type Merge<T, U> = { [K in keyof T | keyof U]: K extends keyof U ? U[K] : K extends keyof T ? T[K] : never }
 export type TripleMerge<T, U, V> = { [K in keyof T | keyof U | keyof V]: K extends keyof V ? V[K] : K extends keyof U ? U[K] : K extends keyof T ? T[K] : never }
 
+export type TripleUnion<T, U, V> = V & U & T
+
 export type Strish = string | {}
 export type Primitive = null | undefined | string | number | boolean | symbol | bigint
 export type IsPrimitive<T> = [T] extends [Primitive] ? true : false

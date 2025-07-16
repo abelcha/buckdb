@@ -27,7 +27,7 @@ interface TFlag {
 
 type MergedModel<Mods extends Models, C extends StrictCollection[]> =
     C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]]
-    ? TripleMerge<{ [K in F['alias']]: TFlag & ModelForCollection<Mods, F> }, ModelForCollection<Mods, F>, MergedModel<Mods, Rest>>
+    ? TripleUnion<{ [K in F['alias']]: TFlag & ModelForCollection<Mods, F> }, ModelForCollection<Mods, F>, MergedModel<Mods, Rest>>
     : {} // Base case should be an empty object for merging
 // Recursive type to merge all models from collections, using alias as key
 type ShallowMergedModel<Mods extends Models, C extends StrictCollection[]> = C extends [infer F extends StrictCollection, ...infer Rest extends StrictCollection[]] ? ModelForCollection<Mods, F> & MergedModel<Mods, Rest>
@@ -218,7 +218,7 @@ export interface Selectors<AV extends MetaModel, GF extends t.DMetaField> {
     select<U extends Primitive>(fn: (p: AV, D: GF) => U): MSF<AV, GF, {}, [PrimitiveField<U>]>
     // E: select(e => ({ name: e.name, age: e.age }))
     // select<U extends TFlag>(fn: (p: AV & Record<string, any>, D: GF) => U): 42 //''
-    select<U extends SelectModel>(fn: (p: AV & Record<string, any>, D: GF) => U):
+    select<U extends SelectModel>(fn: (p: AV, D: GF) => U):
         // U extends Record<string, infer FF extends TFlag> ? MSR<AV, GF, Omit<FF, keyof TFlag>> :
         MSR<AV, GF, FromPlainDict<ShallowModel<U>>>
 
@@ -236,6 +236,10 @@ type PushCollection<C extends StrictCollection[], Ressource extends string, Uri 
 
 type ModKeys<Mods extends Models, Ressource extends keyof Mods & string> = Extract<keyof Mods[Ressource], string> | Extract<keyof Mods[''], string>
 
+// Utility type to dynamically add schema to Models
+type AddSchemaToModels<Mods extends Models, TableName extends string, TSchema extends MetaModel> =
+    Mods & { '': Mods[''] & Record<TableName, TSchema> }
+
 
 export interface FromResult<Mods extends Models, Ressource extends keyof Mods & string, C extends StrictCollection[] = [], GF extends t.DMetaField = t.DMetaField, P extends MetaModel = MergedModel<Mods, C>> extends Selectors<P, GF> {
     join<K extends ModKeys<Mods, Ressource> /*| (string & {})*/, A extends string = DeriveName<K>>(
@@ -251,6 +255,14 @@ export interface FromResult<Mods extends Models, Ressource extends keyof Mods & 
             FromResult<Mods, Ressource, PushCollection<C, Ressource, K, A>, GF>
             : FromResult<Mods, Ressource, PushCollection<C, '', '', A>, GF>
     },
+
+    // Type override overload for join - allows specifying custom schema for table
+    join<TSchema extends MetaModel>(table: string, alias?: string): {
+        using: (o: KeyIntersection<P, TSchema>) =>
+            FromResult<AddSchemaToModels<Mods, string, TSchema>, Ressource, PushCollection<C, '', string, string>, GF>
+        on: (fn: (p: MergedModel<AddSchemaToModels<Mods, string, TSchema>, PushCollection<C, '', string, string>>, D: GF) => any) =>
+            FromResult<AddSchemaToModels<Mods, string, TSchema>, Ressource, PushCollection<C, '', string, string>, GF>
+    }
 
     leftJoin: this['join']
     rightJoin: this['join']
@@ -283,6 +295,7 @@ export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mod
     }
 
     update<K1 extends (ModKeys<Mods, Ressource>) & string>(table: K1): UpdateResult<Mods, Ressource, PushCollection<[], Ressource, K1>> & Resultor<any>
+    
     from<K1 extends ModKeys<Mods, Ressource> | (string & {}), A extends string = DeriveName<K1>>(table: K1, alias?: A):
         K1 extends ModKeys<Mods, Ressource> ?
         (FromResult<Mods, Ressource, PushCollection<[], Ressource, K1, A>, GF> & MS<'records', GF, MergedModel<Mods, PushCollection<[], Ressource, K1, A>>>)
@@ -292,6 +305,12 @@ export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mod
 
     from<MM extends Mods, TT extends keyof Mods & string, SS extends StrictCollection[]>(obj: FromResult<MM, TT, SS, GF>): FromResult<Mods, TT, SS, GF>
     from<V1 extends VTypes, A1 extends MetaModel, S1 extends SelectModel = {}>(obj: MS<V1, GF, A1, S1>): MS<V1, GF, A1, S1>
+    
+    // Type override overload - allows specifying custom schema for table
+    // This dynamically adds Mods[''][table] = TSchema to the Models type
+    // Must come last to ensure proper overload resolution
+    from<TSchema extends MetaModel>(table: string, alias?: string):
+        FromResult<AddSchemaToModels<Mods, string, TSchema>, Ressource, PushCollection<[], '', string, string>, GF> & MS<'records', GF, MergedModel<AddSchemaToModels<Mods, string, TSchema>, PushCollection<[], '', string, string>>>
 
     loadExtensions(...ext: string[]): DBuilderResult<Mods, Ressource, GF> // Use the defined type here
     // fetchSchema(id: string): Promise<Mods>

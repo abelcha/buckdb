@@ -172,7 +172,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
           }
         }
 
-        return result;
+        return `(${result})`;
       },
       ObjectExpression(node: ObjectExpression) {
         return `{${node.properties.map(transformNode).join(', ')}}`

@@ -474,10 +474,12 @@ test('prop spaces', () => {
 })
 
 
-test.todo('raw', () => {
-  // expect(parseObject((e, D) => ({ gg: D.Raw('lol 123') }))).toEqual([['gg', `lol 123`]])
-  // expect(parseObject((e, D) => ({ uuu: D.Raw(`(SELECT string_agg(store_name, ', ') FROM (`) }) )).toEqual([['gg', `lol 123`]])
-  expect(parseObject((e, D) => ({ uuu: D.raw`HELLO` }))).toEqual([['HELLO']])
+test('raw', () => {
+  expect(parseObject((e, D) => ({ uuu: D.raw`'Math' IN (SELECT course FROM grades)` }))).toEqual([[
+    "uuu",
+    "('Math' IN (SELECT course FROM grades))"
+  ]])
+  expect(parseObject((e, D) => ({ uuu: D.raw`HELLO` }))).toEqual([["uuu", '(HELLO)']])
 })
 
 test('comma', () => {

@@ -130,6 +130,6 @@ async function main() {
     await MemoryDB.from(ST_GeneratePoints([0, 0, 10_000, 10_000], 10, 10))
     for (const tf of TableFuncs) {
         console.log('------tf')
-        await MemoryDB.from(`${tf}()`).show({ js: true })
+        await MemoryDB.from(`${tf}()`).show()
     }
 }

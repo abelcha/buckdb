@@ -811,15 +811,26 @@ test('with', async () => {
 
 test('META type checking ', async () => {
     const res = await Bun.$`tsgo  --noEmit --skipLibCheck |grep -E  'deep-map.ts|test.ts'`.quiet().nothrow()
-    // if (res.exitCode !== 0) {
-    //     console.log('Error in command execution:', res.stderr.toString(),res.stdout.toString())
-    //     console.error(res.stderr.toString())
-    //     return
-    // }
     const errs = res.text();
     console.log(errs)
-    // if (errs) {
-    //     console.log(errs)
-    // }
-    expect(errs).toHaveLength(0)
+    expect(errs).toBeEmpty()
+})
+
+
+test('.raw', async () => {
+    const resp = Buck()
+        .from('duckdb_types()')
+        .select((e, D) => ({
+            xx: D.raw`SELECT 42`,
+            zz: 'select' + '42'
+        }))
+    expect(resp.toSql({ trim: true })).toEqual(`FROM duckdb_types() SELECT   xx: (SELECT 42), zz: 'select42'`)
+
+    expect(
+        async () => await Buck()
+            .from<{ xxx: t.DNumericField }>('grades', 'g')
+            .join<{ zzz: t.DVarcharField }>('toto', 't').on(() => true)
+            .select(e => [e.g.xxx, e.xxx.to_hex(), e.zzz, e.t.zzz.len()])
+            .execute() satisfies [number, string, string, number][]
+    ).toThrow()
 })

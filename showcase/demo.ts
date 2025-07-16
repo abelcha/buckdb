@@ -8,7 +8,7 @@ const d1 = await from(duckdb_functions())
     .select(e => [e.database_name.lower(), e.database_name.len()])
     .run()
 
-const d2 = await from(range(0, 10000))
+const d2 = await from(range(0, 1000))
     .select(e => ({
         num: e.range,
         steps: generate_series(e.range).array_filter(x => x % 10 == 0)[-1],

@@ -1,14 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true
   },
-  "files": [
-    "src/type-system.test.ts"
-  ],
   "exclude": [
     "node_modules",
     "demo",
-    "codegen"
+    "examples",
   ]
 }

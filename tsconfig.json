@@ -23,6 +23,7 @@
         // "noUncheckedIndexedAccess": true,
         // Some stricter flags (disabled by default)
         "allowImportingTsExtensions": true,
+        "noEmit": true,
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         // "noPropertyAccessFromIndexSignature": false
@@ -36,5 +37,9 @@
     "exclude": [
         "**/*.js",
         "*.js",
+    ],
+    "include": [
+        "*.ts",
+        "*/*.ts"
     ]
 }

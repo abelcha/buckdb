@@ -8,7 +8,7 @@
     "@types/bun": "^1.2.5"
   },
   "scripts": {
-    "typecheck": " tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports"
+    "typecheck": " tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports -p tsconfig.typecheck.json"
   },
   "peerDependencies": {
     "typescript": "~5.8.3"

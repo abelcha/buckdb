@@ -12,3 +12,4 @@ demo/dist
 */target
 # Local Netlify folder
 .netlify
+demo/stats.html

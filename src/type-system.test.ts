@@ -747,7 +747,7 @@ test('with', async () => {
             await db.with(
                 (accDB) => ({ titi: accDB.from('duckdb_functions()').select() }),
                 accDB => ({ tata: accDB.from('titi').select(e => ({ last_name: e.function_name, first_name: e.database_name.split('') })) }),
-                accDB => ({ tutu: accDB.from('tata').select(({ last_name, first_name }) => ({last_name, first_name,  last_name_len: last_name.len() })).where(e => e.last_name.SimilarTo(/\W+/)) }),
+                accDB => ({ tutu: accDB.from('tata').select(({ last_name, first_name }) => ({ last_name, first_name, last_name_len: last_name.len() })).where(e => e.last_name.SimilarTo(/\W+/)) }),
             )
                 .from('tutu')
                 .select()

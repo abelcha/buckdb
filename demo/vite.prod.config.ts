@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => {
         envPrefix: 'VITE_',
         build: {
             target: 'esnext',
-            assetsInlineLimit: 100_000_000_000,
+            assetsInlineLimit: 10_000,
             minify: true,
             rollupOptions: {
                 output: {

@@ -238,7 +238,7 @@ it('test spaces1', () => {
     expect(
         extractSpecialCalls(`def3\n.from('xxx')`, { positions: false, chain: false, }) as any
     ).toEqual([{
-        expression: "def3\n .from('xxx')",
+        expression: "def3\n.from('xxx')",
         method: 'from',
     }
     ])
@@ -248,7 +248,7 @@ it('test spaces2', () => {
     expect(
         extractSpecialCalls(`def3\n.from('xxx').select(e => ({ ...e }))`, { positions: false, chain: false, }) as any
     ).toEqual([{
-        expression: "def3\n .from('xxx').select(e => ({...e}))",
+        expression: "def3\n.from('xxx').select(e => ({ ...e }))",
         method: 'from',
     }
     ])

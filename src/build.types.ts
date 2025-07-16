@@ -110,7 +110,7 @@ export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaMod
     offset: (n: number) => this
     context: (cb: Record<string, any>) => this
     sample: (n: number | `${number}%`) => this
-    toSql(opts?: any): string
+    toSql(opts?: { trim: boolean }): string
     copyTo: CopyToInterface<A, S>['to'] // Pass available fields to CopyToInterface
 }
 
@@ -159,7 +159,7 @@ export interface Withor<Mods extends Models, T extends keyof Mods & string, GF e
 
 
 interface Resultor<T> {
-    toSql: (opts?: any) => string,
+    toSql: (opts?: { trim: boolean }) => string,
     execute: () => Promise<T>
     exec: this['execute']
     run: this['execute']
@@ -191,7 +191,6 @@ type Project<T, Keys extends readonly string[]> = Flatten<{
 }>;
 
 export interface Selectors<AV extends MetaModel, GF extends t.DMetaField> {
-
     // A: select()
     select(): MSR<AV, GF, ShallowModel<AV>>
     // B: select('name', 'age')

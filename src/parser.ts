@@ -503,6 +503,7 @@ const extractSpreadedParams = (ast: ArrowFunctionExpression) => {
     throw new Error('AST param is not an ObjectExpression (?)')
   }
   const excluded = ast.params[0].properties.filter((e) => e.type === 'Property').map(e => e.key.name)
+  // @ts-ignore-next-line
   const spreadId = ast.params[0]?.properties.find((e) => e.type === 'SpreadElement')?.argument?.name
   return { excluded, spreadId }
 }

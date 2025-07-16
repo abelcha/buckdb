@@ -1,10 +1,11 @@
 import { Buck, from } from '@buckdb/isomorphic'
 
-const SC = Buck('s3://a1738/european_soccer_database.sqlite')
+const SC = Buck('s3://a1738')
 
 // Get top 10 players with their highest overall rating
-const topPlayersByRating = SC.from('Player', 'p')
-    .join('Player_Attributes', 'pa').using('player_api_id')
+const topPlayersByRating = SC.from('soccer/Player.parquet', 'p')
+    .join('soccer/Player_Attributes.parquet', 'pa')
+    .using('player_api_id')
     .select(({ p, pa }, D) => ({
         player_name: p.player_name,
         overall_rating: D.arg_max(pa.overall_rating, pa.date)

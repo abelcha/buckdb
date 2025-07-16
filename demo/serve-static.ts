@@ -33,7 +33,7 @@ Options:
   process.exit(0);
 }
 
-const port = parseInt(values.port || "3000", 10);
+const port = parseFloat((values.port as string) ?? "3000");
 
 serve({
   port,

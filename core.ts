@@ -92,7 +92,7 @@ export class CommandQueue {
     }
     pushAttach(path: string, alias: string, options?: { readonly: boolean }) {
         const opts = options?.readonly ? '(READONLY)' : ''
-        this.queue.push(`ATTACH IF NOT EXISTS '${path}' AS ${alias} ${opts}`, `USE ${alias}`)
+        this.queue.push(`ATTACH OR REPLACE '${path}' AS ${alias} ${opts};`, `USE ${alias};`)
         this.usedDB = alias
         return this
     }

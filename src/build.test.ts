@@ -308,7 +308,7 @@ describe('create operations', () => {
         expectSQL(sql, 'CREATE OR REPLACE TABLE test_table AS FROM duckdb_functions() SELECT function_name')
     })
 
-    it('should handle create if not exists', () => {
+    it('should handle create or replace', () => {
         const create = MemoryDB.create('test_table', { ifNotExists: true })
         const createQuery = create.as(MemoryDB.from('duckdb_functions()').select('function_name'))
         const sql = createQuery.toSql() satisfies string

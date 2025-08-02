@@ -320,6 +320,9 @@ test('parseObject destructuring', () => {
     ['', '', '* EXCLUDE(vvv)'],
     ['vvv', 'vvv'],
   ])
+  expect(parseObject((e, D) => ({ ...e.identity }))).toEqual([
+    ['', '', 'UNNEST(identity)']
+  ])
 })
 
 test('inoperator', () => {

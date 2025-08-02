@@ -543,6 +543,11 @@ export function parseObject<T extends Record<string, any>>(expr: Expr<T> | strin
         if (prop.argument.name === spreadId) {
           return handleExcluded({ excluded })
         }
+        // Handle direct spread like { ...e.identity }
+        if (prop.argument.type === 'MemberExpression') {
+          const memberPath = transformDuckdb(prop.argument, params, context)
+          return ['', '', `UNNEST(${memberPath})`]
+        }
       }
       return [prop.key?.name, transformDuckdb(prop.value, params, context)]
     })

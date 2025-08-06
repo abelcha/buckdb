@@ -158,7 +158,7 @@ function xcopy(
 
             // Build the COPY statement
             const optionsStr = optionsArray.length > 0 ? `(${optionsArray.join(', ')})` : ''
-            const copyStatement = `COPY (${sourceSql}) TO '${destination}' ${optionsStr}`
+            const copyStatement = `COPY (${sourceSql}) TO ${destination} ${optionsStr}`
             return {
                 toSql: (opts?: Record<string, any>) => opts?.trim ? copyStatement.replaceAll(/(\n|\s)+/g, ' ') : copyStatement,
                 execute: async () => {

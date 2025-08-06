@@ -158,7 +158,8 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
 
     const comps = components.join(CRW).trim()
     if (state.copyTo.length) {
-        return copy(comps).to(state.copyTo[0].uri, state.copyTo[0].options).toSql(state)
+        const to = formatSource({ catalog: state.datasources[0].catalog, uri: state.copyTo[0].uri })
+        return copy(comps).to(to, state.copyTo[0].options).toSql(state)
     }
     // if (state.trim && (!state.minTrim || comps.length < state.minTrim)) {
     //     return comps.replace(/(\s|\n)+/g, '$1').trim()
@@ -208,4 +209,4 @@ export const dump = (state: DState, opts?: { state?: boolean }) => {
     return false
 }
 
-export const formalize = (e: string | Function, context = {}) => typeof e === 'function' ? parse(e, context) : e
+export const formalize = (e: string | Function, context = {}, config = {}) => typeof e === 'function' ? parse(e, context, config) : e

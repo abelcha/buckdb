@@ -6,6 +6,12 @@ import * as monaco from 'monaco-editor'
 const theme = themeBalham.withPart(colorSchemeDark)
 import { ClientSideRowModelModule, ColDef, createGrid, GridOptions, ModuleRegistry, NumberFilterModule, TextFilterModule, TooltipModule, ValidationModule } from 'ag-grid-community'
 import { highlightErrorMessage } from './errorHighlighter'
+
+// Utility function for formatting numbers with underscore thousands separators
+const formatNumberWithUnderscores = (value: any): string => {
+  if (typeof value !== 'number') return String(value)
+  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '_')
+}
 // Register required modules
 ModuleRegistry.registerModules([
     ClientSideRowModelModule,
@@ -140,6 +146,7 @@ registerCustomView({
                             }
                             return value;
                         },
+                        valueFormatter: (params) => formatNumberWithUnderscores(params.value),
                         headerTooltip: columnType, // Show type as tooltip
                         sortable: true,
                         filter: true,
@@ -161,11 +168,12 @@ registerCustomView({
                 headerName: 'Row',
                 headerComponentParams: {
                     // Pass column type to the custom header template
-                    template: SubHeader({ columnType: '/ ' + ((globalData?.length ?? 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')) }),
+                    template: SubHeader({ columnType: '/ ' + formatNumberWithUnderscores(globalData?.length ?? 0), percentage: 100 }),
                 },
                 valueGetter: (params) => {
                     return params.node?.rowIndex !== undefined ? params.node.rowIndex + 1 : ''
                 },
+                valueFormatter: (params) => formatNumberWithUnderscores(params.value),
                 width: 70,
                 flex: 0,  // Disable flex for fixed width
                 pinned: 'left',

@@ -80,7 +80,8 @@ export class CommandQueue {
     pushMacros(macros: () => Record<string, (args: any) => any>) {
         const rrr = parseObject(macros)
             .map(([name, fn]) => `CREATE OR REPLACE MACRO ${name}${fn.replace('->', 'AS')};`)
-        this.queue.push(...rrr)
+            .join(';\n')
+        this.queue.push(rrr)
         return this
     }
     pushSettings(settings: Partial<DSettings> = {}) {

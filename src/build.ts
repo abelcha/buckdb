@@ -27,7 +27,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
     function database(...args: any[]) {
         const { handle, opts } = parseArgs(args)
         const ddb = new Ddb(handle, opts)
-        if (opts && Object.keys(opts).length && ddb.type === 'wasm') {
+        if (opts && Object.keys(opts).length  /* && ddb.type === 'wasm'*/) {
             ddb.lazySettings(opts)
 
         }

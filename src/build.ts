@@ -45,7 +45,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 }
             const _where = (operator = 'AND') =>
                 function (...conditions: Parseable[]) {
-                    return fromRes(deriveState(state, { conditions: conditions.map(v => formalize(v, state.context)) }, condition => ({ condition, operator })))
+                    return fromRes(deriveState(state, { conditions: conditions.map(v => formalize(v, state.context, { condition: true })) }, condition => ({ condition, operator })))
                 }
             const execute = async function (props: Record<string, any> = {}) {
                 // console.log(state)
@@ -218,7 +218,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
             },
             with: function (...arr: (() => any)[]) {
                 // @ts-ignore
-                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query:v }) as DCte)
+                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query: v }) as DCte)
                 return {
                     from: (table: string, alias?: string) =>
                         fromRes({ ...dstate, ctes, action: 'select', datasources: [{ catalog: handle, uri: table, alias: alias }] }),

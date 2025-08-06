@@ -154,7 +154,7 @@ type Topts = {
 }
 
 // type oProps = { subMemberExpression?: boolean, isProperty?: boolean }
-export function transformDuckdb(node: Expression, params = new Map<string, { depth: number; position: number }>(), context: Record<string, any> = {}) {
+export function transformDuckdb(node: Expression, params = new Map<string, { depth: number; position: number }>(), context: Record<string, any> = {}, config = {}) {
   function transformTree(node: Expression, opts: Topts = { isFuncArg: false }): any {
     const transformNode = (n: any, o = {}) => transformTree(n, Object.assign({}, opts, o))
     // const transform = (node: any, ..._: any[]) => transformNode(node)
@@ -475,11 +475,11 @@ export const extractParamsContext = (ast: Expression) => {
 type Expr<T> = (d: T, z: DMetaField) => any
 
 
-export function parse<T extends Record<string, any>>(expr: Expr<T> | string | Function, context = {}) {
+export function parse<T extends Record<string, any>>(expr: Expr<T> | string | Function, context = {}, config = {}) {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()
   const ast = jsep(fnstr) as ArrowFunctionExpression
   const params = extractParamsContext(ast)
-  const duckdbExpr = transformDuckdb(ast.body, params, context)
+  const duckdbExpr = transformDuckdb(ast.body, params, context, config)
   return duckdbExpr
 }
 

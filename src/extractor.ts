@@ -50,10 +50,10 @@ export const extractPrimitiveAssignations = (text: string, opts: Opts = {}) => {
         if (isVariableStatement(node)) {
             const declarationList = node.declarationList;
             declarationList.declarations.forEach(declaration => {
-                if (primitiveInitializer(declaration.initializer)) {
+                // if (primitiveInitializer(declaration.initializer)) {
                     const name = declaration.name.getText()
                     assignations[name] = declaration.initializer.getText()
-                }
+                // }
             })
         }
     }

@@ -66,7 +66,7 @@ declare global {
     }
 }
 
-const SubHeader = ({ columnType }) => (
+const SubHeader = ({ columnType, percentage }) => (
     `<div class="ag-cell-label-container" role="presentation">
                   <span data-ref="eMenu" class="ag-header-icon ag-header-cell-menu-button"></span>
                   <span data-ref="eFilterButton" class="ag-header-icon ag-header-cell-filter-button"></span>
@@ -78,7 +78,7 @@ const SubHeader = ({ columnType }) => (
                     <div>
                       <span data-ref="eText" class="ag-header-cell-text" role="columnheader"></span>
                       <span data-ref="eFilter" class="ag-header-icon ag-filter-icon"></span>
-                      <div style="font-size: 0.8em; color: #888; margin-top: 2px">${columnType}</div>
+                      <div style="font-size: 0.8em; color: #888; margin-top: 2px">${columnType} <span style="opacity: 0.5; margin-left: 4px;">${percentage}%</span></div>
                     </div>
                   </div>
                 </div>`
@@ -115,12 +115,19 @@ registerCustomView({
                 const isArrayData = Array.isArray(firstRow)
                 const numCols = isArrayData ? firstRow.length : Object.keys(firstRow).length
                 const keys = isArrayData ? null : Object.keys(firstRow)
+                const totalRows = globalData.length
 
                 for (let i = 0; i < numCols; i++) {
                     const key = keys ? keys[i] : String(i) // Use object key or index as string for field
                     const schemaEntry = schema?.[i] // Get schema entry by index
                     const headerName = schemaEntry?.column_name ?? (keys ? key : `Column ${i + 1}`) // Use schema name or fallback
                     const columnType = schemaEntry?.column_type ?? '_' // Use schema type or fallback
+
+                    const nonEmptyCount = globalData.filter(row => {
+                        const value = isArrayData ? row[i] : row[key]
+                        return value !== null && value !== undefined && value !== ''
+                    }).length
+                    const percentage = totalRows > 0 ? Math.round((nonEmptyCount / totalRows) * 100) : 0
                     
                     // Check if column contains numeric data
                     const sampleValue = isArrayData ? globalData[0]?.[i] : globalData[0]?.[key]
@@ -131,7 +138,7 @@ registerCustomView({
                         headerName: headerName, // Display schema column name or fallback
                         headerComponentParams: {
                             // Pass column type to the custom header template
-                            template: SubHeader({ columnType }),
+                            template: SubHeader({ columnType, percentage }),
                         },
                         valueGetter: (params) => {
                             // Access data by key (for objects) or index (for arrays)

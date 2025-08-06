@@ -131,7 +131,7 @@ export interface TFBase {
     /** @description Tests vectorized types by generating a test dataset. @description @param vector Input vector to test @description @param allFlat Whether to flatten all arguments @description @param args Additional arguments */
     test_vector_types<T1, T2>(vector: T1[], allFlat: boolean, ...args: T2[]): RetCon<'test_vector_types'>;
     /** @description Unnests an array into individual rows. @description @param array Array value to unnest */
-    unnest<T>(array: T[]): RetCon<'unnest'>;
+    unnest(p: any): RetCon<'unnest'>;
     /** @description Retrieves a secret by type and name. @description @param type Secret type identifier @description @param name Secret name identifier */
     which_secret(type: string, name: string): RetCon<'which_secret'>;
 }

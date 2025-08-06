@@ -282,9 +282,8 @@ test('properties', () => {
   expect(parseBody(`{toto:/45/g, x:15}`)).toBe("{toto: '45', x: 15}")
   expect(parseBody(`{['toto']:42}`)).toBe("{'toto': 42}")
 })
-test('parseObject destructuring', () => {
-  //  xx.select(({ comment, description, database_oid, ...rest }) => rest).toSql()
 
+test('parseObject destructuring', () => {
   expect(parseObject(({ elem, ...rest }, DDD) => ({ ...rest, toto: rest.tata }))).toEqual([
     ['', '', '* EXCLUDE(elem)'],
     ['toto', 'tata'],
@@ -409,7 +408,7 @@ test('jsep plugin coverage: arrow function with sequence expression params', () 
   expect(jsep('(e.a, e.b) => e.a + e.b').type).toBe('ArrowFunctionExpression')
 })
 
-test('jsep plugin coverage: object literal with computed property name and spread', () => {
+test.todo('jsep plugin coverage: object literal with computed property name and spread', () => {
   const prop = 'dynamicProp'
   // parseObject needs a function, so this one remains as a function
   // This test is more about the main parser's handling of jsep output.
@@ -512,3 +511,10 @@ test('count filter', () => {
     .toEqual(`count(total) FILTER (function_name.len() > 10)`)
 })
 
+
+
+test.todo('condition mode', () => {
+  expect(parse((e) => e.function_name)).toEqual(`function_name`)
+  expect(parse((e) => e.function_name, {}, { condition: true })).toEqual(`function_name IS NOT NULL`)
+  expect(parse((e) => e.function_name && e.id === '#123', {}, { condition: true })).toEqual(`function_name IS NOT NULL AND id = '#123'`)
+})

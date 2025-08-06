@@ -111,7 +111,10 @@ class Schemes {
             tlogger('Processing:', instanceName, ressourceNames)
             tlogger({ instance })
             for (const ressourceName of ressourceNames) {
-
+                if (typeof ressourceName === 'object' && ressourceName.toSql) {
+                    tlogger(ressourceName, 'object ressource')
+                    continue
+                }
                 if (!isFile(ressourceName) && !isFunction(ressourceName)) {
                     tlogger(ressourceName, 'not a file an not a function')
                     continue
@@ -215,8 +218,8 @@ export const transformedProvider = new class implements TextDocumentContentProvi
                 try {
                     res = execToSql(st, pa).split('\n')
                 } catch (err) {
-                    // console.error(err)
-                    res = ['Error: ', String(err), ...('-- xx\n'.repeat(Math.max(st.end.line - st.start.line - 3, 0)).split('\n'))]
+                    console.error(err)
+                    res = ['zError: ', String(err), ...('-- xx\n'.repeat(Math.max(st.end.line - st.start.line - 3, 0)).split('\n'))]
                 }
                 let offset = 0
                 while (arr[st.start.line + offset]) offset++

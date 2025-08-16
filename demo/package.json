@@ -5,17 +5,20 @@
   "type": "module",
   "scripts": {
     "update-local-dependencies": "tsx update-local-dependencies.ts",
-    "clean": "rm -fr dist",
+    "clean": "trash dist",
     "start": "vite --config vite.config.ts",
     "start:debug": "vite --config vite.config.ts --debug --force",
     "lint": "#eslint '{src/**/*.ts,rollup/*.ts,*.ts}'",
     "typecheck": "tsc --noEmit",
-    "check-build": "npm run lint && npm run typecheck",
+    "check-build": "bun run lint && bun run typecheck",
     "build": "vite --config vite.config.ts build",
     "build:prod": "NODE_OPTIONS='--max-old-space-size=8192' vite --config vite.prod.config.ts build",
     "start:debugServer": "tsx src/debiugServer.ts",
     "preprepare": "patch-package",
-    "deploy": "npm run build:prod && wrangler pages deploy dist --commit-dirty=true"
+    "deploy": "bun run build:prod && wrangler pages deploy dist --commit-dirty=true",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "devDependencies": {
     "@codingame/esbuild-import-meta-url-plugin": "^1.0.3",

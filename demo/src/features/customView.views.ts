@@ -9,8 +9,9 @@ import { highlightErrorMessage } from './errorHighlighter'
 
 // Utility function for formatting numbers with underscore thousands separators
 const formatNumberWithUnderscores = (value: any): string => {
-  if (typeof value !== 'number') return String(value)
-  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '_')
+    // console.log('formatNumberWithUnderscores', value)
+    if (typeof value !== 'number') return String(value)
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '_')
 }
 // Register required modules
 ModuleRegistry.registerModules([
@@ -39,7 +40,7 @@ class CustomHeader {
         return this.eGui
     }
 
-    destroy() {}
+    destroy() { }
 }
 
 // Add sample data for testing
@@ -78,7 +79,7 @@ const SubHeader = ({ columnType, percentage }) => (
                     <div>
                       <span data-ref="eText" class="ag-header-cell-text" role="columnheader"></span>
                       <span data-ref="eFilter" class="ag-header-icon ag-filter-icon"></span>
-                      <div style="font-size: 0.8em; color: #888; margin-top: 2px">${columnType} <span style="opacity: 0.5; margin-left: 4px;">${percentage}%</span></div>
+                      <div style="font-size: 0.8em; color: #888; margin-top: 2px;font-size: 0.7em;">${columnType}${percentage === 100 ? '' : `<span style="opacity: 0.5; margin-left: 4px">${percentage}%</span></div>`}
                     </div>
                   </div>
                 </div>`
@@ -87,7 +88,7 @@ registerCustomView({
     id: 'custom-view',
     name: 'Custom View',
     order: 0,
-    renderBody: function(container: HTMLElement): monaco.IDisposable {
+    renderBody: function (container: HTMLElement): monaco.IDisposable {
         container.style.display = 'block'
         container.style.height = '100%'
         container.style.overflow = '' // Remove overflow:auto to let AG Grid handle scrolling
@@ -121,14 +122,14 @@ registerCustomView({
                     const key = keys ? keys[i] : String(i) // Use object key or index as string for field
                     const schemaEntry = schema?.[i] // Get schema entry by index
                     const headerName = schemaEntry?.column_name ?? (keys ? key : `Column ${i + 1}`) // Use schema name or fallback
-                    const columnType = schemaEntry?.column_type ?? '_' // Use schema type or fallback
+                    const columnType = (schemaEntry?.column_type ?? '_').replaceAll(/BOOLEAN/g, 'BOOL').replaceAll(/VARCHAR/g, 'TEXT') // Use schema type or fallback
 
                     const nonEmptyCount = globalData.filter(row => {
                         const value = isArrayData ? row[i] : row[key]
                         return value !== null && value !== undefined && value !== ''
                     }).length
                     const percentage = totalRows > 0 ? Math.round((nonEmptyCount / totalRows) * 100) : 0
-                    
+
                     // Check if column contains numeric data
                     const sampleValue = isArrayData ? globalData[0]?.[i] : globalData[0]?.[key]
                     const isNumeric = Number.isFinite(sampleValue)
@@ -158,14 +159,14 @@ registerCustomView({
                         sortable: true,
                         filter: true,
                     }
-                    
+
                     // For numeric columns, use smaller fixed width instead of flex
                     if (isNumeric) {
                         colDef.width = 80
                         colDef.minWidth = 60
                         colDef.flex = 0  // Disable flex for numeric columns to use fixed width
                     }
-                    
+
                     columnDefs.push(colDef)
                 }
             }
@@ -199,6 +200,8 @@ registerCustomView({
                     color: #888;
                     font-size: 1.2em;
                     text-align: left;
+                    z-index: 9090;
+                    user-select: all!important;
                 ">
                     <div style="
                         margin: 0;
@@ -334,7 +337,7 @@ class CustomEditorPane extends SimpleEditorPane {
         }
 
         return {
-            dispose() {},
+            dispose() { },
         }
     }
 }

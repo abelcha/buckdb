@@ -52,7 +52,7 @@ for (
         { part: Parts.TITLEBAR_PART, element: '#titleBar', visible: false },
         { part: Parts.BANNER_PART, element: '#banner', visible: false },
         {
-            visible: location.search.includes('sidebar'),
+            visible: true,// location.search.includes('sidebar'),
             part: Parts.SIDEBAR_PART,
             get element() {
                 return getSideBarPosition() === Position.LEFT ? '#sidebar' : '#sidebar-right'
@@ -97,6 +97,7 @@ const layoutService = await getService(IWorkbenchLayoutService)
 //   // const resp = await Buck.from('duckdb_settings()').select().execute()
 //   layoutService.setPartHidden(true, Parts.SIDEBAR_PART)
 layoutService.setPartHidden(true, Parts.BANNER_PART)
+layoutService.setPartHidden(true, Parts.SIDEBAR_PART)
 //   layoutService.setPartHidden(true, Parts.ACTIVITYBAR_PART)
 // })
 

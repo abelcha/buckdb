@@ -2,7 +2,7 @@ import importMetaUrlPlugin from '@codingame/esbuild-import-meta-url-plugin'
 import * as fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
-import { duckdbProxy, duckdbServer } from './vite.dbserver'
+import { configureResponseHeaders, duckdbProxy, duckdbServer, preventReloadOnMainV2Update, saveFileServer } from './vite.dbserver'
 import wasm from 'vite-plugin-wasm'
 
 const pkg = JSON.parse(
@@ -12,97 +12,31 @@ const pkg = JSON.parse(
 const localDependencies = Object.entries(pkg.dependencies as Record<string, string>)
     .filter(([, version]) => version.startsWith('file:../../monaco-vscode-api/'))
     .map(([name]) => name)
+
+const host = process.env.TAURI_DEV_HOST;
+
 export default defineConfig({
+    // prevent vite from obscuring rust errors
+    clearScreen: false,
     build: {
-        target: 'esnext',
-        sourcemap: false,
+        // Tauri uses Chromium on Windows and WebKit on macOS and Linux
+        // target: 'chrome105',
+        target: process.env.TAURI_ENV_PLATFORM == 'windows'
+            ? 'chrome105'
+            : 'safari13',
+        // don't minify for debug builds
+        minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
+        // produce sourcemaps for debug builds
+        sourcemap: !!process.env.TAURI_ENV_DEBUG,
     },
     worker: {
         format: 'es',
     },
     plugins: [
         wasm(),
-        {
-            name: 'configure-response-headers',
-            apply: 'serve',
-            configureServer: (server) => {
-                server.middlewares.use((_req, res, next) => {
-                    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp')
-                    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin')
-                    next()
-                })
-            },
-        },
-        {
-            name: 'force-prevent-transform-assets',
-            apply: 'serve',
-            configureServer(server) {
-                return () => {
-                    server.middlewares.use(async (req, res, next) => {
-                        if (req.originalUrl != null) {
-                            const pathname = new URL(req.originalUrl, import.meta.url).pathname
-                            if (pathname.endsWith('.html')) {
-                                res.setHeader('Content-Type', 'text/html')
-                                res.writeHead(200)
-                                res.write(fs.readFileSync(path.join(__dirname, pathname)))
-                                res.end()
-                            }
-                        }
-
-                        next()
-                    })
-
-                    server.middlewares.use('/save-file', (req, res, next) => {
-                        console.log('Save file request received:', req.method, req.url)
-                        if (req.method !== 'POST') {
-                            return next() // Only handle POST requests
-                        }
-
-                        let body = ''
-                        req.on('data', chunk => {
-                            body += chunk.toString() // Convert Buffer to string
-                        })
-
-                        req.on('end', () => {
-                            try {
-                                let { filePath, content } = JSON.parse(body)
-                                filePath = filePath.replace('/workspace', '/me/dev/buckdb')
-
-                                // ... validation and security checks ...
-
-                                console.log(`[SaveFile] Writing to: ${filePath}`)
-                                // This is where the file is written to the disk on the server side
-                                fs.writeFileSync(filePath, content, 'utf8')
-
-                                res.writeHead(200, { 'Content-Type': 'application/json' })
-                                res.end(JSON.stringify({ success: true }))
-                            } catch (error: any) {
-                                // ... error handling ...
-                            }
-                        })
-                    })
-                }
-            },
-        },
-        {
-            // Custom plugin to prevent HMR reload for specific file
-            name: 'prevent-reload-on-main-v2-update',
-            apply: 'serve',
-            handleHotUpdate({ file, server, modules }) {
-                // Use path.resolve to ensure consistent path format
-                console.log('HMR', file, modules.map(m => m.url))
-                // const targetFile = path.resolve(__dirname, 'src/main.v2.ts');
-                if (file.match(/demo|tutorial|.buck/)) {
-                    console.log(`[HMR Prevent] Update detected for ${file}. Preventing reload.`)
-                    // Returning an empty array prevents the update from being processed
-                    // and thus stops the full page reload for this specific file.
-                    return []
-                }
-                // For all other files, let Vite handle HMR as usual
-                return modules
-            },
-        },
-
+        configureResponseHeaders(),
+        saveFileServer(),
+        preventReloadOnMainV2Update(),
         duckdbServer()
     ],
     esbuild: {
@@ -134,13 +68,30 @@ export default defineConfig({
         },
     },
     server: {
+        // make sure this port matches the devUrl port in tauri.conf.json file
         port: 5173,
-        host: '0.0.0.0',
+        // Tauri expects a fixed port, fail if that port is not available
+        strictPort: true,
+        // if the host Tauri is expecting is set, use it
+        host: host || false,
+        hmr: host
+            ? {
+                protocol: 'ws',
+                host,
+                port: 1421,
+            }
+            : undefined,
         fs: {
             allow: ['../../../'], // allow to load codicon.ttf from monaco-editor in the parent folder and monaco-vscode-api package resources
         },
         proxy: duckdbProxy({ port: '9998' }),
+        watch: {
+            // tell vite to ignore watching `src-tauri`
+            ignored: ['**/src-tauri/**'],
+        },
     },
+    // Env variables starting with the item of `envPrefix` will be exposed in tauri's source code through `import.meta.env`.
+    envPrefix: ['VITE_', 'TAURI_ENV_*'],
     define: {
         rootDirectory: JSON.stringify(__dirname),
     },

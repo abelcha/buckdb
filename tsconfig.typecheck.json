@@ -6,6 +6,8 @@
   "exclude": [
     // "node_modules",
     // "demo",
+    "test3",
+    "watson",
     "examples",
   ]
 }

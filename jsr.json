@@ -1,0 +1,15 @@
+{
+  "name": "@bel/buckdb",
+  "version": "0.0.1",
+  "exports": "./node.ts",
+  "publish": {
+    "include": [
+      ".buck/*",
+      "src/*.ts",
+      "*.ts"
+    ],
+    "exclude": [
+      "src/*.test.ts"
+    ]
+  }
+}

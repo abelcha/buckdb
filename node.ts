@@ -71,8 +71,11 @@ class JsonModelTable {
     }
 }
 
-export const jsonModelTable = new JsonModelTable()
 
+export const jsonModelTable = new JsonModelTable()
+if (import.meta.main) {
+    jsonModelTable.writeJsonContent()
+}
 const mapValueRec = (value: DuckDBValue) => {
     if (value instanceof DuckDBListValue) {
         return value.items.map(mapValueRec)

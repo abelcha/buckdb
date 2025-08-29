@@ -3,7 +3,7 @@ import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_
 export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx }
 import { DSettings } from './.buck/types'
 import { builder } from './src/build'
-import { generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
+import { formatJSON, formatTS, generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { BuckDBBase, CommandQueue, DuckdbCon } from './core'
 import { deriveName, isBucket, Dict } from './src/utils'
@@ -42,6 +42,7 @@ function mapDuckDBTypeToSchema(typeInfo: any): string | Record<string, any> {
 
     return baseType
 }
+
 class JsonModelTable {
     constructor(
         private jsonContent: Dict = JSON.parse(readFileSync(ModelsJsonPath, 'utf-8'))
@@ -50,14 +51,17 @@ class JsonModelTable {
     hasSchema(ressource: string, uri: string) {
         return this.jsonContent[ressource]?.[uri] ? true : false
     }
+    writeJsonContent() {
+        const inter = generateInterface(this.jsonContent);
+        writeFileSync(ModelsJsonPath, formatJSON(this.jsonContent))
+        writeFileSync(ModelsTSPath, inter)
+    }
     writeSchema(ressource: string, uri: string, schemaJson: Record<string, any>) {
         if (!this.jsonContent[ressource]) {
             this.jsonContent[ressource] = {}
         }
         this.jsonContent[ressource][uri] = schemaJson
-        const tsfile = generateInterface(this.jsonContent)
-        writeFileSync(ModelsJsonPath, JSON.stringify(this.jsonContent, null, 2))
-        writeFileSync(ModelsTSPath, tsfile)
+        this.writeJsonContent()
     }
     writeResultSchema(ressource: string, uri: string, result: DuckDBResult) {
         return this.writeSchema(ressource, uri, zipObject(result.columnNames(), result.columnTypes().map(mapDuckDBTypeToSchema)))

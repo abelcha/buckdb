@@ -3,7 +3,7 @@ import type { IDisposable } from 'monaco-editor'
 import { alignExpressionWithSql } from './realign'
 import { EventEmitter, Uri, window as VsCodeWindow, workspace as VsCodeWorkspace } from '@codingame/monaco-vscode-extension-api'
 import contentjson from '@buckdb/.buck/models.json' // Use relative path
-import { generateInterface, serializeDescribe } from '@buckdb/src/interface-generator' // Use relative path
+import { formatJSON, generateInterface, serializeDescribe } from '@buckdb/src/interface-generator' // Use relative path
 import { isFile, isFunction } from '@buckdb/src/utils'
 import { writeFile } from './setup.common'
 import { Extracted, extractReconciledCalls, cleanEval, evalChain, extractPrimitiveAssignations } from '@buckdb/src/extractor'
@@ -73,7 +73,7 @@ class Schemes {
             })
     }
     updateContent = async () => {
-        await this.writeFile('.buck/models.json', JSON.stringify(this.content, null, 2))
+        await this.writeFile('.buck/models.json', formatJSON(this.content))
         const tsfile = generateInterface(this.content)
         await this.writeFile('.buck/models.ts', tsfile)
     }

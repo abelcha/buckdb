@@ -385,7 +385,7 @@ export const generateInterface = (inputData: Record<string, Record<string, any>>
 
     const sourceFile = ts.factory.createSourceFile([importDeclaration, interfaceDeclaration], ts.factory.createToken(ts.SyntaxKind.EndOfFileToken), ts.NodeFlags.None)
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
-    return printer.printNode(ts.EmitHint.Unspecified, sourceFile, sourceFile)
+    return formatTS(printer.printNode(ts.EmitHint.Unspecified, sourceFile, sourceFile))
 }
 
 // --- Optional Main Execution Block ---
@@ -432,3 +432,15 @@ if (import.meta.main) {
   // }
 }
 */
+
+
+export const formatJSON = (obj: any) => {
+    return JSON.stringify(obj, null, 2)
+        .replaceAll(/\n\s{6,}/g, ' ')
+        .replaceAll(/\n\s{4,}\}/g, ' }')
+}
+export const formatTS = (obj: any) => {
+    return obj
+        .replaceAll(/\n\s{12,}/g, ' ')
+        .replaceAll(/\n\s{8,}\}/g, ' }')
+}

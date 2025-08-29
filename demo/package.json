@@ -289,6 +289,7 @@
     "express": "^5.1.0",
     "rollup-plugin-visualizer": "^6.0.3",
     "sucrase": "^3.35.0",
+    "type-fest": "^4.41.0",
     "typescript": "~5.8.3",
     "vite-plugin-html": "^3.2.2",
     "vite-plugin-wasm": "^3.4.1",
@@ -297,10 +298,10 @@
   "overrides": {
     "esbuild": "^0.24.0"
   },
-  "volta": {
-    "extends": "../package.json"
-  },
   "trustedDependencies": [
     "protobufjs"
-  ]
+  ],
+  "volta": {
+    "node": "22.19.0"
+  }
 }

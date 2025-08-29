@@ -1749,13 +1749,10 @@ export interface DAggregate<DNum, DStr> {
   /**@description: Returns the median absolute deviation for the values within x. NULL values are ignored. Temporal types return a positive INTERVAL.		@example: mad(x)	@default: mad(x:DECIMAL | DOUBLE | FLOAT) -> DECIMAL*/
   mad(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
 
-  /**@description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIME*/
-  mean(x: DDateable): DDateField;
-  /**@alias: mean	@description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: avg(x:TIME | TIME WITH TIME ZONE | TIMESTAMP | TIMESTAMP WITH TIME ZONE) -> TIME*/
-  avg: this["mean"];
-
   /**@description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: mean(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DECIMAL*/
   mean(x: DNumericable): DNum & { filter: (x: DAnyable) => DNum };
+  /**@alias: mean	@description: Calculates the average value for all tuples in x.	@example: SUM(x) / COUNT(*)	@default: avg(x:BIGINT | DECIMAL | DOUBLE | HUGEINT | INTEGER | SMALLINT) -> DECIMAL*/
+  avg: this["mean"];
 
   /**@description: Returns the most frequent value for the values within x. NULL values are ignored.	@default: mode(x:ANY) -> ANY*/
   mode(x: DAnyable): DAnyField;
@@ -5245,4 +5242,4 @@ export interface DSettings {
   binary_as_string: boolean;
 }
 
-export type DExtensions = "autocomplete" | "aws" | "azure" | "core_functions" | "delta" | "ducklake" | "encodings" | "excel" | "fts" | "h3" | "hostfs" | "httpfs" | "httpserver" | "iceberg" | "icu" | "inet" | "jemalloc" | "json" | "motherduck" | "mysql_scanner" | "parquet" | "postgres_scanner" | "spatial" | "sqlite_scanner" | "tpcds" | "tpch" | "ui" | "vss" | string | {};
+export type DExtensions = "autocomplete" | "aws" | "azure" | "chsql" | "core_functions" | "delta" | "ducklake" | "encodings" | "excel" | "fts" | "h3" | "hostfs" | "httpfs" | "httpserver" | "iceberg" | "icu" | "inet" | "jemalloc" | "json" | "motherduck" | "mysql_scanner" | "parquet" | "postgres_scanner" | "spatial" | "sqlite_scanner" | "tpcds" | "tpch" | "ui" | "vss" | string | {};

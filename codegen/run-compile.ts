@@ -17,7 +17,7 @@ const allextensions = ['hostfs', 'h3', 'aws', 'azure', 'delta', 'excel', 'fts', 
 
 const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')
-const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number', 'length-ANY[]-number', 'substr-VARCHAR-string', 'range-TIMESTAMP WITH TIME ZONE-any[]', , 'range-TIMESTAMP-any[]']
+const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number', 'length-ANY[]-number', 'substr-VARCHAR-string', 'range-TIMESTAMP WITH TIME ZONE-any[]', , 'range-TIMESTAMP-any[]', 'mean-false-Date', 'avg-false-Date']
 const entriesSorted = <T>(items: Record<string, T>) => {
     return Object.keys(items).sort().map(e => [e, items[e]]) as [string, T][]
 }

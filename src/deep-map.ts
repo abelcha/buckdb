@@ -1,4 +1,4 @@
-import * as t from ".buck/types";
+import * as t from "../.buck/types";
 
 type Assert<T extends true> = T;
 type ExpectEqual<A, B> = (<G>() => G extends A ? 1 : 2) extends (<G>() => G extends B ? 1 : 2) ? (<G>() => G extends B ? 1 : 2) extends (<G>() => G extends A ? 1 : 2) ? true

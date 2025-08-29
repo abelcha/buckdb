@@ -1,4 +1,4 @@
-import { DMetaField } from '.buck/types'
+import { DMetaField } from '../.buck/types'
 import * as FNS from '../fn'
 import jsep, { ArrayExpression, ArrowFunctionExpression, BinaryExpression, CallExpression, ConditionalExpression, Expression, Identifier, Literal, MemberExpression, ObjectExpression, Property, SequenceExpression, SpreadElement, TemplateElement, TemplateLiteral, UnaryExpression } from './jsep'
 import { AggregateFunctions, LitteralTypesMap, PatternMatchers, PolyfillMapping } from './typedef'

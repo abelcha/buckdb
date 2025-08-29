@@ -1,6 +1,6 @@
 import { Models } from '../.buck/models'
 import * as t from '../.buck/types'
-import { DuckdbCon } from '@buckdb/core'
+import { DuckdbCon } from '../core'
 import { DDirection } from './typedef'
 import { CopyToInterface } from './copy'
 import { FromPlainDict, ToCompDict, ToPlain } from './deep-map'

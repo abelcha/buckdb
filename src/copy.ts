@@ -1,5 +1,5 @@
-import * as t from '.buck/types'
-import { DuckdbCon } from '@buckdb/core'
+import * as t from '../.buck/types'
+import { DuckdbCon } from '../core'
 import { GField, MetaModel, MS, SelectModel, VTypes } from './build.types'
 import { formalize } from './formalise'
 import { NestedKeyOf } from './generic-utils'

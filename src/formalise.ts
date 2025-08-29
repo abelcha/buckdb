@@ -4,7 +4,7 @@ import { parse } from './parser'
 import { isBucket, wrap, isFile, isFunction, maxBy } from './utils'
 import { highlightSql } from './highlighter'
 
-export const formatSource = ({ catalog = '', uri }: { catalog: string, uri: string | (Record<string, any> & { toSql: Function }) }) => {
+export const formatSource = ({ catalog = '', uri }: { catalog?: string, uri: string | (Record<string, any> & { toSql: Function }) }) => {
     if (typeof uri !== 'string') {
         return `(${uri.toSql({ trim: true })})`
     }

@@ -105,6 +105,7 @@ for (const file of sourceFiles) {
 
 
 const examples = [
+    ...Object.entries(import.meta.glob('@buckdb/watson/*.ts', { as: 'raw', eager: true })),
     ...Object.entries(import.meta.glob('@buckdb/examples/*.ts', { as: 'raw', eager: true })),
     ...Object.entries(import.meta.glob('@buckdb/showcase/*.ts', { as: 'raw', eager: true }))
 ].map(([path, content]) => {

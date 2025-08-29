@@ -13,3 +13,6 @@ demo/dist
 # Local Netlify folder
 .netlify
 demo/stats.html
+watson
+.buck/models.json
+.buck/models.ts

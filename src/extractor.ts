@@ -50,11 +50,17 @@ export const extractPrimitiveAssignations = (text: string, opts: Opts = {}) => {
         if (isVariableStatement(node)) {
             const declarationList = node.declarationList;
             declarationList.declarations.forEach(declaration => {
+                // declaration
                 // if (primitiveInitializer(declaration.initializer)) {
-                    const name = declaration.name.getText()
-                    assignations[name] = declaration.initializer.getText()
+                const name = declaration.name.getText()
+                // declaration.initializer.
+                if (declaration.initializer.getFirstToken()?.kind === SyntaxKind.AwaitKeyword) {
+                    return
+                }
+                assignations[name] = declaration.initializer.getText()
                 // }
             })
+            // console.log({ assignations })
         }
     }
     forEachChild(sourceFile, visit);

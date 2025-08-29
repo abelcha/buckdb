@@ -1,4 +1,4 @@
-import { DSettings } from './.buck/types'
+import type { DSettings } from './.buck/types'
 import { formatSource } from './src/formalise'
 import { parse, parseObject } from './src/parser'
 import { deriveName } from './src/utils'

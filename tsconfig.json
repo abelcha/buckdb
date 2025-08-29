@@ -14,7 +14,7 @@
 
         "allowSyntheticDefaultImports": 
         true,
-        "verbatimModuleSyntax": false,
+        "verbatimModuleSyntax": true,
         "resolveJsonModule": true,
         // Best practices
         "isolatedModules": true,

@@ -1,5 +1,5 @@
 import { it, expect } from 'bun:test'
-import { extractAssignations, Extracted, extractPrimitiveAssignations, extractReconciledCalls, extractSpecialCalls } from './extractor'
+import { extractAssignations, extractPrimitiveAssignations, extractReconciledCalls, extractSpecialCalls } from './extractor'
 
 const testCode = `
             // Covers lines 109-115, 117-122 (collectDefinitions)

@@ -1,4 +1,4 @@
-import { DMetaField } from './.buck/types'
+import type { DMetaField } from './.buck/types'
 
 import { __serialize } from './src/serializer'
 

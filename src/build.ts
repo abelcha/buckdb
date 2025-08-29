@@ -1,10 +1,11 @@
 import * as t from '../.buck/types'
-import { DuckdbCon } from '../core'
+import type { DuckdbCon } from '../core'
 import { DBuilder } from './build.types'
 import { dump, formalize, serializeCreate, toSql } from './formalise'
 import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
-import { DCte, DDatasource, DOrder, DSelectee, dstate, DState, Parseable } from './typedef'
+import type { DCte, DDatasource, DOrder, DSelectee, DState, Parseable } from './typedef'
+import { dstate } from './typedef'
 import { deriveName, isBucket, keyBy, last, upperFirst, wrap, Σ } from './utils'
 
 export const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>, format = (e: any) => e) => {
@@ -142,7 +143,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     return fromRes(deriveState({ ...state, agg: 'min', limit: 1 }, { orderBy: fields }, field => ({ field, direction: 'ASC' })))
                 },
                 count: function () {
-                    return fromRes(deriveState({ ...state, agg: 'count' }, {  }))
+                    return fromRes(deriveState({ ...state, agg: 'count' }, {}))
                 },
                 countBy: function (gp: Parseable) {
                     const countBy = formalize(gp, state.context)

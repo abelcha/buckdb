@@ -1,12 +1,12 @@
-import { DuckDBArrayValue, DuckDBBitValue, DuckDBBlobValue, DuckDBDateValue, DuckDBDecimalValue, DuckDBIntervalValue, DuckDBListValue, DuckDBMapValue, DuckDBResult, DuckDBStructValue, DuckDBTimestampMillisecondsValue, DuckDBTimestampNanosecondsValue, DuckDBTimestampSecondsValue, DuckDBTimestampTZValue, DuckDBTimestampValue, DuckDBTimeTZValue, DuckDBTimeValue, DuckDBTypeId, DuckDBUnionValue, DuckDBUUIDValue, DuckDBValue, type DuckDBConnection, type DuckDBInstance } from '@duckdb/node-api'
+import { DuckDBArrayValue, DuckDBBitValue, DuckDBBlobValue, DuckDBDateValue, DuckDBDecimalValue, DuckDBIntervalValue, DuckDBListValue, DuckDBMapValue, DuckDBResult, DuckDBStructValue, DuckDBTimestampMillisecondsValue, DuckDBTimestampNanosecondsValue, DuckDBTimestampSecondsValue, DuckDBTimestampTZValue, DuckDBTimestampValue, DuckDBTimeTZValue, DuckDBTimeValue, DuckDBTypeId, DuckDBUnionValue, DuckDBUUIDValue, type DuckDBConnection, type DuckDBInstance, type DuckDBValue } from '@duckdb/node-api'
 import { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx } from './io'
 export { delta_scan, parquet_scan, read_csv, read_json, read_json_objects, read_parquet, read_text, read_xlsx }
-import { DSettings } from './.buck/types'
+import type { DSettings } from './.buck/types'
 import { builder } from './src/build'
-import { formatJSON, formatTS, generateInterface, serializeDescribe, serializeSchema } from './src/interface-generator'
+import { formatJSON, generateInterface, serializeDescribe } from './src/interface-generator'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { BuckDBBase, CommandQueue, DuckdbCon } from './core'
-import { deriveName, isBucket, Dict } from './src/utils'
+import { BuckDBBase } from './core'
+import { isBucket, type Dict } from './src/utils'
 
 import { DuckDBTypeIdMap } from './src/typedef'
 import { omit, pick, zipObject } from 'es-toolkit'

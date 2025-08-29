@@ -1,4 +1,4 @@
-import { DCondition, DCte, DDatasource, DOrder, DSelectee, DState } from './typedef'
+import type { DCondition, DCte, DDatasource, DOrder, DSelectee, DState } from './typedef'
 import { copy } from './copy'
 import { parse } from './parser'
 import { isBucket, wrap, isFile, isFunction, maxBy } from './utils'

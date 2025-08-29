@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { from, Buck } from '@buckdb/isomorphic'
+import { Buck } from '@buckdb/isomorphic'
 
 const str = 'hello world'
 

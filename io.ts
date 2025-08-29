@@ -1,5 +1,7 @@
 // No specific imports needed from typedef for these declarations anymore
-import { __serialize, FilterKeys, SerializeOrdered, SerializeValue } from './src/serializer.ts'
+import { __serialize } from './src/serializer.ts'
+import type { FilterKeys, SerializeOrdered, SerializeValue } from './src/serializer.ts'
+
 type CompressionOptions = 'none' | 'gzip' | 'zstd' | 'lz4' | 'lz4_raw' | 'brotli' | 'auto'
 // const __serialize = () =>
 /** Options for the read-csv function, maintaining original camelCase naming and order. */

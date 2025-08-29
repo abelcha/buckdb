@@ -1,10 +1,10 @@
-import { Models } from '../.buck/models'
 import * as t from '../.buck/types'
-import { DuckdbCon } from '../core'
-import { DDirection } from './typedef'
-import { CopyToInterface } from './copy'
-import { FromPlainDict, ToCompDict, ToPlain } from './deep-map'
-import { Flatten, KeyIntersection, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge, TripleUnion } from './generic-utils'
+import type { Models } from '../.buck/models'
+import type { DuckdbCon } from '../core'
+import type { DDirection } from './typedef'
+import type { CopyToInterface } from './copy'
+import type { FromPlainDict, ToCompDict, ToPlain } from './deep-map'
+import type { Flatten, KeyIntersection, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge, TripleUnion } from './generic-utils'
 import type { DeriveName } from './utils'
 
 type TRessource = keyof Models | (string & {})

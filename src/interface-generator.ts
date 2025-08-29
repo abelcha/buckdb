@@ -1,5 +1,4 @@
 import ts from 'typescript'
-import * as t from '../.buck/types' // Import the types namespace for TS API generation target
 import { mapTypes } from './typedef'
 // import { mapTypes } from "./sync-types";
 

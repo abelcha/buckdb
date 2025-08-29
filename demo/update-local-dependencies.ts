@@ -1,6 +1,6 @@
 import * as fs from 'node:fs'
 import * as nodePath from 'node:path'
-import { PackageJson } from 'type-fest'
+import type { PackageJson } from 'type-fest'
 
 const packageJsonFile = new URL('./package.json', import.meta.url).pathname
 const packageJson: PackageJson = JSON.parse(

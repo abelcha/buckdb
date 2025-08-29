@@ -2,9 +2,9 @@ import { expect, test } from 'bun:test'
 import { sortBy } from 'es-toolkit'
 import * as t from '.buck/types'
 import { Buck, MemoryDB } from '@buckdb/isomorphic'
-import { DBuilderResult, FromResultModel, Withor } from './build.types'
-import { FromPlain, ToCompDict } from './deep-map'
-import { Models } from '@buckdb/.buck/models'
+import type { DBuilderResult, FromResultModel, Withor } from './build.types'
+import type { FromPlain, ToCompDict } from './deep-map'
+import type { Models } from '@buckdb/.buck/models'
 
 const fns = await MemoryDB.from('duckdb_functions()').select().execute()
 type E<T> = T

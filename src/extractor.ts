@@ -1,5 +1,4 @@
 import {
-    CallExpression,
     createSourceFile,
     forEachChild,
     isCallExpression,
@@ -7,12 +6,11 @@ import {
     isPropertyAccessExpression,
     isVariableDeclaration,
     isVariableStatement,
-    Node,
     ScriptTarget,
-    SourceFile,
-    SyntaxKind,
-    VariableDeclaration
+    SyntaxKind
 } from 'typescript';
+import type { CallExpression, Node, SourceFile, VariableDeclaration } from 'typescript'
+
 type Position = { line: number, column: number, charPos: number }
 export type Extracted = {
     method: string,

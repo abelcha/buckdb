@@ -1,8 +1,8 @@
 import * as t from '../.buck/types'
-import { DuckdbCon } from '../core'
-import { GField, MetaModel, MS, SelectModel, VTypes } from './build.types'
 import { formalize } from './formalise'
-import { NestedKeyOf } from './generic-utils'
+import type { DuckdbCon } from '../core'
+import type { GField, MetaModel, MS, SelectModel, VTypes } from './build.types'
+import type { NestedKeyOf } from './generic-utils'
 
 type FileFormats = 'parquet' | 'csv' | 'json' | 'arrow' | 'jsonl'
 type CompressionType = 'auto' | 'none' | 'gzip' | 'zstd' | 'snappy' | 'brotli' | 'lz4'

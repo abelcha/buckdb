@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { DMetaField } from '../.buck/types'
+import type { DMetaField } from '../.buck/types'
 import jsep from './jsep'
 import { parse, parseObject } from './parser'
 

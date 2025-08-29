@@ -152,6 +152,9 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         serializeValue('LIMIT')(state.limit),
         serializeValue('OFFSET')(state.offset),
     ].filter(Boolean)
+    if (state.agg === 'count') {
+        components = ['SELECT COUNT(*) FROM (', ...components, ')']
+    }
     if (state.setops.length) {
         components = ['FROM (', ...components, ')'].concat(...serializeSetops(state.setops, state))
     }

@@ -75,6 +75,9 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 if (state?.keyBy) {
                     return ddb.query(str, props).then(resp => keyBy(resp, state.keyBy as string))
                 }
+                if (state.agg === 'count') {
+                    props.rows = true;
+                }
                 return formatAGG(ddb.query(str, props))
             }
             return {
@@ -137,6 +140,9 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 minBy: function (...fields: Parseable[]) {
                     // return this.orderBy(fields, 'ASC').limit(10)
                     return fromRes(deriveState({ ...state, agg: 'min', limit: 1 }, { orderBy: fields }, field => ({ field, direction: 'ASC' })))
+                },
+                count: function () {
+                    return fromRes(deriveState({ ...state, agg: 'count' }, {  }))
                 },
                 countBy: function (gp: Parseable) {
                     const countBy = formalize(gp, state.context)

@@ -89,6 +89,8 @@ export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaMod
     groupBy<G extends KeyPicker<A, S, 'ALL'>>(...keys: G[] | G[][] | (['GROUPING SETS', G[][]] | ['CUBE' | 'ROLLUP', G[]])): MS<'grouped', GF, A, S, SV>
     countBy<G extends (KeyPicker<A, S>)>(key: G): MS<'values', GF, A, S, [string, number]>
 
+    count(): Resultor<[number]>
+
     keyBy<G extends (KeyPicker<A, S>)>(key: G): MS<'keyed', GF, A, S, SV>
     minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'row', GF, A, S, SV>
     maxBy: this['minBy']

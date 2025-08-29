@@ -8,7 +8,7 @@
     "@types/bun": "^1.2.5"
   },
   "scripts": {
-    "patch": "bump --file jsr.json --commit && jsr publish",
+    "patch": "bump --file jsr.json --commit && jsr publish --allow-slow-types --allow-dirty",
     "typecheck": " tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports -p tsconfig.typecheck.json"
   },
   "dependencies": {

@@ -518,3 +518,8 @@ test.todo('condition mode', () => {
   expect(parse((e) => e.function_name, {}, { condition: true })).toEqual(`function_name IS NOT NULL`)
   expect(parse((e) => e.function_name && e.id === '#123', {}, { condition: true })).toEqual(`function_name IS NOT NULL AND id = '#123'`)
 })
+
+test("[selector]", () => {
+  expect(parse(`(e) => e["function_name"]`)).toEqual(`"function_name"`)
+  expect(parse(`(e) => e['function_name']`)).toEqual(`"function_name"`)
+})

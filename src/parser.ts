@@ -229,11 +229,14 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         }
         node.property.isProperty = true
         const rtn = [transformNode(node.object), transformNode(node.property)].filter(Boolean).flatMap(x => x) as string[]
-        if (node.property.type === 'Literal' && node.accessor === '['
-          // todo: handle this better
-          && typeof node.property.value === 'string' && node.property.value?.includes(' ')
-        ) {
-          return rtn.slice(0, -1).concat('"' + node.property.value + '"').join('.')
+        /*todo: handle this better*/ 
+        if (node.property.type === 'Literal' && node.accessor === '[' && typeof node.property.value === 'string') {
+          if (
+            node.property.value?.includes(' ') ||
+            (node.property.value.length + 2 === node.property.raw.length && !node.object.subMemberExpression)
+          ) {
+            return rtn.slice(0, -1).concat('"' + node.property.value + '"').join('.')
+          }
         }
         // @ts-ignore
         const ret = opts.isFuncArg && node.accessor !== '[' ? rtn : joinMembers(rtn)
@@ -478,6 +481,7 @@ type Expr<T> = (d: T, z: DMetaField) => any
 export function parse<T extends Record<string, any>>(expr: Expr<T> | string | Function, context = {}, config = {}) {
   const fnstr = typeof expr === 'string' ? expr : expr.toString()
   const ast = jsep(fnstr) as ArrowFunctionExpression
+  // console.log(ast)
   const params = extractParamsContext(ast)
   const duckdbExpr = transformDuckdb(ast.body, params, context, config)
   return duckdbExpr

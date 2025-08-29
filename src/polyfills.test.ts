@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'bun:test'
-import { from } from '@buckdb/isomorphic'
+import { from, Buck } from '@buckdb/isomorphic'
 
 const str = 'hello world'
 
-const table = from('data/str-test.jsonl')
+const table = Buck('test').from('data/str-test.jsonl')
 
 describe('polyfills', () => {
     it('at', async () => {

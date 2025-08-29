@@ -425,7 +425,7 @@ test('kitchen_sink', async () => {
         scope: t.DVarcharField
     }
 
-    async function checkSelect(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
+    async function checkSelect(db: FromResultModel<'', [{ catalog: 'test'; uri: 'data/people.parquet'; alias: 'people' }]>) {
         db.select(e => e satisfies RecPeople)
 
         db.join('duckdb_settings()', 'oo').using('name').select(e => e satisfies RecPeople & { oo: Setting })
@@ -615,7 +615,7 @@ test('ambiguous type inference - type conversions', async () => {
 })
 
 test('build-tests', () => {
-    async function checkSelect(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>, db2: FromResultModel<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'duckdb_functions' }]>) {
+    async function checkSelect(db: FromResultModel<'', [{ catalog: 'test'; uri: 'data/people.parquet'; alias: 'people' }]>, db2: FromResultModel<'', [{ catalog: ''; uri: 'duckdb_functions()'; alias: 'duckdb_functions' }]>) {
 
         const respk = await db.select(e => e).execute() satisfies
             { name: string; age: number; total: number, people?: never }[]
@@ -727,7 +727,7 @@ test('d.test.ts', async () => {
 })
 
 test('unshallowing', async () => {
-    const xxx = async function xx(db: FromResultModel<'', [{ catalog: ''; uri: 'data/people.parquet'; alias: 'people' }]>) {
+    const xxx = async function xx(db: FromResultModel<'', [{ catalog: 'test'; uri: 'data/people.parquet'; alias: 'people' }]>) {
         const resp = await db.select(e => e).execute() satisfies { name: string; age: number; total: number }[]
         const respX = await db.select().execute() satisfies { name: string; age: number; total: number }[]
     }

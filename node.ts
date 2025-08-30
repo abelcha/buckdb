@@ -11,10 +11,10 @@ import { isBucket, type Dict } from './src/utils'
 import { DuckDBTypeIdMap } from './src/typedef'
 import { omit, pick, zipObject } from 'es-toolkit'
 import { DuckDBResultReader } from '@duckdb/node-api/lib/DuckDBResultReader'
-import path from 'node:path'
+import Path from 'node:path'
 
-const ModelsJsonPath = path.join(__dirname, './.buck/models.json')
-const ModelsTSPath = path.join(__dirname, './.buck/models.ts')
+const ModelsJsonPath = Path.join(__dirname, './.buck/models.json')
+const ModelsTSPath = Path.join(__dirname, './.buck/models.ts')
 
 const InitConfigKeys = ['s3_access_key_id', 's3_secret_access_key', 's3_region', 's3_session_token']
 function mapDuckDBTypeToSchema(typeInfo: any): string | Record<string, any> {
@@ -194,7 +194,8 @@ class BuckDBNode extends BuckDBBase {
     }
 
     async ensureSchema(_uri: string) {
-        const uri = this.getSchemaUri(_uri)
+        const isInBrowser = typeof window !== 'undefined'
+        const uri = isInBrowser ? this.getSchemaUri(_uri) : _uri
         const h = this.handle || ''
         if (jsonModelTable.hasSchema(h, uri)) {
             return

@@ -10,11 +10,8 @@
         "strictNullChecks": false,
         // Bundler mode
         "moduleResolution": "node",
-
-
-        "allowSyntheticDefaultImports": 
-        true,
-        "verbatimModuleSyntax": true,
+        "allowSyntheticDefaultImports": true,
+        "verbatimModuleSyntax": false,
         "resolveJsonModule": true,
         // Best practices
         "isolatedModules": true,
@@ -29,9 +26,15 @@
         // "noPropertyAccessFromIndexSignature": false
         "baseUrl": ".",
         "paths": {
-            "@buckdb/*": ["./*"],
-            ".buck/*": ["./.buck/*"],
-            "@buckdb/isomorphic": ["./node.ts"],
+            "@buckdb/*": [
+                "./*"
+            ],
+            ".buck/*": [
+                "./.buck/*"
+            ],
+            "@buckdb/isomorphic": [
+                "./node.ts"
+            ],
         }
     },
     "include": [

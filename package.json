@@ -9,7 +9,7 @@
   },
   "scripts": {
     "demo": "npm start --prefix demo",
-    "patch": "bump --file jsr.json --commit && jsr publish --allow-slow-types --allow-dirty",
+    "patch": "bump --file jsr.json --commit && jsr publish --allow-slow-types --allow-dirty --token $JSR_TOKEN",
     "typecheck": " tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports -p tsconfig.typecheck.json"
   },
   "dependencies": {

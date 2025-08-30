@@ -53,10 +53,8 @@ let isDiskSaveEnabled = import.meta.env.DEV
 // Modified to avoid conflicts with undo operations
 const loadVirtualContentIfNeeded = async (editor: TextEditor | undefined, vscodeApi: VsCodeApi) => {
     // Check if editor exists, scheme is file, disk save is OFF, AND it's demo.ts
-    console.log('loadVirtualContentIfNeeded', editor.document.uri.fsPath)
     if (editor && editor.document.uri.scheme === 'file' && (!isDiskSaveEnabled || editor.document.uri.fsPath?.includes('/models'))
     /* && editor.document.uri.fsPath.endsWith('/demo.ts')*/) {
-        console.log('_______loadVirtualContentIfNeeded', editor.document.uri.fsPath)
         const filePath = editor.document.uri.fsPath
         const storageKey = `buckdbVirtualFile:${filePath}` // Key remains specific to the file path
         const storedContent = localStorage.getItem(storageKey)
@@ -83,10 +81,9 @@ const loadVirtualContentIfNeeded = async (editor: TextEditor | undefined, vscode
     }
 }
 
+
 void getApi().then(async (vscode: VsCodeApi) => {
     // Show initial state on load (optional, but helpful for user)
-    vscode.window.showInformationMessage(`Disk Save is currently ${isDiskSaveEnabled ? 'Enabled' : 'Disabled'}.`)
-
     commandDisposables.forEach(d => d.dispose())
     commandDisposables.length = 0
     runOutputChannel?.dispose()

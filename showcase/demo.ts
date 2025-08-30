@@ -1,7 +1,14 @@
 
 import { generate_series, Json, lower, regexp_replace, upper } from "@buckdb/fn";
 import { duckdb_functions, range } from "@buckdb/tf";
-import { from } from "@buckdb/isomorphic";
+import { from, read_csv } from "@buckdb/isomorphic";
+
+
+
+from(read_csv('../data/final.csv', {column_names: ['auuu', 'boooozz', 'x', 'd', 'r']}))
+.select('auuu', 'd', 'd')
+
+from(('../data/final.csv'))
 
 
 const d1 = await from(duckdb_functions())

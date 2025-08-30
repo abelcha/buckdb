@@ -53,7 +53,10 @@ let isDiskSaveEnabled = import.meta.env.DEV
 // Modified to avoid conflicts with undo operations
 const loadVirtualContentIfNeeded = async (editor: TextEditor | undefined, vscodeApi: VsCodeApi) => {
     // Check if editor exists, scheme is file, disk save is OFF, AND it's demo.ts
-    if (editor && editor.document.uri.scheme === 'file' && !isDiskSaveEnabled/* && editor.document.uri.fsPath.endsWith('/demo.ts')*/) {
+    console.log('loadVirtualContentIfNeeded', editor.document.uri.fsPath)
+    if (editor && editor.document.uri.scheme === 'file' && (!isDiskSaveEnabled || editor.document.uri.fsPath?.includes('/models'))
+    /* && editor.document.uri.fsPath.endsWith('/demo.ts')*/) {
+        console.log('_______loadVirtualContentIfNeeded', editor.document.uri.fsPath)
         const filePath = editor.document.uri.fsPath
         const storageKey = `buckdbVirtualFile:${filePath}` // Key remains specific to the file path
         const storedContent = localStorage.getItem(storageKey)
@@ -94,10 +97,7 @@ void getApi().then(async (vscode: VsCodeApi) => {
     })
     scrollSyncMap.clear()
     commandDisposables.push(vscode.workspace.registerTextDocumentContentProvider(transformedScheme, transformedProvider))
-    commandDisposables.push(vscode.commands.registerCommand('show-transformed-view', async () => {
-        const activeEditor = VsCodeWindow.activeTextEditor
-        return activeEditor ? await openTransformedViewAndSync(activeEditor, transformedProvider, vscode) : vscode.window.showWarningMessage('No active editor found to show transformed view for.')
-    }))
+
 
     // Updated getTransformedUri to match the new structure used in sync-view.ts
     const getTransformedUri = (editor: TextEditor | undefined): Uri | undefined => {

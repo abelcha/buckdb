@@ -9,6 +9,7 @@ import { writeFile } from './setup.common'
 import { Extracted, extractReconciledCalls, cleanEval, evalChain, extractPrimitiveAssignations } from '@buckdb/src/extractor'
 import { InstanceOps, RessourceOps, triggerMethods } from '@buckdb/src/typedef'
 import { TextDocumentContentProvider } from 'vscode'
+import { DBuilderResult } from '@buckdb/src/build.types'
 
 export const transformedScheme = 'transformed'
 export const scrollSyncMap = new Map<string, { sourceDisposable: IDisposable; targetDisposable: IDisposable }>()
@@ -57,7 +58,7 @@ const parseChain = (chain: Extracted['chain']) => {
     return { instanceName, instanceStr }
 }
 
-
+// globalThis.TRANSFORM_LOGS = true
 const tlogger = globalThis.TRANSFORM_LOGS ? (...e) => console.log('[TRANSFORM]', ...e) : () => { }
 
 class Schemes {
@@ -65,7 +66,7 @@ class Schemes {
     writeFile = async (filePath: string, content: string) => {
         console.log('writefile', filePath, content.length)
         await writeFile(filePath, content)
-        if (import.meta.env.DEV)
+        if (import.meta.env.DEV && !filePath.includes('/models'))
             await fetch('/save-file', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -88,7 +89,6 @@ class Schemes {
                 continue
             }
             try {
-
                 const schemas = await instance.fetchTables()
                 this.content[instanceName] = schemas
                 toUpdate = true
@@ -105,7 +105,7 @@ class Schemes {
         let toUpdate = false
         for (const { chain, expression, children } of statements) {
             const { instanceName, instanceStr } = parseChain(chain)
-            const instance = cleanEval(instanceStr)
+            const instance = cleanEval(instanceStr) as DBuilderResult<any, ''>
             const ressourceNames = chain.filter(([methodName]) => RessourceOps.includes(methodName))
                 .map(([_, [param1]]) => cleanEval(param1))
             tlogger('Processing:', instanceName, ressourceNames)
@@ -144,7 +144,7 @@ class Schemes {
                     tlogger(ressourceName, 'Schema serialized:', { serialized })
                     this.content[instanceName] ??= {}
                     this.content[instanceName][ressourceName] = serialized
-                    tlogger('UPDATING', instanceName, ressourceName, this.content[instanceName][ressourceName])
+                    console.log('UPDATING', instanceName, ressourceName, this.content[instanceName][ressourceName])
                     toUpdate = true
                 } catch (_err) {
                     const err = _err as Error
@@ -195,11 +195,17 @@ const getCode = (uri: Uri): string => {
 }
 
 
-const refreshTypes = debounce(async (parts: Extracted[]) => {
+
+let __refreshTypes = async (parts: Extracted[]) => {
+    console.log('__refreshTypes')
     schemes.upsertBuckStatements(parts)
         .then(() => schemes.upsertFromStatements(parts))
         .catch(err => console.error(err))
-}, 1000, { edges: ['trailing'] })
+}
+let refreshTypes
+// const refreshTypes = () => {
+//     // console.log('REFRESHTY')
+// }
 
 export const transformedProvider = new class implements TextDocumentContentProvider {
     onDidChangeEmitter = new EventEmitter<Uri>()
@@ -210,8 +216,14 @@ export const transformedProvider = new class implements TextDocumentContentProvi
         try {
             const parts = extractReconciledCalls(code)
             const pa = extractPrimitiveAssignations(code)
-
-            refreshTypes(parts)
+            if (!refreshTypes) {
+                const allItems = window.localStorage
+                console.log('INNNNNNNNIT', allItems)
+                refreshTypes = debounce(refreshTypes, 3000, { edges: ['trailing'] })
+                __refreshTypes(parts)
+            } else {
+                refreshTypes(parts)
+            }
             const arr = new Array(lineNumber).fill(null)
             for (const st of parts || []) {
                 let res: string[] = []

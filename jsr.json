@@ -1,6 +1,6 @@
 {
   "name": "@bel/buckdb",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "exports": {
     ".": "./node.ts",
     "tf": "./tf.ts",

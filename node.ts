@@ -6,7 +6,7 @@ import { builder } from './src/build'
 import { formatJSON, generateInterface, serializeDescribe } from './src/interface-generator'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { BuckDBBase } from './core'
-import { isBucket, type Dict } from './src/utils'
+import { isBucket, isReaderFunction, type Dict } from './src/utils'
 
 import { DuckDBTypeIdMap } from './src/typedef'
 import { omit, pick, zipObject } from 'es-toolkit'
@@ -195,7 +195,8 @@ class BuckDBNode extends BuckDBBase {
 
     async ensureSchema(_uri: string) {
         const isInBrowser = typeof window !== 'undefined'
-        const uri = isInBrowser ? this.getSchemaUri(_uri) : _uri
+        const isReader = isReaderFunction(_uri)
+        const uri = isInBrowser || isReader ? this.getSchemaUri(_uri) : _uri
         const h = this.handle || ''
         if (jsonModelTable.hasSchema(h, uri)) {
             return

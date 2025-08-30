@@ -1,7 +1,16 @@
 {
   "name": "@bel/buckdb",
   "version": "0.0.5",
-  "exports": "./node.ts",
+  "exports": {
+    ".": "./node.ts",
+    "tf": "./tf.ts",
+    "core": "./core.ts",
+    "fn": "./fn.ts",
+    "node": "./node.ts",
+    "io": "./io.ts",
+    "wasm": "./wasm.ts",
+    "remote": "./remote.ts"
+  },
   "publish": {
     "include": [
       ".buck/*",

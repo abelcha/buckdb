@@ -28,6 +28,9 @@ export const userDataProvider = await createIndexedDBProviders()
 export const fileSystemProvider = new RegisteredFileSystemProvider(false)
 
 const loadFile = (content: any, path: string) => {
+    if (path.includes('/models.') && localStorage.getItem(`buckdbVirtualFile:/workspace/${path}`)) {
+        content = localStorage.getItem(`buckdbVirtualFile:/workspace/${path}`)
+    }
     fileSystemProvider.registerFile(new RegisteredMemoryFile(vscode.Uri.file(`/workspace/${path}`), content))
     return true
 }

@@ -10,6 +10,7 @@ import { Extracted, extractReconciledCalls, cleanEval, evalChain, extractPrimiti
 import { InstanceOps, RessourceOps, triggerMethods } from '@buckdb/src/typedef'
 import { TextDocumentContentProvider } from 'vscode'
 import { DBuilderResult } from '@buckdb/src/build.types'
+import { saveDocumentLocalStorage } from './save-command'
 
 export const transformedScheme = 'transformed'
 export const scrollSyncMap = new Map<string, { sourceDisposable: IDisposable; targetDisposable: IDisposable }>()
@@ -61,10 +62,10 @@ const parseChain = (chain: Extracted['chain']) => {
 // globalThis.TRANSFORM_LOGS = true
 const tlogger = globalThis.TRANSFORM_LOGS ? (...e) => console.log('[TRANSFORM]', ...e) : () => { }
 
+const localContent = localStorage.getItem('buckdbVirtualFile:/workspace/.buck/models.json')
 class Schemes {
-    content = contentjson as Record<string, Record<string, any>>
+    content = localContent ? JSON.parse(localContent) : contentjson
     writeFile = async (filePath: string, content: string) => {
-        console.log('writefile', filePath, content.length)
         await writeFile(filePath, content)
         if (import.meta.env.DEV && !filePath.includes('/models'))
             await fetch('/save-file', {
@@ -72,6 +73,9 @@ class Schemes {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filePath: '/workspace/' + filePath, content }),
             })
+        if (filePath.includes('/models')) {
+            saveDocumentLocalStorage('/workspace/' + filePath, content)
+        }
     }
     updateContent = async () => {
         await this.writeFile('.buck/models.json', formatJSON(this.content))
@@ -202,10 +206,7 @@ let __refreshTypes = async (parts: Extracted[]) => {
         .then(() => schemes.upsertFromStatements(parts))
         .catch(err => console.error(err))
 }
-let refreshTypes
-// const refreshTypes = () => {
-//     // console.log('REFRESHTY')
-// }
+const refreshTypes = debounce(__refreshTypes, 3000, { edges: ['trailing'] })
 
 export const transformedProvider = new class implements TextDocumentContentProvider {
     onDidChangeEmitter = new EventEmitter<Uri>()
@@ -216,14 +217,7 @@ export const transformedProvider = new class implements TextDocumentContentProvi
         try {
             const parts = extractReconciledCalls(code)
             const pa = extractPrimitiveAssignations(code)
-            if (!refreshTypes) {
-                const allItems = window.localStorage
-                console.log('INNNNNNNNIT', allItems)
-                refreshTypes = debounce(refreshTypes, 3000, { edges: ['trailing'] })
-                __refreshTypes(parts)
-            } else {
-                refreshTypes(parts)
-            }
+            refreshTypes(parts)
             const arr = new Array(lineNumber).fill(null)
             for (const st of parts || []) {
                 let res: string[] = []

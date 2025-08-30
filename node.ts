@@ -194,9 +194,9 @@ class BuckDBNode extends BuckDBBase {
     }
 
     async ensureSchema(_uri: string) {
-        const isInBrowser = typeof window !== 'undefined'
-        const isReader = isReaderFunction(_uri)
-        const uri = isInBrowser || isReader ? this.getSchemaUri(_uri) : _uri
+        const isInBrowser = typeof window !== 'undefined';
+        const isReader = !!isReaderFunction(_uri);
+        const uri = isInBrowser || !isReader ? this.getSchemaUri(_uri) : _uri;
         const h = this.handle || ''
         if (jsonModelTable.hasSchema(h, uri)) {
             return

@@ -16,5 +16,6 @@
     "@duckdb/node-api": "^1.4.1-r.4",
     "es-toolkit": "^1.33.0",
     "typescript": "5.9.2"
-  }
+  },
+    "license": "MIT"
 }

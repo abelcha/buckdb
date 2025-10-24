@@ -215,6 +215,11 @@ describe('aggregation methods', () => {
         // BUG: Missing parentheses around DISTINCT ON field
         expectSQL(sql, 'FROM duckdb_functions() SELECT DISTINCT ON (function_type) function_name, function_type')
     })
+    it.only('should handle count()', async () => {
+        await TestDB.create('test_table_count', { replace: true }).as([{ name: 'test', value: 42 }, { name: 'test2', value: 43 }]).execute()
+        const r = await TestDB.from('test_table_count').count().execute()
+        expect(r).toBe(2)
+    })
 })
 
 describe('set operations', () => {

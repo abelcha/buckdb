@@ -77,7 +77,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     return ddb.query(str, props).then(resp => keyBy(resp, state.keyBy as string))
                 }
                 if (state.agg === 'count') {
-                    props.rows = true;
+                    return ddb.query(str, { rows: true, ...props }).then(resp => Number(resp[0]?.[0] ?? 0))
                 }
                 return formatAGG(ddb.query(str, props))
             }

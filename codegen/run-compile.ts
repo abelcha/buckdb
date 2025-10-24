@@ -14,6 +14,10 @@ const getCommunityExtensions = () => {
 const community_extensions = [] // await getCommunityExtensions()
 global.duckdb_extensions = await Buck('').from('duckdb_extensions()').select(e => e.extension_name).execute()
 const allextensions = ['hostfs', 'h3', 'aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui', 'ducklake']
+// const nwext = 'airport arrow bigquery bitfilters blockduck cache_httpfs capi_quack chsql chsql_native cronjob crypto datasketches duck_tails duckdb_mcp duckpgq eeagrid evalexpr_rhai faiss file_dialog flockmtl fuzzycomplete geography geotiff gsheets h3 hashfuncs hdf5 highs hostfs http_client httpserver jwt lindel magic marisa markdown msolap nanoarrow nanodbc netquack ofquack open_prompt parser_tools pbix pcap_reader pivot_table prql psql pyroscope quack quackformers quickjs radio rapidfuzz read_stat redis rusty_quack rusty_sheet scrooge sheetreader shellfs splink_udfs st_read_multi stochastic substrait tarfs textplot tributary tsid ulid vortex webbed webmacro wireduck yaml zipfs '
+//     .split(' ').filter(x => !allextensions.includes(x))
+// allextensions.push(...nwext)
+// console.table(nwext.map(e => `INSTALL ${e} from 'COMMUNITY'; LOAD ${e}`))
 
 const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')

@@ -408,10 +408,11 @@ const fnSerial = (name = '', args: any[]) => {
     if (typeof last === 'object' && last !== null && !Array.isArray(last)) {
         opts = args.pop() || {}
     }
+    let source = args.length ===1 ? `"${args[0]}"` : `[${args.map((e = '') => `'${e}'`)}]`
     if (!Object.keys(opts).length) {
-        return `${name}([${args.map((e = '') => `'${e}'`)}])`
+        return `${name}(${source})`
     }
-    return `${name}([${args.map((e = '') => `'${e}'`)}],${__serialize(opts)})`
+    return `${name}(${source},${__serialize(opts)})`
 }
 /** Collection of functions for reading various file formats, serialized for query building. */
 const Fncx = {

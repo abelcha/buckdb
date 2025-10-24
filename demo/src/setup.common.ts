@@ -196,8 +196,14 @@ await Promise.all([
             'strings': true, // <-- Enable here
         },
     })),
+    // initUserKeybindings(
+    //     defaultKeybindings
+    // )
     initUserKeybindings(
+        import.meta.env.PROD ?
+            defaultKeybindings.replace('control+enter', 'cmd+enter') :
             defaultKeybindings
+
     )
 ])
 

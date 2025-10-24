@@ -127,7 +127,7 @@ export class CommandQueue {
             'ui',
             'vss',
         ]
-        const brokenExt = ['wireduck', 'vortex', 'tarfs', 'scrooge', 'redis', 'quackformers', 'pyroscope', 'pcap_reader', 'parser_tools', 'ofquack', 'nanodbc', 'nanoarrow', 'msolap', 'httpfs', 'hdf5']
+        const brokenExt = ['h3','wireduck', 'vortex', 'tarfs', 'scrooge', 'redis', 'quackformers', 'pyroscope', 'pcap_reader', 'parser_tools', 'ofquack', 'nanodbc', 'nanoarrow', 'msolap', 'httpfs', 'hdf5']
         this.queue.push(...extensions.filter(e => !brokenExt.includes(e)).map(e => `INSTALL '${e}' ${!officialExtensions.includes(e) ? 'FROM community' : ''};LOAD '${e}';`))
         return this
     }

@@ -33,8 +33,9 @@ export const duckdbServer = () => ({
     apply: 'serve',
     async configureServer(server) {
         const duckdbProcess = spawn('duckdb', [
+            '-unsigned',
             '-c',
-            'INSTALL hostfs FROM community; LOAD hostfs;INSTALL httpserver FROM community; LOAD httpserver; SELECT httpserve_start(\'0.0.0.0\', 9998, \'\');'
+            'INSTALL hostfs FROM community; LOAD hostfs;INSTALL httpserver FROM community;LOAD \'/Volumes/dev/duckdb-excel/build/release/extension/excel/excel.duckdb_extension\'; LOAD httpserver; SELECT httpserve_start(\'0.0.0.0\', 9998, \'\');'
         ], {
             env: { ...process.env, DUCKDB_HTTPSERVER_FOREGROUND: '1' }
         })

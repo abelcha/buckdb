@@ -48,7 +48,7 @@ Buck('s3://a1738/fsimrep').with(
     .from('results')
     .leftJoin('repos.parquet', 'x').using('full_name')
     .select((e, D) => ({
-        full_name: 'https://github.com/' + e.full_name,
+        full_name: 'github.com/' + e.full_name,
         similarity_score: e.results.similarity_score.round(3),
         common_users: e.common_users,
         total_stars: e.stargazers_count,

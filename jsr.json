@@ -20,5 +20,6 @@
     "exclude": [
       "src/*.test.ts"
     ]
-  }
+  },
+    "license": "MIT"
 }

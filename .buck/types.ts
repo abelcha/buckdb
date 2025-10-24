@@ -2660,6 +2660,308 @@ export interface DGlobal<DNum, DStr> {
   /**@alias: greatest_common_divisor	@description: Computes the greatest common divisor of x and y	@example: gcd(42, 57)	@default: gcd(x:BIGINT, y:BIGINT) -> BIGINT*/
   gcd: this["greatest_common_divisor"];
 
+
+  /**@default: h3_are_neighbor_cells(col0:BIGINT, col1:BIGINT) -> BOOLEAN*/
+  h3_are_neighbor_cells(col0: DNumericable, col1: DNumericable): DBoolField;
+
+  /**@default: h3_are_neighbor_cells(col0:VARCHAR, col1:VARCHAR) -> BOOLEAN*/
+  h3_are_neighbor_cells(col0: DVarcharable, col1: DVarcharable): DBoolField;
+
+  /**@default: h3_cell_area(col0:BIGINT, col1:VARCHAR) -> DOUBLE*/
+  h3_cell_area(col0: DNumericable, col1: DVarcharable): DNum;
+
+  /**@default: h3_cell_area(col0:VARCHAR, col1:VARCHAR) -> DOUBLE*/
+  h3_cell_area(col0: DVarcharable, col1: DVarcharable): DNum;
+
+  /**@default: h3_cell_to_boundary_wkt(col0:BIGINT) -> VARCHAR*/
+  h3_cell_to_boundary_wkt(col0: DNumericable): DStr;
+
+  /**@default: h3_cell_to_boundary_wkt(col0:VARCHAR) -> VARCHAR*/
+  h3_cell_to_boundary_wkt(col0: DVarcharable): DStr;
+
+  /**@default: h3_cell_to_center_child(col0:BIGINT, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_center_child(col0: DNumericable, col1: DNumericable): DNum;
+
+  /**@default: h3_cell_to_center_child(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
+  h3_cell_to_center_child(col0: DVarcharable, col1: DNumericable): DStr;
+
+  /**@default: h3_cell_to_child_pos(col0:BIGINT, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_child_pos(col0: DNumericable, col1: DNumericable): DNum;
+
+  /**@default: h3_cell_to_child_pos(col0:VARCHAR, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_child_pos(col0: DVarcharable, col1: DNumericable): DNum;
+
+  /**@default: h3_cell_to_children(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
+  h3_cell_to_children(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_cell_to_children(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_cell_to_children(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+
+  /**@default: h3_cell_to_lat(col0:BIGINT) -> DOUBLE*/
+  h3_cell_to_lat(col0: DNumericable): DNum;
+
+  /**@default: h3_cell_to_lat(col0:VARCHAR) -> DOUBLE*/
+  h3_cell_to_lat(col0: DVarcharable): DNum;
+
+  /**@default: h3_cell_to_latlng(col0:BIGINT) -> DOUBLE[]*/
+  h3_cell_to_latlng(col0: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_cell_to_latlng(col0:VARCHAR) -> DOUBLE[]*/
+  h3_cell_to_latlng(col0: DVarcharable): DArrayField<DNumericField>;
+
+  /**@default: h3_cell_to_lng(col0:BIGINT) -> DOUBLE*/
+  h3_cell_to_lng(col0: DNumericable): DNum;
+
+  /**@default: h3_cell_to_lng(col0:VARCHAR) -> DOUBLE*/
+  h3_cell_to_lng(col0: DVarcharable): DNum;
+
+  /**@default: h3_cell_to_local_ij(col0:BIGINT, col1:BIGINT) -> INTEGER[]*/
+  h3_cell_to_local_ij(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_cell_to_local_ij(col0:VARCHAR, col1:VARCHAR) -> VARCHAR[]*/
+  h3_cell_to_local_ij(col0: DVarcharable, col1: DVarcharable): DArrayField<DVarcharField>;
+
+  /**@default: h3_cell_to_parent(col0:BIGINT, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_parent(col0: DNumericable, col1: DNumericable): DNum;
+
+  /**@default: h3_cell_to_parent(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
+  h3_cell_to_parent(col0: DVarcharable, col1: DNumericable): DStr;
+
+  /**@default: h3_cell_to_vertex(col0:BIGINT, col1:INTEGER) -> BIGINT*/
+  h3_cell_to_vertex(col0: DNumericable, col1: DNumericable): DNum;
+
+  /**@default: h3_cell_to_vertex(col0:VARCHAR, col1:INTEGER) -> VARCHAR*/
+  h3_cell_to_vertex(col0: DVarcharable, col1: DNumericable): DStr;
+
+  /**@default: h3_cell_to_vertexes(col0:BIGINT) -> BIGINT[]*/
+  h3_cell_to_vertexes(col0: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_cell_to_vertexes(col0:VARCHAR) -> VARCHAR[]*/
+  h3_cell_to_vertexes(col0: DVarcharable): DArrayField<DVarcharField>;
+
+  /**@default: h3_cells_to_directed_edge(col0:BIGINT, col1:BIGINT) -> BIGINT*/
+  h3_cells_to_directed_edge(col0: DNumericable, col1: DNumericable): DNum;
+
+  /**@default: h3_cells_to_directed_edge(col0:VARCHAR, col1:VARCHAR) -> VARCHAR*/
+  h3_cells_to_directed_edge(col0: DVarcharable, col1: DVarcharable): DStr;
+
+  /**@default: h3_cells_to_multi_polygon_wkt(col0:BIGINT[]) -> VARCHAR*/
+  h3_cells_to_multi_polygon_wkt(col0: DArrayable): DStr;
+
+  /**@default: h3_child_pos_to_cell(col0:BIGINT, col1:BIGINT | UBIGINT, col2:INTEGER) -> BIGINT*/
+  h3_child_pos_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
+
+  /**@default: h3_child_pos_to_cell(col0:BIGINT, col1:VARCHAR, col2:INTEGER) -> VARCHAR*/
+  h3_child_pos_to_cell(col0: DNumericable, col1: DVarcharable, col2: DNumericable): DStr;
+
+  /**@default: h3_compact_cells(col0:BIGINT[]) -> BIGINT[]*/
+  h3_compact_cells(col0: DArrayable): DArrayField<DNumericField>;
+
+  /**@default: h3_directed_edge_to_boundary_wkt(col0:BIGINT) -> VARCHAR*/
+  h3_directed_edge_to_boundary_wkt(col0: DNumericable): DStr;
+
+  /**@default: h3_directed_edge_to_boundary_wkt(col0:VARCHAR) -> VARCHAR*/
+  h3_directed_edge_to_boundary_wkt(col0: DVarcharable): DStr;
+
+  /**@default: h3_directed_edge_to_cells(col0:BIGINT) -> UBIGINT[]*/
+  h3_directed_edge_to_cells(col0: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_directed_edge_to_cells(col0:VARCHAR) -> VARCHAR[]*/
+  h3_directed_edge_to_cells(col0: DVarcharable): DArrayField<DVarcharField>;
+
+  /**@default: h3_edge_length(col0:BIGINT, col1:VARCHAR) -> DOUBLE*/
+  h3_edge_length(col0: DNumericable, col1: DVarcharable): DNum;
+
+  /**@default: h3_edge_length(col0:VARCHAR, col1:VARCHAR) -> DOUBLE*/
+  h3_edge_length(col0: DVarcharable, col1: DVarcharable): DNum;
+
+  /**@default: h3_get_base_cell_number(col0:BIGINT) -> INTEGER*/
+  h3_get_base_cell_number(col0: DNumericable): DNum;
+
+  /**@default: h3_get_base_cell_number(col0:VARCHAR) -> INTEGER*/
+  h3_get_base_cell_number(col0: DVarcharable): DNum;
+
+  /**@default: h3_get_directed_edge_destination(col0:BIGINT) -> BIGINT*/
+  h3_get_directed_edge_destination(col0: DNumericable): DNum;
+
+  /**@default: h3_get_directed_edge_destination(col0:VARCHAR) -> VARCHAR*/
+  h3_get_directed_edge_destination(col0: DVarcharable): DStr;
+
+  /**@default: h3_get_directed_edge_origin(col0:BIGINT) -> BIGINT*/
+  h3_get_directed_edge_origin(col0: DNumericable): DNum;
+
+  /**@default: h3_get_directed_edge_origin(col0:VARCHAR) -> VARCHAR*/
+  h3_get_directed_edge_origin(col0: DVarcharable): DStr;
+
+  /**@default: h3_get_hexagon_area_avg(col0:INTEGER, col1:VARCHAR) -> DOUBLE*/
+  h3_get_hexagon_area_avg(col0: DNumericable, col1: DVarcharable): DNum;
+
+  /**@default: h3_get_hexagon_edge_length_avg(col0:INTEGER, col1:VARCHAR) -> DOUBLE*/
+  h3_get_hexagon_edge_length_avg(col0: DNumericable, col1: DVarcharable): DNum;
+
+  /**@default: h3_get_icosahedron_faces(col0:BIGINT) -> INTEGER[]*/
+  h3_get_icosahedron_faces(col0: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_get_icosahedron_faces(col0:VARCHAR) -> INTEGER[]*/
+  h3_get_icosahedron_faces(col0: DVarcharable): DArrayField<DNumericField>;
+
+  /**@default: h3_get_num_cells(col0:INTEGER) -> BIGINT*/
+  h3_get_num_cells(col0: DNumericable): DNum;
+
+  /**@default: h3_get_pentagons(col0:INTEGER) -> UBIGINT[]*/
+  h3_get_pentagons(col0: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_get_pentagons_string(col0:INTEGER) -> VARCHAR[]*/
+  h3_get_pentagons_string(col0: DNumericable): DArrayField<DVarcharField>;
+
+  h3_get_res0_cells(): DArrayField<DNumericField>;
+
+  h3_get_res0_cells_string(): DArrayField<DVarcharField>;
+
+  /**@default: h3_get_resolution(col0:BIGINT) -> INTEGER*/
+  h3_get_resolution(col0: DNumericable): DNum;
+
+  /**@default: h3_get_resolution(col0:VARCHAR) -> INTEGER*/
+  h3_get_resolution(col0: DVarcharable): DNum;
+
+  /**@default: h3_great_circle_distance(col0:DOUBLE, col1:DOUBLE, col2:DOUBLE, col3:DOUBLE, col4:VARCHAR) -> DOUBLE*/
+  h3_great_circle_distance(col0: DNumericable, col1: DNumericable, col2: DNumericable, col3: DNumericable, col4: DVarcharable): DNum;
+
+  /**@default: h3_grid_disk(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
+  h3_grid_disk(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_grid_disk(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_grid_disk(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+
+  /**@default: h3_grid_disk_distances(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
+  h3_grid_disk_distances(col0: DNumericable, col1: DNumericable): DArrayField;
+
+  /**@default: h3_grid_disk_distances(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
+  h3_grid_disk_distances(col0: DVarcharable, col1: DNumericable): DArrayField;
+
+  /**@default: h3_grid_disk_distances_safe(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
+  h3_grid_disk_distances_safe(col0: DNumericable, col1: DNumericable): DArrayField;
+
+  /**@default: h3_grid_disk_distances_safe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
+  h3_grid_disk_distances_safe(col0: DVarcharable, col1: DNumericable): DArrayField;
+
+  /**@default: h3_grid_disk_distances_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[][]*/
+  h3_grid_disk_distances_unsafe(col0: DNumericable, col1: DNumericable): DArrayField;
+
+  /**@default: h3_grid_disk_distances_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[][]*/
+  h3_grid_disk_distances_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField;
+
+  /**@default: h3_grid_disk_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
+  h3_grid_disk_unsafe(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_grid_disk_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_grid_disk_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+
+  /**@default: h3_grid_distance(col0:BIGINT, col1:BIGINT) -> BIGINT*/
+  h3_grid_distance(col0: DNumericable, col1: DNumericable): DNum;
+
+  /**@default: h3_grid_distance(col0:VARCHAR, col1:VARCHAR) -> BIGINT*/
+  h3_grid_distance(col0: DVarcharable, col1: DVarcharable): DNum;
+
+  /**@default: h3_grid_path_cells(col0:BIGINT, col1:BIGINT) -> BIGINT[]*/
+  h3_grid_path_cells(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_grid_path_cells(col0:VARCHAR, col1:VARCHAR) -> VARCHAR[]*/
+  h3_grid_path_cells(col0: DVarcharable, col1: DVarcharable): DArrayField<DVarcharField>;
+
+  /**@default: h3_grid_ring_unsafe(col0:BIGINT, col1:INTEGER) -> BIGINT[]*/
+  h3_grid_ring_unsafe(col0: DNumericable, col1: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_grid_ring_unsafe(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_grid_ring_unsafe(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+
+  /**@default: h3_h3_to_string(col0:BIGINT) -> VARCHAR*/
+  h3_h3_to_string(col0: DNumericable): DStr;
+
+  /**@default: h3_is_pentagon(col0:BIGINT) -> BOOLEAN*/
+  h3_is_pentagon(col0: DNumericable): DBoolField;
+
+  /**@default: h3_is_pentagon(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_pentagon(col0: DVarcharable): DBoolField;
+
+  /**@default: h3_is_res_class_iii(col0:BIGINT) -> BOOLEAN*/
+  h3_is_res_class_iii(col0: DNumericable): DBoolField;
+
+  /**@default: h3_is_res_class_iii(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_res_class_iii(col0: DVarcharable): DBoolField;
+
+  /**@default: h3_is_valid_cell(col0:BIGINT) -> BOOLEAN*/
+  h3_is_valid_cell(col0: DNumericable): DBoolField;
+
+  /**@default: h3_is_valid_cell(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_valid_cell(col0: DVarcharable): DBoolField;
+
+  /**@default: h3_is_valid_directed_edge(col0:BIGINT) -> BOOLEAN*/
+  h3_is_valid_directed_edge(col0: DNumericable): DBoolField;
+
+  /**@default: h3_is_valid_directed_edge(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_valid_directed_edge(col0: DVarcharable): DBoolField;
+
+  /**@default: h3_is_valid_vertex(col0:BIGINT) -> BOOLEAN*/
+  h3_is_valid_vertex(col0: DNumericable): DBoolField;
+
+  /**@default: h3_is_valid_vertex(col0:VARCHAR) -> BOOLEAN*/
+  h3_is_valid_vertex(col0: DVarcharable): DBoolField;
+
+  /**@default: h3_latlng_to_cell(col0:DOUBLE, col1:DOUBLE, col2:INTEGER) -> UBIGINT*/
+  h3_latlng_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
+
+  /**@default: h3_latlng_to_cell_string(col0:DOUBLE, col1:DOUBLE, col2:INTEGER) -> VARCHAR*/
+  h3_latlng_to_cell_string(col0: DNumericable, col1: DNumericable, col2: DNumericable): DStr;
+
+  /**@default: h3_local_ij_to_cell(col0:BIGINT, col1:INTEGER, col2:INTEGER) -> BIGINT*/
+  h3_local_ij_to_cell(col0: DNumericable, col1: DNumericable, col2: DNumericable): DNum;
+
+  /**@default: h3_local_ij_to_cell(col0:VARCHAR, col1:INTEGER, col2:INTEGER) -> VARCHAR*/
+  h3_local_ij_to_cell(col0: DVarcharable, col1: DNumericable, col2: DNumericable): DStr;
+
+  /**@default: h3_origin_to_directed_edges(col0:BIGINT) -> UBIGINT[]*/
+  h3_origin_to_directed_edges(col0: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_origin_to_directed_edges(col0:VARCHAR) -> VARCHAR[]*/
+  h3_origin_to_directed_edges(col0: DVarcharable): DArrayField<DVarcharField>;
+
+  /**@default: h3_polygon_wkt_to_cells(col0:VARCHAR, col1:INTEGER) -> UBIGINT[]*/
+  h3_polygon_wkt_to_cells(col0: DVarcharable, col1: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_polygon_wkt_to_cells_experimental(col0:VARCHAR, col1:INTEGER | VARCHAR, col2:INTEGER | VARCHAR) -> UBIGINT[]*/
+  h3_polygon_wkt_to_cells_experimental(col0: DVarcharable, col1: DNumericable | DVarcharable, col2: DNumericable | DVarcharable): DArrayField<DNumericField>;
+
+  /**@default: h3_polygon_wkt_to_cells_experimental_string(col0:VARCHAR, col1:INTEGER | VARCHAR, col2:INTEGER | VARCHAR) -> VARCHAR[]*/
+  h3_polygon_wkt_to_cells_experimental_string(col0: DVarcharable, col1: DNumericable | DVarcharable, col2: DNumericable | DVarcharable): DArrayField<DVarcharField>;
+
+  /**@default: h3_polygon_wkt_to_cells_string(col0:VARCHAR, col1:INTEGER) -> VARCHAR[]*/
+  h3_polygon_wkt_to_cells_string(col0: DVarcharable, col1: DNumericable): DArrayField<DVarcharField>;
+
+  /**@default: h3_string_to_h3(col0:VARCHAR) -> UBIGINT*/
+  h3_string_to_h3(col0: DVarcharable): DNum;
+
+  /**@default: h3_uncompact_cells(col0:BIGINT[], col1:INTEGER) -> BIGINT[]*/
+  h3_uncompact_cells(col0: DArrayable, col1: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_vertex_to_lat(col0:BIGINT) -> DOUBLE*/
+  h3_vertex_to_lat(col0: DNumericable): DNum;
+
+  /**@default: h3_vertex_to_lat(col0:VARCHAR) -> DOUBLE*/
+  h3_vertex_to_lat(col0: DVarcharable): DNum;
+
+  /**@default: h3_vertex_to_latlng(col0:BIGINT) -> DOUBLE[]*/
+  h3_vertex_to_latlng(col0: DNumericable): DArrayField<DNumericField>;
+
+  /**@default: h3_vertex_to_latlng(col0:VARCHAR) -> DOUBLE[]*/
+  h3_vertex_to_latlng(col0: DVarcharable): DArrayField<DNumericField>;
+
+  /**@default: h3_vertex_to_lng(col0:BIGINT) -> DOUBLE*/
+  h3_vertex_to_lng(col0: DNumericable): DNum;
+
+  /**@default: h3_vertex_to_lng(col0:VARCHAR) -> DOUBLE*/
+  h3_vertex_to_lng(col0: DVarcharable): DNum;
+
   /**@description: Returns a `UBIGINT` with the hash of the `value`. Note that this is not a cryptographic hash.	@example: hash('🦆')	@default: hash(value:ANY) -> UBIGINT*/
   hash(value: DAnyable, ...vargs: DAnyable[]): DNum;
 

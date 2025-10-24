@@ -88,6 +88,9 @@ export function __serialize<T>(value: T, depth = 0): string { // Removed depth p
     }
 
     if (typeof value === 'string') {
+        if (value.includes("'")) {
+            return `e'${value.replaceAll("'", "\\'")}'`
+        }
         return `'${value}'`
     }
 

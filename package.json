@@ -1,16 +1,32 @@
 {
-  "version": "0.0.1",
   "name": "buckdb",
-  "module": "index.ts",
+  "version": "0.1.7",
   "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "^1.2.5"
+  "main": "./node.ts",
+  "module": "./node.ts",
+  "exports": {
+    ".": "./node.ts",
+    "./tf": "./tf.ts",
+    "./core": "./core.ts",
+    "./fn": "./fn.ts",
+    "./node": "./node.ts",
+    "./io": "./io.ts",
+    "./wasm": "./wasm.ts",
+    "./remote": "./remote.ts"
   },
+  "files": [
+    ".buck/*",
+    "src/*.ts",
+    "*.ts",
+    "!src/*.test.ts"
+  ],
   "scripts": {
     "demo": "npm start --prefix demo",
     "patch": "bump --file jsr.json --commit && jsr publish --allow-slow-types --allow-dirty --token $JSR_TOKEN",
-    "typecheck": " tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports -p tsconfig.typecheck.json"
+    "typecheck": "tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports -p tsconfig.typecheck.json"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.5"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.30.0",

@@ -67,7 +67,10 @@
     "test_usr": { "id": "DNumeric", "name": "DVarchar", "age": "DNumeric", "status": "DVarchar" },
     "test_scores": { "player_id": "DNumeric", "score": "DNumeric", "multiplier": "DNumeric" },
     "test_global": { "id": "DNumeric", "flag": "DBool" },
-    "data/people.parquet": { "name": "DVarchar", "age": "DNumeric", "total": "DNumeric" }
+    "data/people.parquet": { "name": "DVarchar", "age": "DNumeric", "total": "DNumeric" },
+    "test_table_count": { "name": "DVarchar", "value": "DNumeric" },
+    "duckdb_functions()": { "database_name": "DVarchar", "database_oid": "DVarchar", "schema_name": "DVarchar", "function_name": "DVarchar", "alias_of": "DVarchar", "function_type": "DVarchar", "description": "DVarchar", "comment": "DVarchar", "tags": "DMap", "return_type": "DVarchar", "parameters": { "__type": "array", "elementType": "DVarchar" }, "parameter_types": { "__type": "array", "elementType": "DVarchar" }, "varargs": "DVarchar", "macro_definition": "DVarchar", "has_side_effects": "DBool", "internal": "DBool", "function_oid": "DNumeric", "examples": { "__type": "array", "elementType": "DVarchar" }, "stability": "DVarchar", "categories": { "__type": "array", "elementType": "DVarchar" } },
+    "test_stream": { "id": "DNumeric", "value": "DVarchar" }
   },
   "s3://a1738/akira09.db": {
     "Actor": { "actor_id": "DNumeric", "first_name": "DVarchar", "last_name": "DVarchar", "last_update": "DDate" },

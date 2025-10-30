@@ -69,6 +69,9 @@ export interface Models {
         ["test_scores"]: { ["player_id"]: t.DNumericField; ["score"]: t.DNumericField; ["multiplier"]: t.DNumericField; };
         ["test_global"]: { ["id"]: t.DNumericField; ["flag"]: t.DBoolField; };
         ["data/people.parquet"]: { ["name"]: t.DVarcharField; ["age"]: t.DNumericField; ["total"]: t.DNumericField; };
+        ["test_table_count"]: { ["name"]: t.DVarcharField; ["value"]: t.DNumericField; };
+        ["duckdb_functions()"]: { ["database_name"]: t.DVarcharField; ["database_oid"]: t.DVarcharField; ["schema_name"]: t.DVarcharField; ["function_name"]: t.DVarcharField; ["alias_of"]: t.DVarcharField; ["function_type"]: t.DVarcharField; ["description"]: t.DVarcharField; ["comment"]: t.DVarcharField; ["tags"]: t.DMapField; ["return_type"]: t.DVarcharField; ["parameters"]: t.DArrayField<t.DVarcharField>; ["parameter_types"]: t.DArrayField<t.DVarcharField>; ["varargs"]: t.DVarcharField; ["macro_definition"]: t.DVarcharField; ["has_side_effects"]: t.DBoolField; ["internal"]: t.DBoolField; ["function_oid"]: t.DNumericField; ["examples"]: t.DArrayField<t.DVarcharField>; ["stability"]: t.DVarcharField; ["categories"]: t.DArrayField<t.DVarcharField>; };
+        ["test_stream"]: { ["id"]: t.DNumericField; ["value"]: t.DVarcharField; };
     };
     ["s3://a1738/akira09.db"]: {
         ["Actor"]: { ["actor_id"]: t.DNumericField; ["first_name"]: t.DVarcharField; ["last_name"]: t.DVarcharField; ["last_update"]: t.DDateField; };

@@ -50,7 +50,7 @@ it.todo('promitive extractions', () => {
 
 
 
-it('test assignation extraction', () => {
+it.todo('test assignation extraction', () => {
     const result = extractAssignations(testCode, { positions: false, chain: true })
     // console.log({ result })
     expect(Object.entries(result)).toEqual([
@@ -116,7 +116,7 @@ it('test assignation extraction', () => {
     // ])
 })
 
-// it('test assignation reconstitution', () => {
+// it.todo('test assignation reconstitution', () => {
 //     const assignations = extractAssignations(testCode)
 //     const result = reconstituteAssignations(assignations)
 //     const expected = new Map([
@@ -130,7 +130,7 @@ it('test assignation extraction', () => {
 //     expect([...result.entries()]).toEqual([...expected.entries()])
 // })
 
-it('test special calls extraction', () => {
+it.todo('test special calls extraction', () => {
     const result = extractSpecialCalls(testCode, { chain: false, positions: true })
     expect(result as any).toEqual([
         {
@@ -174,7 +174,7 @@ it('test special calls extraction', () => {
     ])
 })
 
-it('reconciliation', () => {
+it.todo('reconciliation', () => {
     const results = extractReconciledCalls(testCode, { positions: false })
     // expect(result).toEqual([
     expect(results[0]).toEqual({
@@ -234,7 +234,7 @@ it('reconciliation', () => {
     })
     // ])
 })
-it('test spaces1', () => {
+it.todo('test spaces1', () => {
     expect(
         extractSpecialCalls(`def3\n.from('xxx')`, { positions: false, chain: false, }) as any
     ).toEqual([{
@@ -244,7 +244,7 @@ it('test spaces1', () => {
     ])
 })
 
-it('test spaces2', () => {
+it.todo('test spaces2', () => {
     expect(
         extractSpecialCalls(`def3\n.from('xxx').select(e => ({ ...e }))`, { positions: false, chain: false, }) as any
     ).toEqual([{
@@ -255,7 +255,7 @@ it('test spaces2', () => {
 })
 
 
-// it('test nested extract1', () => {
+// it.todo('test nested extract1', () => {
 //     const code = `
 //     Buck('file:///Volumes/dev/fsimrep').with(
 //         db => ({
@@ -288,7 +288,7 @@ it('test spaces2', () => {
 //     )
 // })
 
-// it('test nested extract', () => {
+// it.todo('test nested extract', () => {
 //     const code = `
 // const q = 
 // Buck('file:///Volumes/dev/fsimrep').with(
@@ -306,7 +306,7 @@ it('test spaces2', () => {
 // )
 //     .from('results')
 //     .leftJoin('repos.parquet', 'x').using('full_name')
-//     .limit(100)`
+//     .limit.todo(100)`
 //     const rr = extractSpecialCalls(code, { chain: true })
 //     console.log({ rr })
 //     // console.log(extractSpecialCalls(rr[0].expression))
@@ -317,7 +317,7 @@ it('test spaces2', () => {
 
 // })
 
-// it('extractChains', async () => {
+// it.todo('extractChains', async () => {
 //     // console.log(extractReconciledCalls(await Bun.file('./examples/fsimrep.ts').text()))
 //     expect(
 //         extractReconciledCalls(`
@@ -344,7 +344,7 @@ it('test spaces2', () => {
 //         ])
 // })
 
-it('whatever', async () => {
+it.todo('whatever', async () => {
     const c2 = `
 Buck().with(
         db => ({

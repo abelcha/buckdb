@@ -22,7 +22,8 @@
   ],
   "scripts": {
     "demo": "npm start --prefix demo",
-    "patch": "bump --file jsr.json --commit && jsr publish --allow-slow-types --allow-dirty --token $JSR_TOKEN",
+    "bump": "deno run --allow-all jsr:@kellnerd/bump --file jsr.json --commit ",
+    "patch": "bun run bump && jsr publish --allow-slow-types --allow-dirty --token $JSR_TOKEN",
     "typecheck": "tsc --noEmit --skipLibCheck --resolveJsonModule --moduleResolution Node --module es2022 --allowSyntheticDefaultImports -p tsconfig.typecheck.json"
   },
   "devDependencies": {

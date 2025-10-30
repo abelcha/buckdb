@@ -234,19 +234,6 @@ type DeltaScanOptions = {
 }
 type DeltaScanKeys = ['binary_as_string', 'compression', 'debug_use_openssl', 'delta_file_number', 'encryption_config', 'explicit_cardinality', 'file_row_number', 'filename', 'hive_partitioning', 'hive_types', 'hive_types_autocast', 'parquet_version', 'pushdown_filters', 'pushdown_partition_info', 'union_by_name']
 /**
- * Options for the read-xlsx function, inferred from signature.
- */
-type ReadXlsxOptions = {
-    all_varchar?: boolean
-    empty_as_varchar?: boolean
-    header?: boolean
-    ignore_errors?: boolean
-    normalize_names?: boolean
-    range?: string // VARCHAR -> string
-    sheet?: string // VARCHAR -> string
-    stop_at_empty?: boolean
-}
-/**
  * Options for the iceberg_metadata function.
  */
 type IcebergMetadataOptions = {
@@ -336,7 +323,103 @@ type STReadSHPOptions = {
 
 type STReadSHPKeys = ['encoding']
 
-type ReadXlsxKeys = ['all_varchar', 'empty_as_varchar', 'header', 'ignore_errors', 'normalize_names', 'range', 'sheet', 'stop_at_empty']
+/**
+ * Options for the analyze_sheet function.
+ * Analyzes the column structure of a single worksheet in a single file.
+ */
+type AnalyzeSheetOptions = {
+    /** Worksheet name (supports wildcards like Sheet*). @default first sheet */
+    sheet?: string
+    /** Data range in format [start_col][start_row]:[end_col][end_row] (e.g., 'A1:C10') */
+    range?: string
+    /** Whether the first row contains column headers. @default true */
+    header?: boolean
+    /** Number of rows to analyze for type inference. @default 10 */
+    analyze_rows?: number
+    /** If true, convert parsing errors to NULL instead of failing. @default false */
+    error_as_null?: boolean
+}
+
+type AnalyzeSheetKeys = ['sheet', 'range', 'header', 'analyze_rows', 'error_as_null']
+
+/**
+ * Options for the read_sheet function.
+ * Reads data from a single worksheet in a single file.
+ */
+type ReadSheetOptions = AnalyzeSheetOptions & {
+    /** Skip rows where all columns contain empty values. @default false */
+    skip_empty_rows?: boolean
+    /** Stop reading at the first completely empty row. @default false */
+    end_at_empty_row?: boolean
+    /** Column names and types, as a struct (e.g., {'col1': 'BIGINT', 'col2': 'VARCHAR'}). */
+    columns?: Record<string, string>
+}
+
+type ReadSheetKeys = ['sheet', 'range', 'header', 'analyze_rows', 'error_as_null', 'skip_empty_rows', 'end_at_empty_row', 'columns']
+
+/**
+ * Options for the analyze_sheets function.
+ * Analyzes column structures of multiple worksheets across multiple files with wildcard pattern matching.
+ */
+type AnalyzeSheetsOptions = {
+    /** List of worksheet names (supports wildcards and file-specific patterns like ['Sheet*'], ['*.xlsx=Sheet*']) */
+    sheets?: string[]
+    /** Data range in format [start_col][start_row]:[end_col][end_row] (e.g., 'A1:C10') */
+    range?: string
+    /** Whether the first row contains column headers. @default true */
+    header?: boolean
+    /** Number of rows to analyze for type inference. @default 10 */
+    analyze_rows?: number
+    /** If true, convert parsing errors to NULL instead of failing. @default false */
+    error_as_null?: boolean
+}
+
+type AnalyzeSheetsKeys = ['sheets', 'range', 'header', 'analyze_rows', 'error_as_null']
+
+/**
+ * Options for the read_sheets function.
+ * Reads data from multiple worksheets across multiple files with wildcard pattern matching.
+ */
+type ReadSheetsOptions = AnalyzeSheetsOptions & {
+    /** Skip rows where all columns contain empty values. @default false */
+    skip_empty_rows?: boolean
+    /** Stop reading at the first completely empty row. @default false */
+    end_at_empty_row?: boolean
+    /** Column name to include file source information in results */
+    file_name_column?: string
+    /** Column name to include worksheet source information in results */
+    sheet_name_column?: string
+    /** When false, union data by position; when true, union data by column name. @default false */
+    union_by_name?: boolean
+    /** Column names and types, as a struct (e.g., {'col1': 'BIGINT', 'col2': 'VARCHAR'}). */
+    columns?: Record<string, string>
+}
+
+type ReadSheetsKeys = ['sheets', 'range', 'header', 'analyze_rows', 'error_as_null', 'skip_empty_rows', 'end_at_empty_row', 'file_name_column', 'sheet_name_column', 'union_by_name', 'columns']
+
+/**
+ * Options for the read_xlsx function from the Excel extension.
+ * Reads Excel .xlsx files.
+ */
+type ReadXlsxOptions = {
+    /** Whether to treat the first row as containing the names of the resulting columns. @default automatically inferred */
+    header?: boolean
+    /** The name of the sheet in the xlsx file to read. @default first sheet */
+    sheet?: string
+    /** Whether to read all cells as containing VARCHARs. @default false */
+    all_varchar?: boolean
+    /** Whether to ignore errors and silently replace cells that can't be cast to the corresponding inferred column type with NULLs. @default false */
+    ignore_errors?: boolean
+    /** The range of cells to read (e.g., 'A1:B2'). @default automatically inferred */
+    range?: string
+    /** Whether to stop reading the file when an empty row is encountered. If an explicit range option is provided, this is false by default, otherwise true. @default false/true */
+    stop_at_empty?: boolean
+    /** Whether to treat empty cells as VARCHAR instead of DOUBLE when trying to automatically infer column types. @default false */
+    empty_as_varchar?: boolean
+}
+
+type ReadXlsxKeys = ['header', 'sheet', 'all_varchar', 'ignore_errors', 'range', 'stop_at_empty', 'empty_as_varchar']
+
 type CsvKeyOpts = StringArrayToUnion<CsvKeys>
 type StringArrayToUnion<T extends readonly string[]> = T extends readonly [infer First, ...infer Rest extends readonly string[]] ? First & string | StringArrayToUnion<Rest>
     : never
@@ -344,51 +427,51 @@ type Opt<T> = T extends Record<string, any> ? T : never
 type RetCon<S extends string, K extends readonly string[], F, U extends Record<string, any>> = keyof U extends undefined ? `${S}(${SerializeValue<F>})`
     : `${S}(${SerializeValue<F>},${SerializeOrdered<FilterKeys<K, U>, U>})`
 type Fnx = {
-    read_csv<const F extends string, const U extends ReadCsvOptions>(args: F): RetCon<'read_csv', CsvKeys, [F], {}>
+    read_csv<const F extends string>(args: F): RetCon<'read_csv', CsvKeys, [F], {}>
     read_csv<const F extends readonly string[]>(...args: F[]): RetCon<'read_csv', CsvKeys, F, {}>
     read_csv<const F extends string[], const U extends ReadCsvOptions>(...args: [...F, U]): RetCon<'read_csv', CsvKeys, F, U>
     read_csv<const F extends readonly string[], const U extends ReadCsvOptions>(...args: [...F[], U]): RetCon<'read_csv', CsvKeys, F, U>
-    read_json<const F extends string, const U extends ReadJsonOptions>(args: F): RetCon<'read_json', CsvKeys, [F], {}>
-    read_json<const F extends readonly string[]>(...args: F[]): RetCon<'read_json', CsvKeys, F, {}>
-    read_json<const F extends string[], const U extends ReadJsonOptions>(...args: [...F, U]): RetCon<'read_json', CsvKeys, F, U>
-    read_json<const F extends readonly string[], const U extends ReadJsonOptions>(...args: [...F[], U]): RetCon<'read_json', CsvKeys, F, U>
-    read_json_objects<const F extends string, const U extends ReadJsonObjectsOptions>(args: F): RetCon<'read_json_objects', CsvKeys, [F], {}>
-    read_json_objects<const F extends readonly string[]>(...args: F[]): RetCon<'read_json_objects', CsvKeys, F, {}>
-    read_json_objects<const F extends string[], const U extends ReadJsonObjectsOptions>(...args: [...F, U]): RetCon<'read_json_objects', CsvKeys, F, U>
-    read_json_objects<const F extends readonly string[], const U extends ReadJsonObjectsOptions>(...args: [...F[], U]): RetCon<'read_json_objects', CsvKeys, F, U>
-    read_parquet<const F extends string, const U extends ReadParquetOptions>(args: F): RetCon<'read_parquet', CsvKeys, [F], {}>
-    read_parquet<const F extends readonly string[]>(...args: F[]): RetCon<'read_parquet', CsvKeys, F, {}>
-    read_parquet<const F extends string[], const U extends ReadParquetOptions>(...args: [...F, U]): RetCon<'read_parquet', CsvKeys, F, U>
-    read_parquet<const F extends readonly string[], const U extends ReadParquetOptions>(...args: [...F[], U]): RetCon<'read_parquet', CsvKeys, F, U>
-    delta_scan<const F extends string, const U extends DeltaScanOptions>(args: F): RetCon<'delta_scan', DeltaScanKeys, [F], {}>
+    read_json<const F extends string>(args: F): RetCon<'read_json', JsonReadKeys, [F], {}>
+    read_json<const F extends readonly string[]>(...args: F[]): RetCon<'read_json', JsonReadKeys, F, {}>
+    read_json<const F extends string[], const U extends ReadJsonOptions>(...args: [...F, U]): RetCon<'read_json', JsonReadKeys, F, U>
+    read_json<const F extends readonly string[], const U extends ReadJsonOptions>(...args: [...F[], U]): RetCon<'read_json', JsonReadKeys, F, U>
+    read_json_objects<const F extends string>(args: F): RetCon<'read_json_objects', JsonReadObjectsKeys, [F], {}>
+    read_json_objects<const F extends readonly string[]>(...args: F[]): RetCon<'read_json_objects', JsonReadObjectsKeys, F, {}>
+    read_json_objects<const F extends string[], const U extends ReadJsonObjectsOptions>(...args: [...F, U]): RetCon<'read_json_objects', JsonReadObjectsKeys, F, U>
+    read_json_objects<const F extends readonly string[], const U extends ReadJsonObjectsOptions>(...args: [...F[], U]): RetCon<'read_json_objects', JsonReadObjectsKeys, F, U>
+    read_parquet<const F extends string>(args: F): RetCon<'read_parquet', ParquetKeys, [F], {}>
+    read_parquet<const F extends readonly string[]>(...args: F[]): RetCon<'read_parquet', ParquetKeys, F, {}>
+    read_parquet<const F extends string[], const U extends ReadParquetOptions>(...args: [...F, U]): RetCon<'read_parquet', ParquetKeys, F, U>
+    read_parquet<const F extends readonly string[], const U extends ReadParquetOptions>(...args: [...F[], U]): RetCon<'read_parquet', ParquetKeys, F, U>
+    delta_scan<const F extends string>(args: F): RetCon<'delta_scan', DeltaScanKeys, [F], {}>
     delta_scan<const F extends readonly string[]>(...args: F[]): RetCon<'delta_scan', DeltaScanKeys, F, {}>
     delta_scan<const F extends string[], const U extends DeltaScanOptions>(...args: [...F, U]): RetCon<'delta_scan', DeltaScanKeys, F, U>
     delta_scan<const F extends readonly string[], const U extends DeltaScanOptions>(...args: [...F[], U]): RetCon<'delta_scan', DeltaScanKeys, F, U>
-    parquet_scan<const F extends string, const U extends ReadParquetOptions>(args: F): RetCon<'parquet_scan', CsvKeys, [F], {}>
-    parquet_scan<const F extends readonly string[]>(...args: F[]): RetCon<'parquet_scan', CsvKeys, F, {}>
-    parquet_scan<const F extends string[], const U extends ReadParquetOptions>(...args: [...F, U]): RetCon<'parquet_scan', CsvKeys, F, U>
-    parquet_scan<const F extends readonly string[], const U extends ReadParquetOptions>(...args: [...F[], U]): RetCon<'parquet_scan', CsvKeys, F, U>
-    read_xlsx<const F extends string, const U extends ReadXlsxKeys>(args: F): RetCon<'read_xlsx', CsvKeys, [F], {}>
-    read_xlsx<const F extends readonly string[]>(...args: F[]): RetCon<'read_xlsx', CsvKeys, F, {}>
-    read_xlsx<const F extends string[], const U extends ReadXlsxKeys>(...args: [...F, U]): RetCon<'read_xlsx', CsvKeys, F, U>
-    read_xlsx<const F extends readonly string[], const U extends ReadXlsxKeys>(...args: [...F[], U]): RetCon<'read_xlsx', CsvKeys, F, U>
-    read_text<const F extends string, const U extends {}>(args: F): RetCon<'read_text', [], [F], {}>
+    parquet_scan<const F extends string>(args: F): RetCon<'parquet_scan', ParquetKeys, [F], {}>
+    parquet_scan<const F extends readonly string[]>(...args: F[]): RetCon<'parquet_scan', ParquetKeys, F, {}>
+    parquet_scan<const F extends string[], const U extends ReadParquetOptions>(...args: [...F, U]): RetCon<'parquet_scan', ParquetKeys, F, U>
+    parquet_scan<const F extends readonly string[], const U extends ReadParquetOptions>(...args: [...F[], U]): RetCon<'parquet_scan', ParquetKeys, F, U>
+    read_xlsx<const F extends string>(args: F): RetCon<'read_xlsx', ReadXlsxKeys, [F], {}>
+    read_xlsx<const F extends readonly string[]>(...args: F[]): RetCon<'read_xlsx', ReadXlsxKeys, F, {}>
+    read_xlsx<const F extends string[], const U extends ReadXlsxOptions>(...args: [...F, U]): RetCon<'read_xlsx', ReadXlsxKeys, F, U>
+    read_xlsx<const F extends readonly string[], const U extends ReadXlsxOptions>(...args: [...F[], U]): RetCon<'read_xlsx', ReadXlsxKeys, F, U>
+    read_text<const F extends string>(args: F): RetCon<'read_text', [], [F], {}>
     read_text<const F extends readonly string[]>(...args: F[]): RetCon<'read_text', [], F, {}>
-    read_text<const F extends string[], const U extends {}>(...args: [...F, U]): RetCon<'read_text', [], F, U>
-    read_text<const F extends readonly string[], const U extends {}>(...args: [...F[], U]): RetCon<'read_text', [], F, U>
-    iceberg_metadata<const F extends string, const U extends IcebergMetadataOptions>(args: F): RetCon<'iceberg_metadata', IcebergMetadataKeys, [F], {}>
+    read_text<const F extends string[]>(...args: [...F, {}]): RetCon<'read_text', [], F, {}>
+    read_text<const F extends readonly string[]>(...args: [...F[], {}]): RetCon<'read_text', [], F, {}>
+    iceberg_metadata<const F extends string>(args: F): RetCon<'iceberg_metadata', IcebergMetadataKeys, [F], {}>
     iceberg_metadata<const F extends readonly string[]>(...args: F[]): RetCon<'iceberg_metadata', IcebergMetadataKeys, F, {}>
     iceberg_metadata<const F extends string[], const U extends IcebergMetadataOptions>(...args: [...F, U]): RetCon<'iceberg_metadata', IcebergMetadataKeys, F, U>
     iceberg_metadata<const F extends readonly string[], const U extends IcebergMetadataOptions>(...args: [...F[], U]): RetCon<'iceberg_metadata', IcebergMetadataKeys, F, U>
-    iceberg_scan<const F extends string, const U extends IcebergScanOptions>(args: F): RetCon<'iceberg_scan', IcebergScanKeys, [F], {}>
+    iceberg_scan<const F extends string>(args: F): RetCon<'iceberg_scan', IcebergScanKeys, [F], {}>
     iceberg_scan<const F extends readonly string[]>(...args: F[]): RetCon<'iceberg_scan', IcebergScanKeys, F, {}>
     iceberg_scan<const F extends string[], const U extends IcebergScanOptions>(...args: [...F, U]): RetCon<'iceberg_scan', IcebergScanKeys, F, U>
     iceberg_scan<const F extends readonly string[], const U extends IcebergScanOptions>(...args: [...F[], U]): RetCon<'iceberg_scan', IcebergScanKeys, F, U>
-    iceberg_snapshots<const F extends string, const U extends IcebergSnapshotsOptions>(args: F): RetCon<'iceberg_snapshots', IcebergSnapshotsKeys, [F], {}>
+    iceberg_snapshots<const F extends string>(args: F): RetCon<'iceberg_snapshots', IcebergSnapshotsKeys, [F], {}>
     iceberg_snapshots<const F extends readonly string[]>(...args: F[]): RetCon<'iceberg_snapshots', IcebergSnapshotsKeys, F, {}>
     iceberg_snapshots<const F extends string[], const U extends IcebergSnapshotsOptions>(...args: [...F, U]): RetCon<'iceberg_snapshots', IcebergSnapshotsKeys, F, U>
     iceberg_snapshots<const F extends readonly string[], const U extends IcebergSnapshotsOptions>(...args: [...F[], U]): RetCon<'iceberg_snapshots', IcebergSnapshotsKeys, F, U>
-    ST_Read<const F extends string, const U extends STReadOptions>(args: F): RetCon<'ST_Read', STReadKeys, [F], {}>
+    ST_Read<const F extends string>(args: F): RetCon<'ST_Read', STReadKeys, [F], {}>
     ST_Read<const F extends readonly string[]>(...args: F[]): RetCon<'ST_Read', STReadKeys, F, {}>
     ST_Read<const F extends string[], const U extends STReadOptions>(...args: [...F, U]): RetCon<'ST_Read', STReadKeys, F, U>
     ST_Read<const F extends readonly string[], const U extends STReadOptions>(...args: [...F[], U]): RetCon<'ST_Read', STReadKeys, F, U>
@@ -396,10 +479,18 @@ type Fnx = {
     ST_Read_Meta<const F extends readonly string[]>(...args: F[]): RetCon<'ST_Read_Meta', [], F, {}>
     ST_ReadOsm<const F extends string>(args: F): RetCon<'ST_ReadOsm', [], [F], {}>
     ST_ReadOsm<const F extends readonly string[]>(...args: F[]): RetCon<'ST_ReadOsm', [], F, {}>
-    ST_ReadSHP<const F extends string, const U extends STReadSHPOptions>(args: F): RetCon<'ST_ReadSHP', STReadSHPKeys, [F], {}>
+    ST_ReadSHP<const F extends string>(args: F): RetCon<'ST_ReadSHP', STReadSHPKeys, [F], {}>
     ST_ReadSHP<const F extends readonly string[]>(...args: F[]): RetCon<'ST_ReadSHP', STReadSHPKeys, F, {}>
     ST_ReadSHP<const F extends string[], const U extends STReadSHPOptions>(...args: [...F, U]): RetCon<'ST_ReadSHP', STReadSHPKeys, F, U>
     ST_ReadSHP<const F extends readonly string[], const U extends STReadSHPOptions>(...args: [...F[], U]): RetCon<'ST_ReadSHP', STReadSHPKeys, F, U>
+    read_sheet<const F extends string>(args: F): RetCon<'read_sheet', ReadSheetKeys, [F], {}>
+    read_sheet<const F extends string[], const U extends ReadSheetOptions>(...args: [...F, U]): RetCon<'read_sheet', ReadSheetKeys, F, U>
+    read_sheets<const F extends readonly string[]>(...args: F[]): RetCon<'read_sheets', ReadSheetsKeys, F, {}>
+    read_sheets<const F extends readonly string[], const U extends ReadSheetsOptions>(...args: [...F[], U]): RetCon<'read_sheets', ReadSheetsKeys, F, U>
+    analyze_sheet<const F extends string>(args: F): RetCon<'analyze_sheet', AnalyzeSheetKeys, [F], {}>
+    analyze_sheet<const F extends string[], const U extends AnalyzeSheetOptions>(...args: [...F, U]): RetCon<'analyze_sheet', AnalyzeSheetKeys, F, U>
+    analyze_sheets<const F extends readonly string[]>(...args: F[]): RetCon<'analyze_sheets', AnalyzeSheetsKeys, F, {}>
+    analyze_sheets<const F extends readonly string[], const U extends AnalyzeSheetsOptions>(...args: [...F[], U]): RetCon<'analyze_sheets', AnalyzeSheetsKeys, F, U>
 }
 /** Helper function to serialize function calls with optional options object. */
 const fnSerial = (name = '', args: any[]) => {
@@ -432,6 +523,10 @@ const Fncx = {
     ST_Read_Meta: (...args: any) => fnSerial('ST_Read_Meta', args),
     ST_ReadOsm: (...args: any) => fnSerial('ST_ReadOsm', args),
     ST_ReadSHP: (...args: any) => fnSerial('ST_ReadSHP', args),
+    read_sheet: (...args: any) => fnSerial('read_sheet', args),
+    read_sheets: (...args: any) => fnSerial('read_sheets', args),
+    analyze_sheet: (...args: any) => fnSerial('analyze_sheet', args),
+    analyze_sheets: (...args: any) => fnSerial('analyze_sheets', args),
 } as unknown as Fnx
 
 
@@ -451,3 +546,7 @@ export const ST_Read = Fncx.ST_Read
 export const ST_Read_Meta = Fncx.ST_Read_Meta
 export const ST_ReadOsm = Fncx.ST_ReadOsm
 export const ST_ReadSHP = Fncx.ST_ReadSHP
+export const read_sheet = Fncx.read_sheet
+export const read_sheets = Fncx.read_sheets
+export const analyze_sheet = Fncx.analyze_sheet
+export const analyze_sheets = Fncx.analyze_sheets

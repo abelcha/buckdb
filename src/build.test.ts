@@ -628,7 +628,7 @@ describe('stream() method - PR #303 integration', () => {
     it('should type check and stream with satisfies', async () => {
         type FunctionRecord = { function_name: string; function_oid: number }
 
-        const stream = await TestDB.from('duckdb_functions()')
+        const stream = TestDB.from('duckdb_functions()')
             .select('function_name', 'function_oid')
             .limit(5)
             .stream() satisfies AsyncIterable<FunctionRecord>
@@ -651,7 +651,7 @@ describe('stream() method - PR #303 integration', () => {
         // Compare stream vs execute
         const executeResults = await query.execute()
         const streamResults: any[] = []
-        for await (const row of await query.stream()) streamResults.push(row)
+        for await (const row of query.stream()) streamResults.push(row)
 
         expect(streamResults).toEqual(executeResults)
         expect(streamResults.length).toBe(50)
@@ -660,7 +660,7 @@ describe('stream() method - PR #303 integration', () => {
     it('should handle where, transformations, and early break', async () => {
         type NameRecord = { name: string; oid: number }
 
-        const stream = await TestDB.from('duckdb_functions()')
+        const stream = TestDB.from('duckdb_functions()')
             .select(e => ({ name: e.function_name, oid: e.function_oid }))
             .where(e => e.function_oid > 0)
             .orderBy('function_oid', 'ASC')

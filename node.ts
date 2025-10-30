@@ -229,7 +229,7 @@ class BuckDBNode extends BuckDBBase {
         return buildResult(reader)
     }
 
-    async stream(sql: string): Promise<AsyncIterable<any>> {
+    async *stream(sql: string) {
         await this._initDB()
         const cmds = this.queue.flush()
         for (const cmd of cmds) {
@@ -238,13 +238,9 @@ class BuckDBNode extends BuckDBBase {
         const result = await this._connection.run(sql)
         // Use the built-in yieldRowObjects method from PR #303
         // This yields Record<string, DuckDBValue> for each row
-        return {
-            [Symbol.asyncIterator]: async function* () {
-                for await (const rowObjects of result.yieldRowObjects()) {
-                    for (const rowObj of rowObjects) {
-                        yield mapRowToObject(rowObj)
-                    }
-                }
+        for await (const rowObjects of result.yieldRowObjects()) {
+            for (const rowObj of rowObjects) {
+                yield mapRowToObject(rowObj)
             }
         }
     }

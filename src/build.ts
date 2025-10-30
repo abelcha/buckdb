@@ -62,10 +62,14 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     }
                 }
             }
-            const stream = async function (props: Record<string, any> = {}) {
+            const stream = (props: Record<string, any> = {}) => {
                 const str = toSql(Object.assign(state, props))
-                await ensureAllSchemas(state)
-                return ddb.stream(str)
+                return {
+                    async *[Symbol.asyncIterator]() {
+                        await ensureAllSchemas(state)
+                        yield* await ddb.stream(str)
+                    }
+                }
             }
             const execute = async function (props: Record<string, any> = {}) {
                 // console.log(state)

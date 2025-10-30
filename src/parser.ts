@@ -202,7 +202,7 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
           } else if (FNS[node.name]) {
             return node.name
           } else if (typeof context[node.name] !== 'undefined') {
-            return '(' + JSON.stringify(context[node.name]).replaceAll(/'/g, "''").replaceAll(/\"/g, "'") + ')'
+            return '(' + JSON.stringify(context[node.name]).replaceAll(/'/g, "''").replaceAll(/"/g, "'") + ')'
           } else {
             throw new Error(`Undefined variable: ${node.name}, use .context({ ${node.name} }) too pass it down`)
           }

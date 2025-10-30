@@ -150,7 +150,7 @@ function tokenizeSql(sql: string): Token[] {
         }
 
         // 5. Punctuation: ( ) , ; . *
-        if (/[\(\)\[\],;.*]/.test(char)) {
+        if (/[()[\],;.*]/.test(char)) {
             tokens.push({ type: TokenType.PUNCTUATION, value: char });
             i++;
             continue;

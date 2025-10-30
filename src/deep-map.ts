@@ -58,9 +58,9 @@ export type NestedKeyOf5<ObjectType extends Record<string, any>> = {
   | Function
   | Promise<any>
   | Error
-  | Number
-  | String
-  | Boolean
+  | number
+  | string
+  | boolean
   ? `${Key}`
   : ObjectType[Key] extends object
   ? `${Key}` | `${Key}.${NestedKeyOf5<ObjectType[Key]>}`

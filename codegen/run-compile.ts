@@ -216,7 +216,7 @@ const rrr = global.renderMacros({ match: e => true })
 let init = false
 async function main() {
     const content = await Bun.file('codegen/template.ts').text()
-    const body = content.split('/*{').join('${').split('}*/').join('}').replaceAll(/`/g, '\`')
+    const body = content.split('/*{').join('${').split('}*/').join('}').replaceAll(/`/g, '`')
     const nwContent = eval(' `' + body + '`')
 
     const nwContentFmt = await Bun.$`cat < ${new Response(nwContent)} | dprint fmt --stdin types.ts `.text()

@@ -53,12 +53,12 @@ export const maxBy = <T>(array: T[], key: (item: T) => number): T | undefined =>
     return array.reduce((max, item) => (key(item) > key(max) ? item : max), array[0])
 }
 
-export const isBucket = e => e?.match(/^(\/\w+|\w+\:\/\/)/) && !e.match(/\.\w+$/)
+export const isBucket = e => e?.match(/^(\/\w+|\w+:\/\/)/) && !e.match(/\.\w+$/)
 
 export const isFile = (str: string) => str.match(/\.\w{2,16}$/)
 
 export const isDirectory = (str: string) => !str.match(/\.\w{2,16}$/)
-export const isFunction = (str: string) => str.match(/\)\;*$/)
+export const isFunction = (str: string) => str.match(/\);*$/)
 
 
 export const isReaderFunction = (n: string) => n.match(/^(st_)?(sniff_.+|read_.+|.+_scan)$/i)

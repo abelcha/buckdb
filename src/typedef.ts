@@ -375,4 +375,4 @@ const fileExtensions = ['parquet', 'csv', 'json', 'orc', 'avro', 'tsv', 'json', 
 const dbExtension = ['sqlite', 'sqlite3', 'duckdb', 'ddb', 'db']
 
 export const ReadableFileRegexp = new RegExp(`\\.(${[...fileExtensions, ...dbExtension].join('|')})(${compressExtensions.join('|')})$`)
-export const DirectoryRegexp = /^[^\.]+$/
+export const DirectoryRegexp = /^[^.]+$/

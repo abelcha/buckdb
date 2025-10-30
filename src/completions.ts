@@ -155,7 +155,7 @@ export class TSCompleter {
     getSuggestions(code: string | Function, offset = 0): string[] {
         if (typeof code === 'function')
             code = code.toString();
-        const m = code.match(/['"`][\)\]]+$/)
+        const m = code.match(/['"`][)\]]+$/)
         if (!offset && m)
             offset = m[0].length
         console.log(code, offset)

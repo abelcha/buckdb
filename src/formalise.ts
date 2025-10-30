@@ -20,7 +20,7 @@ export const formatSource = ({ catalog = '', uri }: { catalog?: string, uri: str
 
     if (isBucket(catalog)) {
         // todo make the pr ob duckdb
-        return uri.replaceAll(/\'([^\/][^\'\:]+\.\w{3,12})\'/g, `'${catalog}/$1'`)
+        return uri.replaceAll(/'([^/][^':]+\.\w{3,12})'/g, `'${catalog}/$1'`)
     }
     return uri
 }

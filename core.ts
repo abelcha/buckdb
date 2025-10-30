@@ -1,6 +1,6 @@
 import type { DSettings } from './.buck/types'
 import { formatSource } from './src/formalise'
-import { parse, parseObject } from './src/parser'
+import { parseObject } from './src/parser'
 import { deriveName } from './src/utils'
 
 export type DuckdbCon = {
@@ -33,7 +33,7 @@ export abstract class BuckDBBase implements DuckdbCon {
         public settings?: Record<string, any>,
     ) { }
     getSchemaUri(s: string) {
-        const [_, fnname, params] = s.match(/(\w+)\((.+)\)/) || []
+        const [_, fnname] = s.match(/(\w+)\((.+)\)/) || []
         if (fnname) {
             return `${fnname}()`
         }

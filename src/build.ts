@@ -6,7 +6,7 @@ import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
 import type { DCte, DDatasource, DOrder, DSelectee, DState, Parseable } from './typedef'
 import { dstate } from './typedef'
-import { deriveName, isBucket, keyBy, last, upperFirst, wrap, Σ } from './utils'
+import { deriveName, isBucket, keyBy, upperFirst, Σ } from './utils'
 
 export const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>, format = (e: any) => e) => {
     return Object.entries(kmap).reduce((acc, [key, values]) => {

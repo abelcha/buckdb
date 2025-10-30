@@ -90,10 +90,7 @@ export const extractAssignations = (text: string, opts: Opts = {}) => {
     return assignations;
 }
 
-const BuckAssign = {
-    expression: 'Buck()',
-    chain: [['Buck',]]
-}
+
 
 
 export const extractReconciledCalls = (testCode: string, opts: Opts = {}): Extracted[] => {
@@ -210,7 +207,7 @@ export const extractSpecialCalls = (text: string, opts: Opts = { positions: true
     const sourceFile = createSourceFile('temp.ts', text, ScriptTarget.Latest, true);
     const specialCalls: Extracted[] = [];
     const pOmiter = (x: Extracted) => {
-        const { start, end, ...rest } = x;
+        const { ...rest } = x;
         return opts.positions === false ? rest : x
     }
 

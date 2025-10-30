@@ -6,7 +6,7 @@ export function timecolor(text: string, date = new Date()): string {
   const s = (15 + 24 - date.getHours()) * 3600 + (60 - date.getMinutes()) * 60 + date.getSeconds();
   let hue = (s / 86400) * 360;
   // Modulate lightness for intra-hour variance: ±0.08 based on minute+second
-  const minsec = date.getMinutes() * 60 + date.getSeconds();
+  
   const baseL = 0.35;
   const l = baseL + (.3 * (date.getMinutes() / 60))
   // hue += Math.sin((minsec / 3600) * 5 * Math.PI) * 20;

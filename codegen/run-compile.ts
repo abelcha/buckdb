@@ -11,7 +11,7 @@ const getCommunityExtensions = () => {
         .then(e => e.filter(z => z.type === 'dir').map(x => x.name))
 }
 
-const community_extensions = [] // await getCommunityExtensions()
+ // await getCommunityExtensions()
 global.duckdb_extensions = await Buck('').from('duckdb_extensions()').select(e => e.extension_name).execute()
 const allextensions = ['hostfs', 'h3', 'aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui', 'ducklake']
 // const nwext = 'airport arrow bigquery bitfilters blockduck cache_httpfs capi_quack chsql chsql_native cronjob crypto datasketches duck_tails duckdb_mcp duckpgq eeagrid evalexpr_rhai faiss file_dialog flockmtl fuzzycomplete geography geotiff gsheets h3 hashfuncs hdf5 highs hostfs http_client httpserver jwt lindel magic marisa markdown msolap nanoarrow nanodbc netquack ofquack open_prompt parser_tools pbix pcap_reader pivot_table prql psql pyroscope quack quackformers quickjs radio rapidfuzz read_stat redis rusty_quack rusty_sheet scrooge sheetreader shellfs splink_udfs st_read_multi stochastic substrait tarfs textplot tributary tsid ulid vortex webbed webmacro wireduck yaml zipfs '
@@ -135,7 +135,7 @@ const banMethods = (e: IFns, type: string) => {
         || (type !== 'DJson' && e.function_name.startsWith('json'))
         || type === 'DAny' && e.parameter_types[0] !== 'ANY'
 }
-let total = 0
+
 
 const getFuncId = (z: IFns) => {
     return Bun.hash.adler32(
@@ -171,7 +171,7 @@ const formatFunctions = (p: ReturnType<typeof getFunctions>, opts: Opts) => {
         .flatMap(([key, values]) => {
             const [fst, ...rest] = sortBy(values, [e => -e.signatures[0].function_name.length])
             const fsig = fst.signatures[0]
-            const char = opts.type ? '- ' : '… '
+            
 
             return fst.signatures.map((e, i) => [
                 buildJSDoc(e),
@@ -211,7 +211,7 @@ global.renderMacros = (opts: Opts) => {
     return formatFunctions(getFunctions(macros, opts), opts)
 }
 
-const rrr = global.renderMacros({ match: e => true })
+
 // console.log(rrr)
 let init = false
 async function main() {

@@ -77,7 +77,7 @@ const joinMembers = (members: any[]) => {
 }
 
 const SLASH = String.fromCharCode(47)
-const BACKSLASH = String.fromCharCode(92)
+
 // Helper function to check if a node is or contains a string literal
 function hasStringLiteral(node: BinaryExpression | Expression): boolean {
   if (!node) return false

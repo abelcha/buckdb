@@ -1,5 +1,5 @@
 import { Buck } from '@buckdb/node'
-import { pragma_show, pragma_storage_info, pragma_table_info, check_peg_parser, checkpoint, force_checkpoint, generate_series, glob, json_each, json_execute_serialized_sql, json_tree, parquet_bloom_probe, parquet_file_metadata, parquet_kv_metadata, parquet_metadata, parquet_schema, range, sql_auto_complete, test_all_types, which_secret, load_aws_credentials, rtree_index_dump, shapefile_meta, sqlite_attach, ST_GeneratePoints, pragma_user_agent, duckdb_indexes }
+import { pragma_show, pragma_storage_info, pragma_table_info, check_peg_parser, checkpoint, force_checkpoint, generate_series, glob, json_each, json_tree, parquet_bloom_probe, parquet_file_metadata, parquet_kv_metadata, parquet_metadata, parquet_schema, range, sql_auto_complete, test_all_types, which_secret, load_aws_credentials, rtree_index_dump, shapefile_meta, sqlite_attach, ST_GeneratePoints, duckdb_indexes }
     from '../tf'
 import { DuckDBMaterializedResult } from '@duckdb/node-api'
 
@@ -64,9 +64,7 @@ const TableFuncs = [
     'sqlite_attach',
     'ST_Drivers'
 ].filter(e => !paramfuncs.includes(e))
-const pr = `
 
-`.split('\n').filter(Boolean)
 
 TestDB.loadExtensions('h3', 'aws', 'azure', 'delta', 'excel', 'fts', 'httpfs', 'iceberg', 'inet', 'spatial', 'sqlite_scanner', 'ui')
 await TestDB.create('tbl').as(

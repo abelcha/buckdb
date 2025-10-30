@@ -590,7 +590,7 @@ export class Jsep {
         let biop_info: BinaryOpInfo
         let left: Expression | null
         let right: Expression | null
-        let i: number
+        
         let cur_biop: string | boolean
 
         // First, try to get the leftmost thing
@@ -1569,7 +1569,7 @@ export const jsepTemplateLiteral: JSEPPlugin = {
                 let raw = ''
                 let closed = false
                 const length = this.expr.length
-                const templateStart = this.index // Keep track of start for raw value
+                 // Keep track of start for raw value
 
                 const pushQuasi = () => {
                     const quasi: TemplateElement = { // Use TemplateElement type

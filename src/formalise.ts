@@ -1,7 +1,7 @@
 import type { DCondition, DCte, DDatasource, DOrder, DSelectee, DState } from './typedef'
 import { copy } from './copy'
 import { parse } from './parser'
-import { isBucket, wrap, isFile, isFunction, maxBy } from './utils'
+import { isBucket, wrap, isFile, isFunction, } from './utils'
 import { highlightSql } from './highlighter'
 
 export const formatSource = ({ catalog = '', uri }: { catalog?: string, uri: string | (Record<string, any> & { toSql: Function }) }) => {
@@ -73,7 +73,7 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         return source.field
     }
 
-    const wrapIfNotEmpty = (value: string) => value ? `(${value})` : ''
+    
     const serializeDatasource = (datasources: DDatasource[]) => {
         return datasources.map((d) => {
             const getJointure = (d: DDatasource): string => {

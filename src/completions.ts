@@ -1,8 +1,8 @@
 
-import nodefs, { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import * as ts from 'typescript';
 import path from 'path';
-import { compilerOptions as tsConfigCompilerOptions } from '../tsconfig.json';
+
 import * as nodePath from 'path';
 
 
@@ -114,7 +114,7 @@ export class TSCompleter {
             host,
             ts.createDocumentRegistry(),
         );
-        const diag = this.languageService.getCompilerOptionsDiagnostics()
+        
         // console.log(diag.map(e => e.messageText.messageText).join('\n'))
         const resp = new Bun.Glob('**/*.{ts,js,tsx}').scanSync({ cwd: process.cwd(), dot: true })
         for (const file of resp) {

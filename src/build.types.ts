@@ -4,7 +4,7 @@ import type { DuckdbCon } from '../core'
 import type { DDirection } from './typedef'
 import type { CopyToInterface } from './copy'
 import type { FromPlainDict, ToCompDict, ToPlain } from './deep-map'
-import type { Flatten, KeyIntersection, NestedKeyOf, PArray, PRecord, Primitive, TripleMerge, TripleUnion } from './generic-utils'
+import type { Flatten, KeyIntersection, NestedKeyOf, PArray, PRecord, Primitive, TripleUnion } from './generic-utils'
 import type { DeriveName } from './utils'
 
 type TRessource = keyof Models | (string & {})

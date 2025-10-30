@@ -5,7 +5,7 @@ import { __serialize } from './src/serializer'
 const FN = new Proxy({}, {
     get(target, prop, receiver) {
         return (...args: any) => {
-            const methodName = prop.toString()
+            
             return args.map(__serialize).join(',')
         }
     },

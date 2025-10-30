@@ -408,7 +408,8 @@ const fnSerial = (name = '', args: any[]) => {
     if (typeof last === 'object' && last !== null && !Array.isArray(last)) {
         opts = args.pop() || {}
     }
-    let source = args.length ===1 ? `"${args[0]}"` : `[${args.map((e = '') => `'${e}'`)}]`
+    // todo: test consequence of removing the [''] for single string argument
+    let source = /*args.length ===1 ? `"${args[0]}"` :*/ `[${args.map((e = '') => `'${e}'`)}]`
     if (!Object.keys(opts).length) {
         return `${name}(${source})`
     }

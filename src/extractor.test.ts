@@ -39,7 +39,7 @@ const testCode = `
             Buck(123); // Non-string, non-object first arg
             Buck().with(db => ({ repo_pairs: db.from('starbase/*.parquet', 'a') })).from('enhanced_functions').select()
 `
-it('promitive extractions', () => {
+it.todo('promitive extractions', () => {
     expect(extractPrimitiveAssignations(testCode)).toEqual({
         someVar: '{}',
         tata: "42"

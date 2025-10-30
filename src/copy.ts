@@ -1,5 +1,5 @@
 import * as t from '../.buck/types'
-import { formalize } from './formalise'
+import { formalize, formatSource } from './formalise'
 import type { DuckdbCon } from '../core'
 import type { GField, MetaModel, MS, SelectModel, VTypes } from './build.types'
 import type { NestedKeyOf } from './generic-utils'
@@ -158,7 +158,7 @@ function xcopy(
 
             // Build the COPY statement
             const optionsStr = optionsArray.length > 0 ? `(${optionsArray.join(', ')})` : ''
-            const copyStatement = `COPY (${sourceSql}) TO ${destination} ${optionsStr}`
+            const copyStatement = `COPY (${sourceSql}) TO ${formatSource({ uri: destination })} ${optionsStr}`
             return {
                 toSql: (opts?: Record<string, any>) => opts?.trim ? copyStatement.replaceAll(/(\n|\s)+/g, ' ') : copyStatement,
                 execute: async () => {

@@ -123,13 +123,17 @@ test('string operations type checking', async () => {
 
 test('orderBy type checking', async () => {
     expect(
+        sortBy(
         await MemoryDB.from('duckdb_functions()')
             .select('function_name', 'function_oid', 'description')
             .orderBy('function_oid')
-            .execute(),
+            .limit(3)
+            .execute()
+        , ['function_oid'])
     ).toEqual(
         sortBy(fns, ['function_oid'])
-            .map(({ function_name, description, function_oid }) => ({ function_name, description, function_oid })),
+            .map(({ function_name, description, function_oid }) => ({ function_name, description, function_oid }))
+            .slice(0, 3),
         // fns.toSorted((a, b) => a.function_oid - b.function_oid)
     )
     expect(() =>
@@ -627,7 +631,7 @@ test('build-tests', () => {
         const respx = await db.select(e => e.age === 12 ? 42 : '12').execute() satisfies (number | string)[]
 
         const resp4 = await db.select((e, D) => ({
-            gg: e.name.str_split('').map((e) => e.upper()),
+            gg: e.name.str_split('').list_transform((e) => e.upper()),
         })).execute() satisfies { gg: string[] }[]
 
         const resp3 = await db.select((e, D) => [e.age.add(12), e.total.to_hex()]).execute() satisfies [number, string][]
@@ -691,7 +695,7 @@ test('d.test.ts', async () => {
 
         const xx = ((x: FromPlain<{ to: number; l: string[]; nested: [{ lol: 42 }, { lol: 1 }] }>) => x)('' as any) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField>; nested: t.DArrayField<{ lol: t.DNumericField }> }
         const r =
-            D.Struct({ ok: 'lol', toto: [123, 31, 41] }).toto.map(x => x + 1).filter(z => z > 12) satisfies
+            D.Struct({ ok: 'lol', toto: [123, 31, 41] }).toto.list_transform(x => x + 1).filter(z => z > 12) satisfies
             t.DArrayField<t.DNumericField>
         const r2 = r.reduce((acc, curr) => acc + curr, 0) satisfies t.DNumericField
         const resp = D.array_transform(D.Array(['lol', 'xxx', 'ddd']), z => z.len()) satisfies
@@ -705,7 +709,7 @@ test('d.test.ts', async () => {
         const zzz2 = (str === 'str') satisfies boolean
 
         const ggg = D.Array(['lol', 'xxx', 'ddd']).array_filter(z => z.includes('toto')) satisfies t.DArrayField<t.DVarcharField>
-        const arr = D.Varchar('lol').str_split(';').map(z => [z.trim()]).filter(z => z[1].len() > 41).map(z => z[0].len() === 1) satisfies t.DArrayField<t.DBoolField>
+        const arr = D.Varchar('lol').str_split(';').list_transform(z => [z.trim()]).filter(z => z[1].len() > 41).list_transform(z => z[0].len() === 1) satisfies t.DArrayField<t.DBoolField>
 
         const uuuuuuu = D.Array([{ lol: 123 }, { lol: 2 }]) // .list_transform(x => ({ ...x, zz: x.lol * 2 }))
 

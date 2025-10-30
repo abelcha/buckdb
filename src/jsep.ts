@@ -961,14 +961,14 @@ export class Jsep {
                     case 'v':
                         str += String.fromCharCode(11)
                         break
-                    default:
-                        str += ch
+                    case 'x':
+                        const zz = this.expr.charAt(this.index) + this.expr.charAt(this.index + 1)
+                        str += String.fromCharCode(parseInt(zz, 16))
+                        this.index += 2
+                        break
                 }
-            } else {
-                str += ch
-            }
+            } else str += ch
         }
-
         if (!closed) {
             this.throwError('Unclosed quote after "' + str + '"')
         }
@@ -1569,7 +1569,7 @@ export const jsepTemplateLiteral: JSEPPlugin = {
                 let raw = ''
                 let closed = false
                 const length = this.expr.length
-                 // Keep track of start for raw value
+                // Keep track of start for raw value
 
                 const pushQuasi = () => {
                     const quasi: TemplateElement = { // Use TemplateElement type
@@ -1710,7 +1710,7 @@ export const jsepTemplateLiteral: JSEPPlugin = {
 const FSLSH_CODE = 47; // /
 const ASTSK_CODE = 42; // *
 
-const comment: JSEPPlugin  ={
+const comment: JSEPPlugin = {
     name: 'comment',
 
     init(jsep) {

@@ -523,3 +523,9 @@ test("[selector]", () => {
   expect(parse(`(e) => e["function_name"]`)).toEqual(`"function_name"`)
   expect(parse(`(e) => e['function_name']`)).toEqual(`"function_name"`)
 })
+test('test unescape \\xNN hex sequences:', () => {
+  const result = parse((e, D) => e["Dép. d'arrivée"])
+  expect(result).toBe("\"Dép. d'arrivée\"")
+  const result2 = parse((e, D) => e["dep"])
+  expect(result2).toBe("dep")
+})

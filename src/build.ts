@@ -121,7 +121,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                             const parsed = parseObject(k, state.context)
                             return parsed.map(([as, field, raw]) => ({ as, field, raw })) as DSelectee[]
                         }
-                        return { field: k }
+                        return { field: k.match(/[\W]/) ? `"${k}"` : k }
                     })
                     return fromRes({ ...state, selected })
                 },

@@ -420,10 +420,6 @@ type ReadXlsxOptions = {
 
 type ReadXlsxKeys = ['header', 'sheet', 'all_varchar', 'ignore_errors', 'range', 'stop_at_empty', 'empty_as_varchar']
 
-type CsvKeyOpts = StringArrayToUnion<CsvKeys>
-type StringArrayToUnion<T extends readonly string[]> = T extends readonly [infer First, ...infer Rest extends readonly string[]] ? First & string | StringArrayToUnion<Rest>
-    : never
-type Opt<T> = T extends Record<string, any> ? T : never
 type RetCon<S extends string, K extends readonly string[], F, U extends Record<string, any>> = keyof U extends undefined ? `${S}(${SerializeValue<F>})`
     : `${S}(${SerializeValue<F>},${SerializeOrdered<FilterKeys<K, U>, U>})`
 type Fnx = {

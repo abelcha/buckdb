@@ -68,7 +68,7 @@ export class TSCompleter {
             try {
                 const content = readFileSync(libPath, 'utf-8');
                 this.files.set(libPath, content);
-            } catch (e) {
+            } catch {
                 // Skip if lib file not found
             }
         });
@@ -114,7 +114,7 @@ export class TSCompleter {
             host,
             ts.createDocumentRegistry(),
         );
-        
+
         // console.log(diag.map(e => e.messageText.messageText).join('\n'))
         const resp = new Bun.Glob('**/*.{ts,js,tsx}').scanSync({ cwd: process.cwd(), dot: true })
         for (const file of resp) {

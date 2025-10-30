@@ -8,7 +8,7 @@ class BuckDBRemote extends BuckDBBase {
     readonly type = 'remote' as const
 
 
-    async ensureSchema(uri: string) {
+    async ensureSchema(_uri: string) {
         // todo
     }
 

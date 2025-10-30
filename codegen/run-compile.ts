@@ -5,7 +5,7 @@ import { Buck } from '@buckdb/node'
 import { mapTypes, mapTypesProps } from '../src/typedef.ts'
 import { wrap, Σ } from '../src/utils.ts'
 
-const getCommunityExtensions = () => {
+const _getCommunityExtensions = () => {
     return fetch('https://api.github.com/repos/duckdb/community-extensions/contents/extensions')
         .then(e => e.json())
         .then(e => e.filter(z => z.type === 'dir').map(x => x.name))
@@ -21,7 +21,7 @@ const allextensions = ['hostfs', 'h3', 'aws', 'azure', 'delta', 'excel', 'fts', 
 
 const instance = Buck('').loadExtensions(...uniq(allextensions))
 const fkey = (key: string) => camelCase(key).match(/\w+/)?.[0].replace('array', 'arr').replace('enum', 'enm').replace('function', 'fn')
-const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number', 'length-ANY[]-number', 'substr-VARCHAR-string', 'range-TIMESTAMP WITH TIME ZONE-any[]', , 'range-TIMESTAMP-any[]', 'mean-false-Date', 'avg-false-Date']
+const OmittedFuncs = ['split-VARCHAR-any[]', 'length-VARCHAR-number', 'length-ANY[]-number', 'substr-VARCHAR-string', 'range-TIMESTAMP WITH TIME ZONE-any[]', 'range-TIMESTAMP-any[]', 'mean-false-Date', 'avg-false-Date']
 const entriesSorted = <T>(items: Record<string, T>) => {
     return Object.keys(items).sort().map(e => [e, items[e]]) as [string, T][]
 }
@@ -47,7 +47,7 @@ async function getMergedResults() {
     const groups = groupBy(results, e => [e.function_name, e.function_type === 'scalar' && e.parameter_types[0], mapTypesProps(e.return_type).rawType].join('-'))
 
     return entriesSorted(groups)
-        .filter(([key, values]) => !OmittedFuncs.includes(key))
+        .filter(([key]) => !OmittedFuncs.includes(key))
         .flatMap(([key, values]) => {
             // console.log({ key })
             if (!values) {
@@ -158,7 +158,7 @@ const getFunctions = (xfns: IFns[], opts: Opts) => {
         e => e.function_name + genArgs(e.args, e.varargs),
     )
     // .filter(z => JSON.stringify(z).match(/\b(array|any)\b/img))
-    const namegp = entriesSorted(groupBy(funcs, e => e.function_name)).map(([key, values]) => {
+    const namegp = entriesSorted(groupBy(funcs, e => e.function_name)).map(([_key, values]) => {
         const id = values.map(getFuncId).toSorted().join('/')
         return { signatures: values, id }
     })
@@ -168,7 +168,7 @@ const getFunctions = (xfns: IFns[], opts: Opts) => {
 const formatFunctions = (p: ReturnType<typeof getFunctions>, opts: Opts) => {
     const override = opts.override || []
     const gpx = p//sortBy(p, ['function_name'])
-        .flatMap(([key, values]) => {
+        .flatMap(([_key, values]) => {
             const [fst, ...rest] = sortBy(values, [e => -e.signatures[0].function_name.length])
             const fsig = fst.signatures[0]
             

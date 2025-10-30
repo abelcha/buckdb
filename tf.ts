@@ -113,9 +113,9 @@ export interface TFBase {
     /** @description Returns list of PostgreSQL timezone names supported. */
     pg_timezone_names(): RetCon<'pg_timezone_names'>;
     /** @description Executes a SQL query and returns a result set. @description @param sql SQL query string */
-    query<T>(sql: string): RetCon<'query'>;
+    query(sql: string): RetCon<'query'>;
     /** @description Executes a table-valued SQL query. @description @param tables Table identifiers or expressions @description @param validate Optional validation flag */
-    query_table<T>(tables: string, validate?: boolean): RetCon<'query_table'>;
+    query_table(tables: string, validate?: boolean): RetCon<'query_table'>;
     /** @description Generates a half-open range of values from start to end with an optional step. @description @param start Start of range @description @param end End of range @description @param step Step increment */
     range(start: number, end?: number, step?: number): RetCon<'range'>;
     /** @description Repeats a single value into a column for a specified count. @description @param value Value to repeat @description @param count Number of repetitions */
@@ -191,7 +191,7 @@ export interface TableFunctions extends TFMetadata, TFPragma, TFBase, TFExtensio
 
 
 const TF = new Proxy({}, {
-    get(target, prop, receiver) {
+    get(_target, prop, _receiver) {
         const methodName = prop.toString()
         return (...args: any) => `${methodName}(${(args).map(__serialize).join(',')})`
     },

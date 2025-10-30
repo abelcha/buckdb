@@ -3,7 +3,7 @@ import type { DMetaField } from './.buck/types'
 import { __serialize } from './src/serializer'
 
 const FN = new Proxy({}, {
-    get(target, prop, receiver) {
+    get(_target, _prop, _receiver) {
         return (...args: any) => {
             
             return args.map(__serialize).join(',')

@@ -187,7 +187,7 @@ interface DTaggedTemplate {
 }
 
 
-export interface DKeywords<DNum, DStr> {
+export interface DKeywords<_DNum, _DStr> {
     Distinct<X>(val: X): X
     Raw: (val: string) => DAnyField
 }

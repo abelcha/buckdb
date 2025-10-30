@@ -19,7 +19,7 @@ export type IsPlainObject<T> = T extends object
   : false
 
 export type NestedKeyOf<ObjectType extends Record<string, any>> = {
-  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends { [t.sInferred]: infer V } ? `${Key}` : IsPlainObject<ObjectType[Key]> extends true ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}` : `${Key}`
+  [Key in keyof ObjectType & (string | number)]: ObjectType[Key] extends { [t.sInferred]: infer _V } ? `${Key}` : IsPlainObject<ObjectType[Key]> extends true ? `${Key}` | `${Key}.${NestedKeyOf<ObjectType[Key]>}` : `${Key}`
 }[keyof ObjectType & (string | number)]
 
 

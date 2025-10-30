@@ -228,7 +228,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 ddb.lazySettings(s)
                 return this
             },
-            fetchTables: async function (id: string) {
+            fetchTables: async function () {
                 const resp = await ddb.query(`SELECT * FROM duckdb_tables()`)
                 return Object.fromEntries(resp.map(e => [upperFirst(e.table_name), serializeSchema(e.sql)]))
             },
@@ -242,7 +242,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
             },
             with: function (...arr: (() => any)[]) {
                 // @ts-ignore
-                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v], i) => ({ name: k, query: v }) as DCte)
+                const ctes = arr.flatMap(x => Object.entries(x(this))).map(([k, v]) => ({ name: k, query: v }) as DCte)
                 return {
                     from: (table: string, alias?: string) =>
                         fromRes({ ...dstate, ctes, action: 'select', datasources: [{ catalog: handle, uri: table, alias: alias }] }),

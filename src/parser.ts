@@ -1,4 +1,4 @@
-import type { DMetaField } from '../.buck/types'
+    import type { DMetaField } from '../.buck/types'
 import * as FNS from '../fn'
 import jsep from './jsep'
 import type { ArrayExpression, ArrowFunctionExpression, BinaryExpression, CallExpression, ConditionalExpression, Expression, Identifier, Literal, MemberExpression, ObjectExpression, Property, SequenceExpression, SpreadElement, TemplateElement, TemplateLiteral, UnaryExpression } from './jsep'
@@ -155,7 +155,7 @@ type Topts = {
 }
 
 // type oProps = { subMemberExpression?: boolean, isProperty?: boolean }
-export function transformDuckdb(node: Expression, params = new Map<string, { depth: number; position: number }>(), context: Record<string, any> = {}, config = {}) {
+export function transformDuckdb(node: Expression, params = new Map<string, { depth: number; position: number }>(), context: Record<string, any> = {}, _config = {}) {
   function transformTree(node: Expression, opts: Topts = { isFuncArg: false }): any {
     const transformNode = (n: any, o = {}) => transformTree(n, Object.assign({}, opts, o))
     // const transform = (node: any, ..._: any[]) => transformNode(node)
@@ -210,8 +210,6 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
         return node.name
       },
       MemberExpression(node: MemberExpression) {
-        node as MemberExpression
-
         const hasSubMember = node.object?.type === 'MemberExpression'
         if (hasSubMember && node.property.type === 'Identifier' && !node.subMemberExpression && node.property.name === 'length') {
           node.property.name = 'len()' // tmp
@@ -247,9 +245,10 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
       Literal(node: Literal) {
         node = node as Literal
         if (node.value instanceof RegExp) {
-          const value = node.value as RegExp
+          
           const rgx = node.value.toString().split(SLASH).slice(1, -1).join(SLASH)
-          const flags = false && opts.isFuncArg && value.flags ? `, '${value.flags}'` : ''
+          
+          const flags = /*opts.isFuncArg && value.flags ? `, '${value.flags}'` :*/ '' //todo: find out
           return `'${rgx}'` + flags
         }
         if (node.value === null) {
@@ -429,9 +428,6 @@ export function transformDuckdb(node: Expression, params = new Map<string, { dep
 }
 
 type DParam = { depth: number; position: number; destuctured?: boolean; excluded?: string[] }
-const isWildcardParam = (d: DParam) => {
-  return d.depth === 0 && d.position === 0
-}
 const extractParams = (ast: Expression) => {
   const params = new Map<string, DParam>()
 

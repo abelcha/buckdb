@@ -52,7 +52,7 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
     }
     const serializeOrder = (id: string) => (orders: DOrder[]) => {
         if (!orders.length) return ''
-        const m = orders.map((e, i) => {
+        const m = orders.map((e) => {
             // const prefix = i === 0 ? id : (e.direction)
             return `${e.field} ${e.direction || ''}`.trim()
         })
@@ -112,7 +112,7 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         return updated.map(e => ` ${e.as} = ${e.raw ? wrap(e.raw, "'") : e.field}`).join(`,${CRW}`)
     }
 
-    function serializeSetops(setops: { type: string; value: string }[], opts: { trim?: boolean } = {}) {
+    function serializeSetops(setops: { type: string; value: string }[], _opts: { trim?: boolean } = {}) {
         return setops.map(e => `${CR}${e.type}${CRW}(${e.value})`)
     }
 

@@ -1,7 +1,7 @@
 import * as t from '../.buck/types'
 import { formalize, formatSource } from './formalise'
 import type { DuckdbCon } from '../core'
-import type { GField, MetaModel, MS, SelectModel, VTypes } from './build.types'
+import type { MetaModel, MS, SelectModel, VTypes } from './build.types'
 import type { NestedKeyOf } from './generic-utils'
 
 type FileFormats = 'parquet' | 'csv' | 'json' | 'arrow' | 'jsonl'
@@ -104,7 +104,7 @@ export interface CopyToInterface<A extends MetaModel, S extends SelectModel = {}
 }
 
 
-declare function _copy<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = [], SS extends GField = t.DAnyField>(
+declare function _copy<V extends VTypes, A extends MetaModel, S extends SelectModel = {}, SV = []>(
     source: MS<V, t.DMetaField, A, S, SV> | string
 ): CopyToInterface<A, S>; // Changed to use the renamed interface
 

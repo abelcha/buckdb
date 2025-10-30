@@ -35,12 +35,12 @@ type Opts = {
     targetMethods?: string[] | null
 }
 
-const primitiveInitializer = (e: VariableDeclaration['initializer']) => {
+const _primitiveInitializer = (e: VariableDeclaration['initializer']) => {
     return e.kind === SyntaxKind.StringLiteral || e.kind === SyntaxKind.NumericLiteral || e.kind === SyntaxKind.TrueKeyword || e.kind === SyntaxKind.FalseKeyword
         || e.kind === SyntaxKind.NullKeyword || e.kind === SyntaxKind.UndefinedKeyword || e.kind === SyntaxKind.RegularExpressionLiteral || e.kind === SyntaxKind.ObjectLiteralExpression || e.kind === SyntaxKind.ArrayLiteralExpression
 }
 
-export const extractPrimitiveAssignations = (text: string, opts: Opts = {}) => {
+export const extractPrimitiveAssignations = (text: string, _opts: Opts = {}) => {
     const sourceFile = createSourceFile('temp.ts', text, ScriptTarget.Latest, true);
     const assignations = {}
 

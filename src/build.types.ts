@@ -53,7 +53,7 @@ type PrimitiveField<T> = T extends number ? t.DNumericField
 export type VTypes = 'frame' | 'records' | 'values' | 'grouped' | 'keyed' | 'row'
 
 
-type FnMap<A extends MetaModel, GF extends t.DMetaField, S extends SelectModel = {}, SV = []> = {
+type FnMap<S extends SelectModel = {}, SV = []> = {
     row: () => Promise<SV extends [] ? ToPlain<S> : ToPlain<SV>>
     values: () => PArray<ToPlain<SV>>
     records: () => PArray<ToPlain<S>>
@@ -77,7 +77,7 @@ export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaMod
     returnType: Awaited<ReturnType<this['execute']>>
     // compType: 
 
-    execute: FnMap<A, GF, S, SV>[V]
+    execute: FnMap<S, SV>[V]
     exec: this['execute']
     run: this['execute']
     stream: () => AsyncGenerator<ToPlain<S>>

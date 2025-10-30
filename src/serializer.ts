@@ -9,7 +9,7 @@ type ToString<T> = T extends string ? `'${T}'`
     : never
 
 // Helper to check if a type is an object
-type IsObject<T> = T extends Record<string, any> ? T : never
+type _IsObject<T> = T extends Record<string, any> ? T : never
 
 // --- Recursive Serialization Helpers ---
 
@@ -206,13 +206,13 @@ export type SerializeOrdered<
 
 // type Keys = ['a', 'b', 'c', 'd', 'e', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
 
-type Model = {
-    a: string
-    b: number
-    c: boolean
-    d: string[]
-    e: { nested: number[] }
-}
+// type Model = {
+//     a: string
+//     b: number
+//     c: boolean
+//     d: string[]
+//     e: { nested: number[] }
+// }
 
 // Use the updated 2-argument signature for SerializeOrdered
 // type Result1 = SerializeOrdered<Keys, { c: false, a: 'toto', g: { lol: 123, toto: 'xx' } }>;

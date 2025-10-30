@@ -76,7 +76,7 @@ await TestDB.create('tbl').as(
         }
     ]
 ).execute()
-const resp = await TestDB.run(`
+const _resp = await TestDB.run(`
 INSTALL spatial;
 LOAD spatial;
 
@@ -99,7 +99,7 @@ FROM t1
 WHERE ST_Within(geom, ST_MakeEnvelope(450, 450, 650, 650));
 `) as DuckDBMaterializedResult
 await TestDB.from(duckdb_indexes()).show()
-async function main() {
+async function _main() {
     // await MemoryDB.run(`CREATE INDEX idx_tbl_table ON tbl(name)`)
     await TestDB.from(pragma_storage_info('tbl')).execute()
     await TestDB.from(pragma_table_info('tbl')).execute()

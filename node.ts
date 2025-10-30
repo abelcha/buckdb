@@ -188,7 +188,7 @@ class BuckDBNode extends BuckDBBase {
         return this._initPromise
     }
 
-    async upsertSchema(model: string, schema: Record<string, string>) {
+    async upsertSchema(_model: string, _schema: Record<string, string>) {
         // await this._initDB();
         // const tableFile = Bun.file(`./.buck/models.json`);
         // const tableContent = await tableFile.json();

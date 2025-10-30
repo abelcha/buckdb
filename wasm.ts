@@ -60,7 +60,7 @@ class BuckDBWasm extends BuckDBBase {
         return this._initPromise
     }
 
-    async ensureSchema(uri: string) {
+    async ensureSchema(_uri: string) {
         // todo
     }
 

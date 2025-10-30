@@ -68,7 +68,7 @@ export type NestedKeyOf5<ObjectType extends Record<string, any>> = {
 }[keyof ObjectType & (string | number)]
 
 // type nativ = ToJSON<Source>
-type res1 =
+type _res1 =
   & Assert<ExpectEqual<ToPlain<t.DVarcharField>, string>>
   & Assert<ExpectEqual<ToPlain<string>, string>>
   & Assert<ExpectEqual<ToPlain<t.DNumericField>, number>>
@@ -177,7 +177,7 @@ export type FromPlain<T> =
   : T extends t.DAnyField ? t.DAnyField
   : T extends object ? t.DStructField<{ [K in keyof T]: FromPlain<T[K]> }>
   : never;
-type res2 =
+type _res2 =
   & Assert<ExpectEqual<FromPlain<string>, t.DVarcharField>>
   & Assert<ExpectEqual<FromPlain<number>, t.DNumericField>>
   & Assert<ExpectEqual<FromPlain<{ xx: number }>, t.DStructField<{ xx: t.DNumericField }>>>

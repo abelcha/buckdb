@@ -122,18 +122,26 @@ const mapValueRec = (value: DuckDBValue) => {
 }
 
 
+function mapRowToObject(rowData: Record<string, any>): Dict {
+    const row: Dict = {}
+    for (const [key, value] of Object.entries(rowData)) {
+        row[key] = mapValueRec(value as DuckDBValue)
+    }
+    return row
+}
+
 function buildResult(reader: DuckDBResultReader) {
     const rows = reader.getRows()
     // @ts-ignore
     const columnNames = reader.result.columnNames()
     const rtn: Dict[] = []
     for (let item of rows) {
-        const row = {}
+        // Convert array row to object using column names
+        const rowObj: Record<string, any> = {}
         for (const [i, name] of columnNames.entries()) {
-            const value = item[i]
-            row[name] = mapValueRec(value)
+            rowObj[name] = item[i]
         }
-        rtn.push(row)
+        rtn.push(mapRowToObject(rowObj))
     }
     return rtn
 }
@@ -219,6 +227,26 @@ class BuckDBNode extends BuckDBBase {
             return reader.getRowsJson()
         }
         return buildResult(reader)
+    }
+
+    async stream(sql: string): Promise<AsyncIterable<any>> {
+        await this._initDB()
+        const cmds = this.queue.flush()
+        for (const cmd of cmds) {
+            await this._connection.run(cmd)
+        }
+        const result = await this._connection.run(sql)
+        // Use the built-in yieldRowObjects method from PR #303
+        // This yields Record<string, DuckDBValue> for each row
+        return {
+            [Symbol.asyncIterator]: async function* () {
+                for await (const rowObjects of result.yieldRowObjects()) {
+                    for (const rowObj of rowObjects) {
+                        yield mapRowToObject(rowObj)
+                    }
+                }
+            }
+        }
     }
 
     async run(sql: string) {

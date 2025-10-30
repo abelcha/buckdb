@@ -80,6 +80,7 @@ export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaMod
     execute: FnMap<A, GF, S, SV>[V]
     exec: this['execute']
     run: this['execute']
+    stream: () => Promise<AsyncIterable<ToPlain<S>>>
     show: this['execute']
     dump: (opts?: { state?: boolean }) => this
 

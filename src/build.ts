@@ -48,10 +48,7 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 function (...conditions: Parseable[]) {
                     return fromRes(deriveState(state, { conditions: conditions.map(v => formalize(v, state.context, { condition: true })) }, condition => ({ condition, operator })))
                 }
-            const execute = async function (props: Record<string, any> = {}) {
-                // console.log(state)
-                const formatAGG = (e: Promise<any>) => state.agg ? e.then(resp => resp[0]) : e
-                const str = toSql(Object.assign(state, props))
+            const ensureAllSchemas = async function (state: DState) {
                 if (state.ctes.length) {
                     const ctEntries = state.ctes.map(e => [e.name, e.query.toState().datasources])
                     const fnamed = ctEntries.map(x => x[0])
@@ -63,6 +60,20 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                     for await (const dt of state.datasources) {
                         await ddb.ensureSchema(dt.uri)
                     }
+                }
+            }
+            const stream = async function (props: Record<string, any> = {}) {
+                const str = toSql(Object.assign(state, props))
+                await ensureAllSchemas(state)
+                return ddb.stream(str)
+            }
+            const execute = async function (props: Record<string, any> = {}) {
+                // console.log(state)
+                const formatAGG = (e: Promise<any>) => state.agg ? e.then(resp => resp[0]) : e
+                const str = toSql(Object.assign(state, props))
+                await ensureAllSchemas(state)
+                if (props.run) {
+                    return ddb.run(str)
                 }
                 if (state.selected.length === 1) {
                     const [{ as, raw, field }] = state.selected
@@ -81,8 +92,10 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 }
                 return formatAGG(ddb.query(str, props))
             }
+
             return {
                 ddb,
+                stream,
                 join: _join('JOIN'),
                 leftJoin: _join('LEFT JOIN'),
                 rightJoin: _join('RIGHT JOIN'),

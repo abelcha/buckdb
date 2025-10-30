@@ -215,7 +215,7 @@ describe('aggregation methods', () => {
         // BUG: Missing parentheses around DISTINCT ON field
         expectSQL(sql, 'FROM duckdb_functions() SELECT DISTINCT ON (function_type) function_name, function_type')
     })
-    it.only('should handle count()', async () => {
+    it('should handle count()', async () => {
         await TestDB.create('test_table_count', { replace: true }).as([{ name: 'test', value: 42 }, { name: 'test2', value: 43 }]).execute()
         const r = await TestDB.from('test_table_count').count().execute()
         expect(r).toBe(2)
@@ -622,6 +622,59 @@ it('wildcard', async () => {
         TestDB.from('duckdb_types()').select((e, D) => ({ ...e, full_name: e.database_name })).toSql({ trim: true })
     ).toEqual("FROM duckdb_types() SELECT  *, full_name: database_name")
 
+})
+
+describe('stream() method - PR #303 integration', () => {
+    it('should type check and stream with satisfies', async () => {
+        type FunctionRecord = { function_name: string; function_oid: number }
+
+        const stream = await TestDB.from('duckdb_functions()')
+            .select('function_name', 'function_oid')
+            .limit(5)
+            .stream() satisfies AsyncIterable<FunctionRecord>
+
+        const rows: FunctionRecord[] = []
+        for await (const row of stream) {
+            rows.push(row satisfies FunctionRecord)
+            expect(row).toHaveProperty('function_name')
+            expect(row).toHaveProperty('function_oid')
+        }
+        expect(rows.length).toBeLessThanOrEqual(5)
+    })
+
+    it('should stream large dataset and match execute() results', async () => {
+        const testData = Array.from({ length: 50 }, (_, i) => ({ id: i, value: `val_${i}` }))
+        await TestDB.create('test_stream', { replace: true }).as(testData).execute()
+
+        const query = TestDB.from('test_stream').select().orderBy(e => [e.id])
+
+        // Compare stream vs execute
+        const executeResults = await query.execute()
+        const streamResults: any[] = []
+        for await (const row of await query.stream()) streamResults.push(row)
+
+        expect(streamResults).toEqual(executeResults)
+        expect(streamResults.length).toBe(50)
+    })
+
+    it('should handle where, transformations, and early break', async () => {
+        type NameRecord = { name: string; oid: number }
+
+        const stream = await TestDB.from('duckdb_functions()')
+            .select(e => ({ name: e.function_name, oid: e.function_oid }))
+            .where(e => e.function_oid > 0)
+            .orderBy('function_oid', 'ASC')
+            .stream()
+
+        let count = 0
+        for await (const row of stream) {
+            count++
+            row satisfies NameRecord
+            expect(row.oid).toBeGreaterThan(0)
+            if (count >= 3) break
+        }
+        expect(count).toBe(3)
+    })
 })
 
 /*

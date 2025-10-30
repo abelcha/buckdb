@@ -9,6 +9,7 @@ export type DuckdbCon = {
     handle?: string | null
     queue: CommandQueue
     run: (sql: string) => Promise<any>
+    stream: (sql: string) => Promise<AsyncIterable<any>>
     getSchemaUri: (model: string) => string
     lazyAttach: (path: string, alias: string, options?: { readonly: boolean }) => any
     ensureSchema: (uri: string) => Promise<any>
@@ -23,6 +24,7 @@ export abstract class BuckDBBase implements DuckdbCon {
     abstract readonly type: 'wasm' | 'node' | 'remote'
     abstract query(sql: string, opts?: Record<string, any>): Promise<any[]>
     abstract run(sql: string): Promise<any>
+    abstract stream(sql: string): Promise<AsyncIterable<any>>
     abstract ensureSchema(uri: string): Promise<any>
     readonly queue = new CommandQueue()
 

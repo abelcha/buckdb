@@ -53,11 +53,18 @@ export const maxBy = <T>(array: T[], key: (item: T) => number): T | undefined =>
     return array.reduce((max, item) => (key(item) > key(max) ? item : max), array[0])
 }
 
-export const isBucket = e => e?.match(/^(\/\w+|\w+:\/\/)/) && !e.match(/\.\w+$/)
+export const isBucket = e => !e?.match(/postgres/i) && e?.match(/^(\/\w+|\w+:\/\/)/) && !e.match(/\.\w+$/)
 
-export const isFile = (str: string) => str.match(/\.\w{2,16}$/)
+// Common file extensions for data files that DuckDB can read
+const FILE_EXTENSIONS = new Set(['csv', 'tsv', 'json', 'jsonl', 'ndjson', 'parquet', 'arrow', 'avro', 'orc', 'feather', 'xlsx', 'xls', 'xlsb', 'xlsm', 'ods', 'txt', 'log', 'md', 'zip', 'gz', 'bz2', 'tar', '7z', 'zst', 'db', 'sqlite', 'sqlite3', 'duckdb', 'xml', 'yaml', 'yml', 'toml', 'ini', 'delta', 'iceberg'])
 
-export const isDirectory = (str: string) => !str.match(/\.\w{2,16}$/)
+export const isFile = (str: string) => {
+    const match = str.match(/\.(\w+)$/)
+    if (!match) return false
+    return FILE_EXTENSIONS.has(match[1].toLowerCase())
+}
+
+export const isDirectory = (str: string) => !isFile(str)
 export const isFunction = (str: string) => str.match(/\);*$/)
 
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { wrap, upperFirst, last, isPlainObject, Σ, keyBy, isBucket } from './utils'
+import { wrap, upperFirst, last, isPlainObject, Σ, keyBy, isBucket, isFile } from './utils'
 import { formatSource } from './formalise'
 export const normalizeSQL = (sql: string): string =>
     sql.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim()
@@ -29,5 +29,11 @@ describe('utils', () => {
         expect(isPlainObject([])).toBe(false)
         expect(isBucket('s3://bucket/')).toBeTruthy()
         expect(isBucket('local/path')).toBeFalsy()
+    })
+    it('test isFile', () => {
+        expect(isFile('file.csv')).toBeTruthy()
+        expect(isFile('file.txt')).toBeTruthy()
+        expect(isFile('pg.table')).toBeFalsy()
+        expect(isFile('s3://toto/test')).toBeFalsy()
     })
 })

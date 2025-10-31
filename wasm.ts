@@ -96,6 +96,17 @@ class BuckDBWasm extends BuckDBBase {
         return rtn
     }
 
+    async *stream(sql: string): AsyncGenerator<any, void, unknown> {
+        await this._initDB()
+        await this._executeQueuedCommands() // Ensure setup commands run first
+        if (!this._con) throw new Error('Database connection not initialized.') // Should be initialized now
+        const reader = await this._con.query(sql)
+        
+        for (const row of reader) {
+            yield row.toJSON()
+        }
+    }
+
     async run(sql: string): Promise<void> {
         await this._initDB()
         await this._executeQueuedCommands() // Ensure setup commands run first

@@ -3,7 +3,7 @@ import { Buck } from '@buckdb/isomorphic'
 import { deriveState } from './build'
 import { expectSQL } from './utils.test'
 
-const TestDB = Buck('test')
+const TestDB = Buck(':memory:')
 
 describe('build.ts - Query Building with Bug Documentation', () => {
     describe('basic select operations', () => {

@@ -164,6 +164,19 @@ export function toSql(state: DState & { trim?: boolean, minTrim?: number }) {
         const to = formatSource({ catalog: state.datasources[0].catalog, uri: state.copyTo[0].uri })
         return copy(comps).to(to, state.copyTo[0].options).toSql(state)
     }
+    if (state.insertInto) {
+        return `INSERT INTO ${state.insertInto.tableName} BY NAME\n(${comps})`
+    }
+    if (state.createAs) {
+        const parts: string[] = ['CREATE']
+        if (state.createAs.replace) parts.push('OR REPLACE')
+        if (state.createAs.temp) parts.push('TEMP')
+        parts.push('TABLE')
+        if (state.createAs.ifNotExists && !state.createAs.replace) parts.push('IF NOT EXISTS')
+        parts.push(state.createAs.tableName)
+        parts.push('AS')
+        return `${parts.join(' ')}${CRW}${comps}`
+    }
     // if (state.trim && (!state.minTrim || comps.length < state.minTrim)) {
     //     return comps.replace(/(\s|\n)+/g, '$1').trim()
     // }
@@ -202,7 +215,6 @@ export const serializeCreate = (table: string, items: any[], opts: Record<string
         createSerialize(table, "SELECT UNNEST(json_transform(j, getvariable('S'))) FROM " + tempname, opts),
     ].join(';\n')
 }
-
 
 export const dump = (state: DState, opts?: { state?: boolean }) => {
     console.log(highlightSql(toSql(state)))

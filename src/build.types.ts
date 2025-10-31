@@ -116,6 +116,8 @@ export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaMod
     sample: (n: number | `${number}%`) => this
     toSql(opts?: { trim: boolean }): string
     copyTo: CopyToInterface<A, S>['to'] // Pass available fields to CopyToInterface
+    insertInto: (tableName: string) => Resultor<any>
+    createAs: (tableName: string, options?: { replace?: boolean; ifNotExists?: boolean; temp?: boolean }) => this
 }
 
 
@@ -351,6 +353,18 @@ export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mod
     // fetchSchema(id: string): Promise<Mods>
     describe(id: string): Promise<any>
     run(sql: string): Promise<any>
+    
+    createAs(tableName: string, query: any, options?: { replace?: boolean; ifNotExists?: boolean; temp?: boolean }): {
+        toSql: (opts?: { trim?: boolean }) => string
+        execute: () => Promise<any>
+    }
+    
+    raw(sql: string): {
+        toSql: () => string
+        execute: () => Promise<any[]>
+        run: () => Promise<any>
+        show: () => Promise<any[]>
+    }
 }
 
 // Overload for settings only

@@ -249,6 +249,17 @@ class BuckDBNode extends BuckDBBase {
         await this._initDB()
         return this._connection.run(sql)
     }
+
+    update(tableName: string) {
+        return update(this, tableName)
+    }
+
+    raw(sql: string) {
+        return {
+            execute: () => this.execute(sql),
+            toSql: () => sql,
+        }
+    }
 }
 
 

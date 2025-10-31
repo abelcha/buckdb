@@ -136,6 +136,12 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 copyTo: function (uri: string, options: Record<string, any> = {}) {
                     return fromRes({ ...state, copyTo: [...state.copyTo, { uri, options }] })
                 },
+                insertInto: function (tableName: string) {
+                    return fromRes({ ...state, insertInto: { tableName } })
+                },
+                createAs: function (tableName: string, options: { replace?: boolean; ifNotExists?: boolean; temp?: boolean } = {}) {
+                    return fromRes({ ...state, createAs: { tableName, ...options } })
+                },
                 where: _where('AND'),
                 or: _where('OR'),
                 and: _where('AND'),

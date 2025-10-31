@@ -340,10 +340,14 @@ export type DSetOp = { type: DSetOpType, value: string }
 export type DOrder = { field: string; direction?: DDirection }
 export type DDatasource = { catalog: string; uri: string; alias?: string; using?: string, joinOn?: string; join?: 'JOIN' | 'LEFT JOIN' | 'RIGHT JOIN' | 'CROSS JOIN' | 'NATURAL JOIN' | 'INNER JOIN' }
 export type DCopyTo = { uri: string; options?: Record<string, any> }
+export type DCreateAs = { tableName: string; replace?: boolean; ifNotExists?: boolean; temp?: boolean }
+export type DInsertInto = { tableName: string }
 export type DCte = { query: { toState: () => DState, toSQL: () => string } & Record<string, any>; name?: string }
 export type Parseable = string | Function
 export const dstate = {
   copyTo: [] as DCopyTo[],
+  createAs: null as DCreateAs | null,
+  insertInto: null as DInsertInto | null,
   context: {} as Record<string, any>,
   datasources: [] as DDatasource[],
   selected: [] as DSelectee[],

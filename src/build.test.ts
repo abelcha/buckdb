@@ -675,6 +675,90 @@ describe('stream() method - PR #303 integration', () => {
         }
         expect(count).toBe(3)
     })
+
+    describe('createAs operations', () => {
+        it('should create basic table', () => {
+            const q = TestDB.from('https://duckdb.org/data/flights.csv')
+                .createAs('flights')
+            const sql = q.toSql()
+
+            expect(sql).toContain('CREATE TABLE flights AS')
+            expect(sql).toContain("FROM 'https://duckdb.org/data/flights.csv'")
+        })
+
+        it('should create table with replace option', () => {
+            const q = TestDB.from('data.csv')
+                .createAs('mytable', { replace: true })
+            const sql = q.toSql()
+
+            expect(sql).toContain('CREATE OR REPLACE TABLE mytable AS')
+            expect(sql).toContain("FROM 'data.csv'")
+        })
+
+        it('should create table with ifNotExists option', () => {
+            const q = TestDB.from('data.csv')
+                .createAs('mytable', { ifNotExists: true })
+            const sql = q.toSql()
+
+            expect(sql).toContain('CREATE TABLE IF NOT EXISTS mytable AS')
+            expect(sql).toContain("FROM 'data.csv'")
+        })
+
+        it('should create temp table', () => {
+            const q = TestDB.from('data.csv')
+                .createAs('mytable', { temp: true })
+            const sql = q.toSql()
+
+            expect(sql).toContain('CREATE TEMP TABLE mytable AS')
+            expect(sql).toContain("FROM 'data.csv'")
+        })
+
+        it('should create table with multiple options and filters', () => {
+            const q = TestDB.from('data.csv')
+                .select('id', 'name')
+                .where(p => p.id > 10)
+                .createAs('mytable', { replace: true, temp: true })
+            const sql = q.toSql()
+
+            expect(sql).toContain('CREATE OR REPLACE TEMP TABLE mytable AS')
+            expect(sql).toContain("FROM 'data.csv'")
+            expect(sql).toContain('id')
+            expect(sql).toContain('name')
+            expect(sql).toContain('WHERE (id > 10)')
+        })
+
+        it('should create table with trimmed output', () => {
+            const q = TestDB.from('data.csv')
+                .select('status', 'count(*)::int')
+                .createAs('mytable')
+
+            expect(q.toSql({ trim: false }).replace(/\s+/g, ' ')).toBe(
+                `CREATE TABLE mytable AS FROM 'data.csv' SELECT status, "count(*)::int"`
+            )
+        })
+    })
+
+    describe('raw SQL operations', () => {
+        it('should execute raw SQL with .raw()', async () => {
+            const result = await TestDB.raw('SELECT 42 as answer, \'hello\' as message').execute()
+            expect(result).toHaveLength(1)
+            expect(result[0].answer).toBe(42)
+            expect(result[0].message).toBe('hello')
+        })
+
+        it('should return SQL with .toSql()', () => {
+            const sql = 'SELECT COUNT(*) as count FROM duckdb_functions()'
+            const q = TestDB.raw(sql)
+            expect(q.toSql()).toBe(sql)
+        })
+
+        it('should work with template literals', async () => {
+            const tableName = 'duckdb_functions'
+            const result = await TestDB.raw(`SELECT COUNT(*) as count FROM ${tableName}()`).execute()
+            expect(result).toHaveLength(1)
+            expect(result[0].count).toBeGreaterThan(0)
+        })
+    })
 })
 
 /*

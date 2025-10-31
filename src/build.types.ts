@@ -132,19 +132,40 @@ type MSRecord = Record<string, MS<any, any, any, any, any>>
 
 // type InitialMaterializedResult<C extends StrictCollection[]> = MS<'records', MergedModel<C>>
 export interface Withor<Mods extends Models, T extends keyof Mods & string, GF extends t.DMetaField = t.DMetaField> {
+    /**
+     * @param fn - A function that takes an accumulator database and returns a record of MS instances.
+     * @returns A WithResult instance that can be used to chain further queries.
+     */
     with<O extends MSRecord>(fn: (accDB: DBuilderResult<Mods, T, GF>) => O): WithResult<Mods, T, ExtractSelectModel<O>, GF>
-
+    /**
+     * @param fn1 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn2 - A function that takes an accumulator database and returns a record of MS instances.
+     * @returns A WithResult instance that can be used to chain further queries.
+     */
     with<O1 extends MSRecord, O2 extends MSRecord>(
         fn1: (accDB: DBuilderResult<Mods, T, GF>) => O1,
         fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, GF>) => O2
     ): WithResult<Mods, T, ExtractSelectModel<O1 & O2>, GF>
 
+    /**
+     * @param fn1 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn2 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn3 - A function that takes an accumulator database and returns a record of MS instances.
+     * @returns A WithResult instance that can be used to chain further queries.
+     */
     with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord>(
         fn1: (accDB: DBuilderResult<Mods, T, GF>) => O1,
         fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, GF>) => O2,
         fn3: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O2>, GF>) => O3
     ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3>, GF>
 
+    /**
+     * @param fn1 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn2 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn3 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn4 - A function that takes an accumulator database and returns a record of MS instances.
+     * @returns A WithResult instance that can be used to chain further queries.
+     */
     with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord, O4 extends MSRecord>(
         fn1: (accDB: DBuilderResult<Mods, T, GF>) => O1,
         fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, GF>) => O2,
@@ -152,6 +173,14 @@ export interface Withor<Mods extends Models, T extends keyof Mods & string, GF e
         fn4: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O3>, GF>) => O4
     ): WithResult<Mods, T, ExtractSelectModel<O1 & O2 & O3 & O4>, GF>
 
+    /**
+     * @param fn1 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn2 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn3 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn4 - A function that takes an accumulator database and returns a record of MS instances.
+     * @param fn5 - A function that takes an accumulator database and returns a record of MS instances.
+     * @returns A WithResult instance that can be used to chain further queries.
+     */
     with<O1 extends MSRecord, O2 extends MSRecord, O3 extends MSRecord, O4 extends MSRecord, O5 extends MSRecord>(
         fn1: (accDB: DBuilderResult<Mods, T, GF>) => O1,
         fn2: (accDB: WithAccDB<Mods, T, ExtractSelectModel<O1>, GF>) => O2,

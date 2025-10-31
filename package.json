@@ -1,6 +1,6 @@
 {
   "name": "buckdb",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "type": "module",
   "main": "./node.ts",
   "module": "./node.ts",

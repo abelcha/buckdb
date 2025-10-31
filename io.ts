@@ -496,7 +496,7 @@ const fnSerial = (name = '', args: any[]) => {
         opts = args.pop() || {}
     }
     // todo: test consequence of removing the [''] for single string argument
-    let source = /*args.length ===1 ? `"${args[0]}"` :*/ `[${args.map((e = '') => `'${e}'`)}]`
+    let source = name === 'read_xlsx' && args.length === 1 ? `"${args[0]}"` : `[${args.map((e = '') => `'${e}'`)}]`
     if (!Object.keys(opts).length) {
         return `${name}(${source})`
     }

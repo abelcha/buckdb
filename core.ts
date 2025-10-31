@@ -11,7 +11,7 @@ export type DuckdbCon = {
     run: (sql: string) => Promise<any>
     stream: (sql: string) => AsyncGenerator<any>
     getSchemaUri: (model: string) => string
-    lazyAttach: (path: string, alias: string, options?: { readonly: boolean }) => any
+    lazyAttach: (path: string, alias: string, options?: { readonly?: boolean; type?: string }) => any
     ensureSchema: (uri: string) => Promise<any>
     describe: (uri: string) => Promise<Record<string, any>>
     query: (sql: string, opts?: Record<string, any>) => Promise<any[]>
@@ -50,7 +50,7 @@ export abstract class BuckDBBase implements DuckdbCon {
         return this
     }
 
-    lazyAttach(uri: string, alias?: string, options?: { readonly: boolean }) {
+    lazyAttach(uri: string, alias?: string, options?: { readonly?: boolean; type?: string }) {
         this.queue.pushAttach(uri, alias || deriveName(uri), options)
         return this
     }
@@ -93,9 +93,25 @@ export class CommandQueue {
         }
         return this
     }
-    pushAttach(path: string, alias: string, options?: { readonly: boolean }) {
-        const opts = options?.readonly ? '(READONLY)' : ''
-        this.queue.push(`ATTACH OR REPLACE '${path}' AS ${alias} ${opts};`, `USE ${alias};`)
+    pushAttach(path: string, alias: string, options?: { readonly?: boolean; type?: string }) {
+        // Detect PostgreSQL connection string
+        const isPostgres = path.startsWith('postgresql://') || path.startsWith('postgres://') || options?.type === 'postgres'
+
+        let opts = ''
+        if (isPostgres) {
+            // For PostgreSQL, we need (TYPE postgres, [READONLY])
+            const parts = ['TYPE postgres']
+            if (options?.readonly) parts.push('READ_ONLY')
+            opts = `(${parts.join(', ')})`
+            // Install and load postgres extension
+            this.queue.push(`INSTALL postgres_scanner; LOAD postgres_scanner;`)
+        } else if (options?.readonly) {
+            opts = '(READ_ONLY)'
+        } else if (options?.type) {
+            opts = `(TYPE ${options.type})`
+        }
+
+        this.queue.push(`ATTACH '${path}' AS ${alias} ${opts};`)
         this.usedDB = alias
         return this
     }
@@ -128,8 +144,9 @@ export class CommandQueue {
             'tpch',
             'ui',
             'vss',
+            'postgres'
         ]
-        const brokenExt = ['h3','wireduck', 'vortex', 'tarfs', 'scrooge', 'redis', 'quackformers', 'pyroscope', 'pcap_reader', 'parser_tools', 'ofquack', 'nanodbc', 'nanoarrow', 'msolap', 'httpfs', 'hdf5']
+        const brokenExt = ['h3', 'wireduck', 'vortex', 'tarfs', 'scrooge', 'redis', 'quackformers', 'pyroscope', 'pcap_reader', 'parser_tools', 'ofquack', 'nanodbc', 'nanoarrow', 'msolap', 'httpfs', 'hdf5']
         this.queue.push(...extensions.filter(e => !brokenExt.includes(e)).map(e => `INSTALL '${e}' ${!officialExtensions.includes(e) ? 'FROM community' : ''};LOAD '${e}';`))
         return this
     }

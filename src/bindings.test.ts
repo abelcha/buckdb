@@ -18,8 +18,7 @@ describe('CommandQueue', () => {
         const queue = new CommandQueue()
         queue.pushAttach('/path/to/db', 'mydb', { readonly: true })
         expect(queue.queue).toEqual([
-            `ATTACH OR REPLACE '/path/to/db' AS mydb (READONLY);`,
-            `USE mydb;`
+            `ATTACH '/path/to/db' AS mydb (READ_ONLY);`,
         ])
     })
 
@@ -40,8 +39,7 @@ describe('CommandQueue', () => {
         const flushed = queue.flush()
         expect(flushed).toEqual([
             `SET threads = '4'`,
-            `ATTACH OR REPLACE '/db' AS test ;`,
-            `USE test;`
+            `ATTACH '/db' AS test ;`,
         ])
         expect(queue.queue).toEqual([]) // should be empty after flush
     })

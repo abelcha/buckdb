@@ -231,9 +231,17 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
         }
         return {
             ddb,
+            raw: (sql: string) => ({
+                toSql: () => sql,
+                execute: () => ddb.query(sql),
+            }),
             run: (sql: string) => ddb.run(sql),
             settings: function (s: Partial<t.DSettings>) {
                 ddb.lazySettings(s)
+                return this
+            },
+            attach: function (path: string, alias?: string, options?: { readonly?: boolean; type?: string }) {
+                ddb.lazyAttach(path, alias || deriveName(path), options)
                 return this
             },
             fetchTables: async function () {

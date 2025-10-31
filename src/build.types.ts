@@ -317,6 +317,7 @@ export declare function Buck<T extends keyof Models>(catalog: T, settings?: Part
 export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mods & string, GF extends t.DMetaField = t.DMetaField> extends Withor<Mods, Ressource, GF> {
     ddb: DuckdbCon
     settings(s: Partial<t.DSettings>): DBuilderResult<Mods, Ressource, GF>
+    attach(path: string, alias?: string, options?: { readonly?: boolean; type?: string }): DBuilderResult<Mods, Ressource, GF>
     fetchTables: () => Promise<[string, any][]>
 
     macros: <U extends Record<string, (...args: any[]) => any>>(
@@ -346,6 +347,7 @@ export interface DBuilderResult<Mods extends Models, Ressource extends keyof Mod
         FromResult<AddSchemaToModels<Mods, string, TSchema>, Ressource, PushCollection<[], '', string, string>, GF> & MS<'records', GF, MergedModel<AddSchemaToModels<Mods, string, TSchema>, PushCollection<[], '', string, string>>>
 
     loadExtensions(...ext: string[]): DBuilderResult<Mods, Ressource, GF> // Use the defined type here
+    attach(uri: string, alias: string): this
     // fetchSchema(id: string): Promise<Mods>
     describe(id: string): Promise<any>
     run(sql: string): Promise<any>

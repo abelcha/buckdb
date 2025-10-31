@@ -6,7 +6,8 @@ import { serializeSchema } from './interface-generator'
 import { parse, parseObject } from './parser'
 import type { DCte, DDatasource, DOrder, DSelectee, DState, Parseable } from './typedef'
 import { dstate } from './typedef'
-import { deriveName, isBucket, keyBy, upperFirst, Σ } from './utils'
+import { deriveName, isBucket, isPlainObject, keyBy, upperFirst, Σ } from './utils'
+import { isMqlQuery, mqlToSql } from './mql'
 
 export const deriveState = (s: DState, kmap: Record<keyof DState | string, any | any[]>, format = (e: any) => e) => {
     return Object.entries(kmap).reduce((acc, [key, values]) => {
@@ -46,7 +47,14 @@ export const builder = (Ddb: new (...args: any[]) => DuckdbCon) =>
                 }
             const _where = (operator = 'AND') =>
                 function (...conditions: Parseable[]) {
-                    return fromRes(deriveState(state, { conditions: conditions.map(v => formalize(v, state.context, { condition: true })) }, condition => ({ condition, operator })))
+                    const parsed = conditions.map(v => {
+                        // Check if it's an MQL query object
+                        if (isPlainObject(v)) {
+                            return mqlToSql(v)
+                        }
+                        return formalize(v, state.context, { condition: true })
+                    })
+                    return fromRes(deriveState(state, { conditions: parsed }, condition => ({ condition, operator })))
                 }
             const ensureAllSchemas = async function (state: DState) {
                 if (state.ctes.length) {

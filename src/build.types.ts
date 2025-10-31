@@ -96,6 +96,7 @@ export interface MS<V extends VTypes, GF extends t.DMetaField, A extends MetaMod
     minBy<G extends (KeyPicker<A, S>)>(key: G): MS<'row', GF, A, S, SV>
     maxBy: this['minBy']
     where(fn: (p: ToCompDict<A & S>, D: t.DMetaComp) => any): MS<V, GF, A, S, SV>
+    where(query: { [K in keyof (A & S)]?: any } & { [key: string]: any }): MS<V, GF, A, S, SV>
     where(rawStr: string): MS<V, GF, A, S, SV>
     having: this['where']
     distinctOn<G extends KeyPicker<A, S>>(...key: G[] | G[][]): MS<V, GF, A, S, SV>

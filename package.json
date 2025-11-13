@@ -12,7 +12,8 @@
     "./node": "./node.ts",
     "./io": "./io.ts",
     "./wasm": "./wasm.ts",
-    "./remote": "./remote.ts"
+    "./remote": "./remote.ts",
+    "./highlighter": "./src/highlighter.ts"
   },
   "files": [
     ".buck/*",

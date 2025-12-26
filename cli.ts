@@ -21,7 +21,7 @@ export async function getAssets(distDir: string) {
 }
 
 // Inlined assets from build time (Base64)
-const assetsBase64 = await getAssets(join(import.meta.dir, "demo/dist"));
+const assetsBase64 = await getAssets(join(import.meta.dir, ".", "demo", "dist"));
 const assets = Object.fromEntries(
   Object.entries(assetsBase64).map(([k, v]) => [k, Buffer.from(v as string, "base64")])
 );

@@ -1,9 +1,13 @@
 import { serve, file, Glob, argv } from "bun";
 import { join, relative } from "path";
 import { parseArgs } from "util";
+import { DuckDBInstance } from '@duckdb/node-api';
 
-// Get assets from demo/dist folder
-async function getAssets(distDir: string) {
+
+// Environment setup for DuckDB
+process.env.DUCKDB_HTTPSERVER_FOREGROUND = '1';
+
+export async function getAssets(distDir: string) {
   const scanner = new Glob("**/*");
   const assets: Record<string, string> = {};
 
@@ -51,6 +55,22 @@ Options:
 }
 
 const port = parseInt((values.port as string) ?? "3000", 10);
+
+// Initialize DuckDB
+const instance = await DuckDBInstance.create(':memory:');
+const connection = await instance.connect();
+
+const initSql = `
+INSTALL hostfs FROM community; 
+LOAD hostfs;
+INSTALL httpserver FROM community;
+LOAD httpserver; 
+SELECT httpserve_start('0.0.0.0', 9998, '');
+`;
+
+console.log('[DuckDB] Initializing...');
+await connection.run(initSql);
+console.log('[DuckDB] HTTP server started on port 9998');
 
 const getMimeType = (filePath: string): string => {
   const ext = filePath.split('.').pop()?.toLowerCase() || '';

@@ -27,6 +27,7 @@
     "!src/*.test.ts"
   ],
   "scripts": {
+    "buckdb": "bun ./cli.ts",
     "demo": "npm start --prefix demo",
     "serve": "bun ./cli.ts",
     "bump-jsr": "deno run --allow-all jsr:@kellnerd/bump --file jsr.json --commit ",

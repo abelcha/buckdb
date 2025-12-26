@@ -33,7 +33,7 @@ export abstract class BuckDBBase implements DuckdbCon {
         public settings?: Record<string, any>,
     ) { }
     getSchemaUri(s: string) {
-        const [_, fnname] = s.match(/(\w+)\((.+)\)/) || []
+        const [_, fnname] = s?.match(/(\w+)\((.+)\)/) || []
         if (fnname) {
             return `${fnname}()`
         }

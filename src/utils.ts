@@ -65,7 +65,7 @@ export const isFile = (str: string) => {
 }
 
 export const isDirectory = (str: string) => !isFile(str)
-export const isFunction = (str: string) => str.match(/\);*$/)
+export const isFunction = (str: string) => str?.match?.(/\);*$/)
 
 
-export const isReaderFunction = (n: string) => n.match(/^(st_)?(sniff_.+|read_.+|.+_scan)$/i)
+export const isReaderFunction = (n: string) => n?.match?.(/^(st_)?(sniff_.+|read_.+|.+_scan)$/i)

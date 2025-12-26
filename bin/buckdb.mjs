@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 // @bun
 var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
@@ -7233,7 +7232,7 @@ async function getAssets(distDir) {
   }
   return assets;
 }
-var assetsBase64 = await getAssets(join(import.meta.dir, ".", "demo", "dist"));
+var assetsBase64 = await getAssets(join(import.meta.dir, "..", "demo", "dist"));
 var assets = Object.fromEntries(Object.entries(assetsBase64).map(([k, v]) => [k, Buffer.from(v, "base64")]));
 var { values } = parseArgs({
   args: argv,

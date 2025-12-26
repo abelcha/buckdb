@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Find and set DYLD_LIBRARY_PATH for DuckDB native module
+if [ -z "$DYLD_LIBRARY_PATH" ]; then
+  # Try common homebrew locations
+  if [ -d "/opt/homebrew/Cellar/duckdb" ]; then
+    DYLD_LIBRARY_PATH=$(ls -d /opt/homebrew/Cellar/duckdb/*/lib 2>/dev/null | head -1)
+  fi
+
+  # Fallback to /usr/local for Intel Macs
+  if [ -z "$DYLD_LIBRARY_PATH" ] && [ -d "/usr/local/Cellar/duckdb" ]; then
+    DYLD_LIBRARY_PATH=$(ls -d /usr/local/Cellar/duckdb/*/lib 2>/dev/null | head -1)
+  fi
+
+  # Export if we found a path
+  if [ -n "$DYLD_LIBRARY_PATH" ]; then
+    export DYLD_LIBRARY_PATH
+  fi
+fi
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Run the compiled bun executable
+exec bun "$SCRIPT_DIR/buckdb.mjs" "$@"

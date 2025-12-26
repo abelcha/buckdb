@@ -4,6 +4,9 @@
   "type": "module",
   "main": "./node.ts",
   "module": "./node.ts",
+  "bin": {
+    "buckdb": "./cli.ts"
+  },
   "exports": {
     ".": "./node.ts",
     "./tf": "./tf.ts",
@@ -13,6 +16,7 @@
     "./io": "./io.ts",
     "./wasm": "./wasm.ts",
     "./remote": "./remote.ts",
+    "./cli": "./cli.ts",
     "./highlighter": "./src/highlighter.ts"
   },
   "files": [
@@ -23,6 +27,7 @@
   ],
   "scripts": {
     "demo": "npm start --prefix demo",
+    "serve": "bun ./cli.ts",
     "bump-jsr": "deno run --allow-all jsr:@kellnerd/bump --file jsr.json --commit ",
     "bump-npm": "deno run --allow-all jsr:@kellnerd/bump --file package.json --commit ",
     "patch": "bun run bump-jsr && bun run bump-npm && jsr publish --allow-slow-types --allow-dirty --token $JSR_TOKEN && npm publish",

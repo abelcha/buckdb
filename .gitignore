@@ -3,11 +3,9 @@ node_modules
 duckdb-node-neo
 .trash
 data
-demo/dist
 repomix-output.xml.txt
 stuffs
 docs/
-demo/dist
 */*/node_modules
 */target
 # Local Netlify folder

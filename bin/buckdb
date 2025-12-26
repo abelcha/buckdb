@@ -27,10 +27,11 @@ case "$SCRIPT_DIR" in
 esac
 # Resolve symlinks
 while [ -L "$SCRIPT_DIR" ]; do
-  SCRIPT_DIR=$(readlink "$SCRIPT_DIR")
-  case "$SCRIPT_DIR" in
-    /*) ;;
-    *)  SCRIPT_DIR="$(pwd)/$SCRIPT_DIR";;
+  LINK_TARGET=$(readlink "$SCRIPT_DIR")
+  LINK_DIR="$(dirname "$SCRIPT_DIR")"
+  case "$LINK_TARGET" in
+    /*)  SCRIPT_DIR="$LINK_TARGET";;
+    *)   SCRIPT_DIR="$LINK_DIR/$LINK_TARGET";;
   esac
 done
 SCRIPT_DIR="$(dirname "$SCRIPT_DIR")"

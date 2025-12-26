@@ -18,8 +18,8 @@ if [ -z "$DYLD_LIBRARY_PATH" ]; then
   fi
 fi
 
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Get the real directory of this script (resolving symlinks)
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
 # Run the compiled bun executable
 exec bun "$SCRIPT_DIR/buckdb.mjs" "$@"

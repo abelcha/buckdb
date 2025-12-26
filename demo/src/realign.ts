@@ -19,7 +19,7 @@ const freplace = (str: string) => (str || '')
         return `.${r}(` // replace all functions with their SQL equivalents
         return e
     })
-    .replaceAll(/\&\&/g, 'AND')
+    .replaceAll(/&&/g, 'AND')
 
 export const alignExpressionWithSql = (expression: string, sql: string) => {
     const expressionLines = expression

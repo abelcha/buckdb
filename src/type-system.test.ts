@@ -124,12 +124,12 @@ test('string operations type checking', async () => {
 test('orderBy type checking', async () => {
     expect(
         sortBy(
-        await MemoryDB.from('duckdb_functions()')
-            .select('function_name', 'function_oid', 'description')
-            .orderBy('function_oid')
-            .limit(3)
-            .execute()
-        , ['function_oid'])
+            await MemoryDB.from('duckdb_functions()')
+                .select('function_name', 'function_oid', 'description')
+                .orderBy('function_oid')
+                .limit(3)
+                .execute()
+            , ['function_oid'])
     ).toEqual(
         sortBy(fns, ['function_oid'])
             .map(({ function_name, description, function_oid }) => ({ function_name, description, function_oid }))
@@ -684,7 +684,7 @@ test('kitchen_sing2', async () => {
 test('d.test.ts', async () => {
 
     function xx(D: t.DMetaField, vc: t.DVarcharField, str: t.DVarcharComp, num: t.DNumericComp) {
-        const yyy = ({} as FromPlain<{ to: number; l: string[] }>) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField> }
+        const _yyy = ({} as FromPlain<{ to: number; l: string[] }>) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField> }
             ; ((
                 x: FromPlain<{
                     to: t.DNumericField
@@ -693,25 +693,25 @@ test('d.test.ts', async () => {
                 }>,
             ) => x)('' as any) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField>; nested: t.DArrayField<{ lol: t.DNumericField }> }
 
-        const xx = ((x: FromPlain<{ to: number; l: string[]; nested: [{ lol: 42 }, { lol: 1 }] }>) => x)('' as any) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField>; nested: t.DArrayField<{ lol: t.DNumericField }> }
-        const r =
+        const _xx = ((x: FromPlain<{ to: number; l: string[]; nested: [{ lol: 42 }, { lol: 1 }] }>) => x)('' as any) satisfies { to: t.DNumericField; l: t.DArrayField<t.DVarcharField>; nested: t.DArrayField<{ lol: t.DNumericField }> }
+        const _r =
             D.Struct({ ok: 'lol', toto: [123, 31, 41] }).toto.list_transform(x => x + 1).filter(z => z > 12) satisfies
             t.DArrayField<t.DNumericField>
-        const r2 = r.reduce((acc, curr) => acc + curr, 0) satisfies t.DNumericField
-        const resp = D.array_transform(D.Array(['lol', 'xxx', 'ddd']), z => z.len()) satisfies
+        const _r2 = r.reduce((acc, curr) => acc + curr, 0) satisfies t.DNumericField
+        const _resp = D.array_transform(D.Array(['lol', 'xxx', 'ddd']), z => z.len()) satisfies
             t.DArrayField<t.DNumericField>
-        const resp2 =
+        const _resp2 =
             D.array_transform(['lol', 'xxx', 'ddd'], z => ({ ok: 'ok', zz: z.lower(), x: z.upper().damerau_levenshtein('xxx') })) satisfies
             t.DArrayField<{ ok: t.DVarcharField; zz: t.DVarcharField; x: t.DNumericField }>
-        const toto = num.abs().as('Bigint').ceil().toExponential()
-        const str2 = vc.damerau_levenshtein('xxx').ceil()[t.sInferred] satisfies number
-        const zzz = str.damerau_levenshtein('xxx') > 12 satisfies boolean
-        const zzz2 = (str === 'str') satisfies boolean
+        const _toto = num.abs().as('Bigint').ceil().toExponential()
+        const _str2 = vc.damerau_levenshtein('xxx').ceil()[t.sInferred] satisfies number
+        const _zzz = str.damerau_levenshtein('xxx') > 12 satisfies boolean
+        const _zzz2 = (str === 'str') satisfies boolean
 
-        const ggg = D.Array(['lol', 'xxx', 'ddd']).array_filter(z => z.includes('toto')) satisfies t.DArrayField<t.DVarcharField>
-        const arr = D.Varchar('lol').str_split(';').list_transform(z => [z.trim()]).filter(z => z[1].len() > 41).list_transform(z => z[0].len() === 1) satisfies t.DArrayField<t.DBoolField>
+        const _ggg = D.Array(['lol', 'xxx', 'ddd']).array_filter(z => z.includes('toto')) satisfies t.DArrayField<t.DVarcharField>
+        const _arr = D.Varchar('lol').str_split(';').list_transform(z => [z.trim()]).filter(z => z[1].len() > 41).list_transform(z => z[0].len() === 1) satisfies t.DArrayField<t.DBoolField>
 
-        const uuuuuuu = D.Array([{ lol: 123 }, { lol: 2 }]) // .list_transform(x => ({ ...x, zz: x.lol * 2 }))
+        const _uuuuuuu = D.Array([{ lol: 123 }, { lol: 2 }]) // .list_transform(x => ({ ...x, zz: x.lol * 2 }))
 
         const ___ = D.Struct({ toto: 123, lol: [{ xx: 123 }] }) satisfies { toto: t.DNumericField; lol: t.DArrayField<{ xx: t.DNumericField }> }
 

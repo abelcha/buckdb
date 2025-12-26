@@ -3,10 +3,22 @@ import { join, relative } from "path";
 import { parseArgs } from "util";
 import { DuckDBInstance } from '@duckdb/node-api';
 
-import { getAssets } from "./get-assets.ts" with { type: "macro" };
 
 // Environment setup for DuckDB
 process.env.DUCKDB_HTTPSERVER_FOREGROUND = '1';
+
+export async function getAssets(distDir: string) {
+  const scanner = new Glob("**/*");
+  const assets: Record<string, string> = {};
+
+  for (const relativePath of scanner.scanSync(distDir)) {
+    const filePath = join(distDir, relativePath);
+    const f = file(filePath);
+    assets["/" + relativePath] = Buffer.from(await f.arrayBuffer()).toString("base64");
+  }
+
+  return assets;
+}
 
 // Inlined assets from build time (Base64)
 const assetsBase64 = await getAssets("./dist");
@@ -60,6 +72,24 @@ console.log('[DuckDB] Initializing...');
 await connection.run(initSql);
 console.log('[DuckDB] HTTP server started on port 9998');
 
+const getMimeType = (filePath: string): string => {
+  const ext = filePath.split('.').pop()?.toLowerCase() || '';
+  const mimeTypes: Record<string, string> = {
+    'html': 'text/html',
+    'js': 'application/javascript',
+    'json': 'application/json',
+    'css': 'text/css',
+    'svg': 'image/svg+xml',
+    'png': 'image/png',
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'gif': 'image/gif',
+    'ico': 'image/x-icon',
+    'wasm': 'application/wasm',
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
+};
+
 const addSecurityHeaders = (res: Response) => {
   res.headers.set("Cross-Origin-Embedder-Policy", "require-corp");
   res.headers.set("Cross-Origin-Opener-Policy", "same-origin");
@@ -70,10 +100,24 @@ const addSecurityHeaders = (res: Response) => {
 const routes: Record<string, any> = {};
 for (const [routePath, content] of Object.entries(assets)) {
   // @ts-ignore
-  routes[routePath] = () => addSecurityHeaders(new Response(content));
+  routes[routePath] = () => {
+    const res = new Response(content, {
+      headers: {
+        'Content-Type': getMimeType(routePath)
+      }
+    });
+    return addSecurityHeaders(res);
+  };
   if (routePath === "/index.html") {
     // @ts-ignore
-    routes["/"] = () => addSecurityHeaders(new Response(content));
+    routes["/"] = () => {
+      const res = new Response(content, {
+        headers: {
+          'Content-Type': 'text/html'
+        }
+      });
+      return addSecurityHeaders(res);
+    };
   }
 }
 

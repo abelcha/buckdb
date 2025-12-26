@@ -34,6 +34,7 @@
     "!cli.ts"
   ],
   "scripts": {
+    "postinstall": "node -e \"const fs=require('fs'),path=require('path');const src=path.join(__dirname,'node_modules/@duckdb/node-bindings-darwin-arm64/duckdb.node');const dst=path.join(__dirname,'bin/duckdb-q2swtjpw.node');if(fs.existsSync(src))fs.copyFileSync(src,dst);\"",
     "buckdb": "bun ./cli.ts",
     "demo": "npm start --prefix demo",
     "serve": "bun ./cli.ts",

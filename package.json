@@ -16,7 +16,6 @@
     "./io": "./io.ts",
     "./wasm": "./wasm.ts",
     "./remote": "./remote.ts",
-    "./cli": "./cli.ts",
     "./highlighter": "./src/highlighter.ts"
   },
   "files": [
@@ -24,8 +23,15 @@
     "bin/*",
     "src/*.ts",
     "demo/dist/**",
-    "*.ts",
-    "!src/*.test.ts"
+    "node.ts",
+    "core.ts",
+    "fn.ts",
+    "io.ts",
+    "remote.ts",
+    "tf.ts",
+    "wasm.ts",
+    "!src/*.test.ts",
+    "!cli.ts"
   ],
   "scripts": {
     "buckdb": "bun ./cli.ts",

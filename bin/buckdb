@@ -18,8 +18,22 @@ if [ -z "$DYLD_LIBRARY_PATH" ]; then
   fi
 fi
 
-# Get the real directory of this script (resolving symlinks)
-SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+# Get the absolute directory of this script, resolving symlinks
+SCRIPT_DIR="$0"
+# If $0 is relative, make it absolute from current directory
+case "$SCRIPT_DIR" in
+  /*) ;;
+  *)  SCRIPT_DIR="$(pwd)/$SCRIPT_DIR";;
+esac
+# Resolve symlinks
+while [ -L "$SCRIPT_DIR" ]; do
+  SCRIPT_DIR=$(readlink "$SCRIPT_DIR")
+  case "$SCRIPT_DIR" in
+    /*) ;;
+    *)  SCRIPT_DIR="$(pwd)/$SCRIPT_DIR";;
+  esac
+done
+SCRIPT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Run the compiled bun executable
 exec bun "$SCRIPT_DIR/buckdb.mjs" "$@"

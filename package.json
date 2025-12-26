@@ -1,11 +1,11 @@
 {
   "name": "buckdb",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "type": "module",
   "main": "./node.ts",
   "module": "./node.ts",
   "bin": {
-    "buckdb": "./cli.ts"
+    "buckdb": "./bin/buckdb.js"
   },
   "exports": {
     ".": "./node.ts",
@@ -21,6 +21,7 @@
   },
   "files": [
     ".buck/*",
+    "bin/*",
     "src/*.ts",
     "demo/dist/**",
     "*.ts",

@@ -5,7 +5,7 @@
   "main": "./node.ts",
   "module": "./node.ts",
   "bin": {
-    "buckdb": "bin/buckdb.mjs"
+    "buckdb": "bin/buckdb.js"
   },
   "exports": {
     ".": "./node.ts",

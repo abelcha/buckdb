@@ -375,7 +375,7 @@ export const RessourceOps = ['from', 'leftJoin', 'join', 'rightJoin', 'naturalJo
 export const InstanceOps = ['Buck', 'settings', 'loadExtensions']
 
 const compressExtensions = ['.gz', '.zst', '.brotli', '.lz4', '.lzma', '.zlib', '']
-const fileExtensions = ['parquet', 'csv', 'json', 'orc', 'avro', 'tsv', 'json', 'ndjson', 'jsonl']
+const fileExtensions = ['parquet', 'csv', 'json', 'orc', 'avro', 'tsv', 'json', 'ndjson', 'jsonl', 'vortex']
 const dbExtension = ['sqlite', 'sqlite3', 'duckdb', 'ddb', 'db']
 
 export const ReadableFileRegexp = new RegExp(`\\.(${[...fileExtensions, ...dbExtension].join('|')})(${compressExtensions.join('|')})$`)

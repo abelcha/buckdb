@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { serve, file, Glob, argv } from "bun";
 import { join, relative } from "path";
 import { parseArgs } from "util";
@@ -19,9 +20,10 @@ export async function getAssets(distDir: string) {
 
   return assets;
 }
-
+// console.log('resolve=>', import.meta.rolve('dist'))
+// console.log('dir=>', import.meta.dir)
 // Inlined assets from build time (Base64)
-const assetsBase64 = await getAssets("./dist");
+const assetsBase64 = await getAssets(import.meta.dir+"/dist");
 const assets = Object.fromEntries(
   Object.entries(assetsBase64).map(([k, v]) => [k, Buffer.from(v as string, "base64")])
 );

@@ -74,21 +74,13 @@ export default defineConfig({
         strictPort: true,
         // if the host Tauri is expecting is set, use it
         host: host || false,
-        hmr: host
-            ? {
-                protocol: 'ws',
-                host,
-                port: 1421,
-            }
-            : undefined,
+        hmr: false,
         fs: {
             allow: ['../../../'], // allow to load codicon.ttf from monaco-editor in the parent folder and monaco-vscode-api package resources
         },
         proxy: duckdbProxy({ port: '9998' }),
-        watch: {
-            // tell vite to ignore watching `src-tauri`
-            ignored: ['**/src-tauri/**'],
-        },
+        // wz
+        watch: null,
     },
     // Env variables starting with the item of `envPrefix` will be exposed in tauri's source code through `import.meta.env`.
     envPrefix: ['VITE_', 'TAURI_ENV_*'],
